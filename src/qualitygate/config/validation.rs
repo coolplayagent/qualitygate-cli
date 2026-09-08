@@ -41,6 +41,34 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             bail!("Check {} timeout_seconds must be 1..86400", check.id);
         }
         crate::paths::relative(Path::new(&check.cwd))?;
+        let mut outputs = BTreeSet::new();
+        let mut roots = BTreeSet::new();
+        for project in &check.projects {
+            let root = crate::paths::relative(Path::new(&project.root))?;
+            if project.root.is_empty()
+                || (project.root != "." && root != project.root)
+                || !roots.insert(root)
+            {
+                bail!("Maven project roots must be unique and normalized");
+            }
+            for path in [&project.effective_pom, &project.dependency_tree] {
+                let normalized = crate::paths::relative(Path::new(path))?;
+                if normalized.is_empty() || normalized != *path || !outputs.insert(path) {
+                    bail!("Maven output paths must be distinct normalized files");
+                }
+            }
+        }
+        if !check.projects.is_empty()
+            && (check.kind != CheckKind::Command
+                || check.expected_exit_code != 0
+                || !check.findings_exit_codes.is_empty()
+                || check
+                    .reports
+                    .iter()
+                    .any(|report| report.mode != IncrementMode::Full))
+        {
+            bail!("Maven project facts require successful commands and full reports");
+        }
         let mut tools = BTreeSet::new();
         for tool in &check.tools {
             validate_id(&tool.id)?;
@@ -70,6 +98,9 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             }
         }
         for report in &check.reports {
+            if !outputs.insert(&report.path) {
+                bail!("Check output paths must be distinct");
+            }
             crate::paths::relative(Path::new(&report.path))?;
             if let Some(baseline) = &report.baseline {
                 crate::paths::relative(Path::new(baseline))?;
@@ -135,24 +166,35 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             }
         }
     }
+    let nodes: Vec<_> = config
+        .rules
+        .iter()
+        .map(|(id, rule)| (id, &rule.depends_on))
+        .chain(
+            config
+                .checks
+                .iter()
+                .map(|check| (&check.id, &check.depends_on)),
+        )
+        .collect();
     let mut completed = BTreeSet::new();
-    for _ in 0..=config.checks.len() {
-        for check in &config.checks {
-            for dependency in &check.depends_on {
+    for _ in 0..=nodes.len() {
+        for (id, dependencies) in &nodes {
+            let mut unique = BTreeSet::new();
+            for dependency in *dependencies {
                 if !ids.contains(dependency.as_str()) {
                     bail!("Unknown prerequisite: {dependency}");
                 }
+                if !unique.insert(dependency) {
+                    bail!("Repeated prerequisite: {dependency}");
+                }
             }
-            if check
-                .depends_on
-                .iter()
-                .all(|id| completed.contains(id) || config.rules.contains_key(id))
-            {
-                completed.insert(check.id.clone());
+            if dependencies.iter().all(|id| completed.contains(id)) {
+                completed.insert((*id).clone());
             }
         }
     }
-    if completed.len() != config.checks.len() {
+    if completed.len() != nodes.len() {
         bail!("Check dependency graph contains a cycle");
     }
     if let Some(path) = &config.custom_rules {

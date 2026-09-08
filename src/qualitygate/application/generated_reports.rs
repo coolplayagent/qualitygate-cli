@@ -11,12 +11,20 @@ use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, sync::Arc, time::Duration};
 
 pub(super) async fn prepare(check: &CommandCheck, workspace: &Path, baseline: bool) -> Result<()> {
-    for report in &check.reports {
-        let name = if baseline {
+    let reports = check.reports.iter().map(|report| {
+        if baseline {
             report.baseline.as_deref().unwrap_or(&report.path)
         } else {
             &report.path
-        };
+        }
+    });
+    let projects = check.projects.iter().flat_map(|project| {
+        [
+            project.effective_pom.as_str(),
+            project.dependency_tree.as_str(),
+        ]
+    });
+    for name in reports.chain(projects) {
         let path = paths::confined(workspace, Path::new(name))?;
         match tokio::fs::remove_file(&path).await {
             Ok(()) => {}
@@ -193,7 +201,7 @@ async fn baseline(
     Ok(reports)
 }
 
-async fn read_report(workspace: &Path, name: &str) -> Result<Vec<u8>> {
+pub(super) async fn read_report(workspace: &Path, name: &str) -> Result<Vec<u8>> {
     let path = paths::confined(workspace, Path::new(name))?;
     let metadata = tokio::fs::metadata(&path)
         .await

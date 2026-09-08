@@ -5,7 +5,9 @@ mod coverage_gate;
 mod evidence;
 mod generated_reports;
 mod policy;
+mod project_reports;
 mod report_gate;
+mod rule_execution;
 mod test_counts;
 mod tool_evidence;
 
@@ -59,49 +61,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .context("Missing run directory name")?
         .to_string_lossy()
         .to_string();
-    let rule_snapshot = Arc::clone(&snapshot);
-    let rule_settings = plan.rules.clone();
-    let mut results = tokio::task::spawn_blocking(move || {
-        rule_settings
-            .iter()
-            .map(|(id, setting)| {
-                let entry = &catalog.entries[id];
-                let mut result = if let Some(rule) = &entry.custom {
-                    crate::adapters::custom_rules::evaluate(rule, setting, &rule_snapshot)
-                } else {
-                    let builtin = entry.builtin.as_ref().expect("resolved builtin");
-                    crate::adapters::rules::evaluate_as(
-                        id,
-                        &builtin.implementation,
-                        setting,
-                        &rule_snapshot,
-                    )
-                };
-                result.rule_version = entry.version();
-                result
-                    .metadata
-                    .insert("rule_definition".into(), serde_json::json!(entry));
-                result.metadata.insert(
-                    "adapter_version".into(),
-                    serde_json::json!(env!("CARGO_PKG_VERSION")),
-                );
-                let sources = setting
-                    .source
-                    .iter()
-                    .chain(entry.custom.iter().map(|rule| &rule.source));
-                for source in sources {
-                    if let Err(error) = policy::validate_source(source, &rule_snapshot.files) {
-                        result.block(
-                            ExecutionStatus::Blocked,
-                            format!("Rule source requires review: {error:#}"),
-                        );
-                    }
-                }
-                result
-            })
-            .collect::<Vec<_>>()
-    })
-    .await?;
+    let mut results: Vec<CheckResult> = Vec::new();
     let workspace = if !plan.commands.is_empty() && invalid.is_empty() {
         Some(snapshot::materialize(&snapshot).await?)
     } else {
@@ -112,31 +72,53 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     } else {
         None
     };
-    for command in &plan.commands {
-        let dependency_failure = command.depends_on.iter().find(|id| {
+    for id in &plan.order {
+        let rule = plan.rules.get(id);
+        let command = plan.commands.iter().find(|command| &command.id == id);
+        let (required, severity, dependencies) = if let Some(rule) = rule {
+            (rule.required, rule.severity, &rule.depends_on)
+        } else {
+            let command = command.expect("planned command");
+            (command.required, command.severity, &command.depends_on)
+        };
+        let dependency_failure = dependencies.iter().find(|id| {
             !results.iter().any(|result| {
                 &result.id == *id
                     && result.execution.status == ExecutionStatus::Completed
                     && result.verdict == Some(Verdict::Pass)
             })
         });
-        let result = if let Some(dependency) = dependency_failure {
-            let mut result = CheckResult::pending(&command.id, command.required, command.severity);
+        let mut result = if let Some(dependency) = dependency_failure {
+            let mut result = CheckResult::pending(id, required, severity);
             result.block(
                 ExecutionStatus::Blocked,
                 format!("Prerequisite {dependency} did not pass"),
             );
             result
-        } else if let (Some(workspace), Some(inputs)) = (&workspace, &input_guard) {
+        } else if let Some(rule) = rule {
+            rule_execution::execute(id, rule, &catalog.entries[id], &snapshot, &results).await?
+        } else if let (Some(command), Some(workspace), Some(inputs)) =
+            (command, &workspace, &input_guard)
+        {
             commands::execute(command, workspace.path(), &directory, &snapshot, inputs).await
         } else {
-            let mut result = CheckResult::pending(&command.id, command.required, command.severity);
+            let mut result = CheckResult::pending(id, required, severity);
             result.block(
                 ExecutionStatus::Blocked,
                 "Policy validation did not complete",
             );
             result
         };
+        result
+            .metadata
+            .insert("depends_on".into(), serde_json::json!(dependencies));
+        if rule.is_some() {
+            let entry = &catalog.entries[id];
+            result.rule_version = entry.version();
+            result
+                .metadata
+                .insert("rule_definition".into(), serde_json::json!(entry));
+        }
         results.push(result);
     }
     if let Some(inputs) = &input_guard
@@ -186,6 +168,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         snapshot: snapshot.identity.clone(),
         policy,
         plan: PlanSummary {
+            execution_order: plan.order,
             required_checks: plan.required,
             pending_delivery_checks: plan.pending_delivery,
             acceptance: plan.acceptance,

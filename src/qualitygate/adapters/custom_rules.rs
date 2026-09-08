@@ -17,34 +17,66 @@ struct Subject {
     name: String,
     text: String,
     declaration: Option<String>,
+    triggered: bool,
 }
 
 pub fn evaluate(rule: &CustomRule, setting: &RuleSetting, snapshot: &Snapshot) -> CheckResult {
+    evaluate_with_projects(rule, setting, snapshot, &[])
+}
+
+pub fn evaluate_with_projects(
+    rule: &CustomRule,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    projects: &[ProjectFacts],
+) -> CheckResult {
     let mut result = CheckResult::pending(&rule.id, setting.required, setting.severity);
     result.rule_version = rule.version;
-    match run(rule, snapshot, &mut result) {
+    match run(rule, snapshot, projects, &mut result) {
         Ok(()) => result.complete(),
         Err(error) => result.block(ExecutionStatus::Blocked, format!("{error:#}")),
     }
     result
 }
 
-fn run(rule: &CustomRule, snapshot: &Snapshot, result: &mut CheckResult) -> Result<()> {
+fn run(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    projects: &[ProjectFacts],
+    result: &mut CheckResult,
+) -> Result<()> {
     for language in &rule.language {
         if !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str()) {
             bail!("Syntax capability unavailable for language: {language}");
         }
     }
-    if let Some(capability) = rule.requires_capabilities.iter().find(|capability| {
-        ["dependency_resolution", "external_provenance"].contains(&capability.as_str())
-    }) {
+    if let Some(capability) = rule
+        .requires_capabilities
+        .iter()
+        .find(|capability| capability.as_str() == "external_provenance")
+    {
         bail!("Required project capability unavailable: {capability}");
     }
     if rule.applies_to.provenance_scope.as_deref() == Some("ai_only") {
         bail!("AI-only scope requires verified external execution provenance");
     }
+    if rule
+        .requires_capabilities
+        .iter()
+        .any(|capability| capability == "dependency_resolution")
+        && projects.is_empty()
+    {
+        bail!(
+            "Required project capability unavailable: dependency_resolution; declare depends_on for a project facts command"
+        );
+    }
     let subjects = subjects(rule, snapshot)?;
+    let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     result.matched_entities = subjects.len();
+    result.metadata.insert(
+        "retained_marker_entities".into(),
+        serde_json::json!(subjects.len() - triggered),
+    );
     result
         .metadata
         .insert("increment_mode".into(), serde_json::json!("entity_changes"));
@@ -70,9 +102,10 @@ fn run(rule: &CustomRule, snapshot: &Snapshot, result: &mut CheckResult) -> Resu
         .transpose()?;
     for subject in &subjects {
         let mut violations = Vec::new();
-        if name
-            .as_ref()
-            .is_some_and(|pattern| !pattern.is_match(&subject.name))
+        if subject.triggered
+            && name
+                .as_ref()
+                .is_some_and(|pattern| !pattern.is_match(&subject.name))
         {
             violations.push((
                 "name_pattern",
@@ -82,9 +115,10 @@ fn run(rule: &CustomRule, snapshot: &Snapshot, result: &mut CheckResult) -> Resu
                 ),
             ));
         }
-        if forbid
-            .as_ref()
-            .is_some_and(|pattern| pattern.is_match(&subject.text))
+        if subject.triggered
+            && forbid
+                .as_ref()
+                .is_some_and(|pattern| pattern.is_match(&subject.text))
         {
             violations.push((
                 "forbid_pattern",
@@ -128,8 +162,11 @@ fn run(rule: &CustomRule, snapshot: &Snapshot, result: &mut CheckResult) -> Resu
                 &rule.fix, &format!("{}:{kind}", subject.identity)));
         }
     }
+    if rule.then.require_dependency.is_some() {
+        dependencies(rule, snapshot, projects, &subjects, result)?;
+    }
     if let Some(maximum) = rule.then.max_count
-        && subjects.len() > maximum
+        && triggered > maximum
     {
         result.diagnostics.push(diagnostic(
             &rule.id,
@@ -137,12 +174,109 @@ fn run(rule: &CustomRule, snapshot: &Snapshot, result: &mut CheckResult) -> Resu
             None,
             format!(
                 "{} matching entities exceeds max_count {maximum}",
-                subjects.len()
+                triggered
             ),
-            serde_json::json!({"count":subjects.len(),"maximum":maximum,"entity":rule.when.entity}),
+            serde_json::json!({"count":triggered,"maximum":maximum,"entity":rule.when.entity}),
             &rule.fix,
             "max_count",
         ));
+    }
+    Ok(())
+}
+
+fn dependencies(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    projects: &[ProjectFacts],
+    subjects: &[Subject],
+    result: &mut CheckResult,
+) -> Result<()> {
+    let required = rule
+        .then
+        .require_dependency
+        .as_ref()
+        .expect("dependency assertion");
+    let group = required
+        .group
+        .as_deref()
+        .filter(|group| !group.trim().is_empty())
+        .ok_or_else(|| anyhow::anyhow!("Maven dependency assertions require group and artifact"))?;
+    if projects.iter().any(|project| {
+        project.schema_version != 1
+            || project.ecosystem != "maven"
+            || project.snapshot_digest != snapshot.identity.content_digest
+    }) {
+        bail!("Project facts are unsupported or belong to another snapshot");
+    }
+    let mut selected: BTreeMap<_, _> = subjects
+        .iter()
+        .filter_map(|subject| {
+            subject.file.as_ref().map(|path| {
+                (
+                    (path.clone(), subject.identity.clone()),
+                    subject.range.clone(),
+                )
+            })
+        })
+        .collect();
+    let mut filters = globset::GlobSetBuilder::new();
+    for pattern in &rule.applies_to.paths {
+        filters.add(globset::Glob::new(pattern)?);
+    }
+    let filters = filters.build()?;
+    let started = std::time::Instant::now();
+    if let Some(binding) = &rule.binding {
+        // An unchanged marked test still needs its dependency after a manifest-only edit.
+        for (path, file) in &snapshot.files {
+            if !snapshot.includes(path) || (!filters.is_empty() && !filters.is_match(path)) {
+                continue;
+            }
+            if !rule.language.is_empty()
+                && syntax::language(path)
+                    .is_none_or(|language| !rule.language.iter().any(|value| value == language))
+            {
+                continue;
+            }
+            if started.elapsed().as_secs() >= 30 || selected.len() > 50_000 {
+                bail!("Dependency scope exceeds analysis budget");
+            }
+            if let Some(view) = syntax::parse(path, &file.bytes)? {
+                for test in &view.tests {
+                    if markers::from_source(&binding.marker, test, &view, &file.bytes)?.is_some() {
+                        selected.insert(
+                            (path.clone(), test.symbol.clone()),
+                            Some(test.range.clone()),
+                        );
+                    }
+                }
+            }
+        }
+    }
+    result.metadata.insert("dependency_scope".into(), serde_json::json!({"mode":"selected_and_retained_marked_tests", "tests":selected.len(), "producers":projects.iter().map(|project| &project.producer_check).collect::<Vec<_>>()}));
+    for ((path, symbol), range) in selected {
+        if started.elapsed().as_secs() >= 30 {
+            bail!("Dependency scope exceeds analysis budget");
+        }
+        if syntax::language(&path) != Some("java") {
+            bail!("Maven dependency facts cannot resolve {path}");
+        }
+        let owners: Vec<_> = projects
+            .iter()
+            .filter(|project| project.owns_test(&path))
+            .collect();
+        if owners.len() != 1 {
+            bail!(
+                "Expected one resolved test module for {path}, found {}",
+                owners.len()
+            );
+        }
+        let project = owners[0];
+        if !project.has_test_dependency(group, &required.artifact) {
+            result.diagnostics.push(diagnostic(&rule.id, Some(&path), range,
+                format!("Required test dependency {group}:{} is not declared and resolved on the test compile classpath of {}", required.artifact, project.coordinate),
+                serde_json::json!({"assertion":"require_dependency", "symbol":symbol, "project":project.coordinate, "manifest":project.manifest, "producer":project.producer_check, "group":group,"artifact":required.artifact}),
+                &rule.fix, &format!("{symbol}:require_dependency")));
+        }
     }
     Ok(())
 }
@@ -160,6 +294,7 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
                 name: message.lines().next().unwrap_or_default().into(),
                 text: message.clone(),
                 declaration: None,
+                triggered: true,
             })
             .collect());
     }
@@ -190,13 +325,19 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
                     name: path.clone(),
                     text: std::str::from_utf8(&snapshot.files[path].bytes)?.into(),
                     declaration: None,
+                    triggered: true,
                 })
             })
             .collect();
     }
     let files = entity_changes::collect(snapshot, &rule.applies_to.paths, &rule.language)?;
     let mut subjects = Vec::new();
+    let mut previous_views = BTreeMap::new();
+    let started = std::time::Instant::now();
     for file in files {
+        if started.elapsed().as_secs() >= 30 {
+            bail!("Marker retention exceeds analysis budget");
+        }
         if rule
             .requires_capabilities
             .iter()
@@ -218,13 +359,34 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
         match rule.when.entity.as_str() {
             "test_method" => {
                 let bytes = &snapshot.files[&file.path].bytes;
-                for test in file
-                    .tests
-                    .iter()
-                    .filter(|test| change == "any" || test.kind == change)
-                {
+                for test in &file.tests {
+                    let triggered = change == "any" || test.kind == change;
+                    let retained = if let (Some(binding), Some(previous), Some(path)) =
+                        (&rule.binding, &test.previous, &test.previous_path)
+                    {
+                        if !previous_views.contains_key(path) {
+                            previous_views.insert(
+                                path.clone(),
+                                syntax::parse(path, &snapshot.base_files[path].bytes)?
+                                    .expect("previous supported syntax"),
+                            );
+                        }
+                        markers::from_source(
+                            &binding.marker,
+                            previous,
+                            &previous_views[path],
+                            &snapshot.base_files[path].bytes,
+                        )?
+                        .is_some()
+                    } else {
+                        false
+                    };
+                    if !triggered && !retained {
+                        continue;
+                    }
                     let entity = &test.entity;
                     subjects.push(Subject {
+                        triggered,
                         file: Some(file.path.clone()),
                         range: Some(entity.range.clone()),
                         identity: entity.symbol.clone(),
@@ -276,6 +438,7 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
                         continue;
                     }
                     subjects.push(Subject {
+                        triggered: true,
                         file: Some(file.path.clone()),
                         range: Some(range),
                         identity: text.clone(),

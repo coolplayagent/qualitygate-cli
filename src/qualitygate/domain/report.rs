@@ -52,6 +52,8 @@ pub struct PolicyEvidence {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlanSummary {
+    #[serde(default)]
+    pub execution_order: Vec<String>,
     pub required_checks: Vec<String>,
     pub pending_delivery_checks: Vec<String>,
     pub acceptance: BTreeMap<String, String>,

@@ -31,6 +31,49 @@ fn check(root: &Path, code: i32) -> serde_json::Value {
 const NAMING: &str = "language: [java, python]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method, change: added}\nthen: {name_pattern: '^test_descriptive_.+$'}";
 
 #[test]
+fn removing_a_baseline_comment_after_a_move_retains_only_marker_obligations() {
+    let root = fixture();
+    let root = root.path();
+    policy(root, "");
+    definition(
+        root,
+        "language: [python]\nrequires_capabilities: [test_methods, comments]\napplies_to: {provenance_scope: all_added_tests}\nbinding: {marker: {type: comment, name: '@generated', fields: [author]}}\nwhen: {entity: test_method, change: added}\nthen: {require_marker: true, name_pattern: '^test_new_convention', max_count: 0}",
+    );
+    std::fs::write(
+        root.join("test_old.py"),
+        "# @generated author='fixture'\ndef test_legacy():\n    assert 1 == 1\n",
+    )
+    .unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "existing marked test"]);
+    std::fs::remove_file(root.join("test_old.py")).unwrap();
+    std::fs::write(
+        root.join("test_moved.py"),
+        "def test_renamed():\n    assert 1 == 1\n",
+    )
+    .unwrap();
+    let failed = check(root, 1);
+    assert_eq!(
+        failed["checks"][0]["metadata"]["retained_marker_entities"],
+        1
+    );
+    assert_eq!(
+        failed["checks"][0]["diagnostics"].as_array().unwrap().len(),
+        1
+    );
+    assert_eq!(
+        failed["checks"][0]["diagnostics"][0]["evidence"]["assertion"],
+        "require_marker"
+    );
+    std::fs::write(
+        root.join("test_moved.py"),
+        "# @generated author='fixture'\ndef test_renamed():\n    assert 1 == 1\n",
+    )
+    .unwrap();
+    check(root, 0);
+}
+
+#[test]
 fn private_rule_runs_on_java_and_python_with_stable_diagnostics_and_snapshot_isolation() {
     let root = fixture();
     let root = root.path();

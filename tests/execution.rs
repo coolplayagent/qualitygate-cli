@@ -71,6 +71,88 @@ mod unix {
     }
 
     #[test]
+    fn project_fact_failures_block_consumers_and_never_reuse_stale_reports() {
+        let root = fixture();
+        let root = root.path();
+        std::fs::write(
+            root.join("pom.xml"),
+            "<project><artifactId>fixture</artifactId></project>",
+        )
+        .unwrap();
+        std::fs::write(root.join("tree-template.json"), r#"{"groupId":"test","artifactId":"fixture","version":"1","type":"jar","scope":"","classifier":"","optional":"false"}"#).unwrap();
+        let generator = r#"mkdir -p target; printf '<project><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>fixture</artifactId><version>1</version><build><sourceDirectory>%s/src/main/java</sourceDirectory><testSourceDirectory>%s/src/test/java</testSourceDirectory></build></project>' "$PWD" "$PWD" > target/effective.xml; cp tree-template.json target/tree.json"#;
+        let base = json!({"id":"facts", "argv":["sh","-c",generator], "tools":[{"id":"git", "argv":["git","--version"]}], "projects":[{"root":".","effective_pom":"target/effective.xml","dependency_tree":"target/tree.json"}]});
+        let run = |producer: Value, code| {
+            let config = json!({"schema_version":1,"rules":{"line-ending":{"depends_on":["facts"]}}, "checks":[producer], "profiles":{"quick":{"include":["line-ending"]}}});
+            std::fs::write(
+                root.join("qualitygate.yaml"),
+                serde_norway::to_string(&config).unwrap(),
+            )
+            .unwrap();
+            report(
+                &cli(root, &["check", "--profile", "quick", "--format", "json"]),
+                code,
+            )
+        };
+        let passed = run(base.clone(), 0);
+        assert_eq!(
+            passed["checks"][0]["metadata"]["projects"][0]["coordinate"],
+            "test:fixture:1"
+        );
+        assert_eq!(passed["checks"][1]["verdict"], "pass");
+        for (field, value) in [
+            ("tools", json!([])),
+            ("argv", json!(["sh", "-c", "exit 9"])),
+            ("argv", json!(["sh", "-c", "true"])),
+            (
+                "argv",
+                json!([
+                    "sh",
+                    "-c",
+                    format!("{generator}; printf '{{}}' > target/tree.json")
+                ]),
+            ),
+            (
+                "argv",
+                json!([
+                    "sh",
+                    "-c",
+                    format!("{generator}; printf rewritten > hello.txt")
+                ]),
+            ),
+        ] {
+            let mut check = base.clone();
+            check[field] = value;
+            let failed = run(check, 2);
+            assert!(failed["checks"][0]["verdict"].is_null());
+            assert_eq!(failed["checks"][1]["execution"]["status"], "blocked");
+            assert!(
+                failed["checks"][1]["execution"]["reason"]
+                    .as_str()
+                    .unwrap()
+                    .contains("Prerequisite facts")
+            );
+        }
+        // Even a syntactically valid preexisting pair is removed before this run.
+        std::fs::create_dir_all(root.join("target")).unwrap();
+        std::fs::write(root.join("target/effective.xml"), "<project/>").unwrap();
+        std::fs::copy(
+            root.join("tree-template.json"),
+            root.join("target/tree.json"),
+        )
+        .unwrap();
+        let mut stale = base;
+        stale["argv"] = json!(["sh", "-c", "true"]);
+        let failed = run(stale, 2);
+        assert!(
+            failed["checks"][0]["execution"]["reason"]
+                .as_str()
+                .unwrap()
+                .contains("not produced")
+        );
+    }
+
+    #[test]
     fn absent_report_versions_are_visible_and_follow_check_requiredness() {
         let root = fixture();
         for (required, code) in [(true, 2), (false, 0)] {

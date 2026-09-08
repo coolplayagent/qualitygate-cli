@@ -12,10 +12,19 @@ pub(super) fn declaration(
     path: &str,
     snapshot: &Snapshot,
 ) -> Result<Option<String>> {
+    from_source(marker, entity, view, &snapshot.files[path].bytes)
+}
+
+pub(super) fn from_source(
+    marker: &Marker,
+    entity: &Entity,
+    view: &Structure,
+    bytes: &[u8],
+) -> Result<Option<String>> {
     match marker.kind.as_str() {
         "annotation" => Ok(entity.annotations.get(&marker.name).cloned()),
         "comment" => {
-            let source = std::str::from_utf8(&snapshot.files[path].bytes)?;
+            let source = std::str::from_utf8(bytes)?;
             let lines: Vec<_> = source.lines().collect();
             let mut end = entity.range.start_line;
             let mut parts = Vec::new();

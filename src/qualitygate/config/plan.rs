@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct Plan {
     pub rules: BTreeMap<String, RuleSetting>,
     pub commands: Vec<CommandCheck>,
+    pub order: Vec<String>,
     pub required: Vec<String>,
     pub pending_delivery: Vec<String>,
     pub task_id: Option<String>,
@@ -48,12 +49,13 @@ impl Plan {
                     timeout_seconds: v.timeout_seconds,
                     required: item.required,
                     severity: item.severity,
-                    depends_on: Vec::new(),
+                    depends_on: v.depends_on.clone(),
                     reports: v.reports.clone(),
+                    projects: v.projects.clone(),
                     expected_exit_code: v.expected_exit_code,
                     findings_exit_codes: v.findings_exit_codes.clone(),
                     tools: v.tools.clone(),
-                    required_args: Vec::new(),
+                    required_args: v.required_args.clone(),
                     evidence_file: v.evidence_file.clone(),
                 });
                 if let Some(full) = combined.profiles.get_mut("full") {
@@ -89,7 +91,12 @@ impl Plan {
                 .collect()
         };
         let mut needed = selected;
-        for _ in 0..combined.checks.len() {
+        for _ in 0..combined.checks.len() + combined.rules.len() {
+            for (id, rule) in &combined.rules {
+                if needed.contains(id) {
+                    needed.extend(rule.depends_on.iter().cloned());
+                }
+            }
             for check in &combined.checks {
                 if needed.contains(&check.id) {
                     needed.extend(check.depends_on.iter().cloned());
@@ -101,29 +108,39 @@ impl Plan {
             .into_iter()
             .filter(|(id, rule)| rule.enabled && needed.contains(id))
             .collect();
-        let mut remaining: Vec<_> = combined
+        let commands: Vec<_> = combined
             .checks
             .into_iter()
             .filter(|check| needed.contains(&check.id))
             .collect();
-        let mut commands = Vec::new();
-        let mut ordered: BTreeSet<_> = rules.keys().cloned().collect();
+        let mut remaining: Vec<_> = rules
+            .iter()
+            .map(|(id, rule)| (id.clone(), rule.depends_on.clone()))
+            .chain(
+                commands
+                    .iter()
+                    .map(|check| (check.id.clone(), check.depends_on.clone())),
+            )
+            .collect();
+        let mut ordered = BTreeSet::new();
+        let mut order = Vec::new();
         while !remaining.is_empty() {
             let Some(index) = remaining
                 .iter()
-                .position(|check| check.depends_on.iter().all(|id| ordered.contains(id)))
+                .position(|(_, dependencies)| dependencies.iter().all(|id| ordered.contains(id)))
             else {
                 bail!("Check depends on a disabled or unavailable prerequisite");
             };
-            let check = remaining.remove(index);
-            ordered.insert(check.id.clone());
-            commands.push(check);
+            let (id, _) = remaining.remove(index);
+            ordered.insert(id.clone());
+            order.push(id);
         }
         let required = all_required.intersection(&ordered).cloned().collect();
         let pending_delivery = all_required.difference(&ordered).cloned().collect();
         Ok(Self {
             rules,
             commands,
+            order,
             required,
             pending_delivery,
             task_id: task.map(|task| task.task_id.clone()),

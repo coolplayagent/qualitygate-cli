@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 pub(super) struct TestChange {
     pub entity: Entity,
     pub previous: Option<Entity>,
+    pub previous_path: Option<String>,
     pub kind: &'static str,
 }
 
@@ -133,6 +134,7 @@ pub(super) fn collect(
             tests.push(TestChange {
                 entity: entity.clone(),
                 previous,
+                previous_path: matched.map(|index| old[index].0.clone()),
                 kind,
             });
         }

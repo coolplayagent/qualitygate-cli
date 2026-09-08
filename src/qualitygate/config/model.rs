@@ -71,6 +71,8 @@ pub struct RuleSetting {
     pub parameters: BTreeMap<String, serde_json::Value>,
     #[serde(default)]
     pub source: Option<Source>,
+    #[serde(default)]
+    pub depends_on: Vec<String>,
     #[serde(skip)]
     pub specified: std::collections::BTreeSet<String>,
 }
@@ -85,6 +87,8 @@ struct RuleOverrides {
     #[serde(default)]
     parameters: BTreeMap<String, serde_json::Value>,
     source: Option<Source>,
+    #[serde(default)]
+    depends_on: Vec<String>,
 }
 
 impl From<RuleOverrides> for RuleSetting {
@@ -102,6 +106,7 @@ impl From<RuleOverrides> for RuleSetting {
             severity: value.severity.unwrap_or_default(),
             parameters: value.parameters,
             source: value.source,
+            depends_on: value.depends_on,
             specified,
         }
     }
@@ -115,6 +120,7 @@ impl Default for RuleSetting {
             severity: Severity::Error,
             parameters: BTreeMap::new(),
             source: None,
+            depends_on: Vec::new(),
             specified: Default::default(),
         }
     }
@@ -155,6 +161,8 @@ pub struct CommandCheck {
     #[serde(default)]
     pub reports: Vec<ReportSpec>,
     #[serde(default)]
+    pub projects: Vec<MavenProject>,
+    #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]
     pub findings_exit_codes: Vec<i32>,
@@ -164,6 +172,15 @@ pub struct CommandCheck {
     pub required_args: Vec<String>,
     #[serde(default)]
     pub evidence_file: Option<String>,
+}
+
+/// Fresh Maven outputs from the same command, paths relative to the repository.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MavenProject {
+    pub root: String,
+    pub effective_pom: String,
+    pub dependency_tree: String,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -261,7 +278,13 @@ pub struct Verification {
     #[serde(default = "timeout")]
     pub timeout_seconds: u64,
     #[serde(default)]
+    pub depends_on: Vec<String>,
+    #[serde(default)]
+    pub required_args: Vec<String>,
+    #[serde(default)]
     pub reports: Vec<ReportSpec>,
+    #[serde(default)]
+    pub projects: Vec<MavenProject>,
     #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]

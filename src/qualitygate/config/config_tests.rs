@@ -60,6 +60,71 @@ fn valid_command_config_roundtrips_and_dependencies_need_not_be_ordered() {
 }
 
 #[test]
+fn rule_and_command_dependencies_form_one_plan_with_profile_closure() {
+    let yaml = "schema_version: 1\nrules: {line-ending: {depends_on: [facts]}}\nchecks: [{id: final, argv: [git, --version], depends_on: [line-ending]}, {id: facts, argv: [git, --version]}]\nprofiles: {quick: {include: [line-ending]}}";
+    let config = parse(yaml.as_bytes()).unwrap();
+    let full = Plan::build(&config, None, "full").unwrap();
+    assert_eq!(full.order, ["facts", "line-ending", "final"]);
+    let quick = Plan::build(&config, None, "quick").unwrap();
+    assert_eq!(quick.order, ["facts", "line-ending"]);
+    assert_eq!(quick.pending_delivery, ["final"]);
+    for altered in [
+        yaml.replace("depends_on: [facts]", "depends_on: [final]"),
+        yaml.replace("depends_on: [facts]", "depends_on: [unknown]"),
+        yaml.replace("depends_on: [facts]", "depends_on: [facts, facts]"),
+    ] {
+        assert!(parse(altered.as_bytes()).is_err());
+    }
+    let disabled = parse(
+        yaml.replace(
+            "line-ending: {depends_on",
+            "line-ending: {enabled: false, depends_on",
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    assert!(Plan::build(&disabled, None, "full").is_err());
+}
+
+#[test]
+fn maven_facts_config_rejects_ambiguous_outputs_and_unsuccessful_producers() {
+    use serde_json::json;
+    let original = json!({"id":"facts", "argv":["mvn"], "projects":[{"root":".", "effective_pom":"target/effective.xml", "dependency_tree":"target/tree.json"}]});
+    let parse_check = |check| {
+        parse(
+            serde_norway::to_string(&json!({"schema_version":1,"checks":[check]}))
+                .unwrap()
+                .as_bytes(),
+        )
+    };
+    assert!(parse_check(original.clone()).is_ok());
+    for (field, value) in [
+        ("expected_exit_code", json!(7)),
+        ("kind", json!("manual")),
+        (
+            "projects",
+            json!([{"root":"../outside", "effective_pom":"x", "dependency_tree":"y"}]),
+        ),
+        (
+            "projects",
+            json!([{"root":".", "effective_pom":"x", "dependency_tree":"x"}]),
+        ),
+        (
+            "reports",
+            json!([{"format":"diagnostics", "path":"target/tree.json"}]),
+        ),
+        (
+            "reports",
+            json!([{"format":"diagnostics", "path":"diagnostics.json", "mode":"changed_lines"}]),
+        ),
+    ] {
+        let mut invalid = original.clone();
+        invalid[field] = value;
+        assert!(parse_check(invalid).is_err());
+    }
+}
+
+#[test]
 fn report_provenance_exit_semantics_and_tool_inputs_are_validated() {
     use serde_json::json;
     let original = json!({

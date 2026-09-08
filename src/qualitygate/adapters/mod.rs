@@ -3,6 +3,7 @@
 pub mod custom_rules;
 mod entity_changes;
 mod markers;
+pub mod maven;
 pub mod reports;
 pub mod rules;
 mod structure_rules;

@@ -5,12 +5,12 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | Requirement | Implementation and authoritative verification | State |
 |---|---|---|
 | §1–2 harness boundaries, strict results and exit codes | `domain/gate.rs`, gate truth-table tests and CLI 0/1/2 scenarios | Core verified; delivery audit pending |
-| §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax adapters and seven built-ins; `structure_rules_tests.rs` | Partial: dependency and boundary semantics remain |
+| §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax adapters, seven built-ins, Maven effective-model/tree pairing and marker/dependency retention | Partial: undeclared-use and module boundaries remain |
 | §3.2 build commands, compilation, tests, static analysis, coverage, compatibility | Bounded command runner; version probes; validated baseline exit codes, tool identities and inputs; JUnit, Checkstyle, SpotBugs, PMD, SARIF, LCOV, Cobertura, JaCoCo and generic JSON parsers | Partial: ecosystem compatibility integrations and final invariants remain |
 | §3.3–3.4 profiles, task contracts, repair feedback and manual evidence | `config/plan.rs`, actual command execution and task/profile CLI scenarios | Partial: manual acceptance and stronger trust validation remain |
 | §3.5 commit, staged, worktree and path snapshots; all increment modes | Snapshot/baseline CLI fixtures; report-gate tests for changed lines, multiplicity, renamed files and affected unmodified sources; coverage omission/branch repair CLI loop | Core modes verified; project impact and full evidence lifecycle audit remain |
-| §4–5 syntax/project/tool adapter ownership and multiple languages | Java, Python, TypeScript, Go, Rust and Shell syntax fixtures; Rust architecture test | Syntax verified; project semantics and complete boundary audit pending |
-| §6.1–6.2 rule packages and custom DSL | Embedded core/shared/Java/Python packages; snapshot-bound custom loading, strict validation, source/definition evidence and `tests/custom_rules.rs` | Syntax/Git/file DSL implemented; dependency and external provenance capabilities remain |
+| §4–5 syntax/project/tool adapter ownership and multiple languages | Java, Python, TypeScript, Go, Rust and Shell syntax fixtures; Maven project facts; Rust architecture test | Maven pairing verified; further ecosystems and complete boundary audit pending |
+| §6.1–6.2 rule packages and custom DSL | Embedded packages, snapshot-bound custom loading, source/definition evidence, rule/command DAG and Maven dependency assertions | Syntax/Git/file DSL and Maven pairing implemented; broader semantics and external provenance remain |
 | §6.3 applicability, execution and completeness | Pure domain tests; CLI 0/1/2 assertions, including missing required tool and stale report | Core verified; final audit pending |
 | §6.4 declaration scopes, trailers and external source evidence | Explicit marker fields and missing-record tests | Partial: commit-to-entity association and external provenance remain |
 | §6.5 init, repeat safety, discovery and candidate configuration | Selected configuration path; custom catalog list/enable/show; effective defaults; JSON/table/Markdown integration scenarios | Core commands verified; expanded project discovery remains |
@@ -54,8 +54,16 @@ Self-hosted `target/debug/qualitygate check --worktree --profile full --output-d
 
 ## Remaining implementation and audit work
 
+The Maven/DAG revision passed **118 ordinary tests** (70 library, nine core CLI, 14 custom-rule CLI, 14 execution CLI, seven MR CLI, three quality and one benchmark). Formatting, compilation and Clippy with warnings denied passed. The complete coverage run passed at **93.05% lines** (5,753 lines, 400 missed), with output in `target/verification-project-coverage.txt`. The live Maven test runs separately from these toolchain-free suites.
+
+[CI run 34227403351](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34227403351), for `a7f9550515f2d98ce4ad57e86e1a277d1d8081a2`, completed successfully in all 15 jobs, including Windows, macOS, Miri, AddressSanitizer, coverage and packaging. This verifies the earlier execution-evidence checkpoint.
+
+The Maven pairing checkpoint used a real Maven 3.9.16 installation (archive SHA-512 checked against Apache's published checksum), JDK 21.0.11, Help Plugin 3.5.1 and Dependency Plugin 3.8.1. `tests/maven.rs` passed its five-run resolution/deletion/repair/marker-retention/runtime-scope sequence, using isolated temporary Git and Maven repositories. The final revision passed in 147.40 seconds; output is `target/verification-live-maven-final.txt`. The dedicated CI job still needs remote confirmation. This fixture is not a §9.2 pilot.
+
+Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-project --format json` passed all seven checks. Evidence is `target/self-project/run-3PCC19/report.json`, bound to `sha256:dd3c55b46457085fbe6de9a3d9847e4a0bea20ea054ef8883702cbd48d0d7f3d` (commit `a7f9550` plus the implemented worktree, before this evidence note). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 103 packaged files; output is `target/verification-project-package.txt`.
+
 - Complete the semantic and external-provenance capabilities used by custom DSL assertions; audit protocol migration against real second-ecosystem evidence.
-- Implement project/semantic dependency checks, annotation dependency pairing, module boundary rules, and interface compatibility integrations.
+- Extend Maven annotation/dependency pairing to further ecosystems; implement used-but-undeclared analysis, module boundaries and interface compatibility integrations.
 - Complete trusted external manual acceptance and agent-run provenance, including the association between a declaration and the actual changed entity/commit.
 - Audit live-provider MR compatibility beyond the controlled HTTP/Git fixtures; retain bounded network access, immutable comparisons and local checkout preservation.
 - Audit trusted strategy updates and verification asset coverage. Source hashing now rejects duplicate/code-only headings; catalog/settings/engine versions participate in rule digests; candidate commands respect selected configuration paths and output formats.

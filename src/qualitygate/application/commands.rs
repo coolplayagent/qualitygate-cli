@@ -89,7 +89,7 @@ async fn execute_checked(
         );
         return result;
     }
-    if !check.reports.is_empty() && check.tools.is_empty() {
+    if (!check.reports.is_empty() || !check.projects.is_empty()) && check.tools.is_empty() {
         result.block(
             ExecutionStatus::Blocked,
             "Report-producing commands require tools with executable version probes",
@@ -322,6 +322,27 @@ async fn execute_checked(
                     "Report-producing command returned an unexpected analyzer exit code",
                 );
                 return result;
+            }
+            if !check.projects.is_empty() {
+                if output.exit_code != Some(0) {
+                    result.block(
+                        ExecutionStatus::ToolError,
+                        "Maven project analysis did not succeed",
+                    );
+                    return result;
+                }
+                if let Err(error) = super::project_reports::collect(
+                    check,
+                    workspace,
+                    artifacts,
+                    snapshot,
+                    &mut result,
+                )
+                .await
+                {
+                    result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+                    return result;
+                }
             }
             result.complete();
         }
