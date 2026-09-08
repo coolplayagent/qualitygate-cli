@@ -4,11 +4,11 @@ The current syntax adapters parse Java/JUnit, Python/pytest, TypeScript/Jest or 
 
 `test-naming` compares base and current entities and checks added tests. Default patterns preserve each framework's discovery conventions. Configure `parameters.pattern` for one pattern or `parameters.patterns` for a map keyed by language. `parameters.paths` confines the rule to explicit path globs.
 
-`parameterized-tests` suggests sharing a parameterized test when at least three new tests within a file and class have the same syntax shape. Existing recognized parameterized tests are excluded. Configure `parameters.minimum_similar` (at least two); use warning severity until the team's false-positive evaluation supports enforcement.
+`parameterized-tests` suggests sharing a parameterized test when at least three new tests within a file and class have the same syntax shape. Existing recognized parameterized tests are excluded. Configure `parameters.minimum_similar` (at least two). Its default severity is warning; increase severity only after the team's false-positive evaluation supports enforcement.
 
-`comment-language` requires `parameters.language` to be `chinese`, `english`, or `bilingual`. It checks changed parsed comments, with `parameters.exempt_patterns` for terminology and code fragments. Language classification is a documented heuristic; use warning severity unless the team has validated its accuracy.
+`comment-language` requires `parameters.language` to be `chinese`, `english`, or `bilingual`. It checks changed parsed comments, with `parameters.exempt_patterns` for terminology and code fragments. Language classification is a documented heuristic and defaults to warning severity.
 
-`ai-code-traceability` requires an explicit `parameters.marker` binding with `type`, `name`, and optional `fields`. It checks declaration presence and fields, not the true origin of code. The implemented default scope is all added tests; external AI-only execution provenance remains part of the implementation ledger. A commit trailer cannot substitute for a declaration on an uncommitted change.
+`ai-code-traceability` requires an explicit `parameters.marker` binding with `type`, `name`, and optional `fields`. It checks declaration presence and fields, not the true origin of code. The implemented default scope is all added tests; removing an existing required annotation is also checked. External AI-only provenance and commit-to-entity trailer association remain incomplete. A range-level commit trailer cannot substitute for a declaration on an unrelated test.
 
 ```yaml
 schema_version: 1
@@ -33,3 +33,5 @@ rules:
 ```
 
 Core rules are `line-ending`, `commit-message`, and `diff-size`. Commit patterns use `parameters.pattern`; diff size uses `parameters.max_added_lines`. Enabling a rule edits a candidate configuration. Rules are not automatically imposed on repositories merely because an ecosystem is detected.
+
+Unknown or wrongly typed parameters are configuration errors. Structure rules support `parameters.paths` and `parameters.languages`; line-ending, commit-message and diff-size do not accept those filters. See [custom rules and packages](custom-rules.md) for versioned definitions, capability declarations and source hashes.

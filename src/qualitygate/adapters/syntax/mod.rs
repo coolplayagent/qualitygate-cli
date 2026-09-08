@@ -18,6 +18,7 @@ pub struct Entity {
     pub name: String,
     pub symbol: String,
     pub range: Range,
+    pub byte_range: std::ops::Range<usize>,
     pub annotations: BTreeMap<String, String>,
     pub body_digest: String,
     pub shape_digest: String,

@@ -2,7 +2,7 @@
 
 use crate::{
     adapters::{
-        reports::{self, Data, Issue},
+        reports::{Data, Issue},
         rules::diagnostic,
     },
     config::{IncrementMode, ReportSpec},
@@ -40,8 +40,24 @@ pub(super) fn apply(
                 "test-count",
             ));
         }
+        if tests.failures > 0 {
+            result.diagnostics.push(diagnostic(
+                &result.id,
+                None,
+                None,
+                format!("{} executed tests failed", tests.failures),
+                serde_json::to_value(tests)?,
+                "Repair the failing test behavior and rerun the suite",
+                "test-failures",
+            ));
+        }
     } else if spec.minimum_tests.is_some() {
         bail!("Configured minimum_tests requires a test-count report");
+    }
+    if !data.coverage.is_empty() || !data.coverage_files.is_empty() {
+        super::coverage_gate::apply(result, spec, &data, snapshot, workspace)?;
+    } else if spec.minimum_coverage.is_some() || !spec.coverage_paths.is_empty() {
+        bail!("Configured coverage gate requires a source inventory and coverage records");
     }
     let mut previous = BTreeMap::new();
     if spec.mode == IncrementMode::NewDiagnostics {
@@ -120,13 +136,12 @@ pub(super) fn apply(
     result
         .metadata
         .insert(format!("{}:filtered", spec.path), filtered.into());
-    if !data.coverage.is_empty() {
-        coverage(result, spec, data.coverage, snapshot, workspace)?;
-    } else if spec.minimum_coverage.is_some() {
-        bail!("Configured minimum_coverage requires executable coverage records");
-    }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "report_gate_tests.rs"]
+mod tests;
 
 fn fingerprint(issue: &Issue) -> String {
     snapshot::digest(
@@ -165,7 +180,12 @@ fn normalize_issue(
     Ok(())
 }
 
-fn map_file(file: &str, snapshot: &Snapshot, workspace: &Path, base: bool) -> Result<String> {
+pub(super) fn map_file(
+    file: &str,
+    snapshot: &Snapshot,
+    workspace: &Path,
+    base: bool,
+) -> Result<String> {
     let files = if base {
         &snapshot.base_files
     } else {
@@ -189,58 +209,4 @@ fn map_file(file: &str, snapshot: &Snapshot, workspace: &Path, base: bool) -> Re
         [name] => Ok((*name).clone()),
         _ => bail!("Report path cannot be mapped uniquely to checked sources: {file}"),
     }
-}
-
-fn coverage(
-    result: &mut CheckResult,
-    spec: &ReportSpec,
-    records: Vec<reports::CoverageLine>,
-    snapshot: &Snapshot,
-    workspace: &Path,
-) -> Result<()> {
-    if ![IncrementMode::Full, IncrementMode::ChangedLines].contains(&spec.mode) {
-        bail!("Coverage supports full or changed_lines mode");
-    }
-    let mut total = 0;
-    let mut hit = 0;
-    let mut branches = 0;
-    let mut branches_hit = 0;
-    for record in records {
-        let file = map_file(&record.file, snapshot, workspace, false)?;
-        if !snapshot.includes(&file) {
-            continue;
-        }
-        if spec.mode == IncrementMode::ChangedLines
-            && !snapshot
-                .changes
-                .get(&file)
-                .is_some_and(|change| change.added_lines.contains(&record.line))
-        {
-            continue;
-        }
-        total += 1;
-        hit += usize::from(record.hits > 0);
-        branches += record.branches_found;
-        branches_hit += record.branches_hit;
-    }
-    let line_percent = if total == 0 {
-        100.0
-    } else {
-        hit as f64 * 100.0 / total as f64
-    };
-    let branch_percent = if branches == 0 {
-        100.0
-    } else {
-        branches_hit as f64 * 100.0 / branches as f64
-    };
-    let threshold = spec.minimum_coverage.unwrap_or(100.0);
-    result.matched_entities += total;
-    let evidence = serde_json::json!({"lines":total,"lines_hit":hit,"line_percent":line_percent,"branches":branches,"branches_hit":branches_hit,"branch_percent":branch_percent,"threshold":threshold});
-    result
-        .metadata
-        .insert(format!("{}:coverage", spec.path), evidence.clone());
-    if line_percent < threshold || branch_percent < threshold {
-        result.diagnostics.push(diagnostic(&result.id, None, None, format!("Coverage below {threshold}%: lines {line_percent:.2}%, branches {branch_percent:.2}%"), evidence, "Add tests for the uncovered changed behavior and branches", "coverage-threshold"));
-    }
-    Ok(())
 }

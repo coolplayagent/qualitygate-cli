@@ -1,0 +1,10 @@
+id: pytest-naming
+version: 1
+description: Validate Python test names while preserving pytest discovery
+implementation: test-naming
+language: ["python"]
+requires_capabilities: ["test_methods"]
+defaults:
+  required: true
+  severity: error
+  parameters: {"languages":["python"]}

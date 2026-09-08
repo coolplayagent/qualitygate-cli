@@ -1,0 +1,10 @@
+id: commit-message
+version: 1
+description: Validate new commit subjects against the team convention
+implementation: commit-message
+language: []
+requires_capabilities: ["commits"]
+defaults:
+  required: true
+  severity: error
+  parameters: {}

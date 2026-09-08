@@ -90,27 +90,35 @@ impl Cli {
             .context("Repository root does not exist")?;
         match self.command {
             Command::Init => {
-                let config = tokio::task::spawn_blocking(move || config::init(&root)).await??;
+                let path = self.config.clone();
+                let config =
+                    tokio::task::spawn_blocking(move || config::init_at(&root, path.as_ref()))
+                        .await??;
                 Ok((
-                    serde_json::to_string_pretty(
-                        &serde_json::json!({"schema_version":1,"config":config,"status":"candidate","message":"Review the discovered candidate policy before enforcing it"}),
+                    super::render::metadata(
+                        &serde_json::json!({"schema_version":1,"source":self.config,"config":config,"status":"candidate","message":"Review the discovered candidate policy before enforcing it"}),
+                        self.format,
                     )?,
                     0,
                 ))
             }
             Command::Config { .. } => {
                 let path = self.config.clone();
-                let config =
-                    tokio::task::spawn_blocking(move || config::read(&root, path.as_ref()))
-                        .await??;
+                let (config, catalog) = tokio::task::spawn_blocking(move || -> Result<_> {
+                    let config = config::read(&root, path.as_ref())?;
+                    let catalog = config::catalog::read(&root, &config)?;
+                    Ok((catalog.resolve(&config)?, catalog))
+                })
+                .await??;
                 Ok((
-                    serde_json::to_string_pretty(
-                        &serde_json::json!({"source": self.config, "config":config}),
+                    super::render::metadata(
+                        &serde_json::json!({"schema_version":1,"source": self.config, "config":config,"catalog":catalog}),
+                        self.format,
                     )?,
                     0,
                 ))
             }
-            Command::Rules { command } => run_rules(root, self.config, command).await,
+            Command::Rules { command } => run_rules(root, self.config, command, self.format).await,
             Command::Check(args) => {
                 let selection = if let Some(diff) = args.diff {
                     let (base, head) = diff
@@ -155,24 +163,36 @@ impl Cli {
     }
 }
 
-async fn run_rules(root: PathBuf, path: String, command: Rules) -> Result<(String, u8)> {
-    let value = tokio::task::spawn_blocking(move || {
-        let mut config = config::read(&root, path.as_ref())?;
+async fn run_rules(
+    root: PathBuf,
+    path: String,
+    command: Rules,
+    format: Format,
+) -> Result<(String, u8)> {
+    let value = tokio::task::spawn_blocking(move || -> Result<serde_json::Value> {
+        let config = config::read(&root, path.as_ref())?;
+        let catalog = config::catalog::read(&root, &config)?;
+        let mut config = catalog.resolve(&config)?;
         match command {
             Rules::List => {
-                let rules: Vec<_> = crate::adapters::rules::BUILTINS.iter().map(|(id, description)| serde_json::json!({"id":id,"description":description,"configuration":config.rules.get(*id)})).collect();
-                Ok(serde_json::json!({"rules":rules}))
+                let rules: Vec<_> = catalog.entries.iter().map(|(id, entry)| serde_json::json!({"id":id,"definition":entry,"configuration":config.rules.get(id),"enabled":config.rules.get(id).is_some_and(|setting| setting.enabled)})).collect();
+                Ok(serde_json::json!({"schema_version":1,"rules":rules}))
             }
             Rules::Enable { rule_id } => {
-                if !crate::adapters::rules::BUILTINS.iter().any(|(id, _)| *id == rule_id) { bail!("Unknown rule: {rule_id}"); }
-                config.rules.entry(rule_id.clone()).or_default().enabled = true;
+                let entry = catalog.entries.get(&rule_id).with_context(|| format!("Unknown rule: {rule_id}"))?;
+                config.rules.entry(rule_id.clone()).or_insert_with(|| entry.defaults()).enabled = true;
                 for profile in config.profiles.values_mut() { if !profile.include.contains(&rule_id) { profile.include.push(rule_id.clone()); } }
                 let data = serde_norway::to_string(&config)?;
                 config::parse(data.as_bytes())?;
-                std::fs::write(crate::paths::confined(&root, path.as_ref())?, data)?;
-                Ok(serde_json::json!({"enabled":rule_id,"status":"candidate"}))
+                let target = crate::paths::confined(&root, path.as_ref())?;
+                let mut temporary = tempfile::NamedTempFile::new_in(target.parent().context("Configuration has no parent directory")?)?;
+                temporary.as_file().set_permissions(std::fs::metadata(&target)?.permissions())?;
+                std::io::Write::write_all(&mut temporary, data.as_bytes())?;
+                temporary.as_file().sync_all()?;
+                temporary.persist(target)?;
+                Ok(serde_json::json!({"schema_version":1,"enabled":rule_id,"status":"candidate"}))
             }
         }
     }).await??;
-    Ok((serde_json::to_string_pretty(&value)?, 0))
+    Ok((super::render::metadata(&value, format)?, 0))
 }

@@ -1,6 +1,7 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
 mod commands;
+mod coverage_gate;
 mod generated_reports;
 mod policy;
 mod report_gate;
@@ -13,6 +14,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct CheckOptions {
@@ -26,14 +28,14 @@ pub struct CheckOptions {
 }
 
 pub async fn check(options: CheckOptions) -> Result<Report> {
-    let snapshot = snapshot::capture(&options.root, &options.selection).await?;
+    let snapshot = Arc::new(snapshot::capture(&options.root, &options.selection).await?);
     if !snapshot.files.contains_key(&options.config) {
         anyhow::bail!(
             "Configuration is not present in the checked snapshot; run init and stage/commit it as appropriate"
         );
     }
     let mut invalid = Vec::new();
-    let (config, mut policy) = policy::load(&snapshot, &options, &mut invalid).await?;
+    let (config, catalog, mut policy) = policy::load(&snapshot, &options, &mut invalid).await?;
     let task_bytes = options
         .task
         .as_ref()
@@ -55,19 +57,49 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .context("Missing run directory name")?
         .to_string_lossy()
         .to_string();
-    let mut results = Vec::new();
-    for (id, setting) in &plan.rules {
-        let mut result = crate::adapters::rules::evaluate(id, setting, &snapshot);
-        if let Some(source) = &setting.source
-            && let Err(error) = policy::validate_source(source, &snapshot.files)
-        {
-            result.block(
-                ExecutionStatus::Blocked,
-                format!("Rule source requires review: {error:#}"),
-            );
-        }
-        results.push(result);
-    }
+    let rule_snapshot = Arc::clone(&snapshot);
+    let rule_settings = plan.rules.clone();
+    let mut results = tokio::task::spawn_blocking(move || {
+        rule_settings
+            .iter()
+            .map(|(id, setting)| {
+                let entry = &catalog.entries[id];
+                let mut result = if let Some(rule) = &entry.custom {
+                    crate::adapters::custom_rules::evaluate(rule, setting, &rule_snapshot)
+                } else {
+                    let builtin = entry.builtin.as_ref().expect("resolved builtin");
+                    crate::adapters::rules::evaluate_as(
+                        id,
+                        &builtin.implementation,
+                        setting,
+                        &rule_snapshot,
+                    )
+                };
+                result.rule_version = entry.version();
+                result
+                    .metadata
+                    .insert("rule_definition".into(), serde_json::json!(entry));
+                result.metadata.insert(
+                    "adapter_version".into(),
+                    serde_json::json!(env!("CARGO_PKG_VERSION")),
+                );
+                let sources = setting
+                    .source
+                    .iter()
+                    .chain(entry.custom.iter().map(|rule| &rule.source));
+                for source in sources {
+                    if let Err(error) = policy::validate_source(source, &rule_snapshot.files) {
+                        result.block(
+                            ExecutionStatus::Blocked,
+                            format!("Rule source requires review: {error:#}"),
+                        );
+                    }
+                }
+                result
+            })
+            .collect::<Vec<_>>()
+    })
+    .await?;
     let workspace = if !plan.commands.is_empty() && invalid.is_empty() {
         Some(snapshot::materialize(&snapshot).await?)
     } else {
@@ -140,7 +172,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         }
         .into(),
         profile: options.profile,
-        snapshot: snapshot.identity,
+        snapshot: snapshot.identity.clone(),
         policy,
         plan: PlanSummary {
             required_checks: plan.required,

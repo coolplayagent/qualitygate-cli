@@ -1,0 +1,10 @@
+id: junit-naming
+version: 1
+description: Validate Java JUnit test names
+implementation: test-naming
+language: ["java"]
+requires_capabilities: ["test_methods","annotations"]
+defaults:
+  required: true
+  severity: error
+  parameters: {"languages":["java"]}

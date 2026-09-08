@@ -132,10 +132,50 @@ pub(super) fn extract(language: &str, path: &str, node: Node<'_>, bytes: &[u8]) 
         }
     }
     let owner = owner(node, bytes);
+    let signature = if language == "java" {
+        node.child_by_field_name("parameters")
+            .map(|parameters| {
+                let mut cursor = parameters.walk();
+                let types: Vec<_> = parameters
+                    .named_children(&mut cursor)
+                    .map(|parameter| {
+                        parameter
+                            .child_by_field_name("type")
+                            .map(|value| text(value, bytes))
+                            .unwrap_or_else(|| text(parameter, bytes))
+                            .split_whitespace()
+                            .collect::<String>()
+                    })
+                    .collect();
+                format!("({})", types.join(","))
+            })
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
+    let mut entity_range = range(node);
+    let mut start_byte = node.start_byte();
+    if language == "python"
+        && let Some(parent) = node
+            .parent()
+            .filter(|parent| parent.kind() == "decorated_definition")
+    {
+        entity_range.start_line = range(parent).start_line;
+        start_byte = parent.start_byte();
+    }
+    if language == "rust" {
+        let mut previous = node.prev_named_sibling();
+        while let Some(attribute) = previous.filter(|node| node.kind() == "attribute_item") {
+            entity_range.start_line = range(attribute).start_line;
+            start_byte = attribute.start_byte();
+            previous = attribute.prev_named_sibling();
+        }
+    }
     Some(Entity {
-        symbol: format!("{owner}#{name}"),
+        symbol: format!("{owner}#{name}{signature}"),
         name,
-        range: range(node),
+        range: entity_range,
+        byte_range: start_byte..node.end_byte(),
         annotations,
         body_digest: crate::snapshot::digest(normalized.as_bytes()),
         shape_digest: crate::snapshot::digest(shape.as_bytes()),

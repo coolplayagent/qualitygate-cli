@@ -1,0 +1,10 @@
+id: diff-size
+version: 1
+description: Report changes exceeding the configured added-line budget
+implementation: diff-size
+language: []
+requires_capabilities: ["files"]
+defaults:
+  required: true
+  severity: warning
+  parameters: {}

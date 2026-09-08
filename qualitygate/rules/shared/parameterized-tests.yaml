@@ -1,0 +1,10 @@
+id: parameterized-tests
+version: 1
+description: Suggest parameterization for structurally similar added tests
+implementation: parameterized-tests
+language: []
+requires_capabilities: ["test_methods"]
+defaults:
+  required: true
+  severity: warning
+  parameters: {}

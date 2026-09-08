@@ -1,0 +1,10 @@
+id: ai-code-traceability
+version: 1
+description: Validate explicitly configured source declarations for added tests
+implementation: ai-code-traceability
+language: []
+requires_capabilities: ["test_methods"]
+defaults:
+  required: true
+  severity: error
+  parameters: {}

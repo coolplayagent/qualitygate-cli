@@ -58,3 +58,29 @@ fn valid_command_config_roundtrips_and_dependencies_need_not_be_ordered() {
     assert_eq!(config.checks.len(), 2);
     parse(serde_norway::to_string(&config).unwrap().as_bytes()).unwrap();
 }
+
+#[test]
+fn misspelled_or_wrongly_typed_builtin_parameters_cannot_disable_assertions() {
+    for rules in [
+        "{line-ending: {parameters: {paths: ['*.txt']}}}",
+        "{commit-message: {parameters: {pattern: 123}}}",
+        "{diff-size: {parameters: {max_added_lines: 0}}}",
+        "{test-naming: {parameters: {patten: '^good'}}}",
+        "{test-naming: {parameters: {patterns: {java: '['}}}}",
+        "{test-naming: {parameters: {paths: '*.java'}}}",
+        "{test-naming: {parameters: {languages: [23]}}}",
+        "{comment-language: {parameters: {language: german}}}",
+        "{comment-language: {parameters: {exempt_patterns: [false]}}}",
+        "{parameterized-tests: {parameters: {minimum_similar: 1}}}",
+        "{ai-code-traceability: {parameters: {marker: {type: guessed, name: X}}}}",
+        "{ai-code-traceability: {parameters: {provenance_scope: author_name}}}",
+    ] {
+        assert!(
+            parse(format!("schema_version: 1\nrules: {rules}\n").as_bytes()).is_err(),
+            "{rules}"
+        );
+    }
+    for rulesets in ["[lang-typo]", "[core, core]"] {
+        assert!(parse(format!("schema_version: 1\nrulesets: {rulesets}").as_bytes()).is_err());
+    }
+}

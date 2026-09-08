@@ -1,58 +1,101 @@
-use serde_json::Value;
-use std::{
-    path::Path,
-    process::{Command, Output},
-};
+mod common;
+use common::*;
 
-fn git(root: &Path, args: &[&str]) {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(root)
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-}
-
-fn fixture() -> tempfile::TempDir {
-    let root = tempfile::tempdir().unwrap();
-    git(root.path(), &["init", "-q"]);
-    git(root.path(), &["config", "user.name", "Fixture"]);
-    git(
-        root.path(),
-        &["config", "user.email", "fixture@example.invalid"],
-    );
-    std::fs::write(root.path().join("hello.txt"), "initial\n").unwrap();
-    git(root.path(), &["add", "."]);
-    git(root.path(), &["commit", "-qm", "initial"]);
-    root
-}
-
-fn cli(root: &Path, args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_qualitygate"))
-        .env(
-            "QUALITYGATE_HOME",
-            root.join(".git/qualitygate-test-evidence"),
+#[cfg(unix)]
+#[test]
+fn fresh_coverage_rejects_missing_sources_and_branches_before_a_successful_recheck() {
+    let root = fixture();
+    let root = root.path();
+    std::fs::create_dir(root.join("src")).unwrap();
+    std::fs::write(root.join("src/a.rs"), "fn a() {}\n").unwrap();
+    std::fs::write(root.join("src/b.rs"), "fn b() {}\n").unwrap();
+    std::fs::write(root.join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: coverage\n    argv: [sh, analyze.sh]\n    reports:\n      - path: coverage.info\n        format: lcov\n        coverage_paths: ['src/*.rs']\n        minimum_coverage: 90\n").unwrap();
+    let a = "SF:src/a.rs\nDA:1,1\nBRDA:1,0,0,1\nBRDA:1,0,1,0\nLF:1\nLH:1\nBRF:2\nBRH:1\nend_of_record\n";
+    let b = "SF:src/b.rs\nDA:1,1\nLF:1\nLH:1\nBRF:0\nBRH:0\nend_of_record\n";
+    let run = |text: &str, code| {
+        std::fs::write(
+            root.join("analyze.sh"),
+            format!("cat > coverage.info <<'COVERAGE'\n{text}COVERAGE\n"),
         )
-        .arg("--root")
-        .arg(root)
-        .args(args)
-        .output()
-        .unwrap()
+        .unwrap();
+        report(&cli(root, &["check", "--format", "json"]), code)
+    };
+    let omitted = run(a, 2);
+    assert!(
+        omitted["checks"][0]["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("omitted sources")
+    );
+    let uncovered = run(&format!("{a}{b}"), 1);
+    assert_eq!(
+        uncovered["checks"][0]["metadata"]["coverage.info:coverage"]["branch_percent"],
+        50.0
+    );
+    let covered = a
+        .replace("BRDA:1,0,1,0", "BRDA:1,0,1,1")
+        .replace("BRH:1", "BRH:2");
+    let passed = run(&format!("{covered}{b}"), 0);
+    assert_eq!(
+        passed["checks"][0]["metadata"]["coverage.info:coverage"]["branch_percent"],
+        100.0
+    );
+    assert_eq!(
+        passed["checks"][0]["execution"]["artifacts"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
 }
 
-fn report(output: &Output, code: i32) -> Value {
-    assert_eq!(
-        output.status.code(),
-        Some(code),
-        "stdout={} stderr={}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+#[cfg(unix)]
+#[test]
+fn command_preconditions_timeout_and_prerequisites_remain_incomplete_with_logs() {
+    let root = fixture();
+    let root = root.path();
+    let run = |checks: &str, code| {
+        std::fs::write(
+            root.join("qualitygate.yaml"),
+            format!("schema_version: 1\nchecks:\n{checks}\n"),
+        )
+        .unwrap();
+        report(&cli(root, &["check", "--format", "json"]), code)
+    };
+    let missing = run(
+        "  - {id: compile, argv: [sh, -c, 'exit 0'], required_args: [-s], severity: warning}",
+        2,
     );
-    serde_json::from_slice(&output.stdout).unwrap()
+    assert_eq!(missing["checks"][0]["execution"]["status"], "blocked");
+    assert_eq!(
+        missing["checks"][0]["execution"]["exit_code"],
+        serde_json::Value::Null
+    );
+    let blocked = run(
+        "  - {id: compile, argv: [sh, -c, 'exit 4']}\n  - {id: tests, argv: [sh, -c, 'exit 0'], depends_on: [compile]}",
+        2,
+    );
+    assert_eq!(blocked["checks"][0]["verdict"], "fail");
+    assert_eq!(blocked["checks"][1]["execution"]["status"], "blocked");
+    let expected = run(
+        "  - {id: expected, argv: [sh, -c, 'exit 7'], expected_exit_code: 7}",
+        0,
+    );
+    assert_eq!(expected["checks"][0]["execution"]["exit_code"], 7);
+    let timeout = run(
+        "  - {id: slow, argv: [sh, -c, 'printf partial; sleep 30'], timeout_seconds: 1}",
+        2,
+    );
+    assert_eq!(timeout["checks"][0]["execution"]["status"], "timed_out");
+    let path = timeout["checks"][0]["execution"]["artifacts"][0]["path"]
+        .as_str()
+        .unwrap();
+    assert_eq!(std::fs::read_to_string(path).unwrap(), "partial");
+    let manual = run(
+        "  - {id: review, kind: manual, evidence_file: review.json}",
+        2,
+    );
+    assert_eq!(manual["checks"][0]["execution"]["status"], "blocked");
 }
 
 #[test]

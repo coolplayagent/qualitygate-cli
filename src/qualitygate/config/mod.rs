@@ -1,5 +1,9 @@
 //! Strict configuration contracts, plan validation and repository discovery.
 
+mod builtin_validation;
+pub mod catalog;
+mod constraints;
+mod custom_validation;
 mod model;
 mod plan;
 mod validation;
@@ -17,7 +21,10 @@ pub fn parse(bytes: &[u8]) -> Result<Config> {
         bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
     }
     let config: Config = serde_norway::from_slice(bytes).context("Invalid qualitygate YAML")?;
-    validation::validate(&config)?;
+    validation::layout(&config, false)?;
+    if config.custom_rules.is_none() {
+        catalog::Catalog::load(&config, std::iter::empty())?.resolve(&config)?;
+    }
     Ok(config)
 }
 
@@ -33,10 +40,14 @@ pub fn read(root: &Path, file: &Path) -> Result<Config> {
 
 /// Initializes a candidate policy without overwriting any existing configuration.
 pub fn init(root: &Path) -> Result<Config> {
+    init_at(root, Path::new(CONFIG_FILE))
+}
+
+pub fn init_at(root: &Path, configuration: &Path) -> Result<Config> {
     use std::io::Write;
-    let path = crate::paths::confined(root, Path::new(CONFIG_FILE))?;
+    let path = crate::paths::confined(root, configuration)?;
     if path.exists() {
-        return read(root, Path::new(CONFIG_FILE));
+        return read(root, configuration);
     }
     let mut config = Config::default();
     for (manifest, language) in [

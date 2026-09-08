@@ -190,3 +190,19 @@ fn syntax_errors_and_invalid_rule_parameters_do_not_become_pass() {
         None
     );
 }
+
+#[test]
+fn removing_an_existing_required_annotation_is_a_violation() {
+    let input = snapshot(
+        "T.java",
+        Some("class T { @Test @Generated(author=\"me\") void test() {} }"),
+        "class T { @Test void test() {} }",
+    );
+    let result = run(
+        "ai-code-traceability",
+        &input,
+        serde_json::json!({"marker":{"type":"annotation","name":"Generated","fields":["author"]}}),
+    );
+    assert_eq!(result.verdict, Some(Verdict::Fail));
+    assert_eq!(result.matched_entities, 1);
+}

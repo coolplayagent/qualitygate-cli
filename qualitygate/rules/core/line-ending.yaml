@@ -1,0 +1,10 @@
+id: line-ending
+version: 1
+description: Preserve line endings; new text files use LF
+implementation: line-ending
+language: []
+requires_capabilities: ["files"]
+defaults:
+  required: true
+  severity: error
+  parameters: {}

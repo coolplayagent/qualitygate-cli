@@ -27,7 +27,7 @@ checks:
     depends_on: [check]
   - id: integration
     kind: command
-    argv: [cargo, test, --locked, --test, cli, --all-features]
+    argv: [cargo, test, --locked, --test, cli, --test, custom_rules, --all-features]
     timeout_seconds: 900
     depends_on: [check]
   - id: quality

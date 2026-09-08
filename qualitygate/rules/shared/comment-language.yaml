@@ -1,0 +1,10 @@
+id: comment-language
+version: 1
+description: Review changed comments against the configured language convention
+implementation: comment-language
+language: []
+requires_capabilities: ["comments"]
+defaults:
+  required: true
+  severity: warning
+  parameters: {}

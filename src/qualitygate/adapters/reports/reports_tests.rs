@@ -75,3 +75,57 @@ fn sarif_and_generic_diagnostics_validate_shape() {
     );
     assert!(parse(ReportFormat::Junit, b" ").is_err());
 }
+
+#[test]
+fn lcov_sections_merge_by_identity_and_validate_source_summaries() {
+    let first = "SF:src/a.rs\nDA:1,1\nBRDA:1,0,0,1\nBRDA:1,0,1,-\nLF:1\nLH:1\nBRF:2\nBRH:1\nend_of_record\n";
+    let second = first
+        .replace("BRDA:1,0,0,1", "BRDA:1,0,0,-")
+        .replace("BRDA:1,0,1,-", "BRDA:1,0,1,1");
+    let merged = parse(
+        ReportFormat::Lcov,
+        format!("TN:first\n{first}TN:second\n{second}").as_bytes(),
+    )
+    .unwrap();
+    assert_eq!(merged.coverage.len(), 1);
+    assert_eq!(merged.coverage[0].branches_found, 2);
+    assert_eq!(merged.coverage[0].branches_hit, 2);
+    assert!(merged.branch_coverage);
+    for broken in [
+        first.replace("LF:1", "LF:2"),
+        first.replace("BRF:2", "BRF:3"),
+        first.replace("DA:1,1", "DA:1,1\nDA:1,1"),
+        first.replace("BRDA:1,0,1,-", "BRDA:1,0,0,1"),
+        first.replace("DA:1,1", "DA:2,1"),
+        "end_of_record\n".into(),
+        "DA:1,1\n".into(),
+        "SF:src/a.rs\nend_of_record\n".into(),
+    ] {
+        assert!(
+            parse(ReportFormat::Lcov, broken.as_bytes()).is_err(),
+            "{broken}"
+        );
+    }
+    let empty = parse(
+        ReportFormat::Lcov,
+        b"SF:src/empty.rs\nLF:0\nLH:0\nBRF:0\nBRH:0\nend_of_record\n",
+    )
+    .unwrap();
+    assert!(empty.coverage.is_empty());
+    assert_eq!(empty.coverage_files, ["src/empty.rs"]);
+    assert!(empty.branch_coverage);
+}
+
+#[test]
+fn coverage_and_test_summary_counters_cannot_disagree_with_detail_records() {
+    let xml = br#"<coverage lines-valid="2" lines-covered="1" branches-valid="0" branches-covered="0"><class filename="a.py"><lines><line number="1" hits="1"/></lines></class></coverage>"#;
+    assert!(parse(ReportFormat::Cobertura, xml).is_err());
+    assert!(
+        parse(
+            ReportFormat::Diagnostics,
+            br#"{"issues":[],"tests":{"executed":0,"failures":1,"skipped":0}}"#
+        )
+        .is_err()
+    );
+    assert!(parse(ReportFormat::Diagnostics, br#"{"issues":[],"coverage":[{"file":"a.rs","line":0,"hits":0,"branches_found":0,"branches_hit":0}]}"#).is_err());
+}

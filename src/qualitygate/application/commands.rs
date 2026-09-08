@@ -44,7 +44,10 @@ pub(super) async fn execute(
         }
     }
     if !result.diagnostics.is_empty() {
-        result.complete();
+        result.block(
+            ExecutionStatus::Blocked,
+            "Command was not executed because required arguments are missing",
+        );
         return result;
     }
     if let Err(error) = super::generated_reports::prepare(check, workspace, false).await {

@@ -4,9 +4,12 @@ use crate::domain::Severity;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-fn one() -> u32 {
+pub const RULESETS: &[&str] = &["core", "shared", "lang-java", "lang-python"];
+
+fn schema_one() -> u32 {
     1
 }
+
 fn yes() -> bool {
     true
 }
@@ -53,7 +56,7 @@ impl Default for Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(from = "RuleOverrides")]
 pub struct RuleSetting {
     #[serde(default = "yes")]
     pub enabled: bool,
@@ -65,6 +68,40 @@ pub struct RuleSetting {
     pub parameters: BTreeMap<String, serde_json::Value>,
     #[serde(default)]
     pub source: Option<Source>,
+    #[serde(skip)]
+    pub specified: std::collections::BTreeSet<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RuleOverrides {
+    #[serde(default = "yes")]
+    enabled: bool,
+    required: Option<bool>,
+    severity: Option<Severity>,
+    #[serde(default)]
+    parameters: BTreeMap<String, serde_json::Value>,
+    source: Option<Source>,
+}
+
+impl From<RuleOverrides> for RuleSetting {
+    fn from(value: RuleOverrides) -> Self {
+        let mut specified = std::collections::BTreeSet::new();
+        if value.required.is_some() {
+            specified.insert("required".into());
+        }
+        if value.severity.is_some() {
+            specified.insert("severity".into());
+        }
+        Self {
+            enabled: value.enabled,
+            required: value.required.unwrap_or(true),
+            severity: value.severity.unwrap_or_default(),
+            parameters: value.parameters,
+            source: value.source,
+            specified,
+        }
+    }
 }
 
 impl Default for RuleSetting {
@@ -75,6 +112,7 @@ impl Default for RuleSetting {
             severity: Severity::Error,
             parameters: BTreeMap::new(),
             source: None,
+            specified: Default::default(),
         }
     }
 }
@@ -142,6 +180,10 @@ pub struct ReportSpec {
     pub minimum_tests: Option<usize>,
     #[serde(default)]
     pub minimum_coverage: Option<f64>,
+    #[serde(default)]
+    pub coverage_paths: Vec<String>,
+    #[serde(default = "yes")]
+    pub require_branch_coverage: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -209,8 +251,9 @@ pub struct Verification {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CustomRule {
+    #[serde(default = "schema_one")]
+    pub schema_version: u32,
     pub id: String,
-    #[serde(default = "one")]
     pub version: u32,
     pub source: Source,
     #[serde(default)]

@@ -2,17 +2,18 @@
 
 use super::{
     rules::diagnostic,
-    syntax::{self, Entity, Structure},
+    syntax::{Entity, Structure},
 };
 use crate::{config::RuleSetting, domain::*, snapshot::Snapshot};
 use anyhow::{Context, Result, bail};
 use regex::Regex;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 struct Change {
     path: String,
     view: Structure,
     added: Vec<Entity>,
+    removed_declarations: Vec<Entity>,
 }
 
 pub(super) fn evaluate(
@@ -32,78 +33,50 @@ pub(super) fn evaluate(
 }
 
 fn collect(setting: &RuleSetting, snapshot: &Snapshot) -> Result<Vec<Change>> {
-    let mut filters = globset::GlobSetBuilder::new();
-    if let Some(paths) = setting.parameters.get("paths") {
-        for path in paths.as_array().context("paths must be an array")? {
-            filters.add(globset::Glob::new(
-                path.as_str().context("paths entries must be strings")?,
-            )?);
-        }
-    }
-    let filters = filters.build()?;
-    let mut head = BTreeMap::new();
-    let mut base = BTreeMap::new();
-    for (path, change) in &snapshot.changes {
-        if !snapshot.includes(path) || !filters.is_empty() && !filters.is_match(path) {
-            continue;
-        }
-        if let Some(file) = snapshot.files.get(path)
-            && let Some(view) = syntax::parse(path, &file.bytes)?
-        {
-            head.insert(path.clone(), view);
-        }
-        if let Some(old_path) = &change.old_path
-            && let Some(file) = snapshot.base_files.get(old_path)
-            && let Some(view) = syntax::parse(old_path, &file.bytes)?
-        {
-            base.insert(old_path.clone(), view);
-        }
-    }
-    let head_ids: BTreeSet<_> = head
-        .iter()
-        .flat_map(|(path, view)| {
-            view.tests
-                .iter()
-                .map(|test| (path.clone(), view.language.clone(), test.symbol.clone()))
-        })
-        .collect();
-    let base_ids: BTreeSet<_> = base
-        .iter()
-        .flat_map(|(path, view)| {
-            view.tests
-                .iter()
-                .map(|test| (path.clone(), view.language.clone(), test.symbol.clone()))
-        })
-        .collect();
-    let mut removed_bodies = BTreeMap::new();
-    for (path, view) in &base {
-        for test in &view.tests {
-            if !head_ids.contains(&(path.clone(), view.language.clone(), test.symbol.clone())) {
-                *removed_bodies
-                    .entry((view.language.clone(), test.body_digest.clone()))
-                    .or_insert(0usize) += 1;
-            }
-        }
-    }
-    let mut result = Vec::new();
-    for (path, view) in head {
-        let mut added = Vec::new();
-        for test in &view.tests {
-            if base_ids.contains(&(path.clone(), view.language.clone(), test.symbol.clone())) {
-                continue;
-            }
-            if let Some(count) =
-                removed_bodies.get_mut(&(view.language.clone(), test.body_digest.clone()))
-                && *count > 0
-            {
-                *count -= 1;
-                continue;
-            }
-            added.push(test.clone());
-        }
-        result.push(Change { path, view, added });
-    }
-    Ok(result)
+    let strings = |key: &str| -> Result<Vec<String>> {
+        setting
+            .parameters
+            .get(key)
+            .map(|value| serde_json::from_value(value.clone()).map_err(Into::into))
+            .transpose()
+            .map(Option::unwrap_or_default)
+    };
+    Ok(
+        super::entity_changes::collect(snapshot, &strings("paths")?, &strings("languages")?)?
+            .into_iter()
+            .map(|file| {
+                let marker = setting
+                    .parameters
+                    .get("marker")
+                    .and_then(|marker| marker.get("name"))
+                    .and_then(serde_json::Value::as_str);
+                let removed_declarations = file
+                    .tests
+                    .iter()
+                    .filter(|test| {
+                        marker.is_some_and(|name| {
+                            test.previous
+                                .as_ref()
+                                .is_some_and(|previous| previous.annotations.contains_key(name))
+                                && !test.entity.annotations.contains_key(name)
+                        })
+                    })
+                    .map(|test| test.entity.clone())
+                    .collect();
+                Change {
+                    path: file.path,
+                    view: file.view,
+                    removed_declarations,
+                    added: file
+                        .tests
+                        .into_iter()
+                        .filter(|test| test.kind == "added")
+                        .map(|test| test.entity)
+                        .collect(),
+                }
+            })
+            .collect(),
+    )
 }
 
 #[cfg(test)]
@@ -271,8 +244,7 @@ fn markers(
         .parameters
         .get("marker")
         .context("Source declarations require an explicit marker binding")?;
-    let kind = marker["type"].as_str().context("marker.type missing")?;
-    let name = marker["name"].as_str().context("marker.name missing")?;
+    let marker: crate::config::Marker = serde_json::from_value(marker.clone())?;
     let scope = setting
         .parameters
         .get("provenance_scope")
@@ -281,62 +253,25 @@ fn markers(
     if scope != "all_added_tests" {
         bail!("AI-only provenance scope requires a verified external execution record");
     }
-    if !["annotation", "comment", "git_trailer"].contains(&kind) {
-        bail!("Unsupported source declaration binding: {kind}");
-    }
+    let name = &marker.name;
     for change in changes {
-        for test in &change.added {
+        for test in change.added.iter().chain(&change.removed_declarations) {
             result.matched_entities += 1;
-            let declaration = match kind {
-                "annotation" => test.annotations.get(name).cloned(),
-                "comment" => change
-                    .view
-                    .comments
-                    .iter()
-                    .rev()
-                    .find(|comment| {
-                        comment.range.end_line <= test.range.start_line
-                            && test.range.start_line - comment.range.end_line <= 3
-                            && comment.text.contains(name)
-                    })
-                    .map(|comment| comment.text.clone()),
-                "git_trailer" => {
-                    if !["diff"].contains(&snapshot.identity.mode.as_str()) {
-                        bail!("Commit trailers cannot prove declarations for uncommitted changes");
-                    }
-                    snapshot.commits.iter().find_map(|(_, message)| {
-                        message
-                            .lines()
-                            .rev()
-                            .take_while(|line| !line.trim().is_empty())
-                            .find(|line| line.starts_with(&format!("{name}:")))
-                            .map(Into::into)
-                    })
-                }
-                _ => unreachable!(),
-            };
-            let fields = marker
-                .get("fields")
-                .map(|fields| fields.as_array().context("marker.fields must be an array"))
-                .transpose()?;
-            let mut missing = Vec::new();
-            if let Some(fields) = fields {
-                for field in fields {
-                    let field = field
-                        .as_str()
-                        .context("marker field name must be a string")?;
-                    let pattern = Regex::new(&format!(
-                        r#"\b{}\s*[:=]\s*(?:"[^"]+"|'[^']+'|[A-Za-z0-9_.]+)"#,
-                        regex::escape(field)
-                    ))?;
-                    if declaration
-                        .as_ref()
-                        .is_none_or(|text| !pattern.is_match(text))
-                    {
-                        missing.push(field);
-                    }
-                }
-            }
+            let declaration =
+                super::markers::declaration(&marker, test, &change.view, &change.path, snapshot)?;
+            let values = declaration
+                .as_deref()
+                .map(super::markers::fields)
+                .unwrap_or_default();
+            let missing: Vec<_> = marker
+                .fields
+                .iter()
+                .filter(|field| {
+                    values
+                        .get(*field)
+                        .is_none_or(|value| value.trim().is_empty())
+                })
+                .collect();
             if declaration.is_none() || !missing.is_empty() {
                 result.diagnostics.push(diagnostic(&result.id, Some(&change.path), Some(test.range.clone()), format!("Test {} lacks the required {name} source declaration or fields", test.name), serde_json::json!({"symbol":test.symbol,"marker":name,"missing_fields":missing,"declaration_only":true}), "Record the actual source using the configured binding and required fields", &test.symbol));
             }

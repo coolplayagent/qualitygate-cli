@@ -2,6 +2,7 @@
 
 mod coverage;
 mod json;
+mod lcov;
 mod xml;
 
 use crate::config::ReportFormat;
@@ -46,6 +47,10 @@ pub struct Data {
     #[serde(default)]
     pub coverage: Vec<CoverageLine>,
     #[serde(default)]
+    pub coverage_files: Vec<String>,
+    #[serde(default)]
+    pub branch_coverage: bool,
+    #[serde(default)]
     pub affected_files: Option<Vec<String>>,
 }
 
@@ -58,7 +63,7 @@ pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
         bail!("Report is empty");
     }
     let data = match format {
-        ReportFormat::Lcov => coverage::lcov(text)?,
+        ReportFormat::Lcov => lcov::parse(text)?,
         ReportFormat::Sarif => json::sarif(text)?,
         ReportFormat::Diagnostics => serde_json::from_str(text)?,
         _ => xml::parse(format, text)?,
@@ -67,6 +72,13 @@ pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
         if issue.rule.is_empty() || issue.message.trim().is_empty() || issue.line == Some(0) {
             bail!("Report contains an invalid diagnostic");
         }
+    }
+    if data
+        .tests
+        .as_ref()
+        .is_some_and(|tests| tests.failures > tests.executed)
+    {
+        bail!("Test failures exceed the executed test count");
     }
     for line in &data.coverage {
         if line.file.is_empty() || line.line == 0 || line.branches_hit > line.branches_found {

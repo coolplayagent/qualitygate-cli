@@ -8,34 +8,6 @@ use crate::{
 use anyhow::{Result, bail};
 use regex::Regex;
 
-pub const BUILTINS: &[(&str, &str)] = &[
-    (
-        "test-naming",
-        "Validate added tests using language-specific naming conventions",
-    ),
-    (
-        "parameterized-tests",
-        "Suggest parameterization for structurally similar new tests",
-    ),
-    (
-        "comment-language",
-        "Check changed comments using the configured language and exemptions",
-    ),
-    (
-        "ai-code-traceability",
-        "Validate explicitly configured source declarations for new tests",
-    ),
-    (
-        "line-ending",
-        "Preserve line endings; new text files use LF",
-    ),
-    (
-        "commit-message",
-        "Validate new commit subjects against a team pattern",
-    ),
-    ("diff-size", "Bound added lines in the selected change"),
-];
-
 pub fn diagnostic(
     rule: &str,
     file: Option<&str>,
@@ -59,8 +31,17 @@ pub fn diagnostic(
 }
 
 pub fn evaluate(id: &str, setting: &RuleSetting, snapshot: &Snapshot) -> CheckResult {
+    evaluate_as(id, id, setting, snapshot)
+}
+
+pub fn evaluate_as(
+    id: &str,
+    implementation: &str,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+) -> CheckResult {
     let mut result = CheckResult::pending(id, setting.required, setting.severity);
-    let evaluation = match id {
+    let evaluation = match implementation {
         "line-ending" => {
             line_endings(&mut result, snapshot);
             Ok(())
@@ -68,7 +49,7 @@ pub fn evaluate(id: &str, setting: &RuleSetting, snapshot: &Snapshot) -> CheckRe
         "commit-message" => commits(&mut result, setting, snapshot),
         "diff-size" => diff_size(&mut result, setting, snapshot),
         "test-naming" | "parameterized-tests" | "comment-language" | "ai-code-traceability" => {
-            super::structure_rules::evaluate(id, &mut result, setting, snapshot)
+            super::structure_rules::evaluate(implementation, &mut result, setting, snapshot)
         }
         _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),
     };

@@ -19,6 +19,7 @@ The CLI, checks and test harnesses are implemented in Rust. Git is required for 
 See [quality gates](docs/quality.md) for CI, coverage and deep verification.
 See [tool reports](docs/reports.md) for test counts, coverage, analyzer output and incremental comparison.
 See [built-in rules](docs/rules.md) for language adapters and team-specific configuration.
+See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.
 
 ## Current command surface
 

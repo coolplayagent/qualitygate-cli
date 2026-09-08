@@ -1,5 +1,52 @@
 use crate::domain::{Report, Severity};
 
+pub(super) fn metadata(
+    value: &serde_json::Value,
+    format: super::cli::Format,
+) -> anyhow::Result<String> {
+    use super::cli::Format;
+    if format == Format::Json {
+        return Ok(serde_json::to_string_pretty(value)?);
+    }
+    if let Some(rules) = value["rules"].as_array() {
+        let mut out: String = if format == Format::Markdown {
+            "| Rule | Enabled | Origin | Capabilities |\n|---|---|---|---|\n".into()
+        } else {
+            "Rule\tEnabled\tOrigin\tCapabilities\n".into()
+        };
+        for rule in rules {
+            let definition = &rule["definition"];
+            let details = if definition["custom"].is_null() {
+                &definition["builtin"]
+            } else {
+                &definition["custom"]
+            };
+            let fields = [
+                rule["id"].as_str().unwrap_or_default().to_owned(),
+                rule["enabled"].to_string(),
+                definition["origin"].as_str().unwrap_or_default().to_owned(),
+                details["requires_capabilities"].to_string(),
+            ];
+            let fields: Vec<_> = fields
+                .into_iter()
+                .map(|field| field.replace('|', "\\|").replace(['\n', '\r', '\t'], " "))
+                .collect();
+            if format == Format::Markdown {
+                out.push_str(&format!("| {} |\n", fields.join(" | ")));
+            } else {
+                out.push_str(&format!("{}\n", fields.join("\t")));
+            }
+        }
+        return Ok(out);
+    }
+    let yaml = serde_norway::to_string(value)?;
+    Ok(if format == Format::Markdown {
+        format!("```yaml\n{yaml}```\n")
+    } else {
+        yaml
+    })
+}
+
 pub(super) fn report(
     report: &Report,
     format: super::cli::Format,

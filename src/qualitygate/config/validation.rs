@@ -4,6 +4,10 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 pub(super) fn validate(config: &Config) -> Result<()> {
+    layout(config, true)
+}
+
+pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
     if config.schema_version != 1 {
         bail!(
             "Unsupported configuration schema_version: {}",
@@ -11,10 +15,16 @@ pub(super) fn validate(config: &Config) -> Result<()> {
         );
     }
     let mut ids: BTreeSet<&str> = config.rules.keys().map(String::as_str).collect();
+    let mut packages = BTreeSet::new();
+    for package in &config.rulesets {
+        if !RULESETS.contains(&package.as_str()) || !packages.insert(package) {
+            bail!("Unknown or duplicate ruleset: {package}");
+        }
+    }
     for (id, rule) in &config.rules {
         validate_id(id)?;
         if let Some(source) = &rule.source {
-            crate::paths::relative(Path::new(&source.document))?;
+            constraints::source(source)?;
         }
     }
     for check in &config.checks {
@@ -33,6 +43,28 @@ pub(super) fn validate(config: &Config) -> Result<()> {
         crate::paths::relative(Path::new(&check.cwd))?;
         for report in &check.reports {
             crate::paths::relative(Path::new(&report.path))?;
+            if report.minimum_tests == Some(0) {
+                bail!("minimum_tests must be at least one");
+            }
+            if [
+                ReportFormat::Lcov,
+                ReportFormat::Cobertura,
+                ReportFormat::Jacoco,
+            ]
+            .contains(&report.format)
+                || report.minimum_coverage.is_some()
+                || !report.coverage_paths.is_empty()
+            {
+                if report.coverage_paths.is_empty() {
+                    bail!("Coverage requires explicit coverage_paths for its source inventory");
+                }
+                for path in &report.coverage_paths {
+                    globset::Glob::new(path)?;
+                }
+                if ![IncrementMode::Full, IncrementMode::ChangedLines].contains(&report.mode) {
+                    bail!("Coverage supports full or changed_lines mode");
+                }
+            }
             if report
                 .minimum_coverage
                 .is_some_and(|number| !number.is_finite() || !(0.0..=100.0).contains(&number))
@@ -54,7 +86,7 @@ pub(super) fn validate(config: &Config) -> Result<()> {
                 bail!("Unknown or repeated check {id} in profile {name}");
             }
         }
-        if name == "full" {
+        if name == "full" && resolved {
             for (id, required) in config
                 .rules
                 .iter()
@@ -93,7 +125,10 @@ pub(super) fn validate(config: &Config) -> Result<()> {
         bail!("Check dependency graph contains a cycle");
     }
     if let Some(path) = &config.custom_rules {
-        crate::paths::relative(Path::new(path))?;
+        let normalized = crate::paths::relative(Path::new(path))?;
+        if normalized == "." || normalized.is_empty() || normalized != path.trim_end_matches('/') {
+            bail!("custom_rules must be a normalized repository subdirectory");
+        }
     }
     for path in &config.verification_assets {
         globset::Glob::new(path)?;
@@ -102,13 +137,5 @@ pub(super) fn validate(config: &Config) -> Result<()> {
 }
 
 pub(super) fn validate_id(id: &str) -> Result<()> {
-    if id.is_empty()
-        || id.len() > 128
-        || !id
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
-    {
-        bail!("Invalid check id: {id}");
-    }
-    Ok(())
+    constraints::id(id)
 }

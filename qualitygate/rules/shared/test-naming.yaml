@@ -1,0 +1,10 @@
+id: test-naming
+version: 1
+description: Validate added tests with framework-specific naming patterns
+implementation: test-naming
+language: []
+requires_capabilities: ["test_methods"]
+defaults:
+  required: true
+  severity: error
+  parameters: {}
