@@ -94,7 +94,7 @@ jobs:
       - name: Miri pure-domain gate
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-deterministic-concurrency
-        run: cargo +nightly miri test --locked --lib --all-features domain::
+        run: 'cargo +nightly miri test --locked --lib --all-features domain::'
 
   address-sanitizer:
     runs-on: ubuntu-latest

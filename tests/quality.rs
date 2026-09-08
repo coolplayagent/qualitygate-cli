@@ -100,3 +100,21 @@ fn architecture_keeps_domain_pure_and_implementation_rust_only() {
         }
     }
 }
+
+#[test]
+fn documentation_yaml_contracts_are_parseable() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for file in files(root).into_iter().filter(|file| {
+        file.extension()
+            .is_some_and(|extension| extension == "yaml" || extension == "yml")
+    }) {
+        let text = std::fs::read_to_string(&file).unwrap();
+        let value: serde_norway::Value = serde_norway::from_str(&text)
+            .unwrap_or_else(|error| panic!("Invalid YAML {}: {error}", file.display()));
+        assert!(
+            value.is_mapping(),
+            "Expected YAML configuration map: {}",
+            file.display()
+        );
+    }
+}

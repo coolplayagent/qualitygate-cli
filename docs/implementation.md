@@ -34,6 +34,8 @@ Self-hosted `cargo run --locked -- check --worktree --profile full --output-dir 
 
 `cargo package --locked --allow-dirty` also passed, including Cargo's package compilation verification. The archive contains all nine embedded rule YAML files. These are local checkpoint results; Miri, ASan and native Windows/macOS jobs still require authoritative CI or platform execution.
 
+The initial remote workflow failed GitHub's YAML validation before any job started: the unquoted Miri command ended with `domain::`. The command is now quoted, and `documentation_yaml_contracts_are_parseable` checks repository YAML files locally. This adds one documentation test beyond the 77-test coverage checkpoint; remote platform gate outcomes remain pending.
+
 ## Remaining implementation and audit work
 
 - Complete the semantic and external-provenance capabilities used by custom DSL assertions; audit protocol migration against real second-ecosystem evidence.
