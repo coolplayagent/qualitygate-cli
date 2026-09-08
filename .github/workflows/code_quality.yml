@@ -1,0 +1,29 @@
+name: Qodana (Manual)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: qodana-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Qodana scan
+        uses: JetBrains/qodana-action@v2026.1
+        with:
+          args: --linter qodana-rust
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          QODANA_ENDPOINT: https://qodana.cloud

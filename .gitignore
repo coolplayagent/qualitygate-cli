@@ -1,0 +1,6 @@
+/target/
+/.qualitygate/
+/.coverage/
+*.profraw
+*.profdata
+.env

@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: Rust formatting
+        entry: cargo fmt --all -- --check
+        language: system
+        pass_filenames: false
+      - id: cargo-check
+        name: Rust type and build gate
+        entry: cargo check --locked --all-targets --all-features
+        language: system
+        pass_filenames: false
+      - id: cargo-clippy
+        name: Rust lint gate
+        entry: cargo clippy --locked --all-targets --all-features -- -D warnings
+        language: system
+        pass_filenames: false
+      - id: cargo-test
+        name: Rust unit integration and documentation gates
+        entry: cargo test --locked --all-targets --all-features
+        language: system
+        pass_filenames: false

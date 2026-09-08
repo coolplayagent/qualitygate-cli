@@ -1,0 +1,48 @@
+schema_version: 1
+languages: [rust]
+rulesets: [core]
+rules:
+  line-ending:
+    enabled: true
+    required: true
+    severity: error
+checks:
+  - id: format
+    kind: command
+    argv: [cargo, fmt, --all, --, --check]
+    timeout_seconds: 120
+  - id: check
+    kind: command
+    argv: [cargo, check, --locked, --all-targets, --all-features]
+    timeout_seconds: 900
+  - id: clippy
+    kind: command
+    argv: [cargo, clippy, --locked, --all-targets, --all-features, --, -D, warnings]
+    timeout_seconds: 900
+    depends_on: [check]
+  - id: unit-test
+    kind: command
+    argv: [cargo, test, --locked, --lib, --bins, --all-features]
+    timeout_seconds: 900
+    depends_on: [check]
+  - id: integration
+    kind: command
+    argv: [cargo, test, --locked, --test, cli, --all-features]
+    timeout_seconds: 900
+    depends_on: [check]
+  - id: quality
+    kind: command
+    argv: [cargo, test, --locked, --test, quality, --all-features]
+    timeout_seconds: 900
+    depends_on: [check]
+profiles:
+  quick:
+    include: [line-ending, format]
+  full:
+    include: [line-ending, format, check, clippy, unit-test, integration, quality]
+verification_assets:
+  - qualitygate.yaml
+  - Cargo.toml
+  - rust-toolchain.toml
+  - tests/**
+  - .github/workflows/**
