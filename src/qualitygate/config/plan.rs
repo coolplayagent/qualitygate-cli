@@ -50,7 +50,9 @@ impl Plan {
                     severity: item.severity,
                     depends_on: Vec::new(),
                     reports: v.reports.clone(),
-                    expected_exit_code: 0,
+                    expected_exit_code: v.expected_exit_code,
+                    findings_exit_codes: v.findings_exit_codes.clone(),
+                    tools: v.tools.clone(),
                     required_args: Vec::new(),
                     evidence_file: v.evidence_file.clone(),
                 });

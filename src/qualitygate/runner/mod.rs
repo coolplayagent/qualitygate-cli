@@ -1,5 +1,7 @@
 //! Bounded process execution with whole-process-tree cancellation.
 
+pub mod identity;
+
 use anyhow::{Context, Result, bail};
 use process_wrap::tokio::{ChildWrapper, CommandWrap, KillOnDrop};
 use std::path::Path;
@@ -23,6 +25,7 @@ pub struct Output {
     pub stderr: Vec<u8>,
     pub exit_code: Option<i32>,
     pub started_at_ms: u64,
+    pub ended_at_ms: u64,
     pub duration_ms: u64,
     pub timed_out: bool,
     pub capture_error: Option<String>,
@@ -102,6 +105,10 @@ pub async fn capture(
         stderr: stderr_bytes,
         exit_code,
         started_at_ms,
+        ended_at_ms: SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_millis()
+            .try_into()?,
         duration_ms: start.elapsed().as_millis().try_into()?,
         timed_out,
         capture_error,

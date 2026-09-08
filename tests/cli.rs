@@ -9,7 +9,7 @@ fn fresh_coverage_rejects_missing_sources_and_branches_before_a_successful_reche
     std::fs::create_dir(root.join("src")).unwrap();
     std::fs::write(root.join("src/a.rs"), "fn a() {}\n").unwrap();
     std::fs::write(root.join("src/b.rs"), "fn b() {}\n").unwrap();
-    std::fs::write(root.join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: coverage\n    argv: [sh, analyze.sh]\n    reports:\n      - path: coverage.info\n        format: lcov\n        coverage_paths: ['src/*.rs']\n        minimum_coverage: 90\n").unwrap();
+    std::fs::write(root.join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: coverage\n    argv: [sh, analyze.sh]\n    tools: [{id: coverage-fixture, argv: [sh, -c, 'printf fixture-v1'], inputs: [analyze.sh]}]\n    reports:\n      - path: coverage.info\n        format: lcov\n        coverage_paths: ['src/*.rs']\n        minimum_coverage: 90\n").unwrap();
     let a = "SF:src/a.rs\nDA:1,1\nBRDA:1,0,0,1\nBRDA:1,0,1,0\nLF:1\nLH:1\nBRF:2\nBRH:1\nend_of_record\n";
     let b = "SF:src/b.rs\nDA:1,1\nLF:1\nLH:1\nBRF:0\nBRH:0\nend_of_record\n";
     let run = |text: &str, code| {
@@ -184,7 +184,7 @@ fn required_tool_absence_blocks_even_when_violation_severity_is_warning() {
 #[test]
 fn zero_test_success_exit_and_stale_reports_cannot_pass() {
     let root = fixture();
-    std::fs::write(root.path().join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: tests\n    argv: [sh, -c, 'printf \"<testsuite/>\" > junit.xml']\n    reports: [{path: junit.xml, format: junit}]\n").unwrap();
+    std::fs::write(root.path().join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: tests\n    argv: [sh, -c, 'printf \"<testsuite/>\" > junit.xml']\n    tools: [{id: junit-fixture, argv: [sh, -c, 'printf fixture-v1']}]\n    reports: [{path: junit.xml, format: junit}]\n").unwrap();
     let zero = report(&cli(root.path(), &["check", "--format", "json"]), 1);
     assert_eq!(zero["checks"][0]["metadata"]["tests"]["executed"], 0);
     std::fs::write(
@@ -192,7 +192,7 @@ fn zero_test_success_exit_and_stale_reports_cannot_pass() {
         "<testsuite tests=\"1\"><testcase name=\"old\"/></testsuite>",
     )
     .unwrap();
-    std::fs::write(root.path().join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: tests\n    argv: [sh, -c, 'true']\n    reports: [{path: junit.xml, format: junit}]\n").unwrap();
+    std::fs::write(root.path().join("qualitygate.yaml"), "schema_version: 1\nchecks:\n  - id: tests\n    argv: [sh, -c, 'true']\n    tools: [{id: junit-fixture, argv: [sh, -c, 'printf fixture-v1']}]\n    reports: [{path: junit.xml, format: junit}]\n").unwrap();
     let missing = report(&cli(root.path(), &["check", "--format", "json"]), 2);
     assert!(
         missing["checks"][0]["execution"]["reason"]
@@ -206,7 +206,7 @@ fn zero_test_success_exit_and_stale_reports_cannot_pass() {
 #[test]
 fn baseline_analysis_filters_old_diagnostics_even_when_their_line_moves() {
     let root = fixture();
-    let config = "schema_version: 1\nchecks:\n  - id: static\n    argv: [sh, -c, 'cat findings.json > report.json']\n    reports: [{path: report.json, format: diagnostics, mode: new_diagnostics, baseline: report.json}]\n";
+    let config = "schema_version: 1\nchecks:\n  - id: static\n    argv: [sh, -c, 'cat findings.json > report.json']\n    tools: [{id: analyzer-fixture, argv: [sh, -c, 'printf fixture-v1']}]\n    reports: [{path: report.json, format: diagnostics, mode: new_diagnostics, baseline: report.json}]\n";
     std::fs::write(root.path().join("qualitygate.yaml"), config).unwrap();
     std::fs::write(
         root.path().join("findings.json"),

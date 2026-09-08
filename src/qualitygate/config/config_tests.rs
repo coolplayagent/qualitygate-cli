@@ -23,8 +23,8 @@ fn validates_profiles_timeouts_thresholds_and_dependency_cycles() {
         "schema_version: 1\nchecks: [{id: x, argv: [echo], timeout_seconds: 0}]",
         "schema_version: 1\nchecks: [{id: x, argv: [echo], depends_on: [x]}]",
         "schema_version: 1\nchecks: [{id: x, argv: [echo], depends_on: [missing]}]",
-        "schema_version: 1\nchecks: [{id: x, argv: [echo], reports: [{path: report, format: lcov, minimum_coverage: 101}]}]",
-        "schema_version: 1\nchecks: [{id: x, argv: [echo], reports: [{path: report, format: diagnostics, mode: new_diagnostics}]}]",
+        "schema_version: 1\nchecks: [{id: x, argv: [echo], tools: [{id: tool, argv: [git, --version]}], reports: [{path: report, format: lcov, coverage_paths: ['src/**'], minimum_coverage: 101}]}]",
+        "schema_version: 1\nchecks: [{id: x, argv: [echo], tools: [{id: tool, argv: [git, --version]}], reports: [{path: report, format: diagnostics, mode: new_diagnostics}]}]",
     ] {
         assert!(parse(yaml.as_bytes()).is_err(), "{yaml}");
     }
@@ -57,6 +57,49 @@ fn valid_command_config_roundtrips_and_dependencies_need_not_be_ordered() {
     let config = parse(yaml.as_bytes()).unwrap();
     assert_eq!(config.checks.len(), 2);
     parse(serde_norway::to_string(&config).unwrap().as_bytes()).unwrap();
+}
+
+#[test]
+fn report_provenance_exit_semantics_and_tool_inputs_are_validated() {
+    use serde_json::json;
+    let original = json!({
+        "id":"static","argv":["analyzer"],"findings_exit_codes":[1],
+        "tools":[{"id":"analyzer","argv":["analyzer","--version"],"inputs":["tool.jar"]}],
+        "reports":[{"path":"report.json","format":"diagnostics","mode":"new_diagnostics","baseline":"report.json"}]
+    });
+    let config =
+        |check| serde_norway::to_string(&json!({"schema_version":1,"checks":[check]})).unwrap();
+    parse(config(original.clone()).as_bytes()).unwrap();
+    for (field, value) in [
+        ("tools", json!([{"id":"x","argv":[]}])),
+        (
+            "tools",
+            json!([{"id":"x","argv":["tool"],"timeout_seconds":0}]),
+        ),
+        (
+            "tools",
+            json!([{"id":"x","argv":["tool"],"timeout_seconds":61}]),
+        ),
+        (
+            "tools",
+            json!([{"id":"x","argv":["tool"],"inputs":["../escape"]}]),
+        ),
+        (
+            "tools",
+            json!([{"id":"x","argv":["tool"]},{"id":"x","argv":["tool"]}]),
+        ),
+        ("findings_exit_codes", json!([1, 1])),
+        ("findings_exit_codes", json!([0])),
+        ("reports", json!([])),
+        (
+            "reports",
+            json!([{"path":"report.json","format":"diagnostics","mode":"new_diagnostics","baseline":"../escape"}]),
+        ),
+    ] {
+        let mut check = original.clone();
+        check[field] = value;
+        assert!(parse(config(check.clone()).as_bytes()).is_err(), "{check}");
+    }
 }
 
 #[test]

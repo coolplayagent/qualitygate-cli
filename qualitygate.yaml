@@ -10,29 +10,45 @@ checks:
   - id: format
     kind: command
     argv: [cargo, fmt, --all, --, --check]
+    tools:
+      - {id: rustfmt, argv: [rustfmt, --version]}
     timeout_seconds: 120
   - id: check
     kind: command
     argv: [cargo, check, --locked, --all-targets, --all-features]
+    tools:
+      - {id: cargo, argv: [cargo, --version]}
+      - {id: rustc, argv: [rustc, --version, --verbose]}
     timeout_seconds: 900
   - id: clippy
     kind: command
     argv: [cargo, clippy, --locked, --all-targets, --all-features, --, -D, warnings]
+    tools:
+      - {id: clippy, argv: [cargo, clippy, --version]}
     timeout_seconds: 900
     depends_on: [check]
   - id: unit-test
     kind: command
     argv: [cargo, test, --locked, --lib, --bins, --all-features]
+    tools:
+      - {id: cargo, argv: [cargo, --version]}
+      - {id: rustc, argv: [rustc, --version, --verbose]}
     timeout_seconds: 900
     depends_on: [check]
   - id: integration
     kind: command
-    argv: [cargo, test, --locked, --test, cli, --test, custom_rules, --test, merge_request, --all-features]
+    argv: [cargo, test, --locked, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --all-features]
+    tools:
+      - {id: cargo, argv: [cargo, --version]}
+      - {id: rustc, argv: [rustc, --version, --verbose]}
     timeout_seconds: 900
     depends_on: [check]
   - id: quality
     kind: command
     argv: [cargo, test, --locked, --test, quality, --all-features]
+    tools:
+      - {id: cargo, argv: [cargo, --version]}
+      - {id: rustc, argv: [rustc, --version, --verbose]}
     timeout_seconds: 900
     depends_on: [check]
 profiles:

@@ -54,6 +54,17 @@ pub struct Data {
     pub affected_files: Option<Vec<String>>,
 }
 
+impl Data {
+    pub fn has_findings(&self) -> bool {
+        !self.issues.is_empty()
+            || self.tests.as_ref().is_some_and(|tests| tests.failures > 0)
+            || self
+                .coverage
+                .iter()
+                .any(|line| line.hits == 0 || line.branches_hit < line.branches_found)
+    }
+}
+
 pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
     if bytes.len() > crate::snapshot::MAX_FILE_BYTES {
         bail!("Report exceeds size budget");

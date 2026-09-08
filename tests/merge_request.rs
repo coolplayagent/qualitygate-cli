@@ -257,6 +257,29 @@ fn mr_arguments_reject_ambiguous_snapshot_selections() {
     );
 }
 
+#[test]
+fn final_provider_failure_preserves_initial_comparison_and_rule_diagnostics() {
+    let branches = branches();
+    let server = Server::new(vec![
+        github(&branches.source, &branches.target),
+        "HTTP/1.1 503 Unavailable\r\nContent-Length: 0\r\n\r\n".into(),
+    ]);
+    let result = report(&run(&branches, &server, "json"), 2);
+    assert_eq!(result["snapshot"]["head"], branches.source);
+    assert_eq!(result["checks"][0]["verdict"], "fail");
+    assert!(
+        !result["checks"][0]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        result["gate"]
+            .to_string()
+            .contains("Cannot revalidate the source snapshot")
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn missing_objects_are_fetched_without_moving_refs_index_or_fetch_head() {

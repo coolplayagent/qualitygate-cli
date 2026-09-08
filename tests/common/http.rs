@@ -38,6 +38,9 @@ impl Server {
                     }
                     Err(error) => panic!("Provider fixture accept failed: {error}"),
                 };
+                // Winsock accepted sockets inherit nonblocking mode. Each
+                // connection uses bounded blocking reads in this fixture.
+                stream.set_nonblocking(false).unwrap();
                 stream
                     .set_read_timeout(Some(Duration::from_secs(2)))
                     .unwrap();
@@ -62,6 +65,17 @@ impl Server {
                     .unwrap()
                     .push(String::from_utf8(request).unwrap());
                 if let Some(response) = responses.next() {
+                    // This fixture serves one request per connection, so every
+                    // response must forbid the client's keep-alive reuse.
+                    let headers = response.split("\r\n\r\n").next().unwrap_or_default();
+                    let response = if headers
+                        .lines()
+                        .any(|line| line.to_ascii_lowercase().starts_with("connection:"))
+                    {
+                        response
+                    } else {
+                        response.replacen("\r\n\r\n", "\r\nConnection: close\r\n\r\n", 1)
+                    };
                     let _ = stream.write_all(response.as_bytes());
                 } else {
                     let _ = stream.write_all(b"HTTP/1.1 500 Fixture exhausted\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");

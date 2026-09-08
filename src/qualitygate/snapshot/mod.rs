@@ -2,9 +2,11 @@
 
 mod changes;
 mod git;
+mod input_guard;
 mod merge_request;
 pub use changes::Change;
 pub use git::{read_commit, resolve_commit, run_git};
+pub use input_guard::InputGuard;
 
 pub use crate::domain::SnapshotIdentity as Identity;
 use anyhow::{Context, Result, bail};

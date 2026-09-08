@@ -8,6 +8,16 @@ pub fn artifact_base() -> PathBuf {
         .unwrap_or_else(|| std::env::temp_dir().join("qualitygate"))
 }
 
+pub fn executable(program: &str, cwd: &std::path::Path) -> anyhow::Result<PathBuf> {
+    use anyhow::Context;
+    which::which_in(program, std::env::var_os("PATH"), cwd)
+        .with_context(|| format!("Cannot resolve executable {program}"))
+}
+
+pub fn platform() -> (&'static str, &'static str) {
+    (std::env::consts::OS, std::env::consts::ARCH)
+}
+
 pub fn provider_token(provider: &str, host: &str) -> Option<String> {
     token_from(provider, host, |key| std::env::var(key).ok())
 }

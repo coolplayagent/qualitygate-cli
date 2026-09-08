@@ -1,6 +1,28 @@
 use super::*;
 use test_server::{Server, json};
 
+#[test]
+fn provider_fixture_waits_for_delayed_request_bytes_after_accepting() {
+    use std::io::{Read, Write};
+    let server = Server::new(vec![json(serde_json::json!({"ok":true}))]);
+    let address = server
+        .base
+        .trim_start_matches("http://")
+        .trim_end_matches('/');
+    let mut stream = std::net::TcpStream::connect(address).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(2)))
+        .unwrap();
+    std::thread::sleep(Duration::from_millis(50));
+    stream
+        .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+        .unwrap();
+    let mut response = String::new();
+    stream.read_to_string(&mut response).unwrap();
+    assert!(response.starts_with("HTTP/1.1 200"), "{response}");
+    assert_eq!(server.requests.lock().unwrap().len(), 1);
+}
+
 #[tokio::test]
 async fn provider_response_body_is_subject_to_total_deadline() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};

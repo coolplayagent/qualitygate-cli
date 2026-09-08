@@ -41,8 +41,39 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             bail!("Check {} timeout_seconds must be 1..86400", check.id);
         }
         crate::paths::relative(Path::new(&check.cwd))?;
+        let mut tools = BTreeSet::new();
+        for tool in &check.tools {
+            validate_id(&tool.id)?;
+            if !(1..=60).contains(&tool.timeout_seconds) {
+                bail!("Tool version timeout_seconds must be 1..60: {}", tool.id);
+            }
+            if !tools.insert(&tool.id) || tool.argv.is_empty() || tool.argv[0].trim().is_empty() {
+                bail!(
+                    "Tool version probes need unique IDs and nonempty argv: {}",
+                    check.id
+                );
+            }
+            for path in &tool.inputs {
+                crate::paths::relative(Path::new(path))?;
+            }
+        }
+        let mut findings = BTreeSet::new();
+        for code in &check.findings_exit_codes {
+            if check.reports.is_empty()
+                || *code == check.expected_exit_code
+                || !findings.insert(code)
+            {
+                bail!(
+                    "findings_exit_codes needs reports and distinct non-success codes: {}",
+                    check.id
+                );
+            }
+        }
         for report in &check.reports {
             crate::paths::relative(Path::new(&report.path))?;
+            if let Some(baseline) = &report.baseline {
+                crate::paths::relative(Path::new(baseline))?;
+            }
             if report.minimum_tests == Some(0) {
                 bail!("minimum_tests must be at least one");
             }

@@ -16,6 +16,9 @@ fn yes() -> bool {
 fn timeout() -> u64 {
     300
 }
+fn tool_timeout() -> u64 {
+    10
+}
 fn dot() -> String {
     ".".into()
 }
@@ -154,6 +157,10 @@ pub struct CommandCheck {
     #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]
+    pub findings_exit_codes: Vec<i32>,
+    #[serde(default)]
+    pub tools: Vec<ToolVersion>,
+    #[serde(default)]
     pub required_args: Vec<String>,
     #[serde(default)]
     pub evidence_file: Option<String>,
@@ -165,6 +172,17 @@ pub enum CheckKind {
     #[default]
     Command,
     Manual,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ToolVersion {
+    pub id: String,
+    pub argv: Vec<String>,
+    #[serde(default)]
+    pub inputs: Vec<String>,
+    #[serde(default = "tool_timeout")]
+    pub timeout_seconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -244,6 +262,12 @@ pub struct Verification {
     pub timeout_seconds: u64,
     #[serde(default)]
     pub reports: Vec<ReportSpec>,
+    #[serde(default)]
+    pub expected_exit_code: i32,
+    #[serde(default)]
+    pub findings_exit_codes: Vec<i32>,
+    #[serde(default)]
+    pub tools: Vec<ToolVersion>,
     #[serde(default)]
     pub evidence_file: Option<String>,
 }

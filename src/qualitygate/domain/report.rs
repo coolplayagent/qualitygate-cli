@@ -136,6 +136,8 @@ pub struct Execution {
     pub argv: Vec<String>,
     pub cwd: Option<String>,
     pub started_at_ms: Option<u64>,
+    #[serde(default)]
+    pub ended_at_ms: Option<u64>,
     pub duration_ms: Option<u64>,
     pub exit_code: Option<i32>,
     pub artifacts: Vec<Artifact>,
@@ -177,6 +179,7 @@ impl CheckResult {
                 argv: Vec::new(),
                 cwd: None,
                 started_at_ms: None,
+                ended_at_ms: None,
                 duration_ms: None,
                 exit_code: None,
                 artifacts: Vec::new(),

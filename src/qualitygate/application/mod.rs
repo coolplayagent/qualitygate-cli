@@ -2,10 +2,12 @@
 
 mod commands;
 mod coverage_gate;
+mod evidence;
 mod generated_reports;
 mod policy;
 mod report_gate;
 mod test_counts;
+mod tool_evidence;
 
 use crate::{
     config::{self, Plan},
@@ -13,7 +15,7 @@ use crate::{
     snapshot::{self, Selection},
 };
 use anyhow::{Context, Result};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -105,6 +107,11 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     } else {
         None
     };
+    let input_guard = if let Some(workspace) = &workspace {
+        Some(snapshot::InputGuard::new(workspace.path(), snapshot.files.clone()).await?)
+    } else {
+        None
+    };
     for command in &plan.commands {
         let dependency_failure = command.depends_on.iter().find(|id| {
             !results.iter().any(|result| {
@@ -120,8 +127,8 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
                 format!("Prerequisite {dependency} did not pass"),
             );
             result
-        } else if let Some(workspace) = &workspace {
-            commands::execute(command, workspace.path(), &directory, &snapshot).await
+        } else if let (Some(workspace), Some(inputs)) = (&workspace, &input_guard) {
+            commands::execute(command, workspace.path(), &directory, &snapshot, inputs).await
         } else {
             let mut result = CheckResult::pending(&command.id, command.required, command.severity);
             result.block(
@@ -132,33 +139,29 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         };
         results.push(result);
     }
-    if let Some(workspace) = &workspace {
-        for (name, file) in &snapshot.files {
-            match crate::paths::confined(workspace.path(), Path::new(name))
-                .and_then(|path| std::fs::read(path).map_err(Into::into))
-            {
-                Ok(bytes) if bytes == file.bytes => {}
-                Ok(_) => invalid.push(format!("Checked input modified during execution: {name}")),
-                Err(_) => invalid.push(format!(
-                    "Checked input removed or replaced during execution: {name}"
-                )),
-            }
-        }
-    }
-    let current = snapshot::capture(&options.root, &options.selection).await?;
-    if current.identity.content_digest != snapshot.identity.content_digest
-        || current.identity.base != snapshot.identity.base
-        || current.identity.head != snapshot.identity.head
-        || match (
-            &current.identity.merge_request,
-            &snapshot.identity.merge_request,
-        ) {
-            (Some(current), Some(previous)) => !current.same_comparison(previous),
-            (None, None) => false,
-            _ => true,
-        }
+    if let Some(inputs) = &input_guard
+        && let Err(error) = inputs.verify().await
     {
-        invalid.push("Source snapshot changed during checks; recheck the final state".into());
+        invalid.push(format!("Execution inputs are invalid: {error:#}"));
+    }
+    match snapshot::capture(&options.root, &options.selection).await {
+        Ok(current)
+            if current.identity.content_digest != snapshot.identity.content_digest
+                || current.identity.base != snapshot.identity.base
+                || current.identity.head != snapshot.identity.head
+                || match (
+                    &current.identity.merge_request,
+                    &snapshot.identity.merge_request,
+                ) {
+                    (Some(current), Some(previous)) => !current.same_comparison(previous),
+                    (None, None) => false,
+                    _ => true,
+                } =>
+        {
+            invalid.push("Source snapshot changed during checks; recheck the final state".into())
+        }
+        Ok(_) => {}
+        Err(error) => invalid.push(format!("Cannot revalidate the source snapshot: {error:#}")),
     }
     let recheck = recheck(&options, &snapshot.identity.base);
     for result in &mut results {
