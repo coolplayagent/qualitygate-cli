@@ -9,6 +9,7 @@ fn snapshot(path: &str, old: Option<&str>, current: &str) -> Snapshot {
     Snapshot {
         root: ".".into(),
         identity: Identity {
+            merge_request: None,
             mode: "worktree".into(),
             base: "base".into(),
             head: "head".into(),

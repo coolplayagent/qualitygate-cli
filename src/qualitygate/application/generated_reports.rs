@@ -129,7 +129,7 @@ async fn baseline(
             if let Some(file) = &issue.file
                 && let Ok(relative) = Path::new(file).strip_prefix(workspace.path())
             {
-                issue.file = Some(relative.to_string_lossy().into_owned());
+                issue.file = Some(paths::from_native(relative)?);
             }
         }
         reports.insert(index, data);

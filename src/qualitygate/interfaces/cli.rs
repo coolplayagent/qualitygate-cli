@@ -68,7 +68,11 @@ struct CheckArgs {
     worktree: bool,
     #[arg(long, group = "selection")]
     path: Option<String>,
-    #[arg(long, conflicts_with_all = ["diff", "staged"])]
+    #[arg(long, group = "selection")]
+    mr: Option<String>,
+    #[arg(long, requires = "mr")]
+    mr_api_base: Option<String>,
+    #[arg(long, conflicts_with_all = ["diff", "staged", "mr"])]
     base: Option<String>,
     #[arg(long, default_value = "full", value_parser = ["quick", "full"])]
     profile: String,
@@ -120,7 +124,12 @@ impl Cli {
             }
             Command::Rules { command } => run_rules(root, self.config, command, self.format).await,
             Command::Check(args) => {
-                let selection = if let Some(diff) = args.diff {
+                let selection = if let Some(url) = args.mr {
+                    Selection::MergeRequest {
+                        url,
+                        api_base: args.mr_api_base,
+                    }
+                } else if let Some(diff) = args.diff {
                     let (base, head) = diff
                         .split_once("..")
                         .context("--diff requires <base>..<head>")?;

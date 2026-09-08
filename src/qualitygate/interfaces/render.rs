@@ -68,6 +68,12 @@ pub(super) fn report(
         "Gate: {:?} | complete: {} | scope: {} | profile: {}\n",
         report.gate.decision, report.gate.complete, report.scope, report.profile
     );
+    if let Some(comparison) = &report.snapshot.merge_request {
+        out.push_str(&format!(
+            "MR: {}\nTarget: {}\nSource: {}\nMerge base: {}\n",
+            comparison.url, comparison.target_head, comparison.source_head, comparison.merge_base
+        ));
+    }
     if format == super::cli::Format::Markdown {
         out.push_str("\n| Check | Execution | Verdict | Details |\n|---|---|---|---|\n");
     }

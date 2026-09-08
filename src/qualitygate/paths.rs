@@ -5,12 +5,25 @@ use std::path::{Component, Path, PathBuf};
 
 /// Converts a user path into a portable, confined repository-relative name.
 pub fn relative(path: &Path) -> Result<String> {
+    if path
+        .to_str()
+        .context("Paths must be valid UTF-8")?
+        .contains('\\')
+    {
+        bail!("Repository-relative paths must use forward slashes");
+    }
+    from_native(path)
+}
+
+/// Normalizes an OS-produced relative path after root confinement. Windows
+/// separators are structural here; user policy paths go through `relative`.
+pub fn from_native(path: &Path) -> Result<String> {
     let mut parts = Vec::new();
     for part in path.components() {
         match part {
             Component::Normal(value) => {
                 let value = value.to_str().context("Paths must be valid UTF-8")?;
-                if value == ".git" || value.contains(['\\', '\0', '\n', '\r']) {
+                if value.eq_ignore_ascii_case(".git") || value.contains(['\\', '\0', '\n', '\r']) {
                     bail!("Unsafe repository path: {}", path.display());
                 }
                 parts.push(value);

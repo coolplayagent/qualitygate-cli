@@ -2,6 +2,7 @@
 
 mod changes;
 mod git;
+mod merge_request;
 pub use changes::Change;
 pub use git::{read_commit, resolve_commit, run_git};
 
@@ -17,10 +18,22 @@ pub const MAX_FILES: usize = 20_000;
 
 #[derive(Debug, Clone)]
 pub enum Selection {
-    Worktree { base: String },
+    Worktree {
+        base: String,
+    },
     Staged,
-    Diff { base: String, head: String },
-    Path { path: String, base: String },
+    Diff {
+        base: String,
+        head: String,
+    },
+    Path {
+        path: String,
+        base: String,
+    },
+    MergeRequest {
+        url: String,
+        api_base: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +74,11 @@ pub async fn capture(root: &Path, selection: &Selection) -> Result<Snapshot> {
     let root_text = run_git(root, &["rev-parse", "--show-toplevel"], None).await?;
     let root = PathBuf::from(std::str::from_utf8(&root_text)?.trim());
     let head = resolve_commit(&root, "HEAD").await?;
+    let merge_request = if let Selection::MergeRequest { url, api_base } = selection {
+        Some(merge_request::resolve(&root, url, api_base.as_deref()).await?)
+    } else {
+        None
+    };
     let (mode, base, target, path_filter) = match selection {
         Selection::Worktree { base } => ("worktree", base.as_str(), head.as_str(), None),
         Selection::Staged => ("staged", head.as_str(), head.as_str(), None),
@@ -71,12 +89,23 @@ pub async fn capture(root: &Path, selection: &Selection) -> Result<Snapshot> {
             head.as_str(),
             Some(crate::paths::relative(Path::new(path))?),
         ),
+        Selection::MergeRequest { .. } => {
+            let comparison = merge_request.as_ref().expect("resolved MR selection");
+            (
+                "mr",
+                comparison.merge_base.as_str(),
+                comparison.source_head.as_str(),
+                None,
+            )
+        }
     };
     let base = resolve_commit(&root, base).await?;
     let target = resolve_commit(&root, target).await?;
     let base_files = read_commit(&root, &base).await?;
     let files = match selection {
-        Selection::Diff { .. } => read_commit(&root, &target).await?,
+        Selection::Diff { .. } | Selection::MergeRequest { .. } => {
+            read_commit(&root, &target).await?
+        }
         Selection::Staged => git::read_index(&root).await?,
         _ => read_worktree(&root).await?,
     };
@@ -89,6 +118,7 @@ pub async fn capture(root: &Path, selection: &Selection) -> Result<Snapshot> {
             base,
             head: target,
             content_digest: content_digest(&files),
+            merge_request,
         },
         files,
         base_files,

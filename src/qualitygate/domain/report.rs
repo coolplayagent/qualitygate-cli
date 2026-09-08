@@ -9,6 +9,35 @@ pub struct SnapshotIdentity {
     pub base: String,
     pub head: String,
     pub content_digest: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub merge_request: Option<MergeRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MergeRequest {
+    pub provider: String,
+    pub url: String,
+    pub repository: String,
+    pub number: u64,
+    pub source_branch: String,
+    pub target_branch: String,
+    pub source_head: String,
+    pub target_head: String,
+    pub merge_base: String,
+    pub api_response_digests: Vec<String>,
+}
+
+impl MergeRequest {
+    pub fn same_comparison(&self, other: &Self) -> bool {
+        self.provider == other.provider
+            && self.repository == other.repository
+            && self.number == other.number
+            && self.source_head == other.source_head
+            && self.target_head == other.target_head
+            && self.merge_base == other.merge_base
+            && self.source_branch == other.source_branch
+            && self.target_branch == other.target_branch
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

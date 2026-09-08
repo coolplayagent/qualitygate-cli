@@ -31,7 +31,7 @@ serde_norway = "0.9.42"
 sha2 = "0.10.9"
 similar = "2.7"
 tempfile = "3"
-tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"] }
 tree-sitter = "0.26.8"
 tree-sitter-java = "0.23.5"
 tree-sitter-python = "0.25.0"
@@ -39,6 +39,7 @@ tree-sitter-typescript = "0.23.2"
 tree-sitter-go = "0.25.0"
 tree-sitter-rust = "0.24.2"
 tree-sitter-bash = "0.25.1"
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls", "json"] }
 
 [dev-dependencies]
 syn = { version = "2", features = ["full", "visit"] }

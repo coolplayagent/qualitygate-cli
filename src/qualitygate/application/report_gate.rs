@@ -196,7 +196,7 @@ pub(super) fn map_file(
         .strip_prefix(workspace)
         .or_else(|_| path.strip_prefix(&snapshot.root))
         .unwrap_or(path);
-    let relative = crate::paths::relative(path)?;
+    let relative = crate::paths::from_native(path)?;
     if files.contains_key(&relative) {
         return Ok(relative);
     }

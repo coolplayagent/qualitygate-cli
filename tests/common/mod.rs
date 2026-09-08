@@ -20,6 +20,9 @@ pub fn git(root: &Path, args: &[&str]) {
 pub fn fixture() -> tempfile::TempDir {
     let root = tempfile::tempdir().unwrap();
     git(root.path(), &["init", "-q"]);
+    // These fixtures assert exact staged/worktree bytes on every platform.
+    git(root.path(), &["config", "core.autocrlf", "false"]);
+    git(root.path(), &["config", "core.safecrlf", "false"]);
     git(root.path(), &["config", "user.name", "Fixture"]);
     git(
         root.path(),

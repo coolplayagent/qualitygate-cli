@@ -149,6 +149,14 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     if current.identity.content_digest != snapshot.identity.content_digest
         || current.identity.base != snapshot.identity.base
         || current.identity.head != snapshot.identity.head
+        || match (
+            &current.identity.merge_request,
+            &snapshot.identity.merge_request,
+        ) {
+            (Some(current), Some(previous)) => !current.same_comparison(previous),
+            (None, None) => false,
+            _ => true,
+        }
     {
         invalid.push("Source snapshot changed during checks; recheck the final state".into());
     }
@@ -206,6 +214,12 @@ fn recheck(options: &CheckOptions, base: &str) -> Vec<String> {
         Selection::Diff { head, .. } => argv.extend(["--diff".into(), format!("{base}..{head}")]),
         Selection::Path { path, .. } => {
             argv.extend(["--path".into(), path.clone(), "--base".into(), base.into()])
+        }
+        Selection::MergeRequest { url, api_base } => {
+            argv.extend(["--mr".into(), url.clone()]);
+            if let Some(base) = api_base {
+                argv.extend(["--mr-api-base".into(), base.clone()]);
+            }
         }
     }
     argv.extend([

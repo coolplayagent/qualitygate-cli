@@ -20,6 +20,7 @@ See [quality gates](docs/quality.md) for CI, coverage and deep verification.
 See [tool reports](docs/reports.md) for test counts, coverage, analyzer output and incremental comparison.
 See [built-in rules](docs/rules.md) for language adapters and team-specific configuration.
 See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.
+See [merge requests](docs/merge-requests.md) for GitHub/GitLab comparisons, credentials and snapshot evidence.
 
 ## Current command surface
 
@@ -28,6 +29,7 @@ cargo run -- init
 cargo run -- check --worktree --profile quick --format json
 cargo run -- check --staged --format markdown
 cargo run -- check --diff HEAD~1..HEAD --format json
+cargo run -- check --mr https://github.com/owner/repository/pull/123 --format markdown
 cargo run -- rules list
 cargo run -- rules enable commit-message
 cargo run -- config --show

@@ -6,6 +6,7 @@ pub mod config;
 pub mod domain;
 pub mod env;
 pub mod interfaces;
+pub mod net;
 pub mod paths;
 pub mod runner;
 pub mod snapshot;

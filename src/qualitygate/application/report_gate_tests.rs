@@ -13,6 +13,7 @@ fn snapshot() -> Snapshot {
     Snapshot {
         root: "/repo".into(),
         identity: Identity {
+            merge_request: None,
             mode: "worktree".into(),
             base: "base".into(),
             head: "head".into(),

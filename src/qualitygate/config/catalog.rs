@@ -122,8 +122,8 @@ pub fn read(root: &std::path::Path, config: &Config) -> Result<Catalog> {
                 if entries > 4096 {
                     bail!("Custom rule directory exceeds discovery budget");
                 }
-                let relative = entry.path().strip_prefix(root)?.to_path_buf();
-                let path = crate::paths::confined(root, &relative)?;
+                let relative = crate::paths::from_native(entry.path().strip_prefix(root)?)?;
+                let path = crate::paths::confined(root, relative.as_ref())?;
                 if entry.file_type()?.is_dir() {
                     pending.push(path);
                 } else if path
@@ -134,7 +134,7 @@ pub fn read(root: &std::path::Path, config: &Config) -> Result<Catalog> {
                     if total > super::MAX_CONFIG_BYTES as u64 {
                         bail!("Custom rules exceed 1 MiB");
                     }
-                    files.insert(crate::paths::relative(&relative)?, std::fs::read(path)?);
+                    files.insert(relative, std::fs::read(path)?);
                 }
             }
         }

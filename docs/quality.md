@@ -11,7 +11,7 @@ Rust is pinned to 1.97.1 by `rust-toolchain.toml`; nightly is required only for 
 
 ```bash
 cargo test --locked --lib --bins --all-features
-cargo test --locked --test cli --test custom_rules --all-features
+cargo test --locked --test cli --test custom_rules --test merge_request --all-features
 cargo test --locked --test quality --all-features
 cargo test --locked --test benchmarks --all-features
 cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90
