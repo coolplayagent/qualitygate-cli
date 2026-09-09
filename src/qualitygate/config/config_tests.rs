@@ -125,6 +125,44 @@ fn maven_facts_config_rejects_ambiguous_outputs_and_unsuccessful_producers() {
 }
 
 #[test]
+fn module_boundaries_require_explicit_inventory_and_valid_direction_constraints() {
+    use serde_json::json;
+    let original =
+        json!({"modules":["core","infra"], "forbidden":[{"from":"g:core", "to":"g:infra"}]});
+    let validate = |parameters| {
+        parse(serde_norway::to_string(&json!({"schema_version":1, "rulesets":["lang-java"], "rules":{"module-boundary":{"parameters":parameters}}})).unwrap().as_bytes())
+    };
+    assert!(validate(original.clone()).is_ok());
+    for (field, value) in [
+        ("modules", json!([])),
+        ("modules", json!(["core", "core"])),
+        ("modules", json!(["../outside"])),
+        ("forbidden", json!([])),
+        ("dependency_kind", json!("inferred")),
+        ("unknown", json!(true)),
+        ("forbidden", json!([{"from":"core", "to":"g:infra"}])),
+        ("forbidden", json!([{"from":"g:core:1", "to":"g:infra"}])),
+        ("forbidden", json!([{"from":"g:[", "to":"g:infra"}])),
+        (
+            "forbidden",
+            json!([{"from":"g:core", "to":"g:infra", "scope":"compile"}]),
+        ),
+        (
+            "forbidden",
+            json!([{"from":"g:core", "to":"g:infra", "scopes":["import"]}]),
+        ),
+        (
+            "forbidden",
+            json!([{"from":"g:core", "to":"g:infra", "scopes":["test","test"]}]),
+        ),
+    ] {
+        let mut changed = original.clone();
+        changed[field] = value;
+        assert!(validate(changed).is_err(), "{field}");
+    }
+}
+
+#[test]
 fn report_provenance_exit_semantics_and_tool_inputs_are_validated() {
     use serde_json::json;
     let original = json!({

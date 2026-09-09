@@ -6,6 +6,7 @@ mod constraints;
 mod custom_validation;
 mod model;
 mod plan;
+pub mod project_rules;
 mod validation;
 pub use model::*;
 pub use plan::{Plan, parse_task};

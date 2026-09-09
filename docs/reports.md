@@ -44,6 +44,8 @@ Captured source, configuration, test and build-input files are checked before an
 
 Source snapshot or provider revalidation failures retain the original comparison, completed diagnostics and execution evidence in an incomplete report.
 
+Materialized workspaces expose a physical canonical root using [dunce](https://docs.rs/dunce/1.0.5/dunce/fn.canonicalize.html), so tools returning physical paths do not disagree with macOS temporary-directory aliases. The directory owner still handles cleanup. Windows input guards additionally compare volume/file identity through [file-id](https://docs.rs/file-id/0.2.3/file_id/), because timestamps alone may not distinguish a rapid same-content replacement. These checks retain the integrity limits described above.
+
 ## Exit-code and baseline semantics
 
 `expected_exit_code` defaults to zero. Tools that use a nonzero code for ordinary findings can declare `findings_exit_codes`, for example `[1]`; this requires reports. Those codes are accepted as completed analyzer execution only when all required reports are generated, validated and contain corresponding findings before incremental filtering. A findings exit code with wholly clean reports is inconsistent evidence and makes the check incomplete. Report diagnostics and the chosen increment mode determine the verdict. Other nonzero exits fail plain command checks; unrecognized analyzer exits and signal termination make report-producing checks incomplete. Task command contracts support the same expected/findings exit codes and tool declarations.

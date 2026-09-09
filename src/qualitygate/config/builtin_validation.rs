@@ -2,6 +2,10 @@ use super::{Marker, RuleSetting};
 use anyhow::{Context, Result, bail};
 
 pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
+    if id == "module-boundary" {
+        super::project_rules::module_boundary(rule)?;
+        return Ok(());
+    }
     let specific: &[&str] = match id {
         "line-ending" => &[],
         "commit-message" => &["pattern"],

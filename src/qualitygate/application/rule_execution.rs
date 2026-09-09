@@ -34,7 +34,13 @@ pub(super) async fn execute(
             )
         } else {
             let builtin = entry.builtin.as_ref().expect("resolved builtin");
-            crate::adapters::rules::evaluate_as(&id, &builtin.implementation, &setting, &snapshot)
+            crate::adapters::rules::evaluate_with_projects(
+                &id,
+                &builtin.implementation,
+                &setting,
+                &snapshot,
+                &projects,
+            )
         };
         result.rule_version = entry.version();
         result

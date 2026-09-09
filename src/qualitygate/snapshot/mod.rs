@@ -187,13 +187,35 @@ async fn read_worktree(root: &Path) -> Result<BTreeMap<String, File>> {
     .await?
 }
 
+/// Owns the disposable directory while exposing its physical execution path.
+pub struct Materialized {
+    _directory: tempfile::TempDir,
+    root: PathBuf,
+}
+
+impl Materialized {
+    fn new(directory: tempfile::TempDir) -> Result<Self> {
+        let root = dunce::canonicalize(directory.path())?;
+        Ok(Self {
+            _directory: directory,
+            root,
+        })
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.root
+    }
+}
+
 /// Materializes checked bytes without exposing the user's working tree to tools.
-pub async fn materialize(snapshot: &Snapshot) -> Result<tempfile::TempDir> {
+pub async fn materialize(snapshot: &Snapshot) -> Result<Materialized> {
     let files = snapshot.files.clone();
     tokio::task::spawn_blocking(move || {
-        let directory = tempfile::Builder::new()
-            .prefix("qualitygate-snapshot-")
-            .tempdir()?;
+        let directory = Materialized::new(
+            tempfile::Builder::new()
+                .prefix("qualitygate-snapshot-")
+                .tempdir()?,
+        )?;
         for (name, file) in files {
             let path = crate::paths::confined(directory.path(), Path::new(&name))?;
             std::fs::create_dir_all(path.parent().context("File has no parent")?)?;

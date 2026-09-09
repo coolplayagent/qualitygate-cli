@@ -96,6 +96,11 @@ const PACKAGED: &[(&str, &str, &str)] = &[
     ),
     (
         "lang-java",
+        "module-boundary.yaml",
+        include_str!("../../../qualitygate/rules/lang-java/module-boundary.yaml"),
+    ),
+    (
+        "lang-java",
         "junit-naming.yaml",
         include_str!("../../../qualitygate/rules/lang-java/junit-naming.yaml"),
     ),

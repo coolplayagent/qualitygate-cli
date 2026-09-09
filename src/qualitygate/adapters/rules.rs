@@ -40,6 +40,16 @@ pub fn evaluate_as(
     setting: &RuleSetting,
     snapshot: &Snapshot,
 ) -> CheckResult {
+    evaluate_with_projects(id, implementation, setting, snapshot, &[])
+}
+
+pub fn evaluate_with_projects(
+    id: &str,
+    implementation: &str,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    projects: &[ProjectFacts],
+) -> CheckResult {
     let mut result = CheckResult::pending(id, setting.required, setting.severity);
     let evaluation = match implementation {
         "line-ending" => {
@@ -48,6 +58,9 @@ pub fn evaluate_as(
         }
         "commit-message" => commits(&mut result, setting, snapshot),
         "diff-size" => diff_size(&mut result, setting, snapshot),
+        "module-boundary" => {
+            super::project_rules::module_boundary(&mut result, setting, snapshot, projects)
+        }
         "test-naming" | "parameterized-tests" | "comment-language" | "ai-code-traceability" => {
             super::structure_rules::evaluate(implementation, &mut result, setting, snapshot)
         }

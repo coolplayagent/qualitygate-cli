@@ -1,0 +1,9 @@
+id: module-boundary
+version: 1
+description: Enforce configured dependency directions using resolved Maven project facts
+implementation: module-boundary
+language: [java]
+requires_capabilities: [dependency_resolution]
+defaults:
+  required: true
+  severity: error

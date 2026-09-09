@@ -1,5 +1,32 @@
 use super::*;
 
+#[cfg(unix)]
+#[test]
+fn materialized_workspaces_expose_physical_paths_and_keep_cleanup_ownership() {
+    let root = tempfile::tempdir().unwrap();
+    let physical = root.path().join("physical");
+    std::fs::create_dir(&physical).unwrap();
+    let alias = root.path().join("alias");
+    std::os::unix::fs::symlink(&physical, &alias).unwrap();
+    let temporary = tempfile::Builder::new()
+        .prefix("workspace-")
+        .tempdir_in(&alias)
+        .unwrap();
+    let logical = temporary.path().to_owned();
+    let workspace = Materialized::new(temporary).unwrap();
+    let path = workspace.path().to_owned();
+    assert!(path.starts_with(dunce::canonicalize(&physical).unwrap()));
+    assert_eq!(path, dunce::canonicalize(&logical).unwrap());
+    std::fs::write(workspace.path().join("source"), "checked bytes").unwrap();
+    assert_eq!(
+        std::fs::read_to_string(logical.join("source")).unwrap(),
+        "checked bytes"
+    );
+    drop(workspace);
+    assert!(!path.exists());
+    assert!(!logical.exists());
+}
+
 async fn repository() -> tempfile::TempDir {
     let root = tempfile::tempdir().unwrap();
     run_git(root.path(), &["init", "-q"], None).await.unwrap();

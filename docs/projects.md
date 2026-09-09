@@ -71,14 +71,44 @@ Maven producers require exit code zero, actual version probes and fresh bounded 
 
 Malformed, missing, mismatched or filtered outputs remain incomplete. Model and tree must agree on project identity and declared dependency versions/scopes; unsupported differences, including unresolved expressions or incompatible version-range representations, remain incomplete. Effective absolute source roots must stay inside the configured module and materialized repository. Extra roots added dynamically by plugins are not inferred: tests outside resolved test roots lack module evidence. Missing/ambiguous owners, foreign snapshots and unsupported ecosystems remain incomplete.
 
-This adapter implements Maven test dependency pairing. Used-but-undeclared bytecode analysis, module boundaries, Gradle/Python project facts and compatibility integrations remain in [the ledger](implementation.md).
+This adapter implements Maven test dependency pairing and the dependency-direction rule below. Used-but-undeclared bytecode analysis, Gradle/Python project facts and compatibility integrations remain in [the ledger](implementation.md).
+
+## Module dependency boundaries
+
+Activate `lang-java` and configure `module-boundary` with the complete inventory of modules this check promises to cover:
+
+```yaml
+rulesets: [lang-java]
+rules:
+  module-boundary:
+    depends_on: [facts-core, facts-infra]
+    parameters:
+      modules: [core, infra]
+      dependency_kind: declared
+      forbidden:
+        - from: 'com.example:core'
+          to: 'com.example:infra'
+          scopes: [compile, runtime]
+```
+
+The named `facts-core` and `facts-infra` checks must produce their respective Maven project facts as described above. In a reactor, make them depend on a repository build/install step so local artifacts are compiled and resolved from the same snapshot. The live reactor fixture demonstrates this sequence.
+
+`modules` contains unique repository-relative module roots (`.` for the root project), with 1–256 entries. Each module requires exactly one passing facts producer and a present manifest. Duplicate project identities, missing modules, unsupported ecosystems or another snapshot's facts leave the rule incomplete. The explicit inventory prevents an empty or partial fact set from being treated as a complete architecture check.
+
+`from` and `to` are `group:artifact` glob patterns, without versions. `forbidden` requires 1–256 constraints. Omitted or empty `scopes` matches all Maven scopes; otherwise it accepts unique values from `compile`, `provided`, `runtime`, `test` and `system`. For example, a test-only restriction does not prohibit a compile-scope edge.
+
+`dependency_kind: declared` checks direct effective declarations. `resolved` checks the module's resolved dependency set, including transitive classpath reachability. It does not claim a direct declaration for each transitive relationship. Duplicate resolution paths or overlapping forbidden constraints produce one diagnostic per module, target, type, classifier and scope.
+
+This rule uses `full` mode: it examines every configured module and can report existing violations in unmodified manifests. It does not describe those violations as newly introduced. Metadata records mode, dependency kind, module inventory and producers. Diagnostics preserve direction, scope, policy matches and evidence location; fingerprints do not change merely because a version or constraint order changes.
+
+The rule checks dependency directions, not arbitrary method/package access. Existing architecture tools can supply their own check reports for those additional contracts. Analysis runs on a worker with a 30-second budget.
 
 ## Verification
 
 Parser and failure fixtures run in ordinary Rust suites. The independent `maven-project` CI job executes real Maven using an isolated temporary artifact repository:
 
 ```bash
-cargo test --locked --test maven -- --ignored --nocapture
+cargo test --locked --test maven -- --ignored --nocapture --test-threads=1
 ```
 
-`QUALITYGATE_TEST_MAVEN=/absolute/path/to/mvn` selects a local installation. This test is explicitly ignored in toolchain-free Rust runs and required by its dedicated job; absence of Maven there fails. It verifies resolution, dependency deletion, repair, marker removal and runtime scope. These controlled fixtures do not establish the real-repository pilot or human-review measurements of §9.2.
+`QUALITYGATE_TEST_MAVEN=/absolute/path/to/mvn` selects a local installation. These tests are explicitly ignored in toolchain-free Rust runs and required by the dedicated job; absence of Maven there fails. They verify pairing and a compiled two-module reactor: a forbidden direction fails, deleting only its dependency breaks compilation and blocks the consumer, and repairing the caller plus dependency passes. These controlled fixtures do not establish the real-repository pilot or human-review measurements of §9.2.

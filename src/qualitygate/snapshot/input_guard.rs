@@ -17,14 +17,19 @@ struct Stamp {
     readonly: bool,
     #[cfg(unix)]
     unix: (u64, u64, i64, i64),
+    #[cfg(windows)]
+    file_id: file_id::FileId,
 }
 
 impl Stamp {
-    fn from(metadata: &std::fs::Metadata) -> Self {
-        Self {
+    fn from(metadata: &std::fs::Metadata, _path: &Path) -> Result<Self> {
+        Ok(Self {
             modified: metadata.modified().ok(),
             created: metadata.created().ok(),
             readonly: metadata.permissions().readonly(),
+            #[cfg(windows)]
+            file_id: file_id::get_file_id(_path)
+                .context("Cannot establish Windows input file identity")?,
             #[cfg(unix)]
             unix: {
                 use std::os::unix::fs::MetadataExt;
@@ -35,7 +40,7 @@ impl Stamp {
                     metadata.ctime_nsec(),
                 )
             },
-        }
+        })
     }
 }
 
@@ -119,7 +124,7 @@ fn inspect(root: &Path, files: &BTreeMap<String, File>) -> Result<BTreeMap<Strin
                 bail!("Checked input executable mode changed during execution: {name}");
             }
         }
-        let before = Stamp::from(&metadata);
+        let before = Stamp::from(&metadata, &path)?;
         let file = std::fs::File::open(&path)?;
         let mut bytes = Vec::new();
         file.take(expected.bytes.len() as u64 + 1)
@@ -127,7 +132,7 @@ fn inspect(root: &Path, files: &BTreeMap<String, File>) -> Result<BTreeMap<Strin
         if bytes != expected.bytes {
             bail!("Checked input modified during execution: {name}");
         }
-        let after = Stamp::from(&std::fs::metadata(&path)?);
+        let after = Stamp::from(&std::fs::metadata(&path)?, &path)?;
         if before != after {
             bail!("Checked input changed while being validated: {name}");
         }
@@ -190,6 +195,22 @@ mod tests {
         );
         let (root, guard) = fixture().await;
         std::fs::remove_file(root.path().join("source.txt")).unwrap();
+        assert!(guard.verify().await.is_err());
+    }
+
+    #[tokio::test]
+    async fn preserving_contents_and_modification_time_does_not_preserve_file_identity() {
+        let (root, guard) = fixture().await;
+        let path = root.path().join("source.txt");
+        let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+        std::fs::rename(&path, root.path().join("original.txt")).unwrap();
+        std::fs::write(&path, "initial\n").unwrap();
+        std::fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(modified))
+            .unwrap();
         assert!(guard.verify().await.is_err());
     }
 

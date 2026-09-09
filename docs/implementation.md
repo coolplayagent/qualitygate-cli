@@ -5,7 +5,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | Requirement | Implementation and authoritative verification | State |
 |---|---|---|
 | §1–2 harness boundaries, strict results and exit codes | `domain/gate.rs`, gate truth-table tests and CLI 0/1/2 scenarios | Core verified; delivery audit pending |
-| §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax adapters, seven built-ins, Maven effective-model/tree pairing and marker/dependency retention | Partial: undeclared-use and module boundaries remain |
+| §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax rules, Maven effective-model/tree pairing, marker retention and module dependency directions | Partial: undeclared-use and additional access boundaries remain |
 | §3.2 build commands, compilation, tests, static analysis, coverage, compatibility | Bounded command runner; version probes; validated baseline exit codes, tool identities and inputs; JUnit, Checkstyle, SpotBugs, PMD, SARIF, LCOV, Cobertura, JaCoCo and generic JSON parsers | Partial: ecosystem compatibility integrations and final invariants remain |
 | §3.3–3.4 profiles, task contracts, repair feedback and manual evidence | `config/plan.rs`, actual command execution and task/profile CLI scenarios | Partial: manual acceptance and stronger trust validation remain |
 | §3.5 commit, staged, worktree and path snapshots; all increment modes | Snapshot/baseline CLI fixtures; report-gate tests for changed lines, multiplicity, renamed files and affected unmodified sources; coverage omission/branch repair CLI loop | Core modes verified; project impact and full evidence lifecycle audit remain |
@@ -52,7 +52,7 @@ Self-hosted `target/debug/qualitygate check --worktree --profile full --output-d
 
 `cargo package --locked --offline --allow-dirty` passed for the execution-evidence checkpoint, including compilation of the packaged source; local output is `target/verification-lifecycle-package.txt`.
 
-## Remaining implementation and audit work
+## Maven project verification
 
 The Maven/DAG revision passed **118 ordinary tests** (70 library, nine core CLI, 14 custom-rule CLI, 14 execution CLI, seven MR CLI, three quality and one benchmark). Formatting, compilation and Clippy with warnings denied passed. The complete coverage run passed at **93.05% lines** (5,753 lines, 400 missed), with output in `target/verification-project-coverage.txt`. The live Maven test runs separately from these toolchain-free suites.
 
@@ -62,8 +62,16 @@ The Maven pairing checkpoint used a real Maven 3.9.16 installation (archive SHA-
 
 Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-project --format json` passed all seven checks. Evidence is `target/self-project/run-3PCC19/report.json`, bound to `sha256:dd3c55b46457085fbe6de9a3d9847e4a0bea20ea054ef8883702cbd48d0d7f3d` (commit `a7f9550` plus the implemented worktree, before this evidence note). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 103 packaged files; output is `target/verification-project-package.txt`.
 
+The module-boundary revision passed **124 ordinary tests** (76 library, nine core CLI, 14 custom-rule CLI, 14 execution CLI, seven MR CLI, three quality and one benchmark). Compilation, formatting and Clippy passed. Coverage passed at **93.20% lines** (5,928 lines, 403 missed); output is `target/verification-boundary-coverage.txt`. The first live reactor run passed in 151.52 seconds (`target/verification-live-boundary.txt`), checking a forbidden compiled dependency, incomplete validation after deleting only the declaration, and a passing caller/dependency repair.
+
+[CI run 34231256430](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34231256430), for `663ee19c63fdbada983664b7763539b889fe631d`, passed 14 of 16 jobs, including live Maven, coverage, Miri, AddressSanitizer and packaging. Windows exposed a same-content replacement that timestamps did not distinguish. The guard now also uses Windows file IDs, with an added preserved-mtime replacement regression. macOS exposed a physical-versus-logical temporary path mismatch in Maven outputs. Materialized workspaces now expose a canonical physical path while retaining cleanup ownership; a symlink-parent regression covers the distinction. The new native CI run must confirm both fixes.
+
+## Remaining implementation and audit work
+
+Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-boundary --format json` passed all seven checks. Evidence is `target/self-boundary/run-tSJdBW/report.json`, bound to `sha256:859c83771cd16d904978a0735f4a9e315c423bc95ce7b9bad669f997d62b685e` (commit `663ee19` plus this implementation, before this evidence note). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 107 files; output is `target/verification-boundary-package.txt`.
+
 - Complete the semantic and external-provenance capabilities used by custom DSL assertions; audit protocol migration against real second-ecosystem evidence.
-- Extend Maven annotation/dependency pairing to further ecosystems; implement used-but-undeclared analysis, module boundaries and interface compatibility integrations.
+- Extend Maven pairing and module dependency directions to further ecosystems; implement used-but-undeclared analysis, additional package/access boundaries and interface compatibility integrations.
 - Complete trusted external manual acceptance and agent-run provenance, including the association between a declaration and the actual changed entity/commit.
 - Audit live-provider MR compatibility beyond the controlled HTTP/Git fixtures; retain bounded network access, immutable comparisons and local checkout preservation.
 - Audit trusted strategy updates and verification asset coverage. Source hashing now rejects duplicate/code-only headings; catalog/settings/engine versions participate in rule digests; candidate commands respect selected configuration paths and output formats.

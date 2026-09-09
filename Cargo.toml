@@ -41,6 +41,10 @@ tree-sitter-rust = "0.24.2"
 tree-sitter-bash = "0.25.1"
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls", "json"] }
 which = "8"
+dunce = "1"
+
+[target.'cfg(windows)'.dependencies]
+file-id = "0.2.3"
 
 [dev-dependencies]
 syn = { version = "2", features = ["full", "visit"] }
