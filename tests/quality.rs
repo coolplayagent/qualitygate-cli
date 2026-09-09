@@ -1,11 +1,16 @@
-use std::{
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
+
+#[path = "quality/architecture.rs"]
+mod architecture;
+#[path = "quality/documentation.rs"]
+mod documentation;
+#[path = "quality/rust_references.rs"]
+mod rust_references;
 
 fn files(root: &Path) -> Vec<PathBuf> {
     let mut entries = Vec::new();
     let mut pending = vec![root.to_path_buf()];
+    let mut visited = 0;
     while let Some(directory) = pending.pop() {
         for entry in std::fs::read_dir(directory).unwrap() {
             let entry = entry.unwrap();
@@ -14,6 +19,13 @@ fn files(root: &Path) -> Vec<PathBuf> {
             {
                 continue;
             }
+            visited += 1;
+            assert!(visited <= 20_000, "Authored file inventory exceeds budget");
+            assert!(
+                !entry.file_type().unwrap().is_symlink(),
+                "Symlink in authored files: {}",
+                entry.path().display()
+            );
             if entry.file_type().unwrap().is_dir() {
                 pending.push(entry.path());
             } else {
@@ -25,13 +37,17 @@ fn files(root: &Path) -> Vec<PathBuf> {
 }
 
 #[test]
-fn documentation_links_fences_and_authored_file_lengths_are_valid() {
+fn documentation_authored_file_lengths_are_valid() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let link = regex::Regex::new(r"\]\(([^)]+)\)").unwrap();
     for file in files(root) {
         if file.file_name().unwrap() == "Cargo.lock" {
             continue;
         }
+        assert!(
+            std::fs::metadata(&file).unwrap().len() <= 2 * 1024 * 1024,
+            "Authored file exceeds 2 MiB: {}",
+            file.display()
+        );
         let bytes = std::fs::read(&file).unwrap();
         let Ok(text) = std::str::from_utf8(&bytes) else {
             continue;
@@ -41,34 +57,12 @@ fn documentation_links_fences_and_authored_file_lengths_are_valid() {
             "File exceeds 1000 lines: {}",
             file.display()
         );
-        if file.extension().is_none_or(|extension| extension != "md") {
-            continue;
-        }
-        assert_eq!(
-            text.lines().filter(|line| line.starts_with("```")).count() % 2,
-            0,
-            "Unbalanced fence: {}",
-            file.display()
-        );
-        for capture in link.captures_iter(text) {
-            let target = &capture[1];
-            if target.contains("://") || target.starts_with('#') {
-                continue;
-            }
-            let target = target.split('#').next().unwrap();
-            assert!(
-                file.parent().unwrap().join(target).exists(),
-                "Broken link in {}: {target}",
-                file.display()
-            );
-        }
     }
 }
 
 #[test]
-fn architecture_keeps_domain_pure_and_implementation_rust_only() {
+fn architecture_authored_sources_are_rust_and_parseable() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let prohibited: BTreeSet<_> = ["process", "fs", "net", "env"].into_iter().collect();
     for file in files(&root.join("src")) {
         assert_eq!(
             file.extension().unwrap(),
@@ -79,25 +73,6 @@ fn architecture_keeps_domain_pure_and_implementation_rust_only() {
         let text = std::fs::read_to_string(&file).unwrap();
         syn::parse_file(&text).unwrap_or_else(|error| panic!("{}: {error}", file.display()));
         assert!(!text.contains("#[allow(dead_code)]"));
-        if file.components().any(|part| part.as_os_str() == "domain") {
-            for namespace in &prohibited {
-                assert!(
-                    !text.contains(&format!("std::{namespace}")),
-                    "Domain owns external I/O: {}",
-                    file.display()
-                );
-            }
-        }
-        if file.file_name().unwrap() != "env.rs"
-            && file.file_name().unwrap() != "main.rs"
-            && !file.file_name().unwrap().to_string_lossy().contains("test")
-        {
-            assert!(
-                !text.contains("std::env::"),
-                "Environment access outside env: {}",
-                file.display()
-            );
-        }
     }
 }
 

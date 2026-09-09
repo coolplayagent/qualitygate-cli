@@ -51,6 +51,15 @@ jobs:
         run: rustup show
       - name: Run quality gate
         run: ${{ matrix.command }}
+      - name: Upload architecture dependency evidence
+        if: always() && matrix.gate == 'architecture'
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture
+          path: |
+            target/architecture/report.json
+            target/architecture/graph.dot
+          if-no-files-found: error
       - name: Verify checks did not rewrite repository inputs
         run: git diff --exit-code
 

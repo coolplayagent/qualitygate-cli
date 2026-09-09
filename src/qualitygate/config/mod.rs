@@ -77,6 +77,43 @@ pub fn init_at(root: &Path, configuration: &Path) -> Result<Config> {
     Ok(config)
 }
 
+/// Enables a candidate rule without changing the policy trust decision.
+pub fn enable_rule(root: &Path, path: &Path, rule_id: &str) -> Result<()> {
+    use std::io::Write;
+    let config = read(root, path)?;
+    let catalog = catalog::read(root, &config)?;
+    let mut config = catalog.resolve(&config)?;
+    let entry = catalog
+        .entries
+        .get(rule_id)
+        .with_context(|| format!("Unknown rule: {rule_id}"))?;
+    config
+        .rules
+        .entry(rule_id.into())
+        .or_insert_with(|| entry.defaults())
+        .enabled = true;
+    for profile in config.profiles.values_mut() {
+        if !profile.include.iter().any(|id| id == rule_id) {
+            profile.include.push(rule_id.into());
+        }
+    }
+    let data = serde_norway::to_string(&config)?;
+    parse(data.as_bytes())?;
+    let target = crate::paths::confined(root, path)?;
+    let mut temporary = tempfile::NamedTempFile::new_in(
+        target
+            .parent()
+            .context("Configuration has no parent directory")?,
+    )?;
+    temporary
+        .as_file()
+        .set_permissions(std::fs::metadata(&target)?.permissions())?;
+    temporary.write_all(data.as_bytes())?;
+    temporary.as_file().sync_all()?;
+    temporary.persist(target)?;
+    Ok(())
+}
+
 #[cfg(test)]
 #[path = "config_tests.rs"]
 mod tests;

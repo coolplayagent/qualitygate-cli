@@ -20,7 +20,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | §9.1 acceptance scenarios | Requirement-specific unit/integration suites | Pending |
 | §9.2 pilot measurement and actual repair loop | Reproducible pilot protocol, run evidence, agreed acceptance measurements | Pending |
 | §10 rollout and stable extensibility | Complete implementation and compatibility fixtures | Pending |
-| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml` | Files implemented; complete gate execution pending |
+| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | All 17 CI jobs passed for `c69aad5`; strengthened harness revision verification below |
 
 Reference inspected: `/opt/workspace/relay-knowledge`, including `Cargo.toml`, `.github/workflows/code_quality.yml`, `.github/workflows/pr-checks.yml`, and its architecture constraints. The reference has unrelated local changes and is read-only for this task. Its available committed graph is pinned to `a6a0c8a9ed7518534e1fd0e49f079b73d179764b`; its newer indexing task is retrying, so current workflow details are checked directly against files.
 
@@ -92,6 +92,20 @@ Python facts now cross-check static PEP 621 declarations, pip report version 1 a
 
 Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-python --format json` passed all seven checks with no violations or incomplete results. Evidence is `target/self-python/run-G6uYxT/report.json`, bound to `sha256:1a9d0eb55da30283d245d5b89fc786030c1d10060b35aaf5611d252fdb10c6dc` (commit `a6e5bd9` plus this implementation, before the final README and evidence notes). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 117 files; output is `target/verification-python-package.txt`. The new revision still requires its own remote CI confirmation.
 
+## Python CI follow-up
+
+[CI run 34305994383](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34305994383), for `c69aad55b21f0b3c211cc92e81dd2b441a3c7307`, completed successfully in all 17 jobs, including real Python/Maven checks, native Windows/macOS, Miri, AddressSanitizer, coverage and packaging.
+
+## Architecture and documentation harness
+
+The architecture harness now follows declared production modules and extracts a syntax-based owner graph. Grouped/aliased imports, re-exports, relative paths, inline modules, macro arguments and production configuration branches participate; cycle and forbidden-direction fixtures establish failure behavior. The gate exposed direct configuration replacement in the CLI, which now delegates to the configuration owner while retaining atomic writes and permissions. Source digests and file/line edge evidence are retained and uploaded by CI. See [the executable ownership contract](architecture.md#allowed-module-dependencies).
+
+The documentation harness now parses CommonMark and checks local Markdown anchors, rendered/duplicate/Chinese headings, reference links, escaped paths and real code-fence closure. Examples inside code do not become links. Deliberately broken fixtures cover missing anchors/files/references, traversal and malformed escapes. These changes strengthen the Rust-only reference-equivalent quality gates.
+
+The revision passed **144 ordinary tests** (89 library, nine core CLI, 14 custom-rule CLI, 14 execution CLI, seven MR CLI, ten quality and one benchmark). Formatting, compilation and Clippy with warnings denied passed. Final full coverage passed at **92.64% lines** (7,054 lines, 519 missed); output is `target/verification-harness-coverage-final.txt`. This includes the parser-offset regression rejecting indented pseudo-closing fences while accepting fences inside lists and blockquotes. The production graph contains 60 source files and 27 distinct permitted owner directions, with no cycles or boundary violations. The three Maven and one Python live tests remain separate CI jobs; the previous revision's all-17-job result does not establish this revision's CI status.
+
+Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-harness --format json` passed all seven checks, with no violations or incomplete results. Evidence is `target/self-harness/run-xdIKXK/report.json`, bound to `sha256:0d4047838059005dbde2223006355f98e4328b1f4d544989ca45f57e145fc183` (commit `c69aad5` plus this implementation). That self-hosted checkpoint preceded the final fence-offset regression and this evidence note; the final full coverage run above validates the fence change. `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 121 files (`target/verification-harness-package-final.txt`).
+
 ## Remaining implementation and audit work
 
 - Complete the semantic and external-provenance capabilities used by custom DSL assertions; audit protocol migration against real second-ecosystem evidence.
@@ -102,6 +116,6 @@ Self-hosted `target/debug/qualitygate check --worktree --profile full --output-d
 - Finish coverage-tool compatibility and SARIF/baseline execution validation. Explicit coverage inventories now reject omitted source files, duplicate mapped lines and missing branch evidence; LCOV section counters and branch identity merges are tested, and empty executable scopes use null rates.
 - Complete entity-change auditing for changed names, cross-file comments and declaration retention. Multiset tests now prove moves/copies, Java overloads and annotation removal; mixed-language/module boundaries still require project facts.
 - Complete the remaining asynchronous I/O/CPU and environment audit. Input scans, executable hashing and report parsing/filtering now use workers; per-command/baseline guards and actual version probes have regression coverage. Audit filesystem race limits and dynamically generated inputs without presenting integrity checks as an OS sandbox.
-- Strengthen the architecture harness from basic purity checks to a real acyclic module/dependency gate; validate Markdown anchors and YAML contracts.
+- Extend the architecture/documentation gates if new source-generation forms or document formats are introduced; the current top-level owner graph and local Markdown/YAML contracts now have executable checks.
 - Maintain the unchanged ≥90% coverage threshold as implementation expands; run self-hosted quality checks, packaging, Miri, ASan and native-platform verification where available.
 - Run and record a reproducible real-repository pilot and its measurement protocol. Do not substitute synthetic successes for unmeasured human-review savings.

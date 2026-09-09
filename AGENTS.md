@@ -15,6 +15,8 @@ Implement the CLI, reusable core, adapters, test harnesses and documentation che
 
 Keep dependencies acyclic. Extract shared contracts into the domain rather than making adapters depend on the CLI. Isolate blocking filesystem or parsing work from asynchronous orchestration. Bound process output, file sizes, concurrency and execution time. Do not introduce unsafe code, placeholder implementations or silent successful fallbacks.
 
+The executable top-level owner contract and supported source forms are documented in [docs/architecture.md](docs/architecture.md). Run the architecture gate after changing module ownership or imports; keep its source-digest and file/line evidence reviewable.
+
 ## Quality contract
 
 - Run `cargo fmt --all -- --check`, `cargo check --all-targets --all-features`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test --all-targets --all-features`.

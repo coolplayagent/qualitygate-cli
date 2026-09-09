@@ -179,26 +179,16 @@ async fn run_rules(
     format: Format,
 ) -> Result<(String, u8)> {
     let value = tokio::task::spawn_blocking(move || -> Result<serde_json::Value> {
-        let config = config::read(&root, path.as_ref())?;
-        let catalog = config::catalog::read(&root, &config)?;
-        let mut config = catalog.resolve(&config)?;
         match command {
             Rules::List => {
+                let config = config::read(&root, path.as_ref())?;
+                let catalog = config::catalog::read(&root, &config)?;
+                let config = catalog.resolve(&config)?;
                 let rules: Vec<_> = catalog.entries.iter().map(|(id, entry)| serde_json::json!({"id":id,"definition":entry,"configuration":config.rules.get(id),"enabled":config.rules.get(id).is_some_and(|setting| setting.enabled)})).collect();
                 Ok(serde_json::json!({"schema_version":1,"rules":rules}))
             }
             Rules::Enable { rule_id } => {
-                let entry = catalog.entries.get(&rule_id).with_context(|| format!("Unknown rule: {rule_id}"))?;
-                config.rules.entry(rule_id.clone()).or_insert_with(|| entry.defaults()).enabled = true;
-                for profile in config.profiles.values_mut() { if !profile.include.contains(&rule_id) { profile.include.push(rule_id.clone()); } }
-                let data = serde_norway::to_string(&config)?;
-                config::parse(data.as_bytes())?;
-                let target = crate::paths::confined(&root, path.as_ref())?;
-                let mut temporary = tempfile::NamedTempFile::new_in(target.parent().context("Configuration has no parent directory")?)?;
-                temporary.as_file().set_permissions(std::fs::metadata(&target)?.permissions())?;
-                std::io::Write::write_all(&mut temporary, data.as_bytes())?;
-                temporary.as_file().sync_all()?;
-                temporary.persist(target)?;
+                config::enable_rule(&root, path.as_ref(), &rule_id)?;
                 Ok(serde_json::json!({"schema_version":1,"enabled":rule_id,"status":"candidate"}))
             }
         }

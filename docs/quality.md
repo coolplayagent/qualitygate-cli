@@ -22,3 +22,5 @@ cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90
 ```
 
 Workflow presence is not evidence that a gate passed. Actual results, coverage measurements and remaining work are recorded in [implementation.md](implementation.md).
+
+The [architecture and documentation contract](architecture.md) describes the production owner graph, source-digest evidence, Markdown anchor validation and their limits. Architecture and documentation continue to run as distinct CI jobs and together in the local `quality` check.
