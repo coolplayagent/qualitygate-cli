@@ -161,7 +161,7 @@ pub struct CommandCheck {
     #[serde(default)]
     pub reports: Vec<ReportSpec>,
     #[serde(default)]
-    pub projects: Vec<MavenProject>,
+    pub projects: Vec<ProjectSpec>,
     #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]
@@ -183,6 +183,48 @@ pub struct MavenProject {
     pub dependency_tree: String,
     #[serde(default)]
     pub dependency_usage: bool,
+}
+
+/// Maven's original untagged form remains readable; new ecosystems identify themselves.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ProjectSpec {
+    Maven(MavenProject),
+    Python(PythonProject),
+}
+
+impl ProjectSpec {
+    pub fn root(&self) -> &str {
+        match self {
+            Self::Maven(project) => &project.root,
+            Self::Python(project) => &project.root,
+        }
+    }
+    pub fn outputs(&self) -> Vec<&str> {
+        match self {
+            Self::Maven(project) => vec![&project.effective_pom, &project.dependency_tree],
+            Self::Python(project) => vec![&project.install_report],
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PythonProject {
+    pub ecosystem: PythonEcosystem,
+    pub root: String,
+    pub source_root: String,
+    pub test_source_root: String,
+    pub install_report: String,
+    pub install_target: String,
+    #[serde(default)]
+    pub extras: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PythonEcosystem {
+    Python,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -286,7 +328,7 @@ pub struct Verification {
     #[serde(default)]
     pub reports: Vec<ReportSpec>,
     #[serde(default)]
-    pub projects: Vec<MavenProject>,
+    pub projects: Vec<ProjectSpec>,
     #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]

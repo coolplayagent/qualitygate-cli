@@ -2,6 +2,8 @@
 
 Java dependency assertions consume fresh Maven output from an explicitly named prerequisite. Effective models supply declarations and source roots; resolved trees supply artifact identities and scopes. Import spelling does not establish package ownership.
 
+[Python project facts](python-projects.md) use the common snapshot-bound protocol with pip installation evidence and PEP 508 markers/extras.
+
 ## Maven producer
 
 ```yaml
@@ -71,7 +73,7 @@ Maven producers require exit code zero, actual version probes and fresh bounded 
 
 Malformed, missing, mismatched or filtered outputs remain incomplete. Model and tree must agree on project identity and declared dependency versions/scopes; unsupported differences, including unresolved expressions or incompatible version-range representations, remain incomplete. Effective absolute source roots must stay inside the configured module and materialized repository. Extra roots added dynamically by plugins are not inferred: tests outside resolved test roots lack module evidence. Missing/ambiguous owners, foreign snapshots and unsupported ecosystems remain incomplete.
 
-This adapter implements Maven test dependency pairing, dependency directions and compiled dependency usage. Gradle/Python project facts and compatibility integrations remain in [the ledger](implementation.md).
+This adapter implements Maven test dependency pairing, dependency directions and compiled dependency usage. Python pairing is documented separately; Gradle facts, further usage/access checks and compatibility integrations remain in [the ledger](implementation.md).
 
 ## Module dependency boundaries
 

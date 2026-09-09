@@ -196,14 +196,9 @@ fn dependencies(
         .require_dependency
         .as_ref()
         .expect("dependency assertion");
-    let group = required
-        .group
-        .as_deref()
-        .filter(|group| !group.trim().is_empty())
-        .ok_or_else(|| anyhow::anyhow!("Maven dependency assertions require group and artifact"))?;
     if projects.iter().any(|project| {
         project.schema_version != 1
-            || project.ecosystem != "maven"
+            || !["maven", "python"].contains(&project.ecosystem.as_str())
             || project.snapshot_digest != snapshot.identity.content_digest
     }) {
         bail!("Project facts are unsupported or belong to another snapshot");
@@ -257,12 +252,16 @@ fn dependencies(
         if started.elapsed().as_secs() >= 30 {
             bail!("Dependency scope exceeds analysis budget");
         }
-        if syntax::language(&path) != Some("java") {
-            bail!("Maven dependency facts cannot resolve {path}");
-        }
+        let language = syntax::language(&path);
         let owners: Vec<_> = projects
             .iter()
-            .filter(|project| project.owns_test(&path))
+            .filter(|project| {
+                project.owns_test(&path)
+                    && matches!(
+                        (project.ecosystem.as_str(), language),
+                        ("maven", Some("java")) | ("python", Some("python"))
+                    )
+            })
             .collect();
         if owners.len() != 1 {
             bail!(
@@ -271,9 +270,36 @@ fn dependencies(
             );
         }
         let project = owners[0];
-        if !project.has_test_dependency(group, &required.artifact) {
+        let (group, artifact) = if project.ecosystem == "python" {
+            if required
+                .group
+                .as_deref()
+                .is_some_and(|group| group != "pypi")
+            {
+                bail!("Python distribution assertions use the pypi group or omit group");
+            }
+            (
+                "pypi",
+                required
+                    .artifact
+                    .parse::<pep508_rs::PackageName>()?
+                    .to_string(),
+            )
+        } else {
+            (
+                required
+                    .group
+                    .as_deref()
+                    .filter(|group| !group.trim().is_empty())
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("Maven dependency assertions require group and artifact")
+                    })?,
+                required.artifact.clone(),
+            )
+        };
+        if !project.has_test_dependency(group, &artifact) {
             result.diagnostics.push(diagnostic(&rule.id, Some(&path), range,
-                format!("Required test dependency {group}:{} is not declared and resolved on the test compile classpath of {}", required.artifact, project.coordinate),
+                format!("Required test dependency {group}:{artifact} is not declared and resolved in the test environment of {}", project.coordinate),
                 serde_json::json!({"assertion":"require_dependency", "symbol":symbol, "project":project.coordinate, "manifest":project.manifest, "producer":project.producer_check, "group":group,"artifact":required.artifact}),
                 &rule.fix, &format!("{symbol}:require_dependency")));
         }

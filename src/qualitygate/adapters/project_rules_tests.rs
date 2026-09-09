@@ -22,6 +22,7 @@ fn fixture() -> (Snapshot, Vec<ProjectFacts>) {
         declared: vec![],
         resolved: vec![],
         dependency_usage: None,
+        python: None,
         producer_check: format!("facts-{root}"),
         snapshot_digest: "digest".into(),
     };

@@ -327,7 +327,7 @@ async fn execute_checked(
                 if output.exit_code != Some(0) {
                     result.block(
                         ExecutionStatus::ToolError,
-                        "Maven project analysis did not succeed",
+                        "Project analysis did not succeed",
                     );
                     return result;
                 }

@@ -42,14 +42,12 @@ pub fn used_undeclared(setting: &RuleSetting) -> Result<UsedUndeclared> {
 }
 
 pub(super) fn validate_usage_command(check: &super::CommandCheck) -> Result<()> {
-    if !check
-        .projects
-        .iter()
-        .any(|project| project.dependency_usage)
-    {
+    if !check.projects.iter().any(
+        |project| matches!(project, super::ProjectSpec::Maven(project) if project.dependency_usage),
+    ) {
         return Ok(());
     }
-    if check.projects.len() != 1 || check.cwd != check.projects[0].root {
+    if check.projects.len() != 1 || check.cwd != check.projects[0].root() {
         bail!("Maven dependency usage requires one project with cwd equal to its root");
     }
     for required in MAVEN_USAGE_ARGS {

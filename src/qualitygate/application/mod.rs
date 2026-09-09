@@ -6,6 +6,7 @@ mod evidence;
 mod generated_reports;
 mod policy;
 mod project_reports;
+mod python_install;
 mod report_gate;
 mod rule_execution;
 mod test_counts;

@@ -147,6 +147,7 @@ pub fn parse(
         declared,
         resolved,
         dependency_usage: None,
+        python: None,
         producer_check: producer.into(),
         snapshot_digest: snapshot.identity.content_digest.clone(),
     })

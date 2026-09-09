@@ -18,12 +18,26 @@ pub(super) async fn prepare(check: &CommandCheck, workspace: &Path, baseline: bo
             &report.path
         }
     });
-    let projects = check.projects.iter().flat_map(|project| {
-        [
-            project.effective_pom.as_str(),
-            project.dependency_tree.as_str(),
-        ]
-    });
+    for project in &check.projects {
+        if let crate::config::ProjectSpec::Python(project) = project {
+            let target = paths::confined(workspace, Path::new(&project.install_target))?;
+            match tokio::fs::symlink_metadata(target).await {
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.into()),
+                Ok(_) => {
+                    bail!("Python installation target must be fresh and absent before the command")
+                }
+            }
+            let report = paths::confined(workspace, Path::new(&project.install_report))?;
+            tokio::fs::create_dir_all(
+                report
+                    .parent()
+                    .context("Python report has no parent directory")?,
+            )
+            .await?;
+        }
+    }
+    let projects = check.projects.iter().flat_map(|project| project.outputs());
     for name in reports.chain(projects) {
         let path = paths::confined(workspace, Path::new(name))?;
         match tokio::fs::remove_file(&path).await {

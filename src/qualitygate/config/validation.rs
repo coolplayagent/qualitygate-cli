@@ -44,17 +44,17 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         let mut outputs = BTreeSet::new();
         let mut roots = BTreeSet::new();
         for project in &check.projects {
-            let root = crate::paths::relative(Path::new(&project.root))?;
-            if project.root.is_empty()
-                || (project.root != "." && root != project.root)
+            let root = crate::paths::relative(Path::new(project.root()))?;
+            if project.root().is_empty()
+                || (project.root() != "." && root != project.root())
                 || !roots.insert(root)
             {
-                bail!("Maven project roots must be unique and normalized");
+                bail!("Project roots must be unique and normalized");
             }
-            for path in [&project.effective_pom, &project.dependency_tree] {
+            for path in project.outputs() {
                 let normalized = crate::paths::relative(Path::new(path))?;
-                if normalized.is_empty() || normalized != *path || !outputs.insert(path) {
-                    bail!("Maven output paths must be distinct normalized files");
+                if normalized.is_empty() || normalized != path || !outputs.insert(path) {
+                    bail!("Project output paths must be distinct normalized files");
                 }
             }
         }
@@ -67,9 +67,10 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
                     .iter()
                     .any(|report| report.mode != IncrementMode::Full))
         {
-            bail!("Maven project facts require successful commands and full reports");
+            bail!("Project facts require successful commands and full reports");
         }
         super::project_rules::validate_usage_command(check)?;
+        super::python::validate(check)?;
         let mut tools = BTreeSet::new();
         for tool in &check.tools {
             validate_id(&tool.id)?;
@@ -99,7 +100,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             }
         }
         for report in &check.reports {
-            if !outputs.insert(&report.path) {
+            if !outputs.insert(report.path.as_str()) {
                 bail!("Check output paths must be distinct");
             }
             crate::paths::relative(Path::new(&report.path))?;

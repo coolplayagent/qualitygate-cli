@@ -20,7 +20,7 @@ See [quality gates](docs/quality.md) for CI, coverage and deep verification.
 See [tool reports](docs/reports.md) for test counts, coverage, analyzer output and incremental comparison.
 See [built-in rules](docs/rules.md) for language adapters and team-specific configuration.
 See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.
-See [project facts](docs/projects.md) for Maven dependency pairing and rule/command prerequisites.
+See [project facts](docs/projects.md) for Maven dependency pairing and rule/command prerequisites, and [Python project facts](docs/python-projects.md) for installed dependency verification.
 See [merge requests](docs/merge-requests.md) for GitHub/GitLab comparisons, credentials and snapshot evidence.
 
 ## Current command surface

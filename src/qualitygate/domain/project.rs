@@ -25,6 +25,8 @@ pub struct ProjectFacts {
     pub resolved: Vec<DependencyFact>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dependency_usage: Option<DependencyUsage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub python: Option<PythonResolution>,
     pub producer_check: String,
     pub snapshot_digest: String,
 }
@@ -37,6 +39,15 @@ pub struct DependencyUsage {
     pub used_undeclared: Vec<DependencyFact>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PythonResolution {
+    pub pip_version: String,
+    pub environment: std::collections::BTreeMap<String, String>,
+    pub extras: Vec<String>,
+    pub install_target: String,
+    pub installed_metadata: std::collections::BTreeMap<String, String>,
+}
+
 impl ProjectFacts {
     pub fn owns_test(&self, file: &str) -> bool {
         file.strip_prefix(&self.test_source_root)
@@ -44,6 +55,17 @@ impl ProjectFacts {
     }
 
     pub fn has_test_dependency(&self, group: &str, artifact: &str) -> bool {
+        if self.ecosystem == "python" {
+            return self.python.is_some()
+                && self.declared.iter().any(|dependency| {
+                    dependency.group == group
+                        && dependency.artifact == artifact
+                        && dependency.artifact_type == "distribution"
+                        && dependency.classifier.is_empty()
+                        && dependency.scope == "environment"
+                        && self.resolved.contains(dependency)
+                });
+        }
         self.declared.iter().any(|dependency| {
             dependency.group == group
                 && dependency.artifact == artifact

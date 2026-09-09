@@ -266,6 +266,57 @@ fn bytecode_usage_requires_complete_single_module_command_and_strict_policy() {
 }
 
 #[test]
+fn python_projects_preserve_maven_config_and_require_actual_confined_installations() {
+    use serde_json::json;
+    let check = json!({"id":"python-facts","argv":["python3","-E","-P","-m","pip","--isolated","install","--ignore-installed","--target","target/python","--report","target/pip.json",".[test]"],"tools":[{"id":"python","argv":["python3","-E","-P","--version"]},{"id":"pip","argv":["python3","-E","-P","-m","pip","--version"]}],"projects":[{"ecosystem":"python","root":".","source_root":"src","test_source_root":"tests","install_target":"target/python","install_report":"target/pip.json","extras":["test"]}]});
+    let config = |check| json!({"schema_version":1,"checks":[check]});
+    let validate = |value| parse(serde_norway::to_string(&value).unwrap().as_bytes());
+    let parsed = validate(config(check.clone())).unwrap();
+    assert!(matches!(
+        &parsed.checks[0].projects[0],
+        ProjectSpec::Python(_)
+    ));
+    for (pointer, value) in [
+        ("/projects/0/ecosystem", json!("unknown")),
+        ("/projects/0/root", json!("module")),
+        ("/projects/0/source_root", json!(".")),
+        ("/projects/0/test_source_root", json!("src/tests")),
+        ("/projects/0/install_target", json!("src/packages")),
+        (
+            "/projects/0/install_report",
+            json!("target/python/report.json"),
+        ),
+        ("/projects/0/extras", json!(["test", "test"])),
+        ("/projects/0/extras", json!(["TEST"])),
+        ("/projects/0/extras", json!([])),
+        ("/tools", json!([])),
+    ] {
+        let mut changed = check.clone();
+        *changed.pointer_mut(pointer).unwrap() = value;
+        assert!(validate(config(changed)).is_err(), "{pointer}");
+    }
+    for value in [
+        "--dry-run",
+        "--no-deps",
+        "--user",
+        "--prefix=/tmp/elsewhere",
+        "--python-version=3.9",
+        "other-package",
+        "--ignore-installed",
+    ] {
+        let mut changed = check.clone();
+        changed["argv"].as_array_mut().unwrap().push(json!(value));
+        assert!(validate(config(changed)).is_err(), "{value}");
+    }
+    let maven = json!({"id":"maven","argv":["mvn"],"projects":[{"root":".","effective_pom":"effective.xml","dependency_tree":"tree.json"}]});
+    let parsed = validate(config(maven)).unwrap();
+    assert!(matches!(
+        &parsed.checks[0].projects[0],
+        ProjectSpec::Maven(_)
+    ));
+}
+
+#[test]
 fn misspelled_or_wrongly_typed_builtin_parameters_cannot_disable_assertions() {
     for rules in [
         "{line-ending: {parameters: {paths: ['*.txt']}}}",

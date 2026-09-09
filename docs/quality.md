@@ -11,6 +11,8 @@ The workflow structure follows `/opt/workspace/relay-knowledge`:
 
 Rust is pinned to 1.97.1 by `rust-toolchain.toml`; nightly is required only for Miri and ASan. The local host's `stable` alias is unusable despite the installed pinned toolchain, so local builds use that explicit pin without changing global toolchains.
 
+The independent `python-project` job uses Python 3.12/pip 26.0.1 to run real installation, declaration-retention and pytest repair checks. It runs the explicitly ignored `tests/python.rs` fixture; missing tools or installation evidence fail the job. See [Python project verification](python-projects.md).
+
 ```bash
 cargo test --locked --lib --bins --all-features
 cargo test --locked --test cli --test custom_rules --test merge_request --test execution --all-features

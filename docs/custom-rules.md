@@ -73,6 +73,8 @@ Structure collection is limited to 50,000 test entities and 30 seconds per rule,
 
 ## Source declarations and capability limits
 
+`require_dependency` also supports Python tests using a [Python installation producer](python-projects.md). Omit `group` or use `pypi`; Java still requires a Maven group. Names, markers and extras follow Python semantics. Both ecosystems retain dependency obligations on unchanged marked tests and route facts by language plus test root.
+
 `then.require_marker: true` requires `binding.marker` and an explicit `applies_to.provenance_scope`. Annotation bindings require `annotations`; comment bindings require `comments`, in addition to `test_methods`.
 
 ```yaml
@@ -90,6 +92,6 @@ then: {require_marker: true}
 
 This fragment belongs in a complete definition with ID, version, source and fix. Comment bindings require an immediately preceding comment block separated only by whitespace; intervening executable code cannot transfer a declaration to a later test. The marker begins a comment line, rather than appearing somewhere in unrelated prose. Fields must be nonempty assignments outside other quoted field values; a description containing `author='someone'` cannot supply an author field. Declarations describe claimed origin and do not prove how code was generated.
 
-`dependency_resolution` and `then.require_dependency` consume verified Maven facts through rule-level `depends_on`; see [project facts](projects.md) for configuration, classpath semantics and retained-test obligations. Missing project evidence remains incomplete. `external_provenance`, `ai_only` and commit-to-entity trailer association remain incomplete. The engine does not downgrade bindings or infer dependencies from imports. Remaining capabilities are in the [requirement ledger](implementation.md).
+`dependency_resolution` and `then.require_dependency` consume verified Maven or Python facts through rule-level `depends_on`; see [Maven facts](projects.md) and [Python facts](python-projects.md) for ecosystem semantics and retained-test obligations. Missing project evidence remains incomplete. `external_provenance`, `ai_only` and commit-to-entity trailer association remain incomplete. The engine does not downgrade bindings or infer dependencies from imports. Remaining capabilities are in the [requirement ledger](implementation.md).
 
 Rule metadata records the definition, origin, version, adapter version, selected change mode and matched count. `policy.rules_digest` covers the resolved settings, complete catalog and engine version; snapshot evidence covers the actual rule-file bytes. Diagnostics include the configured fix and a recheck command preserving selection, baseline, profile, task and policy reference.
