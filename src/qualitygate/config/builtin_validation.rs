@@ -2,6 +2,10 @@ use super::{Marker, RuleSetting};
 use anyhow::{Context, Result, bail};
 
 pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
+    if id == "used-undeclared" {
+        super::project_rules::used_undeclared(rule)?;
+        return Ok(());
+    }
     if id == "module-boundary" {
         super::project_rules::module_boundary(rule)?;
         return Ok(());

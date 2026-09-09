@@ -146,6 +146,7 @@ pub fn parse(
         test_source_root,
         declared,
         resolved,
+        dependency_usage: None,
         producer_check: producer.into(),
         snapshot_digest: snapshot.identity.content_digest.clone(),
     })

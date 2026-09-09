@@ -181,6 +181,8 @@ pub struct MavenProject {
     pub root: String,
     pub effective_pom: String,
     pub dependency_tree: String,
+    #[serde(default)]
+    pub dependency_usage: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]

@@ -4,6 +4,7 @@ pub mod custom_rules;
 mod entity_changes;
 mod markers;
 pub mod maven;
+pub mod maven_usage;
 mod project_rules;
 pub mod reports;
 pub mod rules;

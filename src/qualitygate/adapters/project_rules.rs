@@ -18,6 +18,61 @@ use std::{
     time::{Duration, Instant},
 };
 
+pub(super) fn used_undeclared(
+    result: &mut CheckResult,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    facts: &[ProjectFacts],
+) -> Result<()> {
+    let policy = project_rules::used_undeclared(setting)?;
+    result
+        .metadata
+        .insert("increment_mode".into(), serde_json::json!("full"));
+    let mut inventory = Vec::new();
+    let started = Instant::now();
+    for root in policy.modules {
+        let projects: Vec<_> = facts
+            .iter()
+            .filter(|project| project.root == root)
+            .collect();
+        if projects.len() != 1 {
+            bail!(
+                "Module {root} requires exactly one project facts producer; found {}",
+                projects.len()
+            );
+        }
+        let project = projects[0];
+        if project.schema_version != 1
+            || project.ecosystem != "maven"
+            || project.snapshot_digest != snapshot.identity.content_digest
+            || !snapshot.files.contains_key(&project.manifest)
+        {
+            bail!("Unsupported, missing or foreign Maven usage evidence for {root}");
+        }
+        let usage = project.dependency_usage.as_ref().context(format!(
+            "Module {root} lacks completed bytecode dependency usage analysis"
+        ))?;
+        result.matched_entities += usage.compiled_main_sources + usage.compiled_test_sources;
+        inventory.push(serde_json::json!({"root":root,"manifest":project.manifest,"producer":project.producer_check,"analysis":usage}));
+        for dependency in &usage.used_undeclared {
+            if started.elapsed() > Duration::from_secs(30) {
+                bail!("Dependency usage rule exceeded 30 seconds");
+            }
+            let coordinate = format!("{}:{}", dependency.group, dependency.artifact);
+            result.diagnostics.push(diagnostic(&result.id, Some(&project.manifest), None,
+                format!("Compiled code uses an undeclared dependency: {coordinate} ({})", dependency.scope),
+                serde_json::json!({"dependency":dependency,"analyzer":usage.analyzer,"producer":project.producer_check,"snapshot_digest":project.snapshot_digest}),
+                "Declare the used artifact directly in this module with the appropriate scope, or remove its use; rebuild and rerun the analysis",
+                &format!("{}:{}:{}:{}",coordinate,dependency.artifact_type,dependency.classifier,dependency.scope)));
+        }
+    }
+    result
+        .metadata
+        .insert("module_inventory".into(), serde_json::json!(inventory));
+    result.metadata.insert("analysis_limits".into(), serde_json::json!(["Bytecode analysis does not prove reflective or runtime resource dependency usage", "Full module analysis includes historical undeclared dependencies; it does not claim new-diagnostics filtering"]));
+    Ok(())
+}
+
 pub(super) fn module_boundary(
     result: &mut CheckResult,
     setting: &RuleSetting,

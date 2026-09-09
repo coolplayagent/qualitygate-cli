@@ -9,6 +9,7 @@ pub(super) async fn collect(
     workspace: &Path,
     artifacts: &Path,
     snapshot: &Arc<Snapshot>,
+    stdout: &[u8],
     result: &mut CheckResult,
 ) -> Result<()> {
     let mut facts = Vec::new();
@@ -39,9 +40,18 @@ pub(super) async fn collect(
         let workspace = workspace.to_owned();
         let snapshot = Arc::clone(snapshot);
         let id = check.id.clone();
+        let stdout = project.dependency_usage.then(|| stdout.to_vec());
         facts.push(
             tokio::task::spawn_blocking(move || {
-                crate::adapters::maven::parse(&spec, &model, &tree, &workspace, &snapshot, &id)
+                let mut facts = crate::adapters::maven::parse(
+                    &spec, &model, &tree, &workspace, &snapshot, &id,
+                )?;
+                if let Some(log) = stdout {
+                    facts.dependency_usage = Some(crate::adapters::maven_usage::parse(
+                        &model, &log, &facts, &snapshot,
+                    )?);
+                }
+                Ok::<_, anyhow::Error>(facts)
             })
             .await??,
         );

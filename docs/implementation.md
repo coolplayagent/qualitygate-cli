@@ -5,7 +5,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | Requirement | Implementation and authoritative verification | State |
 |---|---|---|
 | §1–2 harness boundaries, strict results and exit codes | `domain/gate.rs`, gate truth-table tests and CLI 0/1/2 scenarios | Core verified; delivery audit pending |
-| §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax rules, Maven effective-model/tree pairing, marker retention and module dependency directions | Partial: undeclared-use and additional access boundaries remain |
+| §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax rules, Maven effective-model/tree pairing, marker retention, compiled undeclared dependency usage and module dependency directions | Partial: additional ecosystems and access boundaries remain |
 | §3.2 build commands, compilation, tests, static analysis, coverage, compatibility | Bounded command runner; version probes; validated baseline exit codes, tool identities and inputs; JUnit, Checkstyle, SpotBugs, PMD, SARIF, LCOV, Cobertura, JaCoCo and generic JSON parsers | Partial: ecosystem compatibility integrations and final invariants remain |
 | §3.3–3.4 profiles, task contracts, repair feedback and manual evidence | `config/plan.rs`, actual command execution and task/profile CLI scenarios | Partial: manual acceptance and stronger trust validation remain |
 | §3.5 commit, staged, worktree and path snapshots; all increment modes | Snapshot/baseline CLI fixtures; report-gate tests for changed lines, multiplicity, renamed files and affected unmodified sources; coverage omission/branch repair CLI loop | Core modes verified; project impact and full evidence lifecycle audit remain |
@@ -66,12 +66,24 @@ The module-boundary revision passed **124 ordinary tests** (76 library, nine cor
 
 [CI run 34231256430](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34231256430), for `663ee19c63fdbada983664b7763539b889fe631d`, passed 14 of 16 jobs, including live Maven, coverage, Miri, AddressSanitizer and packaging. Windows exposed a same-content replacement that timestamps did not distinguish. The guard now also uses Windows file IDs, with an added preserved-mtime replacement regression. macOS exposed a physical-versus-logical temporary path mismatch in Maven outputs. Materialized workspaces now expose a canonical physical path while retaining cleanup ownership; a symlink-parent regression covers the distinction. The new native CI run must confirm both fixes.
 
-## Remaining implementation and audit work
+## Module boundary follow-up evidence
 
 Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-boundary --format json` passed all seven checks. Evidence is `target/self-boundary/run-tSJdBW/report.json`, bound to `sha256:859c83771cd16d904978a0735f4a9e315c423bc95ce7b9bad669f997d62b685e` (commit `663ee19` plus this implementation, before this evidence note). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 107 files; output is `target/verification-boundary-package.txt`.
 
+[CI run 34297582658](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34297582658), for `a89d904d3beba455e3463f9afb2ca3f08501fd23`, completed successfully in all 16 jobs, including native Windows/macOS, both live Maven tests, Miri, AddressSanitizer, coverage and packaging. This confirms both native fixes. A separate local combined Maven rerun timed out while downloading a plugin dependency (`target/verification-live-boundaries-final.txt`); that local run is not recorded as passing.
+
+## Compiled dependency usage verification
+
+The usage revision passed **129 ordinary tests** (81 library, nine core CLI, 14 custom-rule CLI, 14 execution CLI, seven MR CLI, three quality and one benchmark). Formatting, compilation and Clippy with warnings denied passed. The final complete coverage run passed at **93.42% lines** (6,320 lines, 416 missed); output is `target/verification-usage-coverage-final.txt`. Three live Maven tests remain explicitly separate from the ordinary suite.
+
+`used-undeclared` consumes pinned Maven bytecode analysis from the same successful producer as the effective model and resolved tree. It checks source compilation counts and rejects absent, skipped, contradictory, filtered and unrecognized evidence. Parser/rule/config fixtures cover missing producers, foreign snapshots, undeclared coordinates, classifiers, separate main/test inventories, suppression configuration and command property overrides. The dedicated Maven job now includes `real_used_transitive_dependency_requires_direct_declaration`: compiled transitive Hamcrest usage fails, a POM suppression remains incomplete, a direct declaration repairs the violation, and removing the provider blocks validation. The final four-run live fixture passed in **141.17 seconds**, using Maven 3.9.16/JDK 21.0.11 and isolated Git/artifact repositories; output is `target/verification-live-usage-sealed.txt`.
+
+Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-usage --format json` passed all seven checks. Evidence is `target/self-usage/run-4VvPbp/report.json`, bound to `sha256:8765eec2131c2ac80819e07538ef817c3cd8ff7bccb0c562e92ea01526af19b3` (commit `a89d904` plus this implementation, before this evidence note). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 110 files; output is `target/verification-usage-package.txt`. The new revision still requires its own remote CI confirmation.
+
+## Remaining implementation and audit work
+
 - Complete the semantic and external-provenance capabilities used by custom DSL assertions; audit protocol migration against real second-ecosystem evidence.
-- Extend Maven pairing and module dependency directions to further ecosystems; implement used-but-undeclared analysis, additional package/access boundaries and interface compatibility integrations.
+- Extend Maven pairing, bytecode usage and module dependency directions to further ecosystems; implement additional package/access boundaries and interface compatibility integrations.
 - Complete trusted external manual acceptance and agent-run provenance, including the association between a declaration and the actual changed entity/commit.
 - Audit live-provider MR compatibility beyond the controlled HTTP/Git fixtures; retain bounded network access, immutable comparisons and local checkout preservation.
 - Audit trusted strategy updates and verification asset coverage. Source hashing now rejects duplicate/code-only headings; catalog/settings/engine versions participate in rule digests; candidate commands respect selected configuration paths and output formats.

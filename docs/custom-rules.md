@@ -4,7 +4,7 @@ Rule definitions are loaded from the **selected policy snapshot**. Staged checks
 
 ## Packages and activation
 
-The binary embeds the YAML manifests under `qualitygate/rules/`. `core` contains line endings, commit subjects and diff size; `shared` contains test naming, parameterization suggestions, comment language and source declarations. These packages are always available. Selecting `lang-java` exposes `junit-naming` and the Maven `module-boundary` rule; `lang-python` exposes `pytest-naming`.
+The binary embeds the YAML manifests under `qualitygate/rules/`. `core` contains line endings, commit subjects and diff size; `shared` contains test naming, parameterization suggestions, comment language and source declarations. These packages are always available. Selecting `lang-java` exposes `junit-naming` and the Maven `module-boundary` and `used-undeclared` rules; `lang-python` exposes `pytest-naming`.
 
 Package selection makes definitions available. A rule runs only when enabled in `rules` and selected by the profile. Detection never enables source declarations automatically. Parameterization, comment language and diff size default to warning severity; explicit policy settings take precedence.
 

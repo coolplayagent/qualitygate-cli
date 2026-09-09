@@ -206,6 +206,66 @@ fn report_provenance_exit_semantics_and_tool_inputs_are_validated() {
 }
 
 #[test]
+fn bytecode_usage_requires_complete_single_module_command_and_strict_policy() {
+    use serde_json::json;
+    let mut argv: Vec<String> = vec!["mvn".into()];
+    argv.extend(
+        project_rules::MAVEN_USAGE_ARGS
+            .iter()
+            .map(|arg| (*arg).into()),
+    );
+    argv.extend(["clean", "test-compile", project_rules::MAVEN_USAGE_GOAL].map(str::to_owned));
+    let check = json!({"id":"facts","argv":argv,"projects":[{"root":".","effective_pom":"effective.xml","dependency_tree":"tree.json","dependency_usage":true}]});
+    let config = json!({"schema_version":1,"rulesets":["lang-java"],"rules":{"used-undeclared":{"depends_on":["facts"],"parameters":{"modules":["."]}}},"checks":[check]});
+    let validate = |value| parse(serde_norway::to_string(&value).unwrap().as_bytes());
+    validate(config.clone()).unwrap();
+    for (index, argument) in argv.iter().enumerate().skip(1) {
+        let mut changed = config.clone();
+        changed["checks"][0]["argv"]
+            .as_array_mut()
+            .unwrap()
+            .remove(index);
+        assert!(validate(changed).is_err(), "missing {argument}");
+    }
+    for extra in [
+        "-Dverbose=true",
+        "-Dmdep.analyze.excludedClasses=.*",
+        "--define=mdep.analyze.excludedClasses=.*",
+        "-Dmdep.analyze.excludedClasses",
+        "--define",
+        "--quiet",
+        "--threads=2",
+        "--file=other.xml",
+        "--log-file=report.log",
+        "--projects=other",
+    ] {
+        let mut changed = config.clone();
+        changed["checks"][0]["argv"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!(extra));
+        assert!(validate(changed).is_err(), "{extra}");
+    }
+    let mut cwd = config.clone();
+    cwd["checks"][0]["cwd"] = json!("other");
+    assert!(validate(cwd).is_err());
+    for modules in [
+        json!([]),
+        json!([".", "."]),
+        json!(["../escape"]),
+        json!(["./module"]),
+        json!([""]),
+    ] {
+        let mut changed = config.clone();
+        changed["rules"]["used-undeclared"]["parameters"]["modules"] = modules;
+        assert!(validate(changed).is_err());
+    }
+    let mut unknown = config;
+    unknown["rules"]["used-undeclared"]["parameters"]["module"] = json!(".");
+    assert!(validate(unknown).is_err());
+}
+
+#[test]
 fn misspelled_or_wrongly_typed_builtin_parameters_cannot_disable_assertions() {
     for rules in [
         "{line-ending: {parameters: {paths: ['*.txt']}}}",

@@ -1,0 +1,10 @@
+id: used-undeclared
+version: 1
+description: Require direct declarations for dependencies used by compiled Maven sources
+implementation: used-undeclared
+language: [java]
+requires_capabilities: [dependency_usage]
+defaults:
+  enabled: true
+  required: true
+  severity: error

@@ -23,8 +23,18 @@ pub struct ProjectFacts {
     pub test_source_root: String,
     pub declared: Vec<DependencyFact>,
     pub resolved: Vec<DependencyFact>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dependency_usage: Option<DependencyUsage>,
     pub producer_check: String,
     pub snapshot_digest: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DependencyUsage {
+    pub analyzer: String,
+    pub compiled_main_sources: usize,
+    pub compiled_test_sources: usize,
+    pub used_undeclared: Vec<DependencyFact>,
 }
 
 impl ProjectFacts {

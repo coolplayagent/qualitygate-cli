@@ -198,12 +198,12 @@ async fn execute_checked(
             result.execution.duration_ms = Some(output.duration_ms);
             result.execution.exit_code = output.exit_code;
             let test_counts = super::test_counts::from_output(check, &output.stdout);
-            for (suffix, bytes) in [("stdout", output.stdout), ("stderr", output.stderr)] {
+            for (suffix, bytes) in [("stdout", &output.stdout), ("stderr", &output.stderr)] {
                 match super::evidence::persist(
                     artifacts,
                     &check.id,
                     &format!("{suffix}.log"),
-                    &bytes,
+                    bytes,
                 )
                 .await
                 {
@@ -336,6 +336,7 @@ async fn execute_checked(
                     workspace,
                     artifacts,
                     snapshot,
+                    &output.stdout,
                     &mut result,
                 )
                 .await

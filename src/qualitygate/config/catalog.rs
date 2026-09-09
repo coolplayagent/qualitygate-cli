@@ -60,6 +60,11 @@ pub struct Catalog {
 
 const PACKAGED: &[(&str, &str, &str)] = &[
     (
+        "lang-java",
+        "used-undeclared.yaml",
+        include_str!("../../../qualitygate/rules/lang-java/used-undeclared.yaml"),
+    ),
+    (
         "core",
         "line-ending.yaml",
         include_str!("../../../qualitygate/rules/core/line-ending.yaml"),

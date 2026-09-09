@@ -21,6 +21,7 @@ fn fixture() -> (Snapshot, Vec<ProjectFacts>) {
         test_source_root: format!("{root}/src/test/java"),
         declared: vec![],
         resolved: vec![],
+        dependency_usage: None,
         producer_check: format!("facts-{root}"),
         snapshot_digest: "digest".into(),
     };

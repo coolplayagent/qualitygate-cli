@@ -61,6 +61,9 @@ pub fn evaluate_with_projects(
         "module-boundary" => {
             super::project_rules::module_boundary(&mut result, setting, snapshot, projects)
         }
+        "used-undeclared" => {
+            super::project_rules::used_undeclared(&mut result, setting, snapshot, projects)
+        }
         "test-naming" | "parameterized-tests" | "comment-language" | "ai-code-traceability" => {
             super::structure_rules::evaluate(implementation, &mut result, setting, snapshot)
         }

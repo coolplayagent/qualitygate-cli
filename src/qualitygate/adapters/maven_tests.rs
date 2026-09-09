@@ -33,6 +33,7 @@ fn inputs(root: &Path) -> (Snapshot, MavenProject, String, Value) {
         root: "module".into(),
         effective_pom: "effective.xml".into(),
         dependency_tree: "tree.json".into(),
+        dependency_usage: false,
     };
     let model = format!(
         "<project><modelVersion>4.0.0</modelVersion><groupId>fixture</groupId><artifactId>sample</artifactId><version>1</version><build><sourceDirectory>{}/module/src/main/java</sourceDirectory><testSourceDirectory>{}/module/src/test/java</testSourceDirectory></build><dependencies><dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency></dependencies></project>",

@@ -69,6 +69,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         {
             bail!("Maven project facts require successful commands and full reports");
         }
+        super::project_rules::validate_usage_command(check)?;
         let mut tools = BTreeSet::new();
         for tool in &check.tools {
             validate_id(&tool.id)?;

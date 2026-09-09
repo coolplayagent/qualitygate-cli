@@ -216,3 +216,92 @@ fn real_reactor_dependency_direction_requires_compiled_repair() {
         2
     );
 }
+
+#[test]
+#[ignore = "requires real Maven, JDK and artifact access; mandatory Maven CI job"]
+fn real_used_transitive_dependency_requires_direct_declaration() {
+    let maven = std::env::var("QUALITYGATE_TEST_MAVEN").unwrap_or_else(|_| "mvn".into());
+    let cache = tempfile::tempdir().unwrap();
+    let root = fixture();
+    let root = root.path();
+    std::fs::create_dir_all(root.join("src/test/java")).unwrap();
+    std::fs::create_dir_all(root.join("src/main/java")).unwrap();
+    std::fs::write(
+        root.join("src/main/java/Main.java"),
+        "public class Main { public String value() { return \"value\"; } }\n",
+    )
+    .unwrap();
+    std::fs::write(root.join(".gitignore"), "target/\n").unwrap();
+    let model = |dependencies: &str| {
+        format!(
+            "<project><modelVersion>4.0.0</modelVersion><groupId>fixture</groupId><artifactId>sample</artifactId><version>1</version><properties><maven.compiler.source>17</maven.compiler.source><maven.compiler.target>17</maven.compiler.target></properties>{dependencies}</project>"
+        )
+    };
+    std::fs::write(root.join("pom.xml"), model(DEPENDENCY)).unwrap();
+    std::fs::write(root.join("src/test/java/Usage.java"),"import org.hamcrest.Matcher; import org.hamcrest.CoreMatchers; class Usage { Matcher<String> value() { return CoreMatchers.is(\"value\"); } }\n").unwrap();
+    let mut argv = vec![
+        maven.clone(),
+        "-B".into(),
+        "-ntp".into(),
+        format!("-Dmaven.repo.local={}", cache.path().display()),
+    ];
+    argv.extend(
+        qualitygate::config::project_rules::MAVEN_USAGE_ARGS
+            .iter()
+            .map(|arg| (*arg).to_owned()),
+    );
+    argv.extend(
+        [
+            "clean",
+            "test-compile",
+            "org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom",
+            "-Doutput=target/effective.xml",
+            "org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree",
+            "-DoutputType=json",
+            "-DoutputFile=target/tree.json",
+            qualitygate::config::project_rules::MAVEN_USAGE_GOAL,
+        ]
+        .map(str::to_owned),
+    );
+    let config = json!({"schema_version":1,"rulesets":["lang-java"],"rules":{"used-undeclared":{"depends_on":["facts"],"parameters":{"modules":["."]}}},"checks":[{"id":"facts","argv":argv,"timeout_seconds":600,"tools":[{"id":"maven","argv":[maven,"--version"]},{"id":"java","argv":["java","-version"]}],"projects":[{"root":".","effective_pom":"target/effective.xml","dependency_tree":"target/tree.json","dependency_usage":true}]}],"profiles":{"quick":{"include":["used-undeclared"]}}});
+    std::fs::write(
+        root.join("qualitygate.yaml"),
+        serde_norway::to_string(&config).unwrap(),
+    )
+    .unwrap();
+    let missing = run(root, 1);
+    assert_eq!(missing["checks"][0]["verdict"], "pass");
+    assert_eq!(
+        missing["checks"][1]["diagnostics"][0]["evidence"]["dependency"]["artifact"],
+        "hamcrest-core"
+    );
+    assert_eq!(
+        missing["checks"][0]["metadata"]["projects"][0]["dependency_usage"]["compiled_test_sources"],
+        1
+    );
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "compiled undeclared use"]);
+    // A POM suppression must not turn the same undeclared bytecode use into a pass.
+    let suppressed = model(DEPENDENCY).replace("</project>","<build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version><configuration><ignoredUsedUndeclaredDependencies><ignoredUsedUndeclaredDependency>org.hamcrest:hamcrest-core</ignoredUsedUndeclaredDependency></ignoredUsedUndeclaredDependencies></configuration></plugin></plugins></build></project>");
+    std::fs::write(root.join("pom.xml"), suppressed).unwrap();
+    let suppressed = run(root, 2);
+    assert!(
+        suppressed["checks"][0]["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("may hide usage")
+    );
+    assert_eq!(suppressed["checks"][1]["execution"]["status"], "blocked");
+    let declared = DEPENDENCY.replace("</dependencies>","<dependency><groupId>org.hamcrest</groupId><artifactId>hamcrest-core</artifactId><version>1.3</version><scope>test</scope></dependency></dependencies>");
+    std::fs::write(root.join("pom.xml"), model(&declared)).unwrap();
+    let repaired = run(root, 0);
+    assert_eq!(
+        repaired["checks"][0]["metadata"]["projects"][0]["dependency_usage"]["compiled_main_sources"],
+        1
+    );
+    assert_eq!(repaired["checks"][1]["verdict"], "pass");
+    // Deleting the only provider also breaks compilation, which cannot erase the check.
+    std::fs::write(root.join("pom.xml"), model("")).unwrap();
+    let broken = run(root, 2);
+    assert_eq!(broken["checks"][1]["execution"]["status"], "blocked");
+}

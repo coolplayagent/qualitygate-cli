@@ -71,7 +71,7 @@ Maven producers require exit code zero, actual version probes and fresh bounded 
 
 Malformed, missing, mismatched or filtered outputs remain incomplete. Model and tree must agree on project identity and declared dependency versions/scopes; unsupported differences, including unresolved expressions or incompatible version-range representations, remain incomplete. Effective absolute source roots must stay inside the configured module and materialized repository. Extra roots added dynamically by plugins are not inferred: tests outside resolved test roots lack module evidence. Missing/ambiguous owners, foreign snapshots and unsupported ecosystems remain incomplete.
 
-This adapter implements Maven test dependency pairing and the dependency-direction rule below. Used-but-undeclared bytecode analysis, Gradle/Python project facts and compatibility integrations remain in [the ledger](implementation.md).
+This adapter implements Maven test dependency pairing, dependency directions and compiled dependency usage. Gradle/Python project facts and compatibility integrations remain in [the ledger](implementation.md).
 
 ## Module dependency boundaries
 
@@ -103,6 +103,66 @@ This rule uses `full` mode: it examines every configured module and can report e
 
 The rule checks dependency directions, not arbitrary method/package access. Existing architecture tools can supply their own check reports for those additional contracts. Analysis runs on a worker with a 30-second budget.
 
+## Used but undeclared Maven dependencies
+
+Enable `used-undeclared` with an explicit inventory of 1–256 module roots. Each prerequisite must produce that module's effective model, resolved tree and completed bytecode usage analysis:
+
+```yaml
+schema_version: 1
+rulesets: [lang-java]
+rules:
+  used-undeclared:
+    depends_on: [usage-facts]
+    parameters:
+      modules: ['.']
+checks:
+  - id: usage-facts
+    cwd: .
+    argv:
+      - mvn
+      - -B
+      - -ntp
+      - -N
+      - -Dverbose=false
+      - -DscriptableOutput=false
+      - -DoutputXML=false
+      - -DfailOnWarning=false
+      - -Dmdep.analyze.skip=false
+      - -Dmdep.analyze.excludedClasses=
+      - -Danalyzer=default
+      - -Dstyle.color=never
+      - clean
+      - test-compile
+      - org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom
+      - -Doutput=target/effective.xml
+      - org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree
+      - -DoutputType=json
+      - -DoutputFile=target/tree.json
+      - org.apache.maven.plugins:maven-dependency-plugin:3.8.1:analyze-only
+    timeout_seconds: 600
+    tools:
+      - {id: maven, argv: [mvn, --version]}
+      - {id: java, argv: [java, -version]}
+    projects:
+      - root: .
+        effective_pom: target/effective.xml
+        dependency_tree: target/tree.json
+        dependency_usage: true
+profiles:
+  quick:
+    include: [used-undeclared]
+```
+
+`dependency_usage` defaults to false, preserving existing facts producers. When true, each command covers one non-recursive module, with `cwd` equal to its root. Run `clean`, `test-compile`, model/tree generation, and the pinned analysis goal last. The displayed analysis properties are required and cannot have conflicting duplicates. Add your repository's trusted settings and tool inputs. Reactor artifacts must first be built from the same snapshot, as described above.
+
+The adapter consumes the actual captured stdout of the successful command. It recognizes the pinned plugin execution and complete analysis sections, cross-checks reported artifact coordinates against resolved/direct dependencies, and requires the logged main/test compilation counts to match snapshot Java source inventories. Empty logs, skipped analysis, unsupported plugin versions, truncated sections, missing compilation, failed builds and contradictory facts remain incomplete. Logs and normalized usage facts are retained with tool, command and snapshot evidence.
+
+The effective model cannot suppress usage findings with exclusions or a custom analyzer. Compiler source filters and output overrides that prevent complete source accounting are also rejected. Generated sources, additional source roots, alternate compiler logging and repositories without Java sources need further adapter support; this check does not silently accept their incomplete inventories.
+
+The rule examines all compiled Java sources in each configured module in `full` mode. Existing violations in unmodified manifests remain visible. Diagnostics identify the artifact, type, classifier, scope, manifest and producer, with a stable fingerprint independent of artifact version. Repair by declaring the actual dependency directly with the correct scope, or by removing its use and rebuilding. Unused declarations and test-scope suggestions from Maven establish analysis completion but are not violations of this rule.
+
+Maven's [analysis goal](https://maven.apache.org/plugins/maven-dependency-plugin/usage.html) uses bytecode, so reflection and runtime resource loading are outside its proof. The adapter's section/configuration contract is pinned to [Dependency Plugin 3.8.1 source](https://github.com/apache/maven-dependency-plugin/blob/maven-dependency-plugin-3.8.1/src/main/java/org/apache/maven/plugins/dependency/analyze/AbstractAnalyzeMojo.java). It does not infer dependency ownership from import spelling.
+
 ## Verification
 
 Parser and failure fixtures run in ordinary Rust suites. The independent `maven-project` CI job executes real Maven using an isolated temporary artifact repository:
@@ -111,4 +171,4 @@ Parser and failure fixtures run in ordinary Rust suites. The independent `maven-
 cargo test --locked --test maven -- --ignored --nocapture --test-threads=1
 ```
 
-`QUALITYGATE_TEST_MAVEN=/absolute/path/to/mvn` selects a local installation. These tests are explicitly ignored in toolchain-free Rust runs and required by the dedicated job; absence of Maven there fails. They verify pairing and a compiled two-module reactor: a forbidden direction fails, deleting only its dependency breaks compilation and blocks the consumer, and repairing the caller plus dependency passes. These controlled fixtures do not establish the real-repository pilot or human-review measurements of §9.2.
+`QUALITYGATE_TEST_MAVEN=/absolute/path/to/mvn` selects a local installation. These tests are explicitly ignored in toolchain-free Rust runs and required by the dedicated job; absence of Maven there fails. They verify pairing and a compiled two-module reactor: a forbidden direction fails, deleting only its dependency breaks compilation and blocks the consumer, and repairing the caller plus dependency passes. The usage fixture compiles code that uses a transitive Hamcrest dependency, requires its direct declaration, verifies the repair, and blocks after removing its only provider. These controlled fixtures do not establish the real-repository pilot or human-review measurements of §9.2.
