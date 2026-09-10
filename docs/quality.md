@@ -15,7 +15,7 @@ The independent `python-project` job uses Python 3.12/pip 26.0.1 to run real ins
 
 ```bash
 cargo test --locked --lib --bins --all-features
-cargo test --locked --test cli --test custom_rules --test merge_request --test execution --all-features
+cargo test --locked --test cli --test custom_rules --test merge_request --test execution --test init --all-features
 cargo test --locked --test quality --all-features
 cargo test --locked --test benchmarks --all-features
 cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90
@@ -24,3 +24,5 @@ cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90
 Workflow presence is not evidence that a gate passed. Actual results, coverage measurements and remaining work are recorded in [implementation.md](implementation.md).
 
 The [architecture and documentation contract](architecture.md) describes the production owner graph, source-digest evidence, Markdown anchor validation and their limits. Architecture and documentation continue to run as distinct CI jobs and together in the local `quality` check.
+
+The Rust integration job and local integration check include `tests/init.rs`. Its temporary Cargo project executes a generated candidate, reports a real failed assertion, passes after repair, and rejects a zero-test result. The repository-owned fixture and initialization implementation are Rust.

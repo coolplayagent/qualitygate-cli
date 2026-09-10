@@ -22,6 +22,7 @@ path = "src/qualitygate/main.rs"
 anyhow = "1"
 clap = { version = "4.6", features = ["derive"] }
 globset = "0.4"
+ignore = "0.4.33"
 process-wrap = { version = "9.1", features = ["tokio1"] }
 regex = "1"
 roxmltree = "0.21"

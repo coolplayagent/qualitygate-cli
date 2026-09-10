@@ -36,7 +36,11 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Discover the repository and create a candidate policy without overwriting.
-    Init,
+    Init {
+        /// Include structurally complete command suggestions in a new candidate.
+        #[arg(long)]
+        with_checks: bool,
+    },
     /// Execute policy and acceptance checks against a selected Git snapshot.
     Check(CheckArgs),
     /// Inspect available rules or enable a local candidate rule.
@@ -93,14 +97,15 @@ impl Cli {
             .canonicalize()
             .context("Repository root does not exist")?;
         match self.command {
-            Command::Init => {
+            Command::Init { with_checks } => {
                 let path = self.config.clone();
-                let config =
-                    tokio::task::spawn_blocking(move || config::init_at(&root, path.as_ref()))
-                        .await??;
+                let initialized = tokio::task::spawn_blocking(move || {
+                    config::initialize_at(&root, path.as_ref(), with_checks)
+                })
+                .await??;
                 Ok((
                     super::render::metadata(
-                        &serde_json::json!({"schema_version":1,"source":self.config,"config":config,"status":"candidate","message":"Review the discovered candidate policy before enforcing it"}),
+                        &serde_json::json!({"schema_version":1,"source":self.config,"config":initialized.config,"discovery":initialized.discovery,"created":initialized.created,"with_checks_applied":initialized.with_checks_applied,"status":"candidate","message":"Review candidate checks, report requirements and capability gaps before enforcing this policy"}),
                         self.format,
                     )?,
                     0,

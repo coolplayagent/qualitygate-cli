@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     ops::ControlFlow,
-    path::Path,
     time::{Duration, Instant},
 };
 use tree_sitter::{Language, Node, ParseOptions, Parser};
@@ -45,15 +44,7 @@ pub struct Structure {
 }
 
 pub fn language(path: &str) -> Option<&'static str> {
-    match Path::new(path).extension()?.to_str()? {
-        "java" => Some("java"),
-        "py" => Some("python"),
-        "ts" | "tsx" | "js" | "jsx" | "mjs" | "cjs" => Some("typescript"),
-        "go" => Some("go"),
-        "rs" => Some("rust"),
-        "sh" | "bash" => Some("shell"),
-        _ => None,
-    }
+    crate::domain::language::for_path(path).map(|language| language.name)
 }
 
 pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {

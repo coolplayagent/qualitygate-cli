@@ -4,11 +4,14 @@ mod builtin_validation;
 pub mod catalog;
 mod constraints;
 mod custom_validation;
+pub mod discovery;
+mod initialization;
 mod model;
 mod plan;
 pub mod project_rules;
 mod python;
 mod validation;
+pub use initialization::{Initialization, initialize_at};
 pub use model::*;
 pub use plan::{Plan, parse_task};
 
@@ -46,35 +49,7 @@ pub fn init(root: &Path) -> Result<Config> {
 }
 
 pub fn init_at(root: &Path, configuration: &Path) -> Result<Config> {
-    use std::io::Write;
-    let path = crate::paths::confined(root, configuration)?;
-    if path.exists() {
-        return read(root, configuration);
-    }
-    let mut config = Config::default();
-    for (manifest, language) in [
-        ("Cargo.toml", "rust"),
-        ("pom.xml", "java"),
-        ("pyproject.toml", "python"),
-        ("requirements.txt", "python"),
-        ("package.json", "typescript"),
-        ("go.mod", "go"),
-    ] {
-        if root.join(manifest).is_file() && !config.languages.iter().any(|value| value == language)
-        {
-            config.languages.push(language.into());
-        }
-    }
-    config
-        .rules
-        .insert("line-ending".into(), RuleSetting::default());
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?;
-    file.write_all(serde_norway::to_string(&config)?.as_bytes())?;
-    file.sync_all()?;
-    Ok(config)
+    Ok(initialize_at(root, configuration, false)?.config)
 }
 
 /// Enables a candidate rule without changing the policy trust decision.

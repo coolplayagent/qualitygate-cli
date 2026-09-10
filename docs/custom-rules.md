@@ -1,5 +1,7 @@
 # Custom rule protocol, version 1
 
+Syntax applicability uses the same [capability descriptions as initialization](init.md#discovery-output). Unsupported capabilities remain incomplete even when no entity matches; Shell currently supplies comments, not project imports or test methods.
+
 Rule definitions are loaded from the **selected policy snapshot**. Staged checks read staged definitions; commit comparisons read the chosen commit. `--policy-ref` selects definitions from the caller-supplied policy reference and reports changes to candidate rule files. The caller remains responsible for establishing that reference's trust.
 
 ## Packages and activation

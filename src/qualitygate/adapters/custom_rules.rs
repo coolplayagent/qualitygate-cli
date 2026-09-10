@@ -20,6 +20,21 @@ struct Subject {
     triggered: bool,
 }
 
+fn require_syntax_capabilities(language: &str, capabilities: &[String]) -> Result<()> {
+    let descriptor = crate::domain::language::named(language)
+        .ok_or_else(|| anyhow::anyhow!("Syntax capability unavailable for language: {language}"))?;
+    for capability in capabilities {
+        if ["test_methods", "annotations", "comments", "imports"].contains(&capability.as_str())
+            && !descriptor
+                .syntax_capabilities
+                .contains(&capability.as_str())
+        {
+            bail!("{capability} capability unavailable for {language}");
+        }
+    }
+    Ok(())
+}
+
 pub fn evaluate(rule: &CustomRule, setting: &RuleSetting, snapshot: &Snapshot) -> CheckResult {
     evaluate_with_projects(rule, setting, snapshot, &[])
 }
@@ -46,9 +61,7 @@ fn run(
     result: &mut CheckResult,
 ) -> Result<()> {
     for language in &rule.language {
-        if !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str()) {
-            bail!("Syntax capability unavailable for language: {language}");
-        }
+        require_syntax_capabilities(language, &rule.requires_capabilities)?;
     }
     if let Some(capability) = rule
         .requires_capabilities
@@ -364,24 +377,7 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
         if started.elapsed().as_secs() >= 30 {
             bail!("Marker retention exceeds analysis budget");
         }
-        if rule
-            .requires_capabilities
-            .iter()
-            .any(|value| value == "annotations")
-            && !["java", "python", "rust"].contains(&file.view.language.as_str())
-        {
-            bail!(
-                "annotations capability unavailable for {} in {}",
-                file.view.language,
-                file.path
-            );
-        }
-        if rule.when.entity == "test_method" && file.view.language == "shell" {
-            bail!(
-                "test_methods capability unavailable for shell in {}",
-                file.path
-            );
-        }
+        require_syntax_capabilities(&file.view.language, &rule.requires_capabilities)?;
         match rule.when.entity.as_str() {
             "test_method" => {
                 let bytes = &snapshot.files[&file.path].bytes;

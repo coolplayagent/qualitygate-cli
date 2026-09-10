@@ -1,6 +1,7 @@
 //! Pure, I/O-free gate contracts, shared by CLI, rules and execution adapters.
 
 mod gate;
+pub mod language;
 mod project;
 mod report;
 

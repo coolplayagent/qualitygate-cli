@@ -353,6 +353,8 @@ fn capability_gaps_and_ai_only_scope_are_incomplete_even_without_matching_entiti
     policy(root, "");
     for body in [
         "language: [ruby]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method}\nthen: {name_pattern: ok}",
+        "language: [shell]\nrequires_capabilities: [imports]\nwhen: {entity: import}\nthen: {forbid_pattern: unsafe}",
+        "language: [shell]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method}\nthen: {name_pattern: ok}",
         "language: [java]\nrequires_capabilities: [test_methods, dependency_resolution]\nwhen: {entity: test_method}\nthen: {require_dependency: {group: example, artifact: declarations}}",
         "language: [python]\nrequires_capabilities: [test_methods, comments]\napplies_to: {provenance_scope: ai_only}\nbinding: {marker: {type: comment, name: '@generated'}}\nwhen: {entity: test_method}\nthen: {require_marker: true}",
     ] {
@@ -360,6 +362,18 @@ fn capability_gaps_and_ai_only_scope_are_incomplete_even_without_matching_entiti
         let blocked = check(root, 2);
         assert_eq!(blocked["checks"][0]["verdict"], serde_json::Value::Null);
     }
+    std::fs::write(root.join("run.sh"), "source other.sh\n").unwrap();
+    definition(
+        root,
+        "requires_capabilities: [imports]\nwhen: {entity: import}\nthen: {forbid_pattern: unsafe}",
+    );
+    let blocked = check(root, 2);
+    assert!(
+        blocked["checks"][0]["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("imports capability unavailable for shell")
+    );
 }
 
 #[test]
