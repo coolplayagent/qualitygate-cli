@@ -7,7 +7,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | §1–2 harness boundaries, strict results and exit codes | `domain/gate.rs`, gate truth-table tests and CLI 0/1/2 scenarios | Core verified; delivery audit pending |
 | §3.1 source declarations, matching dependencies, naming, parameterization, comments, line endings, commits, imports and module boundaries | Syntax rules, Maven effective-model/tree pairing, marker retention, compiled undeclared dependency usage and module dependency directions | Partial: additional ecosystems and access boundaries remain |
 | §3.2 build commands, compilation, tests, static analysis, coverage, compatibility | Bounded command runner; version probes; validated baseline exit codes, tool identities and inputs; JUnit, Checkstyle, SpotBugs, PMD, SARIF, LCOV, Cobertura, JaCoCo and generic JSON parsers | Partial: ecosystem compatibility integrations and final invariants remain |
-| §3.3–3.4 profiles, task contracts, repair feedback and manual evidence | `config/plan.rs`, actual command execution and task/profile CLI scenarios | Partial: manual acceptance and stronger trust validation remain |
+| §3.3–3.4 profiles, task contracts, repair feedback and manual evidence | `config/plan.rs`, actual command execution, task/profile CLI scenarios and signed external manual decisions | Manual acceptance added with snapshot/policy/task binding, authorization, expiry, revocation and revalidation; broader trust audit remains |
 | §3.5 commit, staged, worktree and path snapshots; all increment modes | Snapshot/baseline CLI fixtures; report-gate tests for changed lines, multiplicity, renamed files and affected unmodified sources; coverage omission/branch repair CLI loop | Core modes verified; project impact and full evidence lifecycle audit remain |
 | §4–5 syntax/project/tool adapter ownership and multiple languages | Six syntax adapters; Maven facts and Python installation/metadata facts; language-plus-module test routing | Maven/Python pairing implemented; real-repository second-ecosystem audit and further semantics pending |
 | §6.1–6.2 rule packages and custom DSL | Embedded packages, snapshot-bound custom loading, source/definition evidence, rule/command DAG and Maven/Python dependency assertions | Syntax/Git/file DSL and two-ecosystem pairing implemented; broader semantics and external provenance remain |
@@ -20,7 +20,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | §9.1 acceptance scenarios | Requirement-specific unit/integration suites | Pending |
 | §9.2 pilot measurement and actual repair loop | Reproducible pilot protocol, run evidence, agreed acceptance measurements | Pending |
 | §10 rollout and stable extensibility | Complete implementation and compatibility fixtures | Pending |
-| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | All 17 CI jobs passed for `c69aad5`; strengthened harness revision verification below |
+| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | All 17 CI jobs passed for `5077f62`; later revisions require their own verification |
 
 Reference inspected: `/opt/workspace/relay-knowledge`, including `Cargo.toml`, `.github/workflows/code_quality.yml`, `.github/workflows/pr-checks.yml`, and its architecture constraints. The reference has unrelated local changes and is read-only for this task. Its available committed graph is pinned to `a6a0c8a9ed7518534e1fd0e49f079b73d179764b`; its newer indexing task is retrying, so current workflow details are checked directly against files.
 
@@ -124,11 +124,23 @@ Self-hosted `target/debug/qualitygate check --worktree --profile full --output-d
 
 A final linked-worktree regression uses a real temporary Git worktree to verify candidate creation, language discovery, unchanged shared metadata and independent policy location. Discovery excludes the `.git` metadata file as well as directories, avoiding a reserved-path failure in linked worktrees.
 
+## Manual acceptance implementation
+
+[CI run 34424992409](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34424992409), for `5077f62e448b5b3dab6274acc649efebdc592a5d`, completed successfully in all 17 jobs, including native platforms, live Maven/Python, Miri, ASan, coverage and packaging.
+
+Manual checks now verify external Ed25519 DSSE decisions using a caller-controlled trust store. Records bind repository identity, the complete snapshot/comparison, policy and task digests, check ID and acceptance ID. Signer scopes, expiration and revocation are enforced; valid rejection is a violation, while unverified evidence remains incomplete. Bounded external inputs are captured before commands and revalidated before publication. Original envelope/trust artifacts remain reviewable. [The protocol](manual-acceptance.md) documents the producer and trust boundaries.
+
+Rust fixtures cover authenticated approval/rejection, dependent execution, byte tampering, unsigned payloads, foreign subjects, expiry, revocation, explicit repository authorization, malformed/oversized/symlink inputs, and code-change/reapproval. Temporary Rust commands prove that changing trust inputs or reaching an approval's expiry during later execution invalidates the result.
+
+The revision passed **166 ordinary tests** (101 library, nine core CLI, 14 custom-rule CLI, 14 execution CLI, four initialization CLI, six manual acceptance CLI, seven MR CLI, ten quality and one benchmark). Formatting, compilation and Clippy with warnings denied passed. Final full coverage passed at **93.45% lines** (8,185 lines, 536 missed); output is `target/verification-manual-coverage-final.txt`. The six manual acceptance scenarios passed together under coverage in 9.44 seconds, including expiration at the completion boundary. The production ownership graph covers 70 source files with no violations. Three Maven and one Python live tests remain separate CI gates; this revision still requires its own remote confirmation.
+
+Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-manual --format json` passed all seven checks, with no violations or incomplete results. Evidence is `target/self-manual/run-JEo8Ww/report.json`, bound to `sha256:c8f619128de7abe9eae941897065e82c164793e1b8c9990900058cd0052eba75` (commit `5077f62` plus this implementation, before this evidence note). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 138 files; output is `target/verification-manual-package.txt`.
+
 ## Remaining implementation and audit work
 
 - Complete the semantic and external-provenance capabilities used by custom DSL assertions; audit protocol migration against real second-ecosystem evidence.
 - Extend Maven pairing, bytecode usage and module dependency directions to further ecosystems; implement additional package/access boundaries and interface compatibility integrations.
-- Complete trusted external manual acceptance and agent-run provenance, including the association between a declaration and the actual changed entity/commit.
+- Complete agent-run provenance, including the association between a declaration and the actual changed entity/commit; audit deployment of the manual acceptance trust boundary with real external review services.
 - Audit live-provider MR compatibility beyond the controlled HTTP/Git fixtures; retain bounded network access, immutable comparisons and local checkout preservation.
 - Audit trusted strategy updates and verification asset coverage. Source hashing now rejects duplicate/code-only headings; catalog/settings/engine versions participate in rule digests; candidate commands respect selected configuration paths and output formats.
 - Finish coverage-tool compatibility and SARIF/baseline execution validation. Explicit coverage inventories now reject omitted source files, duplicate mapped lines and missing branch evidence; LCOV section counters and branch identity merges are tested, and empty executable scopes use null rates.

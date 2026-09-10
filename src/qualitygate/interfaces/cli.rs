@@ -42,7 +42,7 @@ enum Command {
         with_checks: bool,
     },
     /// Execute policy and acceptance checks against a selected Git snapshot.
-    Check(CheckArgs),
+    Check(Box<CheckArgs>),
     /// Inspect available rules or enable a local candidate rule.
     Rules {
         #[command(subcommand)]
@@ -86,6 +86,12 @@ struct CheckArgs {
     policy_ref: Option<String>,
     #[arg(long)]
     output_dir: Option<PathBuf>,
+    /// Caller-controlled JSON trust store outside the repository.
+    #[arg(long, requires = "evidence_dir")]
+    trust_store: Option<PathBuf>,
+    /// Directory containing signed acceptance records, outside the repository.
+    #[arg(long, requires = "trust_store")]
+    evidence_dir: Option<PathBuf>,
     #[arg(long, value_enum)]
     severity: Option<Severity>,
 }
@@ -165,6 +171,8 @@ impl Cli {
                     task: args.task,
                     policy_ref: args.policy_ref,
                     output_dir: args.output_dir,
+                    trust_store: args.trust_store,
+                    evidence_dir: args.evidence_dir,
                 };
                 let report = application::check(options).await?;
                 let code = report.gate.decision.exit_code();

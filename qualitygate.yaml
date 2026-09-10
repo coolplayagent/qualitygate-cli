@@ -37,7 +37,7 @@ checks:
     depends_on: [check]
   - id: integration
     kind: command
-    argv: [cargo, test, --locked, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --test, init, --all-features]
+    argv: [cargo, test, --locked, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --test, init, --test, manual, --all-features]
     tools:
       - {id: cargo, argv: [cargo, --version]}
       - {id: rustc, argv: [rustc, --version, --verbose]}

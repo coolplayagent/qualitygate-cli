@@ -37,6 +37,25 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         {
             bail!("Command {} needs nonempty argv", check.id);
         }
+        if let Some(path) = &check.evidence_file
+            && (check.kind != CheckKind::Manual
+                || path.is_empty()
+                || crate::paths::relative(Path::new(path))? != *path)
+        {
+            bail!("evidence_file requires a manual check and a normalized relative file path");
+        }
+        if check.kind == CheckKind::Manual
+            && (!check.argv.is_empty()
+                || !check.tools.is_empty()
+                || !check.reports.is_empty()
+                || !check.projects.is_empty()
+                || !check.required_args.is_empty()
+                || !check.findings_exit_codes.is_empty()
+                || check.expected_exit_code != 0
+                || check.cwd != ".")
+        {
+            bail!("Manual checks consume signed records, not command execution fields");
+        }
         if check.timeout_seconds == 0 || check.timeout_seconds > 86_400 {
             bail!("Check {} timeout_seconds must be 1..86400", check.id);
         }

@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --test cli --test custom_rules --test merge_request --test execution --test init --all-features
+            command: cargo test --locked --test cli --test custom_rules --test merge_request --test execution --test init --test manual --all-features
           - gate: documentation
             command: cargo test --locked --test quality documentation --all-features
           - gate: architecture

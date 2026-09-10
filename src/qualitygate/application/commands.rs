@@ -1,8 +1,5 @@
 use crate::{
-    adapters::rules::diagnostic,
-    config::{CheckKind, CommandCheck},
-    domain::*,
-    paths, runner, snapshot,
+    adapters::rules::diagnostic, config::CommandCheck, domain::*, paths, runner, snapshot,
 };
 use std::{path::Path, sync::Arc, time::Duration};
 
@@ -55,13 +52,6 @@ async fn execute_checked(
     result.applicability = Applicability::Applicable;
     result.execution.argv = check.argv.clone();
     result.execution.cwd = Some(check.cwd.clone());
-    if check.kind == CheckKind::Manual {
-        result.block(
-            ExecutionStatus::Blocked,
-            "Manual acceptance requires a verified external record",
-        );
-        return result;
-    }
     let cwd = match paths::confined(workspace, Path::new(&check.cwd)) {
         Ok(path) => path,
         Err(error) => {

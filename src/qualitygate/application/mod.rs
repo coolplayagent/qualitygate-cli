@@ -4,6 +4,7 @@ mod commands;
 mod coverage_gate;
 mod evidence;
 mod generated_reports;
+mod manual;
 mod policy;
 mod project_reports;
 mod python_install;
@@ -30,6 +31,8 @@ pub struct CheckOptions {
     pub task: Option<String>,
     pub policy_ref: Option<String>,
     pub output_dir: Option<PathBuf>,
+    pub trust_store: Option<PathBuf>,
+    pub evidence_dir: Option<PathBuf>,
 }
 
 pub async fn check(options: CheckOptions) -> Result<Report> {
@@ -56,6 +59,32 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .transpose()?;
     policy.task_contract_digest = task_bytes.map(|file| snapshot::digest(&file.bytes));
     let plan = Plan::build(&config, task.as_ref(), &options.profile)?;
+    let external = match (&options.trust_store, &options.evidence_dir) {
+        (Some(store), Some(directory)) => {
+            let (root, store, directory, checks) = (
+                options.root.clone(),
+                store.clone(),
+                directory.clone(),
+                plan.commands.clone(),
+            );
+            match tokio::task::spawn_blocking(move || {
+                manual::load(&root, &store, &directory, &checks)
+            })
+            .await?
+            {
+                Ok(inputs) => Some(Arc::new(inputs)),
+                Err(error) => {
+                    invalid.push(format!("External acceptance inputs are invalid: {error:#}"));
+                    None
+                }
+            }
+        }
+        (None, None) => None,
+        _ => {
+            invalid.push("External acceptance requires both trust_store and evidence_dir".into());
+            None
+        }
+    };
     let directory = crate::paths::run_directory(options.output_dir.as_deref())?;
     let run_id = directory
         .file_name()
@@ -63,7 +92,12 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .to_string_lossy()
         .to_string();
     let mut results: Vec<CheckResult> = Vec::new();
-    let workspace = if !plan.commands.is_empty() && invalid.is_empty() {
+    let workspace = if plan
+        .commands
+        .iter()
+        .any(|check| check.kind == config::CheckKind::Command)
+        && invalid.is_empty()
+    {
         Some(snapshot::materialize(&snapshot).await?)
     } else {
         None
@@ -98,6 +132,19 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
             result
         } else if let Some(rule) = rule {
             rule_execution::execute(id, rule, &catalog.entries[id], &snapshot, &results).await?
+        } else if let Some(command) = command
+            && command.kind == config::CheckKind::Manual
+            && invalid.is_empty()
+        {
+            manual::execute(
+                command,
+                &plan,
+                &snapshot,
+                &policy,
+                external.as_ref(),
+                &directory,
+            )
+            .await
         } else if let (Some(command), Some(workspace), Some(inputs)) =
             (command, &workspace, &input_guard)
         {
@@ -126,6 +173,23 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         && let Err(error) = inputs.verify().await
     {
         invalid.push(format!("Execution inputs are invalid: {error:#}"));
+    }
+    if let Some(external) = external
+        && let Err(error) =
+            manual::revalidate(external, &plan, &snapshot, &policy, &mut results).await
+    {
+        invalid.push(format!(
+            "External acceptance evidence is invalid: {error:#}"
+        ));
+        for result in &mut results {
+            if result.metadata.contains_key("manual_acceptance") {
+                result.block(ExecutionStatus::Blocked, format!("External acceptance evidence changed or could not be revalidated: {error:#}"));
+                result
+                    .metadata
+                    .get_mut("manual_acceptance")
+                    .expect("manual evidence")["valid_at_completion"] = serde_json::json!(false);
+            }
+        }
     }
     match snapshot::capture(&options.root, &options.selection).await {
         Ok(current)
@@ -222,6 +286,12 @@ fn recheck(options: &CheckOptions, base: &str) -> Vec<String> {
     }
     if let Some(reference) = &options.policy_ref {
         argv.extend(["--policy-ref".into(), reference.clone()]);
+    }
+    if let Some(path) = &options.trust_store {
+        argv.extend(["--trust-store".into(), path.display().to_string()]);
+    }
+    if let Some(path) = &options.evidence_dir {
+        argv.extend(["--evidence-dir".into(), path.display().to_string()]);
     }
     argv
 }
