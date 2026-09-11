@@ -5,14 +5,26 @@ use crate::{config::Marker, snapshot::Snapshot};
 use anyhow::{Result, bail};
 use std::collections::BTreeMap;
 
-pub(super) fn declaration(
+pub(super) fn bound_declaration(
     marker: &Marker,
     entity: &Entity,
     view: &Structure,
     path: &str,
     snapshot: &Snapshot,
+    baseline: bool,
+    git: Option<&super::git_trailers::GitFacts>,
 ) -> Result<Option<String>> {
-    from_source(marker, entity, view, &snapshot.files[path].bytes)
+    if marker.kind == "git_trailer" {
+        return git
+            .ok_or_else(|| anyhow::anyhow!("Verified commit-to-entity facts are unavailable"))?
+            .declaration(marker, path, entity, baseline);
+    }
+    let files = if baseline {
+        &snapshot.base_files
+    } else {
+        &snapshot.files
+    };
+    from_source(marker, entity, view, &files[path].bytes)
 }
 
 pub(super) fn from_source(

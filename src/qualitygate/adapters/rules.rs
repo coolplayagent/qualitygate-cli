@@ -61,6 +61,27 @@ pub fn evaluate_with_facts(
     projects: &[ProjectFacts],
     provenance: Option<&super::provenance::ProvenanceFacts>,
 ) -> CheckResult {
+    evaluate_with_context(
+        id,
+        implementation,
+        setting,
+        snapshot,
+        &super::facts::RuleFacts {
+            projects,
+            provenance,
+            git_trailers: None,
+        },
+    )
+}
+
+pub fn evaluate_with_context(
+    id: &str,
+    implementation: &str,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    facts: &super::facts::RuleFacts<'_>,
+) -> CheckResult {
+    let (projects, provenance) = (facts.projects, facts.provenance);
     let mut result = CheckResult::pending(id, setting.required, setting.severity);
     let evaluation = (|| -> Result<()> {
         if let Some(facts) = provenance {
@@ -68,6 +89,12 @@ pub fn evaluate_with_facts(
         }
         if setting.provenance.is_some() && provenance.is_none() {
             bail!("Configured provenance evidence is unavailable");
+        }
+        if let Some(git) = facts.git_trailers {
+            git.ensure_binding(snapshot)?;
+            result
+                .metadata
+                .insert("git_trailers".into(), git.evidence().clone());
         }
         match implementation {
             "line-ending" => {
@@ -88,7 +115,7 @@ pub fn evaluate_with_facts(
                     &mut result,
                     setting,
                     snapshot,
-                    provenance,
+                    facts,
                 )
             }
             _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),

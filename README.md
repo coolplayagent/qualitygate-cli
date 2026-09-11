@@ -20,6 +20,7 @@ See [quality gates](docs/quality.md) for CI, coverage and deep verification.
 See [initialization](docs/init.md) for nested project discovery, capability gaps and command suggestions.
 See [manual acceptance](docs/manual-acceptance.md) for signed review records and caller-controlled trust.
 See [agent-run provenance](docs/provenance.md) for authenticated transformation histories and AI-only test scope.
+See [Git trailer bindings](docs/git-trailers.md) for declarations associated with actual test-changing commits.
 See [tool reports](docs/reports.md) for test counts, coverage, analyzer output and incremental comparison.
 See [built-in rules](docs/rules.md) for language adapters and team-specific configuration.
 See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.

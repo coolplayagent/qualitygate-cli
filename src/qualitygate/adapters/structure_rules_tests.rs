@@ -93,7 +93,7 @@ fn source_declarations_require_explicit_binding_and_nonempty_fields() {
 }
 
 #[test]
-fn unknown_ai_scope_and_trailers_for_uncommitted_changes_are_incomplete() {
+fn ai_scope_and_trailer_binding_without_verified_facts_are_incomplete() {
     let input = snapshot("test_x.py", None, "def test_x():\n    pass\n");
     let scope = run(
         "ai-code-traceability",

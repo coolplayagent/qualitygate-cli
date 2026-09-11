@@ -2,6 +2,7 @@
 
 mod changes;
 mod git;
+pub mod history;
 mod input_guard;
 mod merge_request;
 pub use changes::{Change, compare as compare_files};

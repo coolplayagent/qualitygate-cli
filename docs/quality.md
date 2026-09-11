@@ -15,7 +15,7 @@ The independent `python-project` job uses Python 3.12/pip 26.0.1 to run real ins
 
 ```bash
 cargo test --locked --lib --bins --all-features
-cargo test --locked --test cli --test custom_rules --test merge_request --test execution --test init --test manual --test provenance --all-features
+cargo test --locked --test cli --test custom_rules --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --all-features
 cargo test --locked --test quality --all-features
 cargo test --locked --test benchmarks --all-features
 cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90
@@ -30,3 +30,5 @@ The Rust integration job and local integration check include `tests/init.rs`. It
 `tests/manual.rs` signs external review records in Rust, verifies approval/rejection and task bindings, repairs stale approvals after code changes, and executes a temporary Rust command that changes external trust inputs during a check. The gate must reject that changed evidence while retaining the original artifacts.
 
 `tests/provenance.rs` signs complete run histories and verifies mixed human/agent edits, declaration retention, Python/Java entities, file moves, staged snapshots, omitted steps, unauthorized signers, revocation and tampering. A temporary Rust command proves that record mutation and expiry after initial verification prevent gate completion. Adapter tests exercise ambiguous lineage and malformed intermediate syntax.
+
+`tests/git_trailers.rs` creates real Git histories to verify trailer/entity association across unrelated edits, moves, copies, staged/worktree differences, merges and conflict resolution. It rejects ambiguous trailers and shallow ancestry and confirms replacement refs cannot rewrite snapshot evidence. The provenance suite also exercises the combination of signed AI-only scope and commit-level declarations.

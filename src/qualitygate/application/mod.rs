@@ -5,6 +5,7 @@ mod coverage_gate;
 mod evidence;
 mod external;
 mod generated_reports;
+mod git_trailers;
 mod manual;
 mod policy;
 mod project_reports;
@@ -61,6 +62,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .transpose()?;
     policy.task_contract_digest = task_bytes.map(|file| snapshot::digest(&file.bytes));
     let plan = Plan::build(&config, task.as_ref(), &options.profile)?;
+    let git_facts = git_trailers::load(&plan, &catalog, &snapshot).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
         (Some(store), Some(directory)) => {
             let (root, store, directory, requests) = (
@@ -153,6 +155,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
                         &snapshot,
                         &results,
                         proof.as_ref().map(|proof| &proof.facts),
+                        git_facts.as_ref(),
                     )
                     .await?;
                     if let Some(proof) = proof {

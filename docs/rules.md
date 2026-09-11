@@ -8,7 +8,7 @@ The current syntax adapters parse Java/JUnit, Python/pytest, TypeScript/Jest or 
 
 `comment-language` requires `parameters.language` to be `chinese`, `english`, or `bilingual`. It checks changed parsed comments, with `parameters.exempt_patterns` for terminology and code fragments. Language classification is a documented heuristic and defaults to warning severity.
 
-`ai-code-traceability` requires an explicit `parameters.marker` binding with `type`, `name`, and optional `fields`. It checks declaration presence and fields. The default scope is all added tests; existing annotation/comment declarations retain their obligations. `parameters.provenance_scope: ai_only` selects agent-participating additions using [signed external run records](provenance.md). Missing scope evidence remains incomplete. Commit-to-entity trailer association remains pending; a range-level trailer cannot substitute for a declaration on an unrelated test.
+`ai-code-traceability` requires an explicit `parameters.marker` binding with `type`, `name`, and optional `fields`. It checks declaration presence and fields. The default scope is all added tests; existing declarations retain their obligations. `parameters.provenance_scope: ai_only` selects agent-participating additions using [signed external run records](provenance.md). Missing scope evidence remains incomplete. [Git trailer bindings](git-trailers.md) associate declarations with actual entity-changing commits; uncommitted edits cannot borrow old trailers.
 
 ```yaml
 schema_version: 1

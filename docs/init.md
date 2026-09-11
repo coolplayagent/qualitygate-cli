@@ -25,7 +25,7 @@ JSON retains `schema_version`, `source`, `config` and `status: candidate`, addin
 | `suggested_checks` | Copyable command configuration, purpose, source, review requirements and adoption status |
 | `gaps` | Unsupported metadata/languages, missing project-fact configuration, missing test/report conventions and provenance limits |
 
-Metadata inspection derives suggestions; native build tools must validate actual projects. Maven/Python dependency capabilities still require successful facts producers. Marker options describe declarations; AI-only scope needs separately configured [trusted run records](provenance.md), which discovery cannot generate. Commit-to-entity trailer attribution remains pending. The shared syntax table also controls runtime DSL applicability: required Shell imports/test-method assertions remain incomplete even when no entity matches.
+Metadata inspection derives suggestions; native build tools must validate actual projects. Maven/Python dependency capabilities still require successful facts producers. Marker options describe declarations; AI-only scope needs separately configured [trusted run records](provenance.md), which discovery cannot generate. [Git trailer bindings](git-trailers.md) additionally require complete local ancestry within the documented history budgets. The shared syntax table also controls runtime DSL applicability: required Shell imports/test-method assertions remain incomplete even when no entity matches.
 
 ## Suggested commands
 

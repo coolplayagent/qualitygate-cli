@@ -69,7 +69,7 @@ Producer helpers are `qualitygate::adapters::provenance::{PAYLOAD_TYPE, subject,
 
 Changed test entities inherit participation from matched predecessors. Same-path symbols are reserved before named cross-file moves and body matches; remaining copies are new entities. Human repairs and unambiguous moves preserve prior agent participation. Multiple possible predecessors make verification incomplete. Existing declarations retain their obligations, and present declarations still require valid fields, even outside the agent-triggered subset.
 
-Participation is relative to the comparison base. The CLI does not infer historical agent activity before that base. Supported test syntax follows the [language adapters](rules.md); changed supported-language files must parse at every recorded checkpoint. Malformed intermediate syntax prevents verification. A final passing snapshot cannot substitute for an unverifiable history. Commit-to-entity Git trailer association remains pending.
+Participation is relative to the comparison base. The CLI does not infer historical agent activity before that base. Supported test syntax follows the [language adapters](rules.md); changed supported-language files must parse at every recorded checkpoint. Malformed intermediate syntax prevents verification. A final passing snapshot cannot substitute for an unverifiable history. [Git trailer association](git-trailers.md) is a separate declaration binding that can be combined with authenticated AI-only scope.
 
 | Resource | Limit |
 |---|---|

@@ -353,6 +353,63 @@ fn mixed_language_replay_tracks_java_and_python_entities() {
 }
 
 #[test]
+fn signed_ai_scope_and_commit_trailer_binding_are_both_required() {
+    let mut fixture = Fixture::new();
+    let policy_path = fixture.root.path().join("qualitygate.yaml");
+    let policy = std::fs::read_to_string(&policy_path)
+        .unwrap()
+        .replace("type: comment", "type: git_trailer");
+    std::fs::write(policy_path, policy).unwrap();
+    let rule_path = fixture.root.path().join("rules/ai.yaml");
+    let rule = std::fs::read_to_string(&rule_path)
+        .unwrap()
+        .replace("test_methods, comments", "test_methods, commits")
+        .replace("type: comment", "type: git_trailer");
+    std::fs::write(rule_path, rule).unwrap();
+    git(fixture.root.path(), &["add", "."]);
+    git(fixture.root.path(), &["commit", "-qm", "bind Git trailers"]);
+    let initial = capture(fixture.root.path());
+    let base = initial.identity.head.clone();
+    fixture.history = vec![initial];
+    fixture.change(GENERATED, ActorKind::Agent);
+    fixture.change(MIXED, ActorKind::Human);
+    git(fixture.root.path(), &["add", "test_example.py"]);
+    git(
+        fixture.root.path(),
+        &["commit", "-qm", "mixed edits without declaration"],
+    );
+    let scope = ["--base", base.as_str()];
+    fixture.publish(&fixture.run(&scope, 2));
+    let failed = fixture.run(&scope, 1);
+    for id in IDS {
+        let check = fixture.check(&failed, id);
+        assert_eq!(check["diagnostics"].as_array().unwrap().len(), 1);
+        assert!(
+            check["diagnostics"][0]["evidence"]["symbol"]
+                .as_str()
+                .unwrap()
+                .contains("test_ai")
+        );
+        assert_eq!(
+            check["metadata"]["external_provenance"]["evidence"]["agent_test_entities"],
+            1
+        );
+        assert_eq!(check["metadata"]["git_trailers"]["declaration_only"], true);
+    }
+    git(
+        fixture.root.path(),
+        &[
+            "commit",
+            "--amend",
+            "-qm",
+            "mixed edits\n\nAI: author='agent'",
+        ],
+    );
+    fixture.publish(&fixture.run(&scope, 2));
+    fixture.run(&scope, 0);
+}
+
+#[test]
 fn provenance_must_remain_unchanged_and_unexpired_until_commands_finish() {
     let helper = tempfile::tempdir().unwrap();
     let source = helper.path().join("lifecycle.rs");

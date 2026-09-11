@@ -199,7 +199,7 @@ pub fn discover(root: &Path) -> Result<Discovery> {
     }
     result.gaps.push(Gap {
         path: ".".into(), capability: "external_provenance".into(),
-        reason: "Marker options describe declarations only; AI-only scope and commit-to-entity attribution require trusted external records".into(),
+        reason: "Marker options describe declarations only; AI-only scope needs signed external records, and git_trailer bindings need complete local Git ancestry".into(),
     });
     if result.projects.is_empty() {
         result.gaps.push(Gap { path: ".".into(), capability: "project_verification".into(), reason: "No recognized project manifest; configure existing build/test commands and their acceptance reports".into() });

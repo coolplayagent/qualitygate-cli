@@ -5,6 +5,7 @@ use std::{collections::BTreeMap, path::Path, time::Duration};
 pub async fn run_git(root: &Path, args: &[&str], input: Option<Vec<u8>>) -> Result<Vec<u8>> {
     let argv: Vec<String> = [
         "git",
+        "--no-replace-objects",
         "-c",
         "core.quotepath=false",
         "-c",

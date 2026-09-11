@@ -55,6 +55,25 @@ pub fn evaluate_with_facts(
     projects: &[ProjectFacts],
     provenance: Option<&super::provenance::ProvenanceFacts>,
 ) -> CheckResult {
+    evaluate_with_context(
+        rule,
+        setting,
+        snapshot,
+        &super::facts::RuleFacts {
+            projects,
+            provenance,
+            git_trailers: None,
+        },
+    )
+}
+
+pub fn evaluate_with_context(
+    rule: &CustomRule,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    facts: &super::facts::RuleFacts<'_>,
+) -> CheckResult {
+    let provenance = facts.provenance;
     let mut result = CheckResult::pending(&rule.id, setting.required, setting.severity);
     result.rule_version = rule.version;
     let evaluation = (|| -> Result<()> {
@@ -64,7 +83,13 @@ pub fn evaluate_with_facts(
         if setting.provenance.is_some() && provenance.is_none() {
             bail!("Configured provenance evidence is unavailable");
         }
-        run(rule, snapshot, projects, provenance, &mut result)
+        if let Some(git) = facts.git_trailers {
+            git.ensure_binding(snapshot)?;
+            result
+                .metadata
+                .insert("git_trailers".into(), git.evidence().clone());
+        }
+        run(rule, snapshot, facts, &mut result)
     })();
     match evaluation {
         Ok(()) => result.complete(),
@@ -76,10 +101,10 @@ pub fn evaluate_with_facts(
 fn run(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    projects: &[ProjectFacts],
-    provenance: Option<&super::provenance::ProvenanceFacts>,
+    facts: &super::facts::RuleFacts<'_>,
     result: &mut CheckResult,
 ) -> Result<()> {
+    let (projects, provenance) = (facts.projects, facts.provenance);
     for language in &rule.language {
         require_syntax_capabilities(language, &rule.requires_capabilities)?;
     }
@@ -98,6 +123,7 @@ fn run(
         .binding
         .as_ref()
         .is_some_and(|binding| binding.marker.kind == "git_trailer")
+        && facts.git_trailers.is_none()
     {
         bail!("Commit-to-entity provenance is required for git_trailer binding");
     }
@@ -111,7 +137,7 @@ fn run(
             "Required project capability unavailable: dependency_resolution; declare depends_on for a project facts command"
         );
     }
-    let subjects = subjects(rule, snapshot, provenance)?;
+    let subjects = subjects(rule, snapshot, facts)?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     result.matched_entities = subjects.len();
     result.metadata.insert(
@@ -204,7 +230,14 @@ fn run(
         }
     }
     if rule.then.require_dependency.is_some() {
-        dependencies(rule, snapshot, projects, &subjects, result)?;
+        dependencies(
+            rule,
+            snapshot,
+            projects,
+            &subjects,
+            result,
+            facts.git_trailers,
+        )?;
     }
     if let Some(maximum) = rule.then.max_count
         && triggered > maximum
@@ -231,6 +264,7 @@ fn dependencies(
     projects: &[ProjectFacts],
     subjects: &[Subject],
     result: &mut CheckResult,
+    git: Option<&super::git_trailers::GitFacts>,
 ) -> Result<()> {
     let required = rule
         .then
@@ -278,7 +312,17 @@ fn dependencies(
             }
             if let Some(view) = syntax::parse(path, &file.bytes)? {
                 for test in &view.tests {
-                    if markers::from_source(&binding.marker, test, &view, &file.bytes)?.is_some() {
+                    if markers::bound_declaration(
+                        &binding.marker,
+                        test,
+                        &view,
+                        path,
+                        snapshot,
+                        false,
+                        git,
+                    )?
+                    .is_some()
+                    {
                         selected.insert(
                             (path.clone(), test.symbol.clone()),
                             Some(test.range.clone()),
@@ -351,8 +395,9 @@ fn dependencies(
 fn subjects(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    provenance: Option<&super::provenance::ProvenanceFacts>,
+    facts: &super::facts::RuleFacts<'_>,
 ) -> Result<Vec<Subject>> {
+    let provenance = facts.provenance;
     let change = rule.when.change.as_deref().unwrap_or("added");
     if rule.when.entity == "commit" {
         return Ok(snapshot
@@ -428,11 +473,14 @@ fn subjects(
                                     .expect("previous supported syntax"),
                             );
                         }
-                        markers::from_source(
+                        markers::bound_declaration(
                             &binding.marker,
                             previous,
                             &previous_views[path],
-                            &snapshot.base_files[path].bytes,
+                            path,
+                            snapshot,
+                            true,
+                            facts.git_trailers,
                         )?
                         .is_some()
                     } else {
@@ -442,12 +490,14 @@ fn subjects(
                         .binding
                         .as_ref()
                         .map(|binding| {
-                            markers::declaration(
+                            markers::bound_declaration(
                                 &binding.marker,
                                 &test.entity,
                                 &file.view,
                                 &file.path,
                                 snapshot,
+                                false,
+                                facts.git_trailers,
                             )
                         })
                         .transpose()?

@@ -3,6 +3,8 @@
 pub mod attestation;
 pub mod custom_rules;
 mod entity_changes;
+pub mod facts;
+pub mod git_trailers;
 mod markers;
 pub mod maven;
 pub mod maven_usage;

@@ -21,19 +21,23 @@ pub(super) fn evaluate_with_provenance(
     result: &mut CheckResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    provenance: Option<&super::provenance::ProvenanceFacts>,
+    facts: &super::facts::RuleFacts<'_>,
 ) -> Result<()> {
-    let changes = collect(setting, snapshot)?;
+    let changes = collect(setting, snapshot, facts.git_trailers)?;
     match id {
         "test-naming" => naming(result, setting, &changes),
         "parameterized-tests" => parameterized(result, setting, &changes),
         "comment-language" => comments(result, setting, &changes, snapshot),
-        "ai-code-traceability" => markers(result, setting, &changes, snapshot, provenance),
+        "ai-code-traceability" => markers(result, setting, &changes, snapshot, facts),
         _ => bail!("Unknown structure rule: {id}"),
     }
 }
 
-fn collect(setting: &RuleSetting, snapshot: &Snapshot) -> Result<Vec<Change>> {
+fn collect(
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    git: Option<&super::git_trailers::GitFacts>,
+) -> Result<Vec<Change>> {
     let strings = |key: &str| -> Result<Vec<String>> {
         setting
             .parameters
@@ -63,11 +67,14 @@ fn collect(setting: &RuleSetting, snapshot: &Snapshot) -> Result<Vec<Change>> {
                                 .context("Previous syntax is unavailable")?,
                         );
                     }
-                    if super::markers::from_source(
+                    if super::markers::bound_declaration(
                         marker,
                         previous,
                         &previous_views[path],
-                        &snapshot.base_files[path].bytes,
+                        path,
+                        snapshot,
+                        true,
+                        git,
                     )?
                     .is_some()
                     {
@@ -253,8 +260,9 @@ fn markers(
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
-    provenance: Option<&super::provenance::ProvenanceFacts>,
+    facts: &super::facts::RuleFacts<'_>,
 ) -> Result<()> {
+    let provenance = facts.provenance;
     let marker = setting
         .parameters
         .get("marker")
@@ -268,7 +276,7 @@ fn markers(
     if scope != "all_added_tests" && provenance.is_none() {
         bail!("AI-only provenance scope requires a verified external execution record");
     }
-    if marker.kind == "git_trailer" {
+    if marker.kind == "git_trailer" && facts.git_trailers.is_none() {
         bail!("Commit-to-entity provenance is required for git_trailer binding");
     }
     let name = &marker.name;
@@ -279,8 +287,15 @@ fn markers(
             .map(|test| (test, false))
             .chain(change.removed_declarations.iter().map(|test| (test, true)))
         {
-            let declaration =
-                super::markers::declaration(&marker, test, &change.view, &change.path, snapshot)?;
+            let declaration = super::markers::bound_declaration(
+                &marker,
+                test,
+                &change.view,
+                &change.path,
+                snapshot,
+                false,
+                facts.git_trailers,
+            )?;
             if scope == "ai_only"
                 && !retained
                 && declaration.is_none()
