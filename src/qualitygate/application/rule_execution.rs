@@ -13,11 +13,13 @@ pub(super) async fn execute(
     entry: &Entry,
     snapshot: &Arc<Snapshot>,
     previous: &[CheckResult],
+    provenance: Option<&crate::adapters::provenance::ProvenanceFacts>,
 ) -> anyhow::Result<CheckResult> {
     let id = id.to_owned();
     let setting = setting.clone();
     let entry = entry.clone();
     let snapshot = Arc::clone(snapshot);
+    let provenance = provenance.cloned();
     let mut projects = Vec::new();
     for producer in previous
         .iter()
@@ -29,17 +31,22 @@ pub(super) async fn execute(
     }
     tokio::task::spawn_blocking(move || {
         let mut result = if let Some(rule) = &entry.custom {
-            crate::adapters::custom_rules::evaluate_with_projects(
-                rule, &setting, &snapshot, &projects,
+            crate::adapters::custom_rules::evaluate_with_facts(
+                rule,
+                &setting,
+                &snapshot,
+                &projects,
+                provenance.as_ref(),
             )
         } else {
             let builtin = entry.builtin.as_ref().expect("resolved builtin");
-            crate::adapters::rules::evaluate_with_projects(
+            crate::adapters::rules::evaluate_with_facts(
                 &id,
                 &builtin.implementation,
                 &setting,
                 &snapshot,
                 &projects,
+                provenance.as_ref(),
             )
         };
         result.rule_version = entry.version();

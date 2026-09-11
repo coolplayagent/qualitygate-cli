@@ -16,18 +16,19 @@ struct Change {
     removed_declarations: Vec<Entity>,
 }
 
-pub(super) fn evaluate(
+pub(super) fn evaluate_with_provenance(
     id: &str,
     result: &mut CheckResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
+    provenance: Option<&super::provenance::ProvenanceFacts>,
 ) -> Result<()> {
     let changes = collect(setting, snapshot)?;
     match id {
         "test-naming" => naming(result, setting, &changes),
         "parameterized-tests" => parameterized(result, setting, &changes),
         "comment-language" => comments(result, setting, &changes, snapshot),
-        "ai-code-traceability" => markers(result, setting, &changes, snapshot),
+        "ai-code-traceability" => markers(result, setting, &changes, snapshot, provenance),
         _ => bail!("Unknown structure rule: {id}"),
     }
 }
@@ -41,42 +42,55 @@ fn collect(setting: &RuleSetting, snapshot: &Snapshot) -> Result<Vec<Change>> {
             .transpose()
             .map(Option::unwrap_or_default)
     };
-    Ok(
+    let marker: Option<crate::config::Marker> = setting
+        .parameters
+        .get("marker")
+        .map(|value| serde_json::from_value(value.clone()))
+        .transpose()?;
+    let mut previous_views = BTreeMap::new();
+    let mut result = Vec::new();
+    for file in
         super::entity_changes::collect(snapshot, &strings("paths")?, &strings("languages")?)?
-            .into_iter()
-            .map(|file| {
-                let marker = setting
-                    .parameters
-                    .get("marker")
-                    .and_then(|marker| marker.get("name"))
-                    .and_then(serde_json::Value::as_str);
-                let removed_declarations = file
-                    .tests
-                    .iter()
-                    .filter(|test| {
-                        marker.is_some_and(|name| {
-                            test.previous
-                                .as_ref()
-                                .is_some_and(|previous| previous.annotations.contains_key(name))
-                                && !test.entity.annotations.contains_key(name)
-                        })
-                    })
-                    .map(|test| test.entity.clone())
-                    .collect();
-                Change {
-                    path: file.path,
-                    view: file.view,
-                    removed_declarations,
-                    added: file
-                        .tests
-                        .into_iter()
-                        .filter(|test| test.kind == "added")
-                        .map(|test| test.entity)
-                        .collect(),
+    {
+        let mut removed_declarations = Vec::new();
+        if let Some(marker) = &marker {
+            for test in &file.tests {
+                if let (Some(previous), Some(path)) = (&test.previous, &test.previous_path) {
+                    if !previous_views.contains_key(path) {
+                        previous_views.insert(
+                            path.clone(),
+                            super::syntax::parse(path, &snapshot.base_files[path].bytes)?
+                                .context("Previous syntax is unavailable")?,
+                        );
+                    }
+                    if super::markers::from_source(
+                        marker,
+                        previous,
+                        &previous_views[path],
+                        &snapshot.base_files[path].bytes,
+                    )?
+                    .is_some()
+                    {
+                        // Retained declarations remain obligations even when the entity
+                        // has no agent participation in the current comparison.
+                        removed_declarations.push(test.entity.clone());
+                    }
                 }
-            })
-            .collect(),
-    )
+            }
+        }
+        result.push(Change {
+            path: file.path,
+            view: file.view,
+            removed_declarations,
+            added: file
+                .tests
+                .into_iter()
+                .filter(|test| test.kind == "added")
+                .map(|test| test.entity)
+                .collect(),
+        });
+    }
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -239,6 +253,7 @@ fn markers(
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
+    provenance: Option<&super::provenance::ProvenanceFacts>,
 ) -> Result<()> {
     let marker = setting
         .parameters
@@ -250,15 +265,30 @@ fn markers(
         .get("provenance_scope")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("all_added_tests");
-    if scope != "all_added_tests" {
+    if scope != "all_added_tests" && provenance.is_none() {
         bail!("AI-only provenance scope requires a verified external execution record");
+    }
+    if marker.kind == "git_trailer" {
+        bail!("Commit-to-entity provenance is required for git_trailer binding");
     }
     let name = &marker.name;
     for change in changes {
-        for test in change.added.iter().chain(&change.removed_declarations) {
-            result.matched_entities += 1;
+        for (test, retained) in change
+            .added
+            .iter()
+            .map(|test| (test, false))
+            .chain(change.removed_declarations.iter().map(|test| (test, true)))
+        {
             let declaration =
                 super::markers::declaration(&marker, test, &change.view, &change.path, snapshot)?;
+            if scope == "ai_only"
+                && !retained
+                && declaration.is_none()
+                && !provenance.is_some_and(|facts| facts.participated(&change.path, test))
+            {
+                continue;
+            }
+            result.matched_entities += 1;
             let values = declaration
                 .as_deref()
                 .map(super::markers::fields)

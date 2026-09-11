@@ -3,10 +3,12 @@
 mod commands;
 mod coverage_gate;
 mod evidence;
+mod external;
 mod generated_reports;
 mod manual;
 mod policy;
 mod project_reports;
+mod provenance;
 mod python_install;
 mod report_gate;
 mod rule_execution;
@@ -61,14 +63,14 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     let plan = Plan::build(&config, task.as_ref(), &options.profile)?;
     let external = match (&options.trust_store, &options.evidence_dir) {
         (Some(store), Some(directory)) => {
-            let (root, store, directory, checks) = (
+            let (root, store, directory, requests) = (
                 options.root.clone(),
                 store.clone(),
                 directory.clone(),
-                plan.commands.clone(),
+                external::requests(&plan),
             );
             match tokio::task::spawn_blocking(move || {
-                manual::load(&root, &store, &directory, &checks)
+                external::load(&root, &store, &directory, &requests)
             })
             .await?
             {
@@ -92,6 +94,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .to_string_lossy()
         .to_string();
     let mut results: Vec<CheckResult> = Vec::new();
+    let mut provenance_proofs = std::collections::BTreeMap::new();
     let workspace = if plan
         .commands
         .iter()
@@ -131,7 +134,38 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
             );
             result
         } else if let Some(rule) = rule {
-            rule_execution::execute(id, rule, &catalog.entries[id], &snapshot, &results).await?
+            match provenance::prepare(
+                id,
+                rule,
+                &catalog.entries[id],
+                &snapshot,
+                &policy,
+                external.as_ref(),
+                &directory,
+            )
+            .await
+            {
+                Ok(proof) => {
+                    let mut result = rule_execution::execute(
+                        id,
+                        rule,
+                        &catalog.entries[id],
+                        &snapshot,
+                        &results,
+                        proof.as_ref().map(|proof| &proof.facts),
+                    )
+                    .await?;
+                    if let Some(proof) = proof {
+                        result.execution.artifacts.extend(proof.artifacts);
+                        result
+                            .metadata
+                            .insert("external_provenance".into(), proof.metadata);
+                        provenance_proofs.insert(id.clone(), proof.facts);
+                    }
+                    result
+                }
+                Err(result) => *result,
+            }
         } else if let Some(command) = command
             && command.kind == config::CheckKind::Manual
             && invalid.is_empty()
@@ -176,18 +210,23 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     }
     if let Some(external) = external
         && let Err(error) =
-            manual::revalidate(external, &plan, &snapshot, &policy, &mut results).await
+            manual::revalidate(external.clone(), &plan, &snapshot, &policy, &mut results)
+                .await
+                .and_then(|()| provenance::revalidate(&external, &provenance_proofs, &mut results))
     {
         invalid.push(format!(
             "External acceptance evidence is invalid: {error:#}"
         ));
         for result in &mut results {
-            if result.metadata.contains_key("manual_acceptance") {
+            if result.metadata.contains_key("manual_acceptance")
+                || result.metadata.contains_key("external_provenance")
+            {
                 result.block(ExecutionStatus::Blocked, format!("External acceptance evidence changed or could not be revalidated: {error:#}"));
-                result
-                    .metadata
-                    .get_mut("manual_acceptance")
-                    .expect("manual evidence")["valid_at_completion"] = serde_json::json!(false);
+                for name in ["manual_acceptance", "external_provenance"] {
+                    if let Some(evidence) = result.metadata.get_mut(name) {
+                        evidence["valid_at_completion"] = serde_json::json!(false);
+                    }
+                }
             }
         }
     }

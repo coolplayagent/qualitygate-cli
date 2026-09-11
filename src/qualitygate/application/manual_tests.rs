@@ -2,6 +2,15 @@ use super::*;
 use base64::Engine;
 use serde_json::json;
 
+fn load(root: &Path, store: &Path, directory: &Path, checks: &[CommandCheck]) -> Result<Inputs> {
+    let requests = checks
+        .iter()
+        .filter_map(|check| check.evidence_file.as_ref())
+        .map(|name| (name.clone(), attestation::MAX_ENVELOPE_BYTES))
+        .collect();
+    external::load(root, store, directory, &requests)
+}
+
 fn fixture() -> (tempfile::TempDir, tempfile::TempDir, Vec<CommandCheck>) {
     let root = tempfile::tempdir().unwrap();
     let external = tempfile::tempdir().unwrap();

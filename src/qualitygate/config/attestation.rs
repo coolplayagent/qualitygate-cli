@@ -20,7 +20,10 @@ pub struct TrustStore {
 pub struct TrustedKey {
     pub id: String,
     pub public_key: String,
+    #[serde(default)]
     pub checks: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub provenance_rules: Vec<String>,
     #[serde(default)]
     pub tasks: Vec<String>,
     #[serde(default)]
@@ -46,12 +49,15 @@ pub fn parse(bytes: &[u8]) -> Result<TrustStore> {
     for key in &store.keys {
         super::validation::validate_id(&key.id)?;
         if !ids.insert(&key.id)
-            || !(1..=1024).contains(&key.checks.len())
+            || key.checks.is_empty() && key.provenance_rules.is_empty()
             || key.public_key.len() > 128
         {
-            bail!("Trusted keys need unique IDs, bounded public keys and 1..1024 check IDs");
+            bail!(
+                "Trusted keys need unique IDs, bounded public keys and explicit check or provenance-rule authorization"
+            );
         }
         identifiers(&key.checks)?;
+        identifiers(&key.provenance_rules)?;
         identifiers(&key.tasks)?;
     }
     identifiers(&store.revoked_records)?;

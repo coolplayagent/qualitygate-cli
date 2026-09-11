@@ -4,9 +4,11 @@ mod attestation;
 mod gate;
 pub mod language;
 mod project;
+mod provenance;
 mod report;
 
 pub use attestation::*;
 pub use gate::{Decision, Gate, evaluate};
 pub use project::*;
+pub use provenance::*;
 pub use report::*;

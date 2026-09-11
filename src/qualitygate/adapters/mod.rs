@@ -7,6 +7,7 @@ mod markers;
 pub mod maven;
 pub mod maven_usage;
 mod project_rules;
+pub mod provenance;
 pub mod python;
 mod python_metadata;
 pub mod reports;

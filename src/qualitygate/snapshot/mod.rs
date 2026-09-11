@@ -4,7 +4,7 @@ mod changes;
 mod git;
 mod input_guard;
 mod merge_request;
-pub use changes::Change;
+pub use changes::{Change, compare as compare_files};
 pub use git::{read_commit, resolve_commit, run_git};
 pub use input_guard::InputGuard;
 

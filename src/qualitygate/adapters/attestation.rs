@@ -41,7 +41,7 @@ pub struct VerifiedManual {
     pub public_key_digest: String,
 }
 
-fn decode(value: &str) -> Result<Vec<u8>> {
+pub(super) fn decode(value: &str) -> Result<Vec<u8>> {
     for engine in [
         general_purpose::STANDARD,
         general_purpose::URL_SAFE,
@@ -83,19 +83,26 @@ pub fn validate_keys(store: &TrustStore) -> Result<()> {
     Ok(())
 }
 
-pub fn verify(
+pub(super) struct Authenticated {
+    pub payload: Vec<u8>,
+    pub signer_key_id: String,
+    pub public_key_digest: String,
+}
+
+pub(super) fn authenticate(
     bytes: &[u8],
     store: &TrustStore,
-    expected: &ManualSubject,
-    now: u64,
-) -> Result<VerifiedManual> {
+    payload_type: &str,
+    maximum_bytes: usize,
+    authorized: impl Fn(&crate::config::attestation::TrustedKey) -> bool,
+) -> Result<Authenticated> {
     let started = Instant::now();
-    if bytes.len() > MAX_ENVELOPE_BYTES {
-        bail!("Acceptance envelope exceeds 1 MiB");
+    if bytes.len() > maximum_bytes {
+        bail!("Signed envelope exceeds its byte budget");
     }
     let envelope: Envelope =
         serde_json::from_slice(bytes).context("Invalid acceptance envelope")?;
-    if envelope.payload_type != PAYLOAD_TYPE || !(1..=16).contains(&envelope.signatures.len()) {
+    if envelope.payload_type != payload_type || !(1..=16).contains(&envelope.signatures.len()) {
         bail!("Unsupported acceptance payload type or signature count (requires 1..16)");
     }
     let payload = decode(&envelope.payload)?;
@@ -103,12 +110,7 @@ pub fn verify(
     validate_keys(store)?;
     let mut signer = None;
     for key in &store.keys {
-        if !key.checks.contains(&expected.check_id)
-            || match &expected.task {
-                Some(task) => !key.tasks.contains(&task.task_id),
-                None => !key.allow_repository_checks,
-            }
-        {
+        if !authorized(key) {
             continue;
         }
         let public_key: [u8; 32] = decode(&key.public_key)?
@@ -143,6 +145,30 @@ pub fn verify(
     }
     let (signer_key_id, public_key_digest) =
         signer.context("No authorized signer verified the acceptance record")?;
+    Ok(Authenticated {
+        payload,
+        signer_key_id,
+        public_key_digest,
+    })
+}
+
+pub fn verify(
+    bytes: &[u8],
+    store: &TrustStore,
+    expected: &ManualSubject,
+    now: u64,
+) -> Result<VerifiedManual> {
+    let Authenticated {
+        payload,
+        signer_key_id,
+        public_key_digest,
+    } = authenticate(bytes, store, PAYLOAD_TYPE, MAX_ENVELOPE_BYTES, |key| {
+        key.checks.contains(&expected.check_id)
+            && match &expected.task {
+                Some(task) => key.tasks.contains(&task.task_id),
+                None => key.allow_repository_checks,
+            }
+    })?;
     // Interpret the same authenticated bytes; never re-read the envelope payload.
     let record: ManualRecord =
         serde_json::from_slice(&payload).context("Invalid signed manual record")?;
@@ -161,22 +187,39 @@ pub fn verify(
             bail!("Signed record ID, reviewer and reason must be nonempty and bounded");
         }
     }
-    if store.revoked_records.contains(&record.record_id) {
-        bail!("Acceptance record has been revoked");
-    }
-    if record.issued_at > now
-        || record.expires_at <= now
-        || record.expires_at <= record.issued_at
-        || record.expires_at - record.issued_at > store.max_age_seconds
-        || now - record.issued_at > store.max_age_seconds
-    {
-        bail!("Acceptance record is expired, future-dated or outside the allowed validity period");
-    }
+    validity(
+        store,
+        &record.record_id,
+        record.issued_at,
+        record.expires_at,
+        now,
+    )?;
     Ok(VerifiedManual {
         record,
         signer_key_id,
         public_key_digest,
     })
+}
+
+pub(super) fn validity(
+    store: &TrustStore,
+    record_id: &str,
+    issued_at: u64,
+    expires_at: u64,
+    now: u64,
+) -> Result<()> {
+    if store.revoked_records.iter().any(|id| id == record_id) {
+        bail!("Acceptance record has been revoked");
+    }
+    if issued_at > now
+        || expires_at <= now
+        || expires_at <= issued_at
+        || expires_at - issued_at > store.max_age_seconds
+        || now - issued_at > store.max_age_seconds
+    {
+        bail!("Acceptance record is expired, future-dated or outside the allowed validity period");
+    }
+    Ok(())
 }
 
 #[cfg(test)]

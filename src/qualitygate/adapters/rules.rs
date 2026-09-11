@@ -50,25 +50,50 @@ pub fn evaluate_with_projects(
     snapshot: &Snapshot,
     projects: &[ProjectFacts],
 ) -> CheckResult {
+    evaluate_with_facts(id, implementation, setting, snapshot, projects, None)
+}
+
+pub fn evaluate_with_facts(
+    id: &str,
+    implementation: &str,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    projects: &[ProjectFacts],
+    provenance: Option<&super::provenance::ProvenanceFacts>,
+) -> CheckResult {
     let mut result = CheckResult::pending(id, setting.required, setting.severity);
-    let evaluation = match implementation {
-        "line-ending" => {
-            line_endings(&mut result, snapshot);
-            Ok(())
+    let evaluation = (|| -> Result<()> {
+        if let Some(facts) = provenance {
+            facts.ensure_binding(snapshot, id)?;
         }
-        "commit-message" => commits(&mut result, setting, snapshot),
-        "diff-size" => diff_size(&mut result, setting, snapshot),
-        "module-boundary" => {
-            super::project_rules::module_boundary(&mut result, setting, snapshot, projects)
+        if setting.provenance.is_some() && provenance.is_none() {
+            bail!("Configured provenance evidence is unavailable");
         }
-        "used-undeclared" => {
-            super::project_rules::used_undeclared(&mut result, setting, snapshot, projects)
+        match implementation {
+            "line-ending" => {
+                line_endings(&mut result, snapshot);
+                Ok(())
+            }
+            "commit-message" => commits(&mut result, setting, snapshot),
+            "diff-size" => diff_size(&mut result, setting, snapshot),
+            "module-boundary" => {
+                super::project_rules::module_boundary(&mut result, setting, snapshot, projects)
+            }
+            "used-undeclared" => {
+                super::project_rules::used_undeclared(&mut result, setting, snapshot, projects)
+            }
+            "test-naming" | "parameterized-tests" | "comment-language" | "ai-code-traceability" => {
+                super::structure_rules::evaluate_with_provenance(
+                    implementation,
+                    &mut result,
+                    setting,
+                    snapshot,
+                    provenance,
+                )
+            }
+            _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),
         }
-        "test-naming" | "parameterized-tests" | "comment-language" | "ai-code-traceability" => {
-            super::structure_rules::evaluate(implementation, &mut result, setting, snapshot)
-        }
-        _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),
-    };
+    })();
     match evaluation {
         Ok(()) if result.verdict != Some(Verdict::Skipped) => result.complete(),
         Ok(()) => {}

@@ -45,9 +45,28 @@ pub fn evaluate_with_projects(
     snapshot: &Snapshot,
     projects: &[ProjectFacts],
 ) -> CheckResult {
+    evaluate_with_facts(rule, setting, snapshot, projects, None)
+}
+
+pub fn evaluate_with_facts(
+    rule: &CustomRule,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    projects: &[ProjectFacts],
+    provenance: Option<&super::provenance::ProvenanceFacts>,
+) -> CheckResult {
     let mut result = CheckResult::pending(&rule.id, setting.required, setting.severity);
     result.rule_version = rule.version;
-    match run(rule, snapshot, projects, &mut result) {
+    let evaluation = (|| -> Result<()> {
+        if let Some(facts) = provenance {
+            facts.ensure_binding(snapshot, &rule.id)?;
+        }
+        if setting.provenance.is_some() && provenance.is_none() {
+            bail!("Configured provenance evidence is unavailable");
+        }
+        run(rule, snapshot, projects, provenance, &mut result)
+    })();
+    match evaluation {
         Ok(()) => result.complete(),
         Err(error) => result.block(ExecutionStatus::Blocked, format!("{error:#}")),
     }
@@ -58,6 +77,7 @@ fn run(
     rule: &CustomRule,
     snapshot: &Snapshot,
     projects: &[ProjectFacts],
+    provenance: Option<&super::provenance::ProvenanceFacts>,
     result: &mut CheckResult,
 ) -> Result<()> {
     for language in &rule.language {
@@ -67,11 +87,19 @@ fn run(
         .requires_capabilities
         .iter()
         .find(|capability| capability.as_str() == "external_provenance")
+        && provenance.is_none()
     {
         bail!("Required project capability unavailable: {capability}");
     }
-    if rule.applies_to.provenance_scope.as_deref() == Some("ai_only") {
+    if rule.applies_to.provenance_scope.as_deref() == Some("ai_only") && provenance.is_none() {
         bail!("AI-only scope requires verified external execution provenance");
+    }
+    if rule
+        .binding
+        .as_ref()
+        .is_some_and(|binding| binding.marker.kind == "git_trailer")
+    {
+        bail!("Commit-to-entity provenance is required for git_trailer binding");
     }
     if rule
         .requires_capabilities
@@ -83,7 +111,7 @@ fn run(
             "Required project capability unavailable: dependency_resolution; declare depends_on for a project facts command"
         );
     }
-    let subjects = subjects(rule, snapshot)?;
+    let subjects = subjects(rule, snapshot, provenance)?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     result.matched_entities = subjects.len();
     result.metadata.insert(
@@ -320,7 +348,11 @@ fn dependencies(
     Ok(())
 }
 
-fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
+fn subjects(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    provenance: Option<&super::provenance::ProvenanceFacts>,
+) -> Result<Vec<Subject>> {
     let change = rule.when.change.as_deref().unwrap_or("added");
     if rule.when.entity == "commit" {
         return Ok(snapshot
@@ -382,7 +414,10 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
             "test_method" => {
                 let bytes = &snapshot.files[&file.path].bytes;
                 for test in &file.tests {
-                    let triggered = change == "any" || test.kind == change;
+                    let in_scope = rule.applies_to.provenance_scope.as_deref() != Some("ai_only")
+                        || provenance
+                            .is_some_and(|facts| facts.participated(&file.path, &test.entity));
+                    let triggered = (change == "any" || test.kind == change) && in_scope;
                     let retained = if let (Some(binding), Some(previous), Some(path)) =
                         (&rule.binding, &test.previous, &test.previous_path)
                     {
@@ -403,7 +438,21 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
                     } else {
                         false
                     };
-                    if !triggered && !retained {
+                    let declaration = rule
+                        .binding
+                        .as_ref()
+                        .map(|binding| {
+                            markers::declaration(
+                                &binding.marker,
+                                &test.entity,
+                                &file.view,
+                                &file.path,
+                                snapshot,
+                            )
+                        })
+                        .transpose()?
+                        .flatten();
+                    if !triggered && !retained && declaration.is_none() {
                         continue;
                     }
                     let entity = &test.entity;
@@ -414,20 +463,7 @@ fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
                         identity: entity.symbol.clone(),
                         name: entity.name.clone(),
                         text: std::str::from_utf8(&bytes[entity.byte_range.clone()])?.into(),
-                        declaration: rule
-                            .binding
-                            .as_ref()
-                            .map(|binding| {
-                                markers::declaration(
-                                    &binding.marker,
-                                    entity,
-                                    &file.view,
-                                    &file.path,
-                                    snapshot,
-                                )
-                            })
-                            .transpose()?
-                            .flatten(),
+                        declaration,
                     });
                 }
             }

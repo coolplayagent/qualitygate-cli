@@ -73,6 +73,8 @@ pub struct RuleSetting {
     pub source: Option<Source>,
     #[serde(default)]
     pub depends_on: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<ProvenanceSpec>,
     #[serde(skip)]
     pub specified: std::collections::BTreeSet<String>,
 }
@@ -89,6 +91,7 @@ struct RuleOverrides {
     source: Option<Source>,
     #[serde(default)]
     depends_on: Vec<String>,
+    provenance: Option<ProvenanceSpec>,
 }
 
 impl From<RuleOverrides> for RuleSetting {
@@ -107,6 +110,7 @@ impl From<RuleOverrides> for RuleSetting {
             parameters: value.parameters,
             source: value.source,
             depends_on: value.depends_on,
+            provenance: value.provenance,
             specified,
         }
     }
@@ -121,6 +125,7 @@ impl Default for RuleSetting {
             parameters: BTreeMap::new(),
             source: None,
             depends_on: Vec::new(),
+            provenance: None,
             specified: Default::default(),
         }
     }
@@ -132,6 +137,12 @@ pub struct Source {
     pub document: String,
     pub section: String,
     pub content_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProvenanceSpec {
+    pub evidence_file: String,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

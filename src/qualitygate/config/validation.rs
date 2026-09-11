@@ -23,6 +23,12 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
     }
     for (id, rule) in &config.rules {
         validate_id(id)?;
+        if let Some(provenance) = &rule.provenance {
+            let path = &provenance.evidence_file;
+            if path.is_empty() || crate::paths::relative(Path::new(path))? != *path {
+                bail!("Provenance evidence_file requires a normalized relative file path");
+            }
+        }
         if let Some(source) = &rule.source {
             constraints::source(source)?;
         }

@@ -1,7 +1,7 @@
 //! Multiset matching preserves moves while distinguishing newly copied entities.
 
 use super::syntax::{self, Entity, Structure};
-use crate::snapshot::Snapshot;
+use crate::snapshot::{self, File, Snapshot};
 use anyhow::{Result, bail};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::time::{Duration, Instant};
@@ -11,6 +11,7 @@ pub(super) struct TestChange {
     pub previous: Option<Entity>,
     pub previous_path: Option<String>,
     pub kind: &'static str,
+    pub ambiguous: bool,
 }
 
 pub(super) struct FileView {
@@ -24,6 +25,38 @@ pub(super) fn collect(
     snapshot: &Snapshot,
     paths: &[String],
     languages: &[String],
+) -> Result<Vec<FileView>> {
+    analyze(
+        &snapshot.base_files,
+        &snapshot.files,
+        &snapshot.changes,
+        paths,
+        languages,
+        |path| snapshot.includes(path),
+    )
+}
+
+pub(super) fn collect_between(
+    base: &BTreeMap<String, File>,
+    head: &BTreeMap<String, File>,
+) -> Result<Vec<FileView>> {
+    analyze(
+        base,
+        head,
+        &snapshot::compare_files(base, head),
+        &[],
+        &[],
+        |_| true,
+    )
+}
+
+fn analyze(
+    base_files: &BTreeMap<String, File>,
+    files: &BTreeMap<String, File>,
+    changes: &BTreeMap<String, snapshot::Change>,
+    paths: &[String],
+    languages: &[String],
+    includes: impl Fn(&str) -> bool,
 ) -> Result<Vec<FileView>> {
     for language in languages {
         if !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str()) {
@@ -41,7 +74,7 @@ pub(super) fn collect(
     let mut entity_count = 0;
     // Match across the complete change before filtering; moving into a selected
     // path must not turn an existing entity into a new one.
-    for (path, change) in &snapshot.changes {
+    for (path, change) in changes {
         if started.elapsed() > Duration::from_secs(30) {
             bail!("Rule structure collection exceeded 30 seconds");
         }
@@ -51,14 +84,14 @@ pub(super) fn collect(
         {
             continue;
         }
-        if let Some(file) = snapshot.files.get(path)
+        if let Some(file) = files.get(path)
             && let Some(view) = syntax::parse(path, &file.bytes)?
         {
             entity_count += view.tests.len();
             head.insert(path.clone(), view);
         }
         if let Some(path) = &change.old_path
-            && let Some(file) = snapshot.base_files.get(path)
+            && let Some(file) = base_files.get(path)
             && let Some(view) = syntax::parse(path, &file.bytes)?
         {
             entity_count += view.tests.len();
@@ -78,6 +111,7 @@ pub(super) fn collect(
         .collect();
     let mut used = BTreeSet::new();
     let mut matches = BTreeMap::new();
+    let mut ambiguous_matches = BTreeSet::new();
     let mut symbols: BTreeMap<_, VecDeque<_>> = BTreeMap::new();
     for (index, (path, language, test)) in old.iter().enumerate() {
         symbols
@@ -88,12 +122,51 @@ pub(super) fn collect(
     // Reserve every surviving symbol before assigning a removed body to a move.
     for (path, view) in &head {
         for (index, test) in view.tests.iter().enumerate() {
-            if let Some(old_index) = symbols
-                .get_mut(&(path.as_str(), view.language.as_str(), test.symbol.as_str()))
-                .and_then(VecDeque::pop_front)
+            if let Some(candidates) =
+                symbols.get_mut(&(path.as_str(), view.language.as_str(), test.symbol.as_str()))
             {
-                used.insert(old_index);
-                matches.insert((path.clone(), index), old_index);
+                let ambiguous = candidates.len() > 1;
+                if let Some(old_index) = candidates.pop_front() {
+                    used.insert(old_index);
+                    matches.insert((path.clone(), index), old_index);
+                    if ambiguous {
+                        ambiguous_matches.insert((path.clone(), index));
+                    }
+                }
+            }
+        }
+    }
+    // Preserve named entities across file moves before falling back to body-only
+    // matching; repeated trivial bodies otherwise exchange identities on reorder.
+    let mut named_bodies: BTreeMap<_, VecDeque<_>> = BTreeMap::new();
+    for (index, (_, language, entity)) in old.iter().enumerate() {
+        if !used.contains(&index) {
+            named_bodies
+                .entry((
+                    language.to_string(),
+                    entity.symbol.clone(),
+                    entity.body_digest.clone(),
+                ))
+                .or_default()
+                .push_back(index);
+        }
+    }
+    let mut moved = BTreeMap::new();
+    for (path, view) in &head {
+        for (index, entity) in view.tests.iter().enumerate() {
+            if matches.contains_key(&(path.clone(), index)) {
+                continue;
+            }
+            if let Some(candidates) = named_bodies.get_mut(&(
+                view.language.clone(),
+                entity.symbol.clone(),
+                entity.body_digest.clone(),
+            )) {
+                let ambiguous = candidates.len() > 1;
+                if let Some(previous) = candidates.pop_front() {
+                    used.insert(previous);
+                    moved.insert((path.clone(), index), (previous, ambiguous));
+                }
             }
         }
     }
@@ -111,10 +184,14 @@ pub(super) fn collect(
         let mut tests = Vec::new();
         for (index, entity) in view.tests.iter().enumerate() {
             let direct = matches.get(&(path.clone(), index)).copied();
-            let matched = direct.or_else(|| {
-                bodies
-                    .get_mut(&(view.language.clone(), entity.body_digest.clone()))
-                    .and_then(VecDeque::pop_front)
+            let named = moved.get(&(path.clone(), index)).copied();
+            let mut ambiguous = named.is_some_and(|(_, ambiguous)| ambiguous)
+                || ambiguous_matches.contains(&(path.clone(), index));
+            let matched = direct.or(named.map(|(index, _)| index)).or_else(|| {
+                let candidates =
+                    bodies.get_mut(&(view.language.clone(), entity.body_digest.clone()))?;
+                ambiguous = candidates.len() > 1;
+                candidates.pop_front()
             });
             let previous = matched.map(|old_index| {
                 used.insert(old_index);
@@ -136,10 +213,11 @@ pub(super) fn collect(
                 previous,
                 previous_path: matched.map(|index| old[index].0.clone()),
                 kind,
+                ambiguous,
             });
         }
-        if snapshot.includes(&path) && (filters.is_empty() || filters.is_match(&path)) {
-            let previous = snapshot.changes[&path]
+        if includes(&path) && (filters.is_empty() || filters.is_match(&path)) {
+            let previous = changes[&path]
                 .old_path
                 .as_ref()
                 .and_then(|path| base.get(path))

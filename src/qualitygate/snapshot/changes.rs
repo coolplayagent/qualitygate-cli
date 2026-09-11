@@ -10,7 +10,7 @@ pub struct Change {
     pub added_lines: BTreeSet<usize>,
 }
 
-pub(super) fn compare(
+pub fn compare(
     base: &BTreeMap<String, File>,
     head: &BTreeMap<String, File>,
 ) -> BTreeMap<String, Change> {

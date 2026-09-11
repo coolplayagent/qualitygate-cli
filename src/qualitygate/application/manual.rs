@@ -1,101 +1,14 @@
 //! External trust inputs are loaded before commands and revalidated before publication.
 
+use super::external::{self, Inputs, now, unchanged};
 use crate::{
     adapters::{attestation, rules::diagnostic},
-    config::{self, CheckKind, CommandCheck, Plan, attestation::TrustStore},
+    config::{CheckKind, CommandCheck, Plan},
     domain::*,
-    paths,
     snapshot::{self, Snapshot},
 };
-use anyhow::{Context, Result, bail};
-use std::{
-    collections::BTreeMap,
-    io::Read,
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
-};
-
-pub(super) struct Inputs {
-    store: TrustStore,
-    store_path: PathBuf,
-    store_bytes: Vec<u8>,
-    records: BTreeMap<String, Result<(PathBuf, Vec<u8>), String>>,
-}
-
-fn read(path: &Path, limit: usize) -> Result<Vec<u8>> {
-    if !std::fs::symlink_metadata(path)?.is_file() {
-        bail!(
-            "External evidence must be a regular non-symlink file: {}",
-            path.display()
-        );
-    }
-    let file = std::fs::File::open(path)?;
-    if !file.metadata()?.is_file() {
-        bail!("External evidence is not a regular file");
-    }
-    let mut bytes = Vec::new();
-    file.take((limit + 1) as u64).read_to_end(&mut bytes)?;
-    if bytes.len() > limit {
-        bail!("External evidence exceeds its byte budget");
-    }
-    Ok(bytes)
-}
-
-pub(super) fn load(
-    root: &Path,
-    store_path: &Path,
-    evidence_directory: &Path,
-    checks: &[CommandCheck],
-) -> Result<Inputs> {
-    let started = Instant::now();
-    let root = dunce::canonicalize(root)?;
-    let canonical_store = dunce::canonicalize(store_path)?;
-    let directory = dunce::canonicalize(evidence_directory)?;
-    if canonical_store.starts_with(&root) || directory.starts_with(&root) || !directory.is_dir() {
-        bail!("Trust store and evidence directory must be outside the checked repository");
-    }
-    let store_bytes = read(store_path, 256 * 1024)?;
-    let store = config::attestation::parse(&store_bytes)?;
-    attestation::validate_keys(&store)?;
-    let mut records = BTreeMap::new();
-    let mut total = store_bytes.len();
-    for check in checks
-        .iter()
-        .filter(|check| check.kind == CheckKind::Manual)
-    {
-        if started.elapsed() > Duration::from_secs(30) {
-            bail!("External evidence loading exceeded its 30-second budget");
-        }
-        if let Some(name) = &check.evidence_file {
-            if records.contains_key(name) {
-                continue;
-            }
-            if records.len() >= 128 {
-                bail!("External evidence exceeds 128 records");
-            }
-            let record = (|| -> Result<_> {
-                let path = paths::confined(&directory, Path::new(name))?;
-                let bytes = read(&path, attestation::MAX_ENVELOPE_BYTES)?;
-                Ok((path, bytes))
-            })()
-            .map_err(|error| format!("{error:#}"));
-            if let Ok((_, bytes)) = &record {
-                total += bytes.len();
-            }
-            if total > 8 * 1024 * 1024 {
-                bail!("External evidence exceeds 8 MiB total");
-            }
-            records.insert(name.clone(), record);
-        }
-    }
-    Ok(Inputs {
-        store,
-        store_path: store_path.to_owned(),
-        store_bytes,
-        records,
-    })
-}
+use anyhow::{Context, Result};
+use std::{collections::BTreeMap, path::Path, sync::Arc, time::Duration};
 
 fn subject(
     check: &CommandCheck,
@@ -121,19 +34,11 @@ fn subject(
     }
 }
 
-fn now() -> Result<u64> {
-    Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
-}
-
 fn record<'a>(inputs: &'a Inputs, check: &CommandCheck) -> Result<&'a [u8]> {
-    let name = check.evidence_file.as_ref().context(
+    let name = check.evidence_file.as_deref().context(
         "Manual acceptance needs evidence_file relative to the external evidence directory",
     )?;
-    match inputs.records.get(name) {
-        Some(Ok((_, bytes))) => Ok(bytes),
-        Some(Err(error)) => bail!("Cannot read external acceptance record {name}: {error}"),
-        None => bail!("External acceptance record is unavailable: {name}"),
-    }
+    external::record(inputs, name)
 }
 
 pub(super) async fn execute(
@@ -214,25 +119,6 @@ pub(super) async fn execute(
         );
     }
     result
-}
-
-fn unchanged(inputs: &Inputs) -> Result<()> {
-    if read(&inputs.store_path, 256 * 1024)? != inputs.store_bytes {
-        bail!("External trust store changed during checks");
-    }
-    for (path, bytes) in inputs
-        .records
-        .values()
-        .filter_map(|record| record.as_ref().ok())
-    {
-        if read(path, attestation::MAX_ENVELOPE_BYTES)? != *bytes {
-            bail!(
-                "External acceptance record changed during checks: {}",
-                path.display()
-            );
-        }
-    }
-    Ok(())
 }
 
 pub(super) async fn revalidate(
