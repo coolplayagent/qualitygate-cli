@@ -34,6 +34,21 @@ rules:
 
 Core rules are `line-ending`, `commit-message`, and `diff-size`. Commit patterns use `parameters.pattern`; diff size uses `parameters.max_added_lines`. Enabling a rule edits a candidate configuration. Rules are not automatically imposed on repositories merely because an ecosystem is detected.
 
+Each packaged definition declares `standard_refs` and
+`lifecycle_inputs`. The catalog resolves both against the reviewed
+[external standards archive](../knowledge/best-practices/engineering-standards/README.md)
+and rejects absent, unknown, mismatched, or non-enforced mappings. The
+definitions are exposed by `rules list` and rule metadata.
+
+The [lifecycle matrix](../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml)
+labels an input as enforced, evidence-contract, or planned. An enforced input
+has deterministic snapshot evidence. Design review, security analysis,
+performance, and operations entries require configured evidence and remain
+incomplete when selected evidence is absent; planned entries cannot affect a
+verdict. The [critical adoption guide](../knowledge/best-practices/engineering-standards/guides/critical-adoption.md)
+records language, severity, tooling, and performance conflicts before a rule is
+promoted.
+
 The `lang-java` package also provides `module-boundary`, which consumes Maven project facts from declared prerequisites. It requires an explicit module inventory and forbidden dependency directions; see [project rules](projects.md). This is a project semantic rule, separate from file syntax checks.
 
 Unknown or wrongly typed parameters are configuration errors. Structure rules support `parameters.paths` and `parameters.languages`; line-ending, commit-message and diff-size do not accept those filters. See [custom rules and packages](custom-rules.md) for versioned definitions, capability declarations and source hashes.

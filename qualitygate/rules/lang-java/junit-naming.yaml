@@ -8,3 +8,8 @@ defaults:
   required: true
   severity: error
   parameters: {"languages":["java"]}
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [naming, test-maintainability]}
+  - {source_id: google-java, controls: [naming, source-file]}
+  - {source_id: huawei-codearts, controls: [coding-style, static-gate]}
+lifecycle_inputs: [java-test-conventions]

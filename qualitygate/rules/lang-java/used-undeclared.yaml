@@ -8,3 +8,8 @@ defaults:
   enabled: true
   required: true
   severity: error
+standard_refs:
+  - {source_id: alibaba-p3c, controls: [dependency-rules, static-analysis]}
+  - {source_id: aws-component-management, controls: [component-inventory, dependency-management]}
+  - {source_id: huawei-codearts, controls: [security-quality, static-gate]}
+lifecycle_inputs: [java-direct-dependencies]

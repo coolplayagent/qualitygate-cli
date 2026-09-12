@@ -8,3 +8,7 @@ defaults:
   required: true
   severity: error
   parameters: {}
+standard_refs:
+  - {source_id: aws-code-review, controls: [change-review, completion-criteria]}
+  - {source_id: cloudflare-codex, controls: [governed-standards, merge-gate]}
+lifecycle_inputs: [change-subject-traceability]

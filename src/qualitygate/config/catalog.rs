@@ -1,6 +1,6 @@
 //! Versioned rule packages and snapshot-independent policy resolution.
 
-use super::{Config, CustomRule, RuleSetting, custom_validation, validation};
+use super::{Config, CustomRule, RuleSetting, StandardReference, custom_validation, validation};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -16,6 +16,10 @@ pub struct Builtin {
     pub language: Vec<String>,
     pub requires_capabilities: Vec<String>,
     pub defaults: RuleSetting,
+    #[serde(default)]
+    pub standard_refs: Vec<StandardReference>,
+    #[serde(default)]
+    pub lifecycle_inputs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -116,6 +120,233 @@ const PACKAGED: &[(&str, &str, &str)] = &[
     ),
 ];
 
+#[derive(Debug, Deserialize)]
+struct StandardRegistry {
+    schema_version: u32,
+    sources: Vec<StandardSource>,
+    #[serde(flatten)]
+    _metadata: BTreeMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StandardSource {
+    id: String,
+    #[serde(flatten)]
+    _metadata: BTreeMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LifecycleMatrix {
+    schema_version: u32,
+    inputs: Vec<LifecycleInput>,
+    #[serde(flatten)]
+    _metadata: BTreeMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+enum LifecycleInputStatus {
+    Enforced,
+    EvidenceContract,
+    Planned,
+}
+
+#[derive(Debug, Deserialize)]
+struct LifecycleInput {
+    id: String,
+    status: LifecycleInputStatus,
+    rule_id: Option<String>,
+    lifecycle_stage: String,
+    languages: Vec<String>,
+    concerns: Vec<String>,
+    enforcement: String,
+    outcome: String,
+    source_ids: Vec<String>,
+    evidence: Vec<String>,
+    applicability: String,
+    critical_adoption: String,
+}
+
+#[derive(Debug)]
+struct Standards {
+    source_ids: BTreeSet<String>,
+    inputs: BTreeMap<String, LifecycleInput>,
+}
+
+const STANDARD_REGISTRY: &str =
+    include_str!("../../../knowledge/best-practices/engineering-standards/registry.yaml");
+const LIFECYCLE_MATRIX: &str = include_str!(
+    "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml"
+);
+
+fn nonempty_unique(values: &[String]) -> bool {
+    !values.is_empty()
+        && values.iter().all(|value| !value.trim().is_empty())
+        && values.iter().collect::<BTreeSet<_>>().len() == values.len()
+}
+
+fn allowed(values: &[String], choices: &[&str]) -> bool {
+    nonempty_unique(values) && values.iter().all(|value| choices.contains(&value.as_str()))
+}
+
+fn supported_enforced_input(input: &LifecycleInput) -> bool {
+    ["deterministic-static", "semantic-static"].contains(&input.enforcement.as_str())
+        || (input.enforcement == "external-report"
+            && input
+                .evidence
+                .iter()
+                .any(|item| item == "selected-snapshot" || item == "snapshot-digest"))
+}
+
+fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
+    let registry: StandardRegistry =
+        serde_norway::from_str(registry_yaml).context("Invalid built-in standards registry")?;
+    if registry.schema_version != 2 || registry.sources.is_empty() {
+        bail!("Built-in standards registry has an unsupported schema or no sources");
+    }
+    let mut source_ids = BTreeSet::new();
+    for source in registry.sources {
+        if source.id.trim().is_empty() || !source_ids.insert(source.id) {
+            bail!("Built-in standards registry has duplicate or empty source IDs");
+        }
+    }
+
+    let matrix: LifecycleMatrix =
+        serde_norway::from_str(matrix_yaml).context("Invalid lifecycle rule input matrix")?;
+    if matrix.schema_version != 1 || matrix.inputs.is_empty() {
+        bail!("Lifecycle rule input matrix has an unsupported schema or no inputs");
+    }
+    let mut inputs = BTreeMap::new();
+    for input in matrix.inputs {
+        if input.id.trim().is_empty()
+            || input.lifecycle_stage.trim().is_empty()
+            || input.enforcement.trim().is_empty()
+            || input.outcome.trim().is_empty()
+            || input.applicability.trim().is_empty()
+            || input.critical_adoption.trim().is_empty()
+            || !allowed(
+                &input.languages,
+                &[
+                    "all",
+                    "java",
+                    "python",
+                    "rust",
+                    "cpp",
+                    "cuda",
+                    "typescript",
+                    "go",
+                ],
+            )
+            || !allowed(
+                &input.concerns,
+                &[
+                    "coding",
+                    "documentation",
+                    "testing",
+                    "architecture",
+                    "dependencies",
+                    "security",
+                    "performance",
+                    "reliability",
+                    "reviewability",
+                    "quality-gate",
+                    "operations",
+                ],
+            )
+            || ![
+                "plan",
+                "architecture",
+                "implementation",
+                "review",
+                "static-analysis",
+                "verification",
+                "release",
+                "operations",
+            ]
+            .contains(&input.lifecycle_stage.as_str())
+            || ![
+                "deterministic-static",
+                "semantic-static",
+                "external-report",
+                "design-evidence",
+                "benchmark-evidence",
+                "operational-evidence",
+            ]
+            .contains(&input.enforcement.as_str())
+            || !["violation", "warning", "incomplete", "advisory"].contains(&input.outcome.as_str())
+            || !nonempty_unique(&input.source_ids)
+            || !nonempty_unique(&input.evidence)
+            || input.source_ids.iter().any(|id| !source_ids.contains(id))
+            || (input.status == LifecycleInputStatus::Enforced
+                && (input
+                    .rule_id
+                    .as_deref()
+                    .is_none_or(|rule_id| rule_id.trim().is_empty())
+                    || !supported_enforced_input(&input)))
+        {
+            bail!("Lifecycle rule input matrix has invalid input metadata");
+        }
+        if inputs.insert(input.id.clone(), input).is_some() {
+            bail!("Lifecycle rule input matrix has duplicate input IDs");
+        }
+    }
+    Ok(Standards { source_ids, inputs })
+}
+
+#[cfg(test)]
+pub(super) fn validate_standard_inputs(registry_yaml: &str, matrix_yaml: &str) -> Result<()> {
+    standards_from(registry_yaml, matrix_yaml).map(|_| ())
+}
+
+fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<BTreeSet<String>> {
+    if rule.standard_refs.is_empty() || rule.lifecycle_inputs.is_empty() {
+        bail!(
+            "Built-in rule {} must declare standard references and lifecycle inputs",
+            rule.id
+        );
+    }
+    let mut reference_sources = BTreeSet::new();
+    for reference in &rule.standard_refs {
+        if reference.source_id.trim().is_empty()
+            || !nonempty_unique(&reference.controls)
+            || !standards.source_ids.contains(&reference.source_id)
+            || !reference_sources.insert(reference.source_id.clone())
+        {
+            bail!(
+                "Built-in rule {} references an invalid or unarchived standard source",
+                rule.id
+            );
+        }
+    }
+    let mut input_sources = BTreeSet::new();
+    let mut input_ids = BTreeSet::new();
+    for input_id in &rule.lifecycle_inputs {
+        let input = standards.inputs.get(input_id).with_context(|| {
+            format!(
+                "Built-in rule {} references an unknown lifecycle input {input_id}",
+                rule.id
+            )
+        })?;
+        if input.status != LifecycleInputStatus::Enforced
+            || input.rule_id.as_deref() != Some(rule.id.as_str())
+            || !input_ids.insert(input_id.clone())
+        {
+            bail!(
+                "Built-in rule {} has an invalid lifecycle input mapping",
+                rule.id
+            );
+        }
+        input_sources.extend(input.source_ids.iter().cloned());
+    }
+    if reference_sources != input_sources {
+        bail!(
+            "Built-in rule {} standard references do not match its lifecycle inputs",
+            rule.id
+        );
+    }
+    Ok(input_ids)
+}
+
 /// Local discovery for config/list/enable; checks use `load` with immutable files.
 pub fn read(root: &std::path::Path, config: &Config) -> Result<Catalog> {
     let mut files = BTreeMap::new();
@@ -163,14 +394,17 @@ impl Catalog {
         config: &Config,
         files: impl IntoIterator<Item = (&'a str, &'a [u8])>,
     ) -> Result<Self> {
+        let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX)?;
         let mut entries = BTreeMap::new();
+        let mut mapped_inputs = BTreeSet::new();
         for (package, path, yaml) in PACKAGED {
+            let rule: Builtin = serde_norway::from_str(yaml)?;
+            mapped_inputs.extend(validate_builtin_standards(&rule, &standards)?);
             if !["core", "shared"].contains(package)
                 && !config.rulesets.iter().any(|name| name == package)
             {
                 continue;
             }
-            let rule: Builtin = serde_norway::from_str(yaml)?;
             entries.insert(
                 rule.id.clone(),
                 Entry {
@@ -180,6 +414,15 @@ impl Catalog {
                     custom: None,
                 },
             );
+        }
+        for input in standards.inputs.values() {
+            if input.status == LifecycleInputStatus::Enforced && !mapped_inputs.contains(&input.id)
+            {
+                bail!(
+                    "Enforced lifecycle input {} is not mapped by a packaged built-in rule",
+                    input.id
+                );
+            }
         }
         if let Some(directory) = &config.custom_rules {
             let prefix = format!("{}/", directory.trim_end_matches('/'));

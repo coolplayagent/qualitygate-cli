@@ -7,3 +7,9 @@ requires_capabilities: [dependency_resolution]
 defaults:
   required: true
   severity: error
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [architecture, dependency-boundary]}
+  - {source_id: aws-architecture, controls: [architecture-review, dependency-boundary]}
+  - {source_id: azure-waf, controls: [architecture, security-boundary]}
+  - {source_id: meta-velox, controls: [small-api, low-coupling]}
+lifecycle_inputs: [java-module-boundaries]

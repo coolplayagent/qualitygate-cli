@@ -8,3 +8,7 @@ defaults:
   required: true
   severity: error
   parameters: {"languages":["python"]}
+standard_refs:
+  - {source_id: google-python, controls: [naming, lint]}
+  - {source_id: huawei-codearts, controls: [coding-style, static-gate]}
+lifecycle_inputs: [python-test-conventions]

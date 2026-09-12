@@ -167,6 +167,88 @@ fn trusted_policy_detects_disabled_checks_and_formats_preserve_exit_codes() {
 }
 
 #[test]
+fn trusted_policy_preserves_severity_task_items_and_verification_inputs() {
+    let root = fixture();
+    let policy = serde_json::json!({
+        "schema_version": 1,
+        "rules": {"line-ending": {"required": true, "severity": "error"}},
+        "checks": [{"id": "verification-build", "argv": ["rustc", "verify.rs", "-o", "verify-output"]}],
+        "verification_assets": ["verify.rs", "verification/**"]
+    });
+    let task = serde_json::json!({"schema_version": 1, "task_id": "preserve-contract", "acceptance": [
+        {"id": "first", "description": "First required condition", "verification": {"check_id": "first", "argv": ["rustc", "--version"]}},
+        {"id": "second", "description": "Second required condition", "verification": {"check_id": "second", "argv": ["rustc", "--version"]}}
+    ]});
+    let write_json = |name: &str, value: &serde_json::Value| {
+        std::fs::write(
+            root.path().join(name),
+            serde_norway::to_string(value).unwrap(),
+        )
+        .unwrap();
+    };
+    write_json("qualitygate.yaml", &policy);
+    write_json("task.yaml", &task);
+    std::fs::write(
+        root.path().join("verify.rs"),
+        "fn main() { assert!(true); }\n",
+    )
+    .unwrap();
+    git(root.path(), &["add", "."]);
+    git(
+        root.path(),
+        &["commit", "-qm", "trusted complete verification contract"],
+    );
+    let run = |code| {
+        report(
+            &cli(
+                root.path(),
+                &[
+                    "check",
+                    "--policy-ref",
+                    "HEAD",
+                    "--task",
+                    "task.yaml",
+                    "--format",
+                    "json",
+                ],
+            ),
+            code,
+        )
+    };
+    run(0);
+    let expect_change = |path: &str| {
+        let output = run(2);
+        assert!(
+            output["policy"]["changes"]
+                .as_array()
+                .unwrap()
+                .contains(&serde_json::json!(path))
+        );
+        assert_eq!(output["gate"]["complete"], false);
+    };
+    let mut weakened = policy.clone();
+    weakened["rules"]["line-ending"]["severity"] = serde_json::json!("warning");
+    write_json("qualitygate.yaml", &weakened);
+    expect_change("qualitygate.yaml");
+    write_json("qualitygate.yaml", &policy);
+    let mut shortened = task.clone();
+    shortened["acceptance"].as_array_mut().unwrap().pop();
+    write_json("task.yaml", &shortened);
+    expect_change("task.yaml");
+    write_json("task.yaml", &task);
+    std::fs::write(root.path().join("verify.rs"), "fn main() {}\n").unwrap();
+    expect_change("verify.rs");
+    std::fs::remove_file(root.path().join("verify.rs")).unwrap();
+    expect_change("verify.rs");
+    git(root.path(), &["restore", "verify.rs"]);
+    std::fs::create_dir(root.path().join("verification")).unwrap();
+    std::fs::write(root.path().join("verification/new.rs"), "fn main() {}\n").unwrap();
+    expect_change("verification/new.rs");
+    std::fs::remove_file(root.path().join("verification/new.rs")).unwrap();
+    run(0);
+}
+
+#[test]
 fn required_tool_absence_blocks_even_when_violation_severity_is_warning() {
     let root = fixture();
     std::fs::write(root.path().join("qualitygate.yaml"), "schema_version: 1\nrules: {line-ending: {}}\nchecks: [{id: missing, argv: [qualitygate-no-such-executable], severity: warning}]\n").unwrap();

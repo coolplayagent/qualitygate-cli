@@ -8,3 +8,8 @@ defaults:
   required: true
   severity: error
   parameters: {}
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [naming, readability]}
+  - {source_id: google-python, controls: [naming, lint]}
+  - {source_id: huawei-codearts, controls: [coding-style, static-gate]}
+lifecycle_inputs: [test-scenario-naming]

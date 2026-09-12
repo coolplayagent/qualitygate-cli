@@ -43,6 +43,14 @@ pub struct Config {
     pub verification_assets: Vec<String>,
 }
 
+/// A stable identifier connecting a built-in rule to the reviewed standards archive.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StandardReference {
+    pub source_id: String,
+    pub controls: Vec<String>,
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -183,6 +191,8 @@ pub struct CommandCheck {
     pub required_args: Vec<String>,
     #[serde(default)]
     pub evidence_file: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compatibility: Option<super::compatibility::CompatibilitySpec>,
 }
 
 /// Fresh Maven outputs from the same command, paths relative to the repository.
@@ -348,6 +358,8 @@ pub struct Verification {
     pub tools: Vec<ToolVersion>,
     #[serde(default)]
     pub evidence_file: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compatibility: Option<super::compatibility::CompatibilitySpec>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

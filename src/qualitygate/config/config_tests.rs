@@ -60,6 +60,44 @@ fn valid_command_config_roundtrips_and_dependencies_need_not_be_ordered() {
 }
 
 #[test]
+fn packaged_rules_expose_archived_standard_inputs() {
+    let config = Config {
+        rulesets: RULESETS.iter().map(|name| (*name).into()).collect(),
+        ..Config::default()
+    };
+    let catalog = catalog::Catalog::load(&config, std::iter::empty()).unwrap();
+    assert!(catalog.entries.len() >= 10);
+    assert!(catalog.entries.values().any(|entry| {
+        entry
+            .builtin
+            .as_ref()
+            .is_some_and(|rule| !rule.standard_refs.is_empty())
+    }));
+    assert!(catalog.entries.values().all(|entry| {
+        entry.builtin.as_ref().is_some_and(|rule| {
+            !rule.lifecycle_inputs.is_empty()
+                && rule.standard_refs.iter().all(|reference| {
+                    !reference.source_id.is_empty() && !reference.controls.is_empty()
+                })
+        })
+    }));
+}
+
+#[test]
+fn lifecycle_matrix_rejects_unarchived_input_sources() {
+    let registry = "schema_version: 2\nsources: [{id: known-source}]";
+    let matrix = "schema_version: 1\ninputs: [{id: input, status: enforced, rule_id: line-ending, lifecycle_stage: implementation, languages: [all], concerns: [coding], enforcement: deterministic-static, outcome: violation, source_ids: [missing-source], evidence: [diff], applicability: source, critical_adoption: scope}]";
+    assert!(catalog::validate_standard_inputs(registry, matrix).is_err());
+}
+
+#[test]
+fn lifecycle_matrix_rejects_unverifiable_enforced_evidence() {
+    let registry = "schema_version: 2\nsources: [{id: known-source}]";
+    let matrix = "schema_version: 1\ninputs: [{id: input, status: enforced, rule_id: line-ending, lifecycle_stage: architecture, languages: [all], concerns: [security], enforcement: design-evidence, outcome: violation, source_ids: [known-source], evidence: [design-record], applicability: source, critical_adoption: scope}]";
+    assert!(catalog::validate_standard_inputs(registry, matrix).is_err());
+}
+
+#[test]
 fn rule_and_command_dependencies_form_one_plan_with_profile_closure() {
     let yaml = "schema_version: 1\nrules: {line-ending: {depends_on: [facts]}}\nchecks: [{id: final, argv: [git, --version], depends_on: [line-ending]}, {id: facts, argv: [git, --version]}]\nprofiles: {quick: {include: [line-ending]}}";
     let config = parse(yaml.as_bytes()).unwrap();

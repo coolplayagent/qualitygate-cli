@@ -17,6 +17,9 @@ Keep dependencies acyclic. Extract shared contracts into the domain rather than 
 
 The executable top-level owner contract and supported source forms are documented in [docs/architecture.md](docs/architecture.md). Run the architecture gate after changing module ownership or imports; keep its source-digest and file/line evidence reviewable.
 
+CodeSpec map: codespec/codespec-map.yaml
+Knowledge map: knowledge/knowledge-map.yaml
+
 ## Quality contract
 
 - Run `cargo fmt --all -- --check`, `cargo check --all-targets --all-features`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test --all-targets --all-features`.

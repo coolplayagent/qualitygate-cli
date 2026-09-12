@@ -8,3 +8,7 @@ defaults:
   required: true
   severity: warning
   parameters: {}
+standard_refs:
+  - {source_id: google-code-review, controls: [focused-change, code-health]}
+  - {source_id: cloudflare-codex, controls: [reviewability, merge-gate]}
+lifecycle_inputs: [focused-change-review]

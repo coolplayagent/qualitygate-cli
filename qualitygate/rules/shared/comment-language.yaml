@@ -8,3 +8,9 @@ defaults:
   required: true
   severity: warning
   parameters: {}
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [documentation, maintainability]}
+  - {source_id: google-cpp, controls: [readability, documentation]}
+  - {source_id: google-java, controls: [documentation, source-file]}
+  - {source_id: meta-velox, controls: [reader-focus, documentation]}
+lifecycle_inputs: [explanatory-comments]

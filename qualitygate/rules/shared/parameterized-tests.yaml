@@ -8,3 +8,8 @@ defaults:
   required: true
   severity: warning
   parameters: {}
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [performance, maintainability]}
+  - {source_id: google-code-review, controls: [test-design, code-health]}
+  - {source_id: google-python, controls: [test-clarity, lint]}
+lifecycle_inputs: [test-variation-design]

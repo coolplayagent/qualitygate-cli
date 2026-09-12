@@ -1,6 +1,8 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
 mod commands;
+mod compatibility;
+mod compatibility_inputs;
 mod coverage_gate;
 mod evidence;
 mod external;
@@ -100,7 +102,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     let workspace = if plan
         .commands
         .iter()
-        .any(|check| check.kind == config::CheckKind::Command)
+        .any(|check| check.kind == config::CheckKind::Command && check.compatibility.is_none())
         && invalid.is_empty()
     {
         Some(snapshot::materialize(&snapshot).await?)
@@ -182,6 +184,11 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
                 &directory,
             )
             .await
+        } else if let Some(command) = command
+            && command.compatibility.is_some()
+            && invalid.is_empty()
+        {
+            compatibility::execute(command, &directory, &snapshot).await
         } else if let (Some(command), Some(workspace), Some(inputs)) =
             (command, &workspace, &input_guard)
         {

@@ -1,0 +1,214 @@
+schema_version: 1
+updated: 2026-09-12
+title: Qualitygate lifecycle rule input matrix
+policy:
+  missing_required_evidence: incomplete
+  enforced_input_rule: Only deterministic validators with source-snapshot-backed evidence may be attached to a packaged builtin; a report also needs explicit snapshot binding.
+  evidence_contract_rule: Design, benchmark, operational, and unbound report inputs require configured evidence before they can affect a gate.
+  conflict_rule: See guides/critical-adoption.md before changing severity or applicability.
+taxonomy:
+  lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
+  languages: [all, java, python, rust, cpp, cuda, typescript, go]
+  concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations]
+  enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
+  outcomes: [violation, warning, incomplete, advisory]
+  statuses: [enforced, evidence-contract, planned]
+inputs:
+  - id: source-format-hygiene
+    status: enforced
+    rule_id: line-ending
+    lifecycle_stage: implementation
+    languages: [all]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [google-cpp, google-java, huawei-codearts, meta-velox]
+    evidence: [changed-file-bytes, diff]
+    applicability: Text source under the selected snapshot.
+    critical_adoption: Preserve repository-specific generated-file and binary exclusions; do not infer formatting quality from line endings.
+  - id: change-subject-traceability
+    status: enforced
+    rule_id: commit-message
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [reviewability, quality-gate]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [aws-code-review, cloudflare-codex]
+    evidence: [commit-subject, selected-commit-history]
+    applicability: Commit snapshots with complete local history.
+    critical_adoption: A subject convention records intent but cannot replace code review, ownership, or threat analysis.
+  - id: focused-change-review
+    status: enforced
+    rule_id: diff-size
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [reviewability, quality-gate]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-code-review, cloudflare-codex]
+    evidence: [diff]
+    applicability: Added-line budgets selected by repository policy.
+    critical_adoption: Change size is a review signal, not a performance, security, or correctness proxy; generated and mechanical migrations need explicit review context.
+  - id: explanatory-comments
+    status: enforced
+    rule_id: comment-language
+    lifecycle_stage: implementation
+    languages: [all]
+    concerns: [coding, documentation, reviewability]
+    enforcement: semantic-static
+    outcome: warning
+    source_ids: [alibaba-ajcg, google-cpp, google-java, meta-velox]
+    evidence: [changed-comments, syntax-spans]
+    applicability: Parsed changed comments in supported language adapters.
+    critical_adoption: The language classifier is heuristic; terminology and code fragments require scoped exemptions.
+  - id: test-scenario-naming
+    status: enforced
+    rule_id: test-naming
+    lifecycle_stage: verification
+    languages: [java, python, rust, typescript, go]
+    concerns: [testing, documentation]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [alibaba-ajcg, google-python, huawei-codearts]
+    evidence: [test-structure, syntax-spans]
+    applicability: Added tests recognized by a supported syntax adapter.
+    critical_adoption: Framework discovery rules outrank a generic naming convention.
+  - id: test-variation-design
+    status: enforced
+    rule_id: parameterized-tests
+    lifecycle_stage: verification
+    languages: [java, python, rust, typescript, go]
+    concerns: [testing, reviewability]
+    enforcement: semantic-static
+    outcome: warning
+    source_ids: [alibaba-ajcg, google-code-review, google-python]
+    evidence: [test-structure, syntax-spans]
+    applicability: Similar newly added tests in one recognized scope.
+    critical_adoption: Similar shape does not prove identical behavior; parameterization remains advisory until false-positive evidence supports escalation.
+  - id: ai-change-provenance
+    status: enforced
+    rule_id: ai-code-traceability
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [reviewability, quality-gate]
+    enforcement: external-report
+    outcome: violation
+    source_ids: [aws-code-review, cloudflare-codex]
+    evidence: [declaration, signed-run, snapshot-digest]
+    applicability: Added tests selected by configured provenance scope.
+    critical_adoption: A declaration is not proof; missing or invalid signed evidence must remain incomplete.
+  - id: java-module-boundaries
+    status: enforced
+    rule_id: module-boundary
+    lifecycle_stage: architecture
+    languages: [java]
+    concerns: [architecture, dependencies, security]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [alibaba-ajcg, aws-architecture, azure-waf, meta-velox]
+    evidence: [resolved-project-facts, dependency-graph, configured-boundaries]
+    applicability: Maven projects with an explicit module inventory and dependency directions.
+    critical_adoption: Cloud architecture advice sets review questions; only declared project facts can establish a dependency violation.
+  - id: java-direct-dependencies
+    status: enforced
+    rule_id: used-undeclared
+    lifecycle_stage: static-analysis
+    languages: [java]
+    concerns: [dependencies, security, quality-gate]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [alibaba-p3c, aws-component-management, huawei-codearts]
+    evidence: [resolved-dependency-facts, bytecode-usage, static-report]
+    applicability: Maven projects with complete compilation and dependency inventories.
+    critical_adoption: Missing bytecode, resolution, or analyzer scope is incomplete evidence, never a clean dependency result.
+  - id: java-test-conventions
+    status: enforced
+    rule_id: junit-naming
+    lifecycle_stage: verification
+    languages: [java]
+    concerns: [testing, coding]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [alibaba-ajcg, google-java, huawei-codearts]
+    evidence: [test-structure, annotations]
+    applicability: Added JUnit tests parsed by the Java adapter.
+    critical_adoption: Existing project conventions take precedence when they preserve framework discovery and do not reduce code health.
+  - id: python-test-conventions
+    status: enforced
+    rule_id: pytest-naming
+    lifecycle_stage: verification
+    languages: [python]
+    concerns: [testing, coding]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [google-python, huawei-codearts]
+    evidence: [test-structure, syntax-spans]
+    applicability: Added pytest tests parsed by the Python adapter.
+    critical_adoption: Pytest discovery is the hard constraint; style preferences cannot make discovered tests invisible.
+  - id: secure-design-review
+    status: evidence-contract
+    lifecycle_stage: architecture
+    languages: [all]
+    concerns: [architecture, security, reliability]
+    enforcement: design-evidence
+    outcome: incomplete
+    source_ids: [alibaba-ajcg, aws-architecture, azure-waf, cloudflare-codex, meta-zoncolan]
+    evidence: [design-record, threat-model, abuse-case-tests, system-scope]
+    applicability: New or materially changed trust boundaries, externally reachable flows, identities, secrets, or sensitive data.
+    critical_adoption: This is a required evidence contract when a task selects it; it is not implemented as a source-text rule.
+  - id: static-analysis-evidence
+    status: evidence-contract
+    lifecycle_stage: static-analysis
+    languages: [java, python, cpp, typescript, go]
+    concerns: [security, dependencies, quality-gate]
+    enforcement: external-report
+    outcome: incomplete
+    source_ids: [huawei-codearts, meta-zoncolan, meta-infer, aws-component-management]
+    evidence: [tool-identity, analyzer-version, selected-snapshot, report, suppression-record]
+    applicability: A configured language and analyzer with complete scope and normalized report output.
+    critical_adoption: Static analysis detects selected issue classes, not every defect; suppressions need a scoped rationale and stale or partial reports cannot pass.
+  - id: performance-verification
+    status: evidence-contract
+    lifecycle_stage: verification
+    languages: [all, cpp, cuda]
+    concerns: [performance, reliability]
+    enforcement: benchmark-evidence
+    outcome: incomplete
+    source_ids: [nvidia-cuda, aws-performance, azure-performance-testing, google-sre-books]
+    evidence: [baseline, benchmark-or-load-test, environment, threshold, profile-or-telemetry]
+    applicability: Changes with declared performance, capacity, latency, throughput, or CUDA optimization claims.
+    critical_adoption: Results must use a comparable workload and environment; performance tests are not required for every source edit and never replace correctness tests.
+  - id: operational-objectives
+    status: evidence-contract
+    lifecycle_stage: operations
+    languages: [all]
+    concerns: [reliability, performance, security, operations]
+    enforcement: operational-evidence
+    outcome: incomplete
+    source_ids: [google-sre-books, aws-performance, azure-waf, cloudflare-codex]
+    evidence: [slo-or-objective, telemetry, alert-policy, incident-follow-up]
+    applicability: Services with production availability, security, or latency objectives.
+    critical_adoption: Operational evidence is workload-specific and cannot be inferred from a local source snapshot.
+  - id: rust-public-api-review
+    status: planned
+    lifecycle_stage: architecture
+    languages: [rust]
+    concerns: [coding, architecture, documentation]
+    enforcement: semantic-static
+    outcome: advisory
+    source_ids: [rust-api-guidelines, cloudflare-codex]
+    evidence: [public-api-diff, rustdoc, compatibility-policy]
+    applicability: Public Rust crate APIs.
+    critical_adoption: Rust API Guidelines are deliberately advisory; an adapter needs a repository-selected compatibility policy before enforcement.
+  - id: typescript-go-static-gate
+    status: planned
+    lifecycle_stage: static-analysis
+    languages: [typescript, go]
+    concerns: [coding, security, quality-gate]
+    enforcement: external-report
+    outcome: advisory
+    source_ids: [google-typescript, huawei-codearts, cloudflare-codex]
+    evidence: [type-check-or-lint-report, tool-identity, selected-snapshot]
+    applicability: TypeScript and Go projects after an explicit adapter and report schema are configured.
+    critical_adoption: A vendor rule set describes categories, not a portable parser or severity policy.

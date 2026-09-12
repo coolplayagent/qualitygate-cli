@@ -57,6 +57,7 @@ impl Plan {
                     tools: v.tools.clone(),
                     required_args: v.required_args.clone(),
                     evidence_file: v.evidence_file.clone(),
+                    compatibility: v.compatibility.clone(),
                 });
                 if let Some(full) = combined.profiles.get_mut("full") {
                     full.include.push(v.check_id.clone());

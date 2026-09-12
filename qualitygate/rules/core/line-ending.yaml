@@ -8,3 +8,9 @@ defaults:
   required: true
   severity: error
   parameters: {}
+standard_refs:
+  - {source_id: google-cpp, controls: [formatting, file-integrity]}
+  - {source_id: google-java, controls: [formatting, source-file]}
+  - {source_id: huawei-codearts, controls: [coding-style, static-gate]}
+  - {source_id: meta-velox, controls: [formatting, reviewability]}
+lifecycle_inputs: [source-format-hygiene]

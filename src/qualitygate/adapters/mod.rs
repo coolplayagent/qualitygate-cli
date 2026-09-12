@@ -1,6 +1,7 @@
 //! Rule and ecosystem adapters produce shared results without CLI dependencies.
 
 pub mod attestation;
+pub mod compatibility;
 pub mod custom_rules;
 mod entity_changes;
 pub mod facts;

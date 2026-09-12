@@ -1,0 +1,222 @@
+schema_version: 2
+reviewed_on: 2026-09-12
+purpose: Reviewed primary engineering guidance mapped to qualitygate lifecycle inputs.
+source_policy:
+  authority_order: [repository-policy, language-ecosystem, official-company, project-guide, advisory]
+  adoption_rule: External guidance is evidence, not an implicit repository policy.
+  freshness_rule: Recheck continuously maintained pages before changing enforcement.
+sources:
+  - id: alibaba-ajcg
+    organization: Alibaba
+    title: Alibaba Java Coding Guidelines
+    authority: official-company
+    kind: guide
+    url: https://github.com/alibaba/Alibaba-Java-Coding-Guidelines
+    languages: [java]
+    lifecycle_stages: [implementation, review, static-analysis, release]
+    concerns: [coding, architecture, security, performance, dependencies]
+    summary: Severity-tiered Java guidance for naming, concurrency, input and output controls, dependency versioning, API compatibility, and operational limits.
+  - id: alibaba-p3c
+    organization: Alibaba
+    title: P3C PMD implementation and IDE plugins
+    authority: official-company
+    kind: repository
+    url: https://github.com/alibaba/p3c
+    languages: [java]
+    lifecycle_stages: [implementation, static-analysis]
+    concerns: [coding, dependencies, static-gate]
+    summary: Public PMD and IDE implementation of a subset of Alibaba Java Coding Guidelines, including pre-check analysis.
+  - id: google-cpp
+    organization: Google
+    title: Google C++ Style Guide
+    authority: official-company
+    kind: web
+    url: https://google.github.io/styleguide/cppguide.html
+    languages: [cpp]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, architecture, performance]
+    summary: C++ source structure, self-contained interfaces, direct dependencies, readability, ownership, and maintainability conventions.
+  - id: google-java
+    organization: Google
+    title: Google Java Style Guide
+    authority: official-company
+    kind: web
+    url: https://google.github.io/styleguide/javaguide.html
+    languages: [java]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, documentation]
+    summary: Enforceable Java source-file, Unicode, naming, formatting, and Javadoc conventions.
+  - id: google-python
+    organization: Google
+    title: Google Python Style Guide
+    authority: official-company
+    kind: web
+    url: https://google.github.io/styleguide/pyguide.html
+    languages: [python]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, security, testing]
+    summary: Python linting, naming, imports, documentation, exception boundaries, and test readability guidance.
+  - id: google-typescript
+    organization: Google
+    title: Google TypeScript Style Guide
+    authority: official-company
+    kind: web
+    url: https://google.github.io/styleguide/tsguide.html
+    languages: [typescript]
+    lifecycle_stages: [implementation, static-analysis]
+    concerns: [coding, architecture, security]
+    summary: Type checking, module boundaries, unsafe assertion avoidance, and tool-enforced conformance guidance.
+  - id: google-code-review
+    organization: Google
+    title: The Standard of Code Review
+    authority: official-company
+    kind: web
+    url: https://google.github.io/eng-practices/review/reviewer/standard.html
+    languages: [all]
+    lifecycle_stages: [review]
+    concerns: [reviewability, quality-gate]
+    summary: Review favors demonstrable code-health improvement, evidence over preference, and escalation or recorded consensus for genuine conflict.
+  - id: google-sre-books
+    organization: Google
+    title: Google SRE Books
+    authority: official-company
+    kind: ebook
+    url: https://sre.google/books/
+    languages: [all]
+    lifecycle_stages: [architecture, verification, release, operations]
+    concerns: [reliability, security, performance, operations]
+    summary: Online books connect secure and reliable system design with deployment, monitoring, capacity, and operational feedback.
+  - id: huawei-codearts
+    organization: Huawei Cloud
+    title: CodeArts Check Rule Set
+    authority: official-company
+    kind: web-and-pdf
+    url: https://support.huaweicloud.com/intl/en-us/usermanual-codecheck/devcloud_hlp_00116.html
+    languages: [java, python, cpp, go, typescript]
+    lifecycle_stages: [implementation, static-analysis, review]
+    concerns: [coding, security, static-gate]
+    summary: Language-specific critical, general, and comprehensive rule sets with configurable issue levels and exportable rules.
+  - id: nvidia-cuda
+    organization: NVIDIA
+    title: CUDA C++ Best Practices Guide
+    authority: official-company
+    kind: web-and-pdf
+    url: https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/
+    languages: [cpp, cuda]
+    lifecycle_stages: [architecture, implementation, verification, release]
+    concerns: [performance, correctness]
+    summary: APOD performance cycle, profiling-led optimization, numerical verification, memory behavior, and target-specific CUDA deployment.
+  - id: aws-code-review
+    organization: AWS
+    title: Code review - DevOps Guidance
+    authority: official-company
+    kind: web
+    url: https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/code-review.html
+    languages: [all]
+    lifecycle_stages: [review]
+    concerns: [reviewability, quality-gate, change-management]
+    summary: Peer review and clear completion criteria provide shared responsibility and controlled change management.
+  - id: aws-architecture
+    organization: AWS
+    title: Use application risk assessments for secure software design
+    authority: official-company
+    kind: web
+    url: https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.st.3-use-application-risk-assessments-for-secure-software-design.html
+    languages: [all]
+    lifecycle_stages: [architecture, verification]
+    concerns: [architecture, security, quality-gate]
+    summary: Design review and threat modeling turn abuse cases into requirements and tests before implementation.
+  - id: aws-performance
+    organization: AWS
+    title: Performance efficiency - AWS Well-Architected Framework
+    authority: official-company
+    kind: web-and-pdf
+    url: https://docs.aws.amazon.com/wellarchitected/latest/framework/a-performance-efficiency.html
+    languages: [all]
+    lifecycle_stages: [architecture, verification, operations]
+    concerns: [performance, operations]
+    summary: KPIs, load tests, monitoring, automation, and recurring review support data-driven performance decisions.
+  - id: aws-component-management
+    organization: AWS
+    title: Software component management - DevOps Guidance
+    authority: official-company
+    kind: web
+    url: https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/software-component-management.html
+    languages: [all]
+    lifecycle_stages: [implementation, static-analysis, release]
+    concerns: [dependencies, security, supply-chain]
+    summary: Component inventories, clear ownership, version updates, and relationship visibility support supply-chain security and integrity.
+  - id: azure-waf
+    organization: Microsoft Azure
+    title: Azure Well-Architected Framework security maturity model
+    authority: official-company
+    kind: web
+    url: https://learn.microsoft.com/en-us/azure/well-architected/security/maturity-model
+    languages: [all]
+    lifecycle_stages: [architecture, implementation, static-analysis, operations]
+    concerns: [architecture, security, operations]
+    summary: A progressive security baseline spanning identity, encryption, secure coding, automated scans, monitoring, and continuous refinement.
+  - id: azure-performance-testing
+    organization: Microsoft Azure
+    title: Architecture strategies for performance testing
+    authority: official-company
+    kind: web
+    url: https://learn.microsoft.com/en-us/azure/well-architected/performance-efficiency/performance-test
+    languages: [all]
+    lifecycle_stages: [architecture, verification, release, operations]
+    concerns: [performance, reliability]
+    summary: Production-like, hypothesis-driven performance testing with baselines, budgets, thresholds, and controlled progressive exposure.
+  - id: cloudflare-codex
+    organization: Cloudflare
+    title: How Cloudflare enforces engineering standards using AI
+    authority: official-company
+    kind: web
+    url: https://blog.cloudflare.com/engineering-standards-enforcement/
+    languages: [rust, typescript, go, all]
+    lifecycle_stages: [architecture, implementation, review, static-analysis, operations]
+    concerns: [governance, quality-gate, security, reliability]
+    summary: Governed standards can progress from approved advice to enforceable requirements and be consumed consistently in design, code, and incident review.
+  - id: meta-velox
+    organization: Meta
+    title: Velox coding style
+    authority: company-project
+    kind: repository
+    url: https://github.com/facebookincubator/velox/blob/main/CODING_STYLE.md
+    languages: [cpp]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, architecture, performance]
+    summary: Formatting, descriptive names, reader-focused comments, small public APIs, and low coupling for high-performance C++.
+  - id: meta-zoncolan
+    organization: Meta
+    title: Zoncolan static analysis
+    authority: official-company
+    kind: web
+    url: https://engineering.fb.com/2019/08/15/security/zoncolan/
+    languages: [all]
+    lifecycle_stages: [static-analysis, review]
+    concerns: [security, privacy, static-gate]
+    summary: Security engineers codify high-confidence source-to-sink findings, validate rules, and run them across change volume.
+  - id: meta-infer
+    organization: Meta
+    title: Infer issue types
+    authority: company-project
+    kind: documentation
+    url: https://fbinfer.com/docs/all-issue-types/
+    languages: [java, cpp, objective-c, c]
+    lifecycle_stages: [static-analysis, verification]
+    concerns: [security, correctness, performance, static-gate]
+    summary: Static analysis categories cover memory, concurrency, resource, nullability, taint, and cost issues when analyzer inputs are complete.
+  - id: rust-api-guidelines
+    organization: Rust Project
+    title: Rust API Guidelines
+    authority: language-ecosystem
+    kind: ebook
+    url: https://rust-lang.github.io/api-guidelines/
+    languages: [rust]
+    lifecycle_stages: [architecture, implementation, review]
+    concerns: [coding, architecture, documentation]
+    summary: Reviewable API-design guidance for idiomatic, interoperable Rust crates; advisory rather than a universal mandate.
+notes:
+  - Source summaries are short paraphrases and links, never copied vendor manuals.
+  - Source authority describes provenance, not automatic precedence over an adopted repository policy.
+  - Archived or project-scoped tools are evidence of a practice, not a default tool recommendation.
