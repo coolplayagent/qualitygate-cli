@@ -49,3 +49,8 @@ These decisions feed [the lifecycle matrix](../lifecycle-rule-matrix.yaml).
 The matrix permits a packaged builtin only when it has bounded immutable
 evidence. All other source-derived ideas remain planned or evidence-contract
 inputs until a repository adopts the required scope and evidence.
+
+The registry's declared language, SDLC, and concern breadth must also occur in
+direct matrix inputs; a repository-wide `all` entry cannot conceal a missing
+language lane. This makes the archive's directory structure a checkable input
+contract rather than a bibliography with unconnected coverage labels.

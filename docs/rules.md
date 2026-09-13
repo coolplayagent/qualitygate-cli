@@ -54,9 +54,9 @@ HTTPS-linked source metadata. Its closed lifecycle taxonomy and the required
 status/outcome pairs (`enforced` → violation or warning, `evidence-contract` →
 incomplete, `planned` → advisory) prevent a source note from silently changing
 how an input can affect a verdict. Its declared organization, language, SDLC,
-and concern coverage is also checked, and every required organization must
-reach at least one lifecycle input rather than remain an unused bibliography
-entry.
+and concern coverage is also checked: every dimension must reach a direct
+lifecycle input rather than remain an unused bibliography entry. A universal
+language input cannot stand in for a declared language lane.
 
 The same matrix keeps risk-based security planning, supply-chain posture, and
 release provenance as evidence contracts. They are not hidden default rules:

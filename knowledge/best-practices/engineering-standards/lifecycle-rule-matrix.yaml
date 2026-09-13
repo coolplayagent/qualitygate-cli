@@ -9,7 +9,7 @@ policy:
 taxonomy:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   languages: [all, java, python, rust, cpp, cuda, typescript, go]
-  concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations]
+  concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations, static-gate]
   enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
@@ -172,7 +172,7 @@ inputs:
     status: evidence-contract
     lifecycle_stage: static-analysis
     languages: [java, python, cpp, typescript, go]
-    concerns: [security, dependencies, quality-gate]
+    concerns: [security, dependencies, static-gate, quality-gate]
     enforcement: external-report
     outcome: incomplete
     source_ids: [huawei-codearts, meta-zoncolan, meta-infer, aws-component-management]

@@ -126,7 +126,7 @@ policy:
 taxonomy:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   languages: [all, java, python, rust, cpp, cuda, typescript, go]
-  concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations]
+  concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations, static-gate]
   enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
@@ -157,7 +157,7 @@ fn lifecycle_matrix_rejects_unverifiable_enforced_evidence() {
 fn standards_registry_rejects_invalid_source_metadata() {
     let registry = standards_registry("known-source");
     let matrix = lifecycle_matrix(
-        "id: input, status: planned, lifecycle_stage: architecture, languages: [rust], concerns: [architecture], enforcement: semantic-static, outcome: advisory, source_ids: [known-source], evidence: [public-api-diff], applicability: public API, critical_adoption: policy",
+        "id: input, status: planned, lifecycle_stage: implementation, languages: [java], concerns: [coding], enforcement: semantic-static, outcome: advisory, source_ids: [known-source], evidence: [source-review], applicability: source, critical_adoption: policy",
     );
     catalog::validate_standard_inputs(&registry, &matrix).unwrap();
     for invalid in [
@@ -181,7 +181,7 @@ fn standards_registry_rejects_invalid_source_metadata() {
 fn standards_registry_requires_declared_breadth_and_input_coverage() {
     let registry = standards_registry("known-source");
     let matrix = lifecycle_matrix(
-        "id: input, status: planned, lifecycle_stage: architecture, languages: [rust], concerns: [architecture], enforcement: semantic-static, outcome: advisory, source_ids: [known-source], evidence: [public-api-diff], applicability: public API, critical_adoption: policy",
+        "id: input, status: planned, lifecycle_stage: implementation, languages: [java], concerns: [coding], enforcement: semantic-static, outcome: advisory, source_ids: [known-source], evidence: [source-review], applicability: source, critical_adoption: policy",
     );
     catalog::validate_standard_inputs(&registry, &matrix).unwrap();
     for invalid in [
@@ -206,15 +206,43 @@ fn standards_registry_requires_declared_breadth_and_input_coverage() {
         .replace(
             "notes: [Source summaries are paraphrases.]",
             "  - id: unmapped-source\n    organization: Missing Input Organization\n    title: Unmapped source\n    authority: official-company\n    kind: guide\n    url: https://example.com/unmapped\n    languages: [java]\n    lifecycle_stages: [implementation]\n    concerns: [coding]\n    summary: A valid but unmapped source.\nnotes: [Source summaries are paraphrases.]",
-        );
+    );
     assert!(catalog::validate_standard_inputs(&unmapped_organization, &matrix).is_err());
+    for (invalid, expected) in [
+        (
+            matrix.replace(
+                "lifecycle_stage: implementation, languages: [java]",
+                "lifecycle_stage: review, languages: [java]",
+            ),
+            "lifecycle stage",
+        ),
+        (
+            matrix.replace(
+                "languages: [java], concerns: [coding]",
+                "languages: [all], concerns: [coding]",
+            ),
+            "language",
+        ),
+        (
+            matrix.replace(
+                "concerns: [coding], enforcement",
+                "concerns: [documentation], enforcement",
+            ),
+            "concern",
+        ),
+    ] {
+        let error = catalog::validate_standard_inputs(&registry, &invalid)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains(expected), "{error}");
+    }
 }
 
 #[test]
 fn lifecycle_matrix_rejects_status_and_taxonomy_mismatches() {
     let registry = standards_registry("known-source");
     let matrix = lifecycle_matrix(
-        "id: input, status: evidence-contract, lifecycle_stage: architecture, languages: [all], concerns: [security], enforcement: design-evidence, outcome: incomplete, source_ids: [known-source], evidence: [design-record], applicability: source, critical_adoption: scope",
+        "id: input, status: evidence-contract, lifecycle_stage: implementation, languages: [java], concerns: [coding], enforcement: design-evidence, outcome: incomplete, source_ids: [known-source], evidence: [design-record], applicability: source, critical_adoption: scope",
     );
     catalog::validate_standard_inputs(&registry, &matrix).unwrap();
     for invalid in [

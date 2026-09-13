@@ -35,8 +35,8 @@ so a rule cannot silently point at an unarchived source or claim an unimplemente
 design, analyzer, or benchmark input as an enforced check.
 Registry schema v3 also rejects incomplete source provenance, non-HTTPS links,
 unknown archive classifications, taxonomy drift, missing declared organization,
-language, lifecycle, or concern coverage, unused required organizations, and
-status/outcome mismatches;
+language, lifecycle, or concern coverage, absent direct lifecycle paths for
+those declared dimensions, and status/outcome mismatches;
 the native configuration tests cover these archive-contract failures separately
 from rule execution.
 

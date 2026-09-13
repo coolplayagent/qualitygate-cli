@@ -11,8 +11,10 @@ that qualitygate can reasonably consume. The source IDs in built-in rule files
 and their lifecycle input IDs are checked against both files when the rule
 catalog loads. The registry also declares its required organizations, language
 lanes, lifecycle stages, and concerns. Catalog loading rejects an archive that
-can no longer substantiate that breadth, or a lifecycle matrix that leaves one
-of the required organizations without a rule-input path.
+can no longer substantiate that breadth, or a lifecycle matrix that leaves any
+declared organization, language lane, stage, or concern without a direct
+rule-input path. A universal (`all`) input does not substitute for a declared
+language lane.
 
 The archive covers five concerns:
 

@@ -312,6 +312,7 @@ const INPUT_CONCERNS: &[&str] = &[
     "reviewability",
     "quality-gate",
     "operations",
+    "static-gate",
 ];
 const LIFECYCLE_STAGES: &[&str] = &[
     "plan",
@@ -410,10 +411,55 @@ fn coverage_is_valid(coverage: &ArchiveCoverage) -> bool {
             .organizations
             .iter()
             .all(|organization| valid_text(organization, 256))
-        && allowed(&coverage.languages, ARCHIVE_LANGUAGES)
+        && allowed(&coverage.languages, INPUT_LANGUAGES)
         && !coverage.languages.iter().any(|language| language == "all")
         && allowed(&coverage.lifecycle_stages, LIFECYCLE_STAGES)
-        && allowed(&coverage.concerns, ARCHIVE_CONCERNS)
+        && allowed(&coverage.concerns, INPUT_CONCERNS)
+}
+
+/// Declared archive breadth is only meaningful when it reaches the lifecycle
+/// matrix. A universal input is useful for repository-wide controls, but it
+/// cannot stand in for a declared language lane because it has no language
+/// specific applicability or evidence boundary.
+fn lifecycle_input_coverage_is_valid(
+    coverage: &ArchiveCoverage,
+    inputs: &BTreeMap<String, LifecycleInput>,
+) -> Result<()> {
+    let languages: BTreeSet<_> = inputs
+        .values()
+        .flat_map(|input| input.languages.iter().map(String::as_str))
+        .filter(|language| *language != "all")
+        .collect();
+    if coverage
+        .languages
+        .iter()
+        .any(|language| !languages.contains(language.as_str()))
+    {
+        bail!("Lifecycle rule input matrix omits a required archive language");
+    }
+    let stages: BTreeSet<_> = inputs
+        .values()
+        .map(|input| input.lifecycle_stage.as_str())
+        .collect();
+    if coverage
+        .lifecycle_stages
+        .iter()
+        .any(|stage| !stages.contains(stage.as_str()))
+    {
+        bail!("Lifecycle rule input matrix omits a required archive lifecycle stage");
+    }
+    let concerns: BTreeSet<_> = inputs
+        .values()
+        .flat_map(|input| input.concerns.iter().map(String::as_str))
+        .collect();
+    if coverage
+        .concerns
+        .iter()
+        .any(|concern| !concerns.contains(concern.as_str()))
+    {
+        bail!("Lifecycle rule input matrix omits a required archive concern");
+    }
+    Ok(())
 }
 
 fn source_is_valid(source: &StandardSource, policy: &SourcePolicy) -> bool {
@@ -558,6 +604,7 @@ fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
     {
         bail!("Lifecycle rule input matrix omits a required archive organization");
     }
+    lifecycle_input_coverage_is_valid(&registry.coverage, &inputs)?;
     Ok(Standards { source_ids, inputs })
 }
 
