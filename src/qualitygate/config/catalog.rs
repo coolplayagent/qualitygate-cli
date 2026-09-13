@@ -4,6 +4,7 @@ use super::{Config, CustomRule, RuleSetting, StandardReference, custom_validatio
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use url::Url;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -121,29 +122,71 @@ const PACKAGED: &[(&str, &str, &str)] = &[
 ];
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct StandardRegistry {
     schema_version: u32,
+    reviewed_on: String,
+    purpose: String,
+    source_policy: SourcePolicy,
     sources: Vec<StandardSource>,
-    #[serde(flatten)]
-    _metadata: BTreeMap<String, serde_json::Value>,
+    notes: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourcePolicy {
+    authority_order: Vec<String>,
+    adoption_rule: String,
+    freshness_rule: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct StandardSource {
     id: String,
-    #[serde(flatten)]
-    _metadata: BTreeMap<String, serde_json::Value>,
+    organization: String,
+    title: String,
+    authority: String,
+    kind: String,
+    url: String,
+    languages: Vec<String>,
+    lifecycle_stages: Vec<String>,
+    concerns: Vec<String>,
+    summary: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct LifecycleMatrix {
     schema_version: u32,
+    updated: String,
+    title: String,
+    policy: LifecyclePolicy,
+    taxonomy: LifecycleTaxonomy,
     inputs: Vec<LifecycleInput>,
-    #[serde(flatten)]
-    _metadata: BTreeMap<String, serde_json::Value>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LifecyclePolicy {
+    missing_required_evidence: String,
+    enforced_input_rule: String,
+    evidence_contract_rule: String,
+    conflict_rule: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LifecycleTaxonomy {
+    lifecycle_stages: Vec<String>,
+    languages: Vec<String>,
+    concerns: Vec<String>,
+    enforcement: Vec<String>,
+    outcomes: Vec<String>,
+    statuses: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 enum LifecycleInputStatus {
     Enforced,
@@ -152,6 +195,7 @@ enum LifecycleInputStatus {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct LifecycleInput {
     id: String,
     status: LifecycleInputStatus,
@@ -179,6 +223,104 @@ const LIFECYCLE_MATRIX: &str = include_str!(
     "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml"
 );
 
+const SOURCE_AUTHORITIES: &[&str] = &[
+    "repository-policy",
+    "task-contract",
+    "standards-body",
+    "industry-standard",
+    "industry-consortium",
+    "language-ecosystem",
+    "official-company",
+    "company-project",
+    "project-guide",
+    "advisory",
+];
+const SOURCE_KINDS: &[&str] = &[
+    "guide",
+    "repository",
+    "web",
+    "ebook",
+    "web-and-pdf",
+    "documentation",
+    "standard-and-pdf",
+    "standard",
+    "specification",
+];
+const ARCHIVE_LANGUAGES: &[&str] = &[
+    "all",
+    "java",
+    "python",
+    "rust",
+    "cpp",
+    "cuda",
+    "typescript",
+    "go",
+    "c",
+    "objective-c",
+];
+const ARCHIVE_CONCERNS: &[&str] = &[
+    "coding",
+    "documentation",
+    "testing",
+    "architecture",
+    "dependencies",
+    "security",
+    "performance",
+    "reliability",
+    "reviewability",
+    "quality-gate",
+    "operations",
+    "correctness",
+    "privacy",
+    "static-gate",
+    "supply-chain",
+    "governance",
+    "change-management",
+];
+const INPUT_LANGUAGES: &[&str] = &[
+    "all",
+    "java",
+    "python",
+    "rust",
+    "cpp",
+    "cuda",
+    "typescript",
+    "go",
+];
+const INPUT_CONCERNS: &[&str] = &[
+    "coding",
+    "documentation",
+    "testing",
+    "architecture",
+    "dependencies",
+    "security",
+    "performance",
+    "reliability",
+    "reviewability",
+    "quality-gate",
+    "operations",
+];
+const LIFECYCLE_STAGES: &[&str] = &[
+    "plan",
+    "architecture",
+    "implementation",
+    "review",
+    "static-analysis",
+    "verification",
+    "release",
+    "operations",
+];
+const ENFORCEMENT_KINDS: &[&str] = &[
+    "deterministic-static",
+    "semantic-static",
+    "external-report",
+    "design-evidence",
+    "benchmark-evidence",
+    "operational-evidence",
+];
+const OUTCOMES: &[&str] = &["violation", "warning", "incomplete", "advisory"];
+const INPUT_STATUSES: &[&str] = &["enforced", "evidence-contract", "planned"];
+
 fn nonempty_unique(values: &[String]) -> bool {
     !values.is_empty()
         && values.iter().all(|value| !value.trim().is_empty())
@@ -187,6 +329,99 @@ fn nonempty_unique(values: &[String]) -> bool {
 
 fn allowed(values: &[String], choices: &[&str]) -> bool {
     nonempty_unique(values) && values.iter().all(|value| choices.contains(&value.as_str()))
+}
+
+fn exact_membership(values: &[String], choices: &[&str]) -> bool {
+    allowed(values, choices) && values.len() == choices.len()
+}
+
+fn valid_text(value: &str, maximum: usize) -> bool {
+    !value.trim().is_empty() && value.len() <= maximum && !value.chars().any(char::is_control)
+}
+
+fn valid_date(value: &str) -> bool {
+    let mut parts = value.split('-');
+    let (Some(year), Some(month), Some(day), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
+    else {
+        return false;
+    };
+    if year.len() != 4
+        || month.len() != 2
+        || day.len() != 2
+        || !year.bytes().all(|byte| byte.is_ascii_digit())
+        || !month.bytes().all(|byte| byte.is_ascii_digit())
+        || !day.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return false;
+    }
+    let (Ok(year), Ok(month), Ok(day)) = (
+        year.parse::<u32>(),
+        month.parse::<u32>(),
+        day.parse::<u32>(),
+    ) else {
+        return false;
+    };
+    let days = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) => 29,
+        2 => 28,
+        _ => return false,
+    };
+    (2000..=9999).contains(&year) && (1..=days).contains(&day)
+}
+
+fn valid_https_url(value: &str) -> bool {
+    Url::parse(value).is_ok_and(|url| {
+        url.scheme() == "https"
+            && url.host_str().is_some()
+            && url.username().is_empty()
+            && url.password().is_none()
+    })
+}
+
+fn source_policy_is_valid(policy: &SourcePolicy) -> bool {
+    allowed(&policy.authority_order, SOURCE_AUTHORITIES)
+        && policy
+            .authority_order
+            .first()
+            .is_some_and(|value| value == "repository-policy")
+        && valid_text(&policy.adoption_rule, 1024)
+        && valid_text(&policy.freshness_rule, 1024)
+}
+
+fn source_is_valid(source: &StandardSource, policy: &SourcePolicy) -> bool {
+    super::constraints::id(&source.id).is_ok()
+        && valid_text(&source.organization, 256)
+        && valid_text(&source.title, 512)
+        && SOURCE_AUTHORITIES.contains(&source.authority.as_str())
+        && policy
+            .authority_order
+            .iter()
+            .any(|authority| authority == &source.authority)
+        && SOURCE_KINDS.contains(&source.kind.as_str())
+        && valid_https_url(&source.url)
+        && allowed(&source.languages, ARCHIVE_LANGUAGES)
+        && allowed(&source.lifecycle_stages, LIFECYCLE_STAGES)
+        && allowed(&source.concerns, ARCHIVE_CONCERNS)
+        && valid_text(&source.summary, 2048)
+}
+
+fn matrix_metadata_is_valid(matrix: &LifecycleMatrix) -> bool {
+    matrix.schema_version == 1
+        && valid_date(&matrix.updated)
+        && valid_text(&matrix.title, 512)
+        && matrix.policy.missing_required_evidence == "incomplete"
+        && valid_text(&matrix.policy.enforced_input_rule, 2048)
+        && valid_text(&matrix.policy.evidence_contract_rule, 2048)
+        && valid_text(&matrix.policy.conflict_rule, 2048)
+        && exact_membership(&matrix.taxonomy.lifecycle_stages, LIFECYCLE_STAGES)
+        && exact_membership(&matrix.taxonomy.languages, INPUT_LANGUAGES)
+        && exact_membership(&matrix.taxonomy.concerns, INPUT_CONCERNS)
+        && exact_membership(&matrix.taxonomy.enforcement, ENFORCEMENT_KINDS)
+        && exact_membership(&matrix.taxonomy.outcomes, OUTCOMES)
+        && exact_membership(&matrix.taxonomy.statuses, INPUT_STATUSES)
 }
 
 fn supported_enforced_input(input: &LifecycleInput) -> bool {
@@ -201,88 +436,62 @@ fn supported_enforced_input(input: &LifecycleInput) -> bool {
 fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
     let registry: StandardRegistry =
         serde_norway::from_str(registry_yaml).context("Invalid built-in standards registry")?;
-    if registry.schema_version != 2 || registry.sources.is_empty() {
-        bail!("Built-in standards registry has an unsupported schema or no sources");
+    if registry.schema_version != 3
+        || registry.sources.is_empty()
+        || !valid_date(&registry.reviewed_on)
+        || !valid_text(&registry.purpose, 1024)
+        || !source_policy_is_valid(&registry.source_policy)
+        || !nonempty_unique(&registry.notes)
+        || registry.notes.iter().any(|note| !valid_text(note, 2048))
+    {
+        bail!("Built-in standards registry has invalid metadata or no sources");
     }
     let mut source_ids = BTreeSet::new();
     for source in registry.sources {
-        if source.id.trim().is_empty() || !source_ids.insert(source.id) {
-            bail!("Built-in standards registry has duplicate or empty source IDs");
+        if !source_is_valid(&source, &registry.source_policy)
+            || !source_ids.insert(source.id.clone())
+        {
+            bail!("Built-in standards registry has duplicate, invalid, or incomplete sources");
         }
     }
 
     let matrix: LifecycleMatrix =
         serde_norway::from_str(matrix_yaml).context("Invalid lifecycle rule input matrix")?;
-    if matrix.schema_version != 1 || matrix.inputs.is_empty() {
-        bail!("Lifecycle rule input matrix has an unsupported schema or no inputs");
+    if !matrix_metadata_is_valid(&matrix) || matrix.inputs.is_empty() {
+        bail!("Lifecycle rule input matrix has invalid metadata or no inputs");
     }
     let mut inputs = BTreeMap::new();
     for input in matrix.inputs {
-        if input.id.trim().is_empty()
-            || input.lifecycle_stage.trim().is_empty()
-            || input.enforcement.trim().is_empty()
-            || input.outcome.trim().is_empty()
-            || input.applicability.trim().is_empty()
-            || input.critical_adoption.trim().is_empty()
-            || !allowed(
-                &input.languages,
-                &[
-                    "all",
-                    "java",
-                    "python",
-                    "rust",
-                    "cpp",
-                    "cuda",
-                    "typescript",
-                    "go",
-                ],
-            )
-            || !allowed(
-                &input.concerns,
-                &[
-                    "coding",
-                    "documentation",
-                    "testing",
-                    "architecture",
-                    "dependencies",
-                    "security",
-                    "performance",
-                    "reliability",
-                    "reviewability",
-                    "quality-gate",
-                    "operations",
-                ],
-            )
-            || ![
-                "plan",
-                "architecture",
-                "implementation",
-                "review",
-                "static-analysis",
-                "verification",
-                "release",
-                "operations",
-            ]
-            .contains(&input.lifecycle_stage.as_str())
-            || ![
-                "deterministic-static",
-                "semantic-static",
-                "external-report",
-                "design-evidence",
-                "benchmark-evidence",
-                "operational-evidence",
-            ]
-            .contains(&input.enforcement.as_str())
-            || !["violation", "warning", "incomplete", "advisory"].contains(&input.outcome.as_str())
+        let outcome_matches_status = match input.status {
+            LifecycleInputStatus::Enforced => {
+                ["violation", "warning"].contains(&input.outcome.as_str())
+            }
+            LifecycleInputStatus::EvidenceContract => input.outcome == "incomplete",
+            LifecycleInputStatus::Planned => input.outcome == "advisory",
+        };
+        if super::constraints::id(&input.id).is_err()
+            || input
+                .rule_id
+                .as_ref()
+                .is_some_and(|rule_id| super::constraints::id(rule_id).is_err())
+            || !valid_text(&input.applicability, 4096)
+            || !valid_text(&input.critical_adoption, 4096)
+            || !allowed(&input.languages, INPUT_LANGUAGES)
+            || !allowed(&input.concerns, INPUT_CONCERNS)
+            || !LIFECYCLE_STAGES.contains(&input.lifecycle_stage.as_str())
+            || !ENFORCEMENT_KINDS.contains(&input.enforcement.as_str())
+            || !OUTCOMES.contains(&input.outcome.as_str())
             || !nonempty_unique(&input.source_ids)
             || !nonempty_unique(&input.evidence)
+            || input
+                .evidence
+                .iter()
+                .any(|evidence| super::constraints::id(evidence).is_err())
             || input.source_ids.iter().any(|id| !source_ids.contains(id))
+            || !outcome_matches_status
             || (input.status == LifecycleInputStatus::Enforced
-                && (input
-                    .rule_id
-                    .as_deref()
-                    .is_none_or(|rule_id| rule_id.trim().is_empty())
-                    || !supported_enforced_input(&input)))
+                && (input.rule_id.is_none() || !supported_enforced_input(&input)))
+            || (input.status != LifecycleInputStatus::Enforced && input.rule_id.is_some())
         {
             bail!("Lifecycle rule input matrix has invalid input metadata");
         }

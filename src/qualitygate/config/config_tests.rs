@@ -83,18 +83,120 @@ fn packaged_rules_expose_archived_standard_inputs() {
     }));
 }
 
+fn standards_registry(source_id: &str) -> String {
+    format!(
+        r#"schema_version: 3
+reviewed_on: 2026-09-13
+purpose: Reviewed source archive.
+source_policy:
+  authority_order: [repository-policy, official-company]
+  adoption_rule: External guidance needs adoption.
+  freshness_rule: Recheck sources.
+sources:
+  - id: {source_id}
+    organization: Example Organization
+    title: Example source
+    authority: official-company
+    kind: guide
+    url: https://example.com/source
+    languages: [all]
+    lifecycle_stages: [implementation]
+    concerns: [coding]
+    summary: Example source summary.
+notes: [Source summaries are paraphrases.]
+"#
+    )
+}
+
+fn lifecycle_matrix(input: &str) -> String {
+    format!(
+        r#"schema_version: 1
+updated: 2026-09-13
+title: Test lifecycle inputs
+policy:
+  missing_required_evidence: incomplete
+  enforced_input_rule: Only immutable evidence is enforceable.
+  evidence_contract_rule: Other evidence needs a contract.
+  conflict_rule: Read conflicts before adoption.
+taxonomy:
+  lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
+  languages: [all, java, python, rust, cpp, cuda, typescript, go]
+  concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations]
+  enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
+  outcomes: [violation, warning, incomplete, advisory]
+  statuses: [enforced, evidence-contract, planned]
+inputs: [{{{input}}}]
+"#
+    )
+}
+
 #[test]
 fn lifecycle_matrix_rejects_unarchived_input_sources() {
-    let registry = "schema_version: 2\nsources: [{id: known-source}]";
-    let matrix = "schema_version: 1\ninputs: [{id: input, status: enforced, rule_id: line-ending, lifecycle_stage: implementation, languages: [all], concerns: [coding], enforcement: deterministic-static, outcome: violation, source_ids: [missing-source], evidence: [diff], applicability: source, critical_adoption: scope}]";
-    assert!(catalog::validate_standard_inputs(registry, matrix).is_err());
+    let registry = standards_registry("known-source");
+    let matrix = lifecycle_matrix(
+        "id: input, status: enforced, rule_id: line-ending, lifecycle_stage: implementation, languages: [all], concerns: [coding], enforcement: deterministic-static, outcome: violation, source_ids: [missing-source], evidence: [diff], applicability: source, critical_adoption: scope",
+    );
+    assert!(catalog::validate_standard_inputs(&registry, &matrix).is_err());
 }
 
 #[test]
 fn lifecycle_matrix_rejects_unverifiable_enforced_evidence() {
-    let registry = "schema_version: 2\nsources: [{id: known-source}]";
-    let matrix = "schema_version: 1\ninputs: [{id: input, status: enforced, rule_id: line-ending, lifecycle_stage: architecture, languages: [all], concerns: [security], enforcement: design-evidence, outcome: violation, source_ids: [known-source], evidence: [design-record], applicability: source, critical_adoption: scope}]";
-    assert!(catalog::validate_standard_inputs(registry, matrix).is_err());
+    let registry = standards_registry("known-source");
+    let matrix = lifecycle_matrix(
+        "id: input, status: enforced, rule_id: line-ending, lifecycle_stage: architecture, languages: [all], concerns: [security], enforcement: design-evidence, outcome: violation, source_ids: [known-source], evidence: [design-record], applicability: source, critical_adoption: scope",
+    );
+    assert!(catalog::validate_standard_inputs(&registry, &matrix).is_err());
+}
+
+#[test]
+fn standards_registry_rejects_invalid_source_metadata() {
+    let registry = standards_registry("known-source");
+    let matrix = lifecycle_matrix(
+        "id: input, status: planned, lifecycle_stage: architecture, languages: [rust], concerns: [architecture], enforcement: semantic-static, outcome: advisory, source_ids: [known-source], evidence: [public-api-diff], applicability: public API, critical_adoption: policy",
+    );
+    catalog::validate_standard_inputs(&registry, &matrix).unwrap();
+    for invalid in [
+        registry.replace("reviewed_on: 2026-09-13", "reviewed_on: 2026-02-30"),
+        registry.replace("authority: official-company", "authority: unknown"),
+        registry.replace(
+            "url: https://example.com/source",
+            "url: http://example.com/source",
+        ),
+        registry.replace("languages: [all]", "languages: [unknown]"),
+        registry.replace(
+            "    summary: Example source summary.",
+            "    unexpected: true\n    summary: Example source summary.",
+        ),
+    ] {
+        assert!(catalog::validate_standard_inputs(&invalid, &matrix).is_err());
+    }
+}
+
+#[test]
+fn lifecycle_matrix_rejects_status_and_taxonomy_mismatches() {
+    let registry = standards_registry("known-source");
+    let matrix = lifecycle_matrix(
+        "id: input, status: evidence-contract, lifecycle_stage: architecture, languages: [all], concerns: [security], enforcement: design-evidence, outcome: incomplete, source_ids: [known-source], evidence: [design-record], applicability: source, critical_adoption: scope",
+    );
+    catalog::validate_standard_inputs(&registry, &matrix).unwrap();
+    for invalid in [
+        matrix.replace("outcome: incomplete", "outcome: warning"),
+        matrix.replace(
+            "statuses: [enforced, evidence-contract, planned]",
+            "statuses: [enforced, evidence-contract]",
+        ),
+        matrix.replace("enforcement: design-evidence", "enforcement: unknown"),
+        matrix.replace(
+            "status: evidence-contract,",
+            "status: evidence-contract, rule_id: line-ending,",
+        ),
+        matrix.replace(
+            "critical_adoption: scope",
+            "unexpected: true, critical_adoption: scope",
+        ),
+    ] {
+        assert!(catalog::validate_standard_inputs(&registry, &invalid).is_err());
+    }
 }
 
 #[test]

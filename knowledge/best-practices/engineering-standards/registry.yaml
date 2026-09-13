@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 reviewed_on: 2026-09-13
 purpose: Reviewed primary engineering guidance mapped to qualitygate lifecycle inputs.
 source_policy:

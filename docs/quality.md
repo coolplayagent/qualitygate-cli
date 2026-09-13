@@ -33,6 +33,10 @@ Built-in rule catalog loading validates every `standard_refs` and
 [registry and lifecycle matrix](../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml),
 so a rule cannot silently point at an unarchived source or claim an unimplemented
 design, analyzer, or benchmark input as an enforced check.
+Registry schema v3 also rejects incomplete source provenance, non-HTTPS links,
+unknown archive classifications, taxonomy drift, and status/outcome mismatches;
+the native configuration tests cover these archive-contract failures separately
+from rule execution.
 
 The Rust integration job and local integration check include `tests/init.rs`. Its temporary Cargo project executes a generated candidate, reports a real failed assertion, passes after repair, and rejects a zero-test result. The repository-owned fixture and initialization implementation are Rust.
 

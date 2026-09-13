@@ -49,6 +49,12 @@ verdict. The [critical adoption guide](../knowledge/best-practices/engineering-s
 records language, severity, tooling, and performance conflicts before a rule is
 promoted.
 
+The embedded archive accepts only its versioned registry schema and complete,
+HTTPS-linked source metadata. Its closed lifecycle taxonomy and the required
+status/outcome pairs (`enforced` → violation or warning, `evidence-contract` →
+incomplete, `planned` → advisory) prevent a source note from silently changing
+how an input can affect a verdict.
+
 The same matrix keeps risk-based security planning, supply-chain posture, and
 release provenance as evidence contracts. They are not hidden default rules:
 an adopting policy must select their scope and retain the specified requirement,
