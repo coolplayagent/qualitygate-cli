@@ -17,10 +17,10 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | §6.6 source mapping, trusted policy and changed verification assets | CommonMark section digests and bound source reviews; one resolved policy commit for configuration, custom rules and tasks; candidate content/mode comparison and policy-tampering CLI fixtures | Review and task-selection contracts locally verified; comprehensive trust deployment and verification-asset audit remain |
 | §7 all CLI commands and MR providers | `--mr`, bounded GitHub/GitLab HTTP adapters, local merge-base resolution and `tests/merge_request.rs` | MR implementation added; verification checkpoint below, live-service audit pending |
 | §8 JSON/table/Markdown, fingerprints, executions and snapshot binding | Resolved policy commit and pinned rechecks; retained task conditions in JSON/table/Markdown; durable artifacts, actual tool versions, executable/lockfile identities, per-command/baseline guards and retained evidence after source invalidation | Core evidence implemented; comprehensive lifecycle/environment audit remains |
-| §9.1 acceptance scenarios | Requirement-specific unit/integration suites | Pending |
+| §9.1 acceptance scenarios | [Acceptance evidence audit](acceptance-evidence.md) maps every item to controlled unit/integration evidence and preserves the real-pilot repair boundary | Partially verified: §9.1.3 real-pilot agent repair/recheck remains pending |
 | §9.2 pilot measurement and actual repair loop | [Pilot protocol](pilot.md) specifies selection, baseline attribution, immutable cases, reviewer classifications, repair budgets and denominators | Protocol prepared; team-selected repository, thresholds and measured acceptance remain pending |
-| §10 rollout and stable extensibility | Complete implementation and compatibility fixtures | Pending |
-| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | [PR Checks run 34743942526](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942526) passed all 20 jobs and [Bazel run 34743942537](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942537) passed for `fc458d2` |
+| §10 rollout and stable extensibility | Complete implementation and compatibility fixtures | Pending: an authorized rollout requires the team-selected pilot evidence |
+| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | [PR Checks run 34746651406](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34746651406) passed all 20 jobs and [Bazel run 34746651386](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34746651386) passed for `aef969a` |
 
 Reference inspected: `/opt/workspace/relay-knowledge`, including `Cargo.toml`, `.github/workflows/code_quality.yml`, `.github/workflows/pr-checks.yml`, and its architecture constraints. The reference has unrelated local changes and is read-only for this task. Its available committed graph is pinned to `a6a0c8a9ed7518534e1fd0e49f079b73d179764b`; its newer indexing task is retrying, so current workflow details are checked directly against files.
 
@@ -232,6 +232,16 @@ ten-check profile. [PR Checks run 34743942526](https://github.com/coolplayagent/
 then passed all 20 jobs and [Bazel run 34743942537](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942537)
 passed. This is implementation evidence for the archive contract, not a
 substitute for the real-repository pilot or §9.2 human-review measurement.
+
+## Acceptance traceability audit
+
+The [acceptance evidence audit](acceptance-evidence.md) now maps each §9.1
+criterion to its controlled fixture evidence and distinguishes the technical
+policy checks from the external approval boundary. It records the current
+`aef969a` local and remote verification, while retaining the open pilot
+acceptance gap: §9.1.3 requires a team-selected real-repository agent repair
+and recheck. Section §9.2 and the rollout portions of §10 remain
+pending until the pilot protocol yields measured, human-reviewed records.
 
 ## Remaining implementation and audit work
 
