@@ -20,7 +20,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | §9.1 acceptance scenarios | Requirement-specific unit/integration suites | Pending |
 | §9.2 pilot measurement and actual repair loop | [Pilot protocol](pilot.md) specifies selection, baseline attribution, immutable cases, reviewer classifications, repair budgets and denominators | Protocol prepared; team-selected repository, thresholds and measured acceptance remain pending |
 | §10 rollout and stable extensibility | Complete implementation and compatibility fixtures | Pending |
-| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | All 18 CI jobs passed for `7d6fb2a`; the current 20-job revision requires its own CI results |
+| Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | [PR Checks run 34743942526](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942526) passed all 20 jobs and [Bazel run 34743942537](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942537) passed for `fc458d2` |
 
 Reference inspected: `/opt/workspace/relay-knowledge`, including `Cargo.toml`, `.github/workflows/code_quality.yml`, `.github/workflows/pr-checks.yml`, and its architecture constraints. The reference has unrelated local changes and is read-only for this task. Its available committed graph is pinned to `a6a0c8a9ed7518534e1fd0e49f079b73d179764b`; its newer indexing task is retrying, so current workflow details are checked directly against files.
 
@@ -223,6 +223,15 @@ The reusable `Plan::build` API also validates directly constructed task contract
 The final revision passed **242 ordinary tests** (144 library, 87 CLI integration, ten quality and one benchmark); nine live-tool tests remain separate. Required formatting, compilation, Clippy with warnings denied and all-target/all-feature tests passed (`target/verification-policy-task-core-{fmt,check,clippy,all}-final.txt`). Full `cargo llvm-cov --all-targets --all-features --fail-under-lines 90` passed at **94.79% Rust line coverage** (11,526 lines, 601 missed; `target/verification-policy-task-core-coverage-final.txt`). The unchanged architecture gate covers 88 production source files without violations and retains source digests and file/line edges in `target/architecture/report.json`. The policy fixtures run through both CI and the self-hosted integration check; the signed manual acceptance and source-review suites pass with the new selection behavior. The new documentation's initially broken local anchor was repaired and the unchanged documentation gate passed in the final suite.
 
 Self-hosted `target/debug/qualitygate check --worktree --profile full --output-dir target/self-policy-task-core-final --format json` passed all seven checks. Evidence is `target/self-policy-task-core-final/run-UqMzgi/report.json`, bound to `sha256:9d04d8a84f145bf7d6734831273ed4c5759752f2fe082da561020b25c637da68` (commit `7d6fb2a` plus this implementation, including the reusable-core validation). `cargo package --locked --offline --allow-dirty` passed archive compilation verification with 220 files (`target/verification-policy-task-core-package-final.txt`). Both checkpoints precede this final evidence note, after which the documentation gate was rerun. The current reference workflows were rechecked read-only: the optional manual Qodana workflow and stable/Miri/ASan/coverage contracts remain aligned within this CLI's documented scope. This revision still needs its own native-platform, Miri and ASan CI results; full requirements acceptance and the team-selected real-repository pilot remain pending.
+
+## Standards archive coverage verification
+
+The `fc458d2` standards-archive coverage revision passed the complete local
+mandatory suite, including 94.82% Rust line coverage and the self-hosted
+ten-check profile. [PR Checks run 34743942526](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942526)
+then passed all 20 jobs and [Bazel run 34743942537](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34743942537)
+passed. This is implementation evidence for the archive contract, not a
+substitute for the real-repository pilot or §9.2 human-review measurement.
 
 ## Remaining implementation and audit work
 
