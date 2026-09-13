@@ -29,6 +29,12 @@ The adapter uses class-level line records. Method-level copies do not add to the
 
 `sources/source` entries resolve shortened filenames against the selected snapshot. Explicit roots must yield exactly one existing path after confinement; missing, foreign, traversing and ambiguous roots cannot fall back to suffix guesses. With no explicit roots, the existing unique report-path mapping applies. Every record is mapped and validated before scope filtering, including records outside the configured coverage paths.
 
+When a producer reports a rooted source location, the mapper first removes the
+materialized workspace or selected snapshot root on every platform. This also
+covers Windows paths that have a root but no drive prefix; a rooted location
+outside both trusted roots remains incomplete rather than becoming a relative
+or suffix-matched path.
+
 Positive `branches-valid` establishes branch measurement. Zero does not distinguish a branch-free measured program from a tool invoked without branch measurement. A required branch contract therefore needs native JSON or another format that proves measurement. Setting `require_branch_coverage: false` is an explicit line-only policy choice. The [coverage.py XML producer](https://github.com/nedbat/coveragepy/blob/7.10.7/coverage/xmlreport.py) and [XML command documentation](https://coverage.readthedocs.io/en/7.10.7/commands/cmd_xml.html) describe its source-root and summary output.
 
 ## JaCoCo XML

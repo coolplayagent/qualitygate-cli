@@ -171,14 +171,14 @@ fn map_source(file: &str, data: &Data, snapshot: &Snapshot, workspace: &Path) ->
     let mut candidates = BTreeSet::new();
     for root in &data.coverage_roots {
         let candidate = Path::new(root).join(file);
-        let relative = if candidate.is_absolute() {
-            candidate
-                .strip_prefix(workspace)
-                .or_else(|_| candidate.strip_prefix(&snapshot.root))
-                .ok()
-        } else {
-            Some(candidate.as_path())
-        };
+        // On Windows a leading slash has a root but no drive prefix, so it is
+        // not `is_absolute()`. Always try the known execution roots first;
+        // only a genuinely relative candidate may bypass that confinement.
+        let relative = candidate
+            .strip_prefix(workspace)
+            .or_else(|_| candidate.strip_prefix(&snapshot.root))
+            .ok()
+            .or_else(|| (!candidate.has_root()).then_some(candidate.as_path()));
         if let Some(relative) = relative
             && let Ok(path) = paths::from_native(relative)
             && snapshot.files.contains_key(&path)
