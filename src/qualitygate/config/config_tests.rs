@@ -92,6 +92,11 @@ source_policy:
   authority_order: [repository-policy, official-company]
   adoption_rule: External guidance needs adoption.
   freshness_rule: Recheck sources.
+coverage:
+  organizations: [Example Organization]
+  languages: [java]
+  lifecycle_stages: [implementation]
+  concerns: [coding]
 sources:
   - id: {source_id}
     organization: Example Organization
@@ -99,7 +104,7 @@ sources:
     authority: official-company
     kind: guide
     url: https://example.com/source
-    languages: [all]
+    languages: [java]
     lifecycle_stages: [implementation]
     concerns: [coding]
     summary: Example source summary.
@@ -162,7 +167,7 @@ fn standards_registry_rejects_invalid_source_metadata() {
             "url: https://example.com/source",
             "url: http://example.com/source",
         ),
-        registry.replace("languages: [all]", "languages: [unknown]"),
+        registry.replace("    languages: [java]", "    languages: [unknown]"),
         registry.replace(
             "    summary: Example source summary.",
             "    unexpected: true\n    summary: Example source summary.",
@@ -170,6 +175,39 @@ fn standards_registry_rejects_invalid_source_metadata() {
     ] {
         assert!(catalog::validate_standard_inputs(&invalid, &matrix).is_err());
     }
+}
+
+#[test]
+fn standards_registry_requires_declared_breadth_and_input_coverage() {
+    let registry = standards_registry("known-source");
+    let matrix = lifecycle_matrix(
+        "id: input, status: planned, lifecycle_stage: architecture, languages: [rust], concerns: [architecture], enforcement: semantic-static, outcome: advisory, source_ids: [known-source], evidence: [public-api-diff], applicability: public API, critical_adoption: policy",
+    );
+    catalog::validate_standard_inputs(&registry, &matrix).unwrap();
+    for invalid in [
+        registry.replace(
+            "  organizations: [Example Organization]",
+            "  organizations: []",
+        ),
+        registry.replace("  languages: [java]", "  languages: [all]"),
+        registry.replace("  concerns: [coding]", "  concerns: [unknown]"),
+        registry.replace(
+            "  organizations: [Example Organization]",
+            "  organizations: [Missing Organization]",
+        ),
+    ] {
+        assert!(catalog::validate_standard_inputs(&invalid, &matrix).is_err());
+    }
+    let unmapped_organization = registry
+        .replace(
+            "  organizations: [Example Organization]",
+            "  organizations: [Example Organization, Missing Input Organization]",
+        )
+        .replace(
+            "notes: [Source summaries are paraphrases.]",
+            "  - id: unmapped-source\n    organization: Missing Input Organization\n    title: Unmapped source\n    authority: official-company\n    kind: guide\n    url: https://example.com/unmapped\n    languages: [java]\n    lifecycle_stages: [implementation]\n    concerns: [coding]\n    summary: A valid but unmapped source.\nnotes: [Source summaries are paraphrases.]",
+        );
+    assert!(catalog::validate_standard_inputs(&unmapped_organization, &matrix).is_err());
 }
 
 #[test]

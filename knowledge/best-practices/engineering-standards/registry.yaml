@@ -5,6 +5,11 @@ source_policy:
   authority_order: [repository-policy, task-contract, standards-body, industry-standard, industry-consortium, language-ecosystem, official-company, company-project, project-guide, advisory]
   adoption_rule: External guidance is evidence, not an implicit repository policy.
   freshness_rule: Recheck continuously maintained pages before changing enforcement.
+coverage:
+  organizations: [Alibaba, Google, Huawei Cloud, NVIDIA, AWS, Microsoft Azure, Cloudflare, Meta]
+  languages: [java, python, rust, cpp, cuda, typescript, go]
+  lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
+  concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
   - id: alibaba-ajcg
     organization: Alibaba
@@ -26,6 +31,16 @@ sources:
     lifecycle_stages: [implementation, static-analysis]
     concerns: [coding, dependencies, static-gate]
     summary: Public PMD and IDE implementation of a subset of Alibaba Java Coding Guidelines, including pre-check analysis.
+  - id: alibaba-f2e-spec
+    organization: Alibaba
+    title: Alibaba Front-end Coding Guidelines and Relevant Tools
+    authority: official-company
+    kind: repository
+    url: https://github.com/alibaba/f2e-spec
+    languages: [typescript]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, architecture, documentation, static-gate]
+    summary: Public front-end and engineering guidance covering TypeScript, React, Node.js, Git and documentation conventions, plus linter-based rule packages.
   - id: google-cpp
     organization: Google
     title: Google C++ Style Guide

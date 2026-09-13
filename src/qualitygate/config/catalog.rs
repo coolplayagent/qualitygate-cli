@@ -128,6 +128,7 @@ struct StandardRegistry {
     reviewed_on: String,
     purpose: String,
     source_policy: SourcePolicy,
+    coverage: ArchiveCoverage,
     sources: Vec<StandardSource>,
     notes: Vec<String>,
 }
@@ -138,6 +139,18 @@ struct SourcePolicy {
     authority_order: Vec<String>,
     adoption_rule: String,
     freshness_rule: String,
+}
+
+/// The deliberately reviewed breadth of this archive. These labels are not
+/// policy requirements for a checked repository; they ensure that a future
+/// archive edit cannot silently drop one of the research lanes it claims.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArchiveCoverage {
+    organizations: Vec<String>,
+    languages: Vec<String>,
+    lifecycle_stages: Vec<String>,
+    concerns: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -391,6 +404,18 @@ fn source_policy_is_valid(policy: &SourcePolicy) -> bool {
         && valid_text(&policy.freshness_rule, 1024)
 }
 
+fn coverage_is_valid(coverage: &ArchiveCoverage) -> bool {
+    nonempty_unique(&coverage.organizations)
+        && coverage
+            .organizations
+            .iter()
+            .all(|organization| valid_text(organization, 256))
+        && allowed(&coverage.languages, ARCHIVE_LANGUAGES)
+        && !coverage.languages.iter().any(|language| language == "all")
+        && allowed(&coverage.lifecycle_stages, LIFECYCLE_STAGES)
+        && allowed(&coverage.concerns, ARCHIVE_CONCERNS)
+}
+
 fn source_is_valid(source: &StandardSource, policy: &SourcePolicy) -> bool {
     super::constraints::id(&source.id).is_ok()
         && valid_text(&source.organization, 256)
@@ -441,18 +466,38 @@ fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
         || !valid_date(&registry.reviewed_on)
         || !valid_text(&registry.purpose, 1024)
         || !source_policy_is_valid(&registry.source_policy)
+        || !coverage_is_valid(&registry.coverage)
         || !nonempty_unique(&registry.notes)
         || registry.notes.iter().any(|note| !valid_text(note, 2048))
     {
         bail!("Built-in standards registry has invalid metadata or no sources");
     }
     let mut source_ids = BTreeSet::new();
+    let mut sources = BTreeMap::new();
     for source in registry.sources {
         if !source_is_valid(&source, &registry.source_policy)
             || !source_ids.insert(source.id.clone())
         {
             bail!("Built-in standards registry has duplicate, invalid, or incomplete sources");
         }
+        sources.insert(source.id.clone(), source);
+    }
+    let source_coverage = |values: &[String], select: fn(&StandardSource) -> &[String]| {
+        values.iter().all(|value| {
+            sources
+                .values()
+                .any(|source| select(source).iter().any(|candidate| candidate == value))
+        })
+    };
+    if !source_coverage(&registry.coverage.organizations, |source| {
+        std::slice::from_ref(&source.organization)
+    }) || !source_coverage(&registry.coverage.languages, |source| &source.languages)
+        || !source_coverage(&registry.coverage.lifecycle_stages, |source| {
+            &source.lifecycle_stages
+        })
+        || !source_coverage(&registry.coverage.concerns, |source| &source.concerns)
+    {
+        bail!("Built-in standards registry does not satisfy its declared coverage");
     }
 
     let matrix: LifecycleMatrix =
@@ -498,6 +543,20 @@ fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
         if inputs.insert(input.id.clone(), input).is_some() {
             bail!("Lifecycle rule input matrix has duplicate input IDs");
         }
+    }
+    let mapped_organizations: BTreeSet<_> = inputs
+        .values()
+        .flat_map(|input| input.source_ids.iter())
+        .filter_map(|source_id| sources.get(source_id))
+        .map(|source| source.organization.as_str())
+        .collect();
+    if registry
+        .coverage
+        .organizations
+        .iter()
+        .any(|organization| !mapped_organizations.contains(organization.as_str()))
+    {
+        bail!("Lifecycle rule input matrix omits a required archive organization");
     }
     Ok(Standards { source_ids, inputs })
 }

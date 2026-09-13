@@ -241,7 +241,7 @@ inputs:
     concerns: [coding, security, quality-gate]
     enforcement: external-report
     outcome: advisory
-    source_ids: [google-typescript, go-code-review, huawei-codearts, cloudflare-codex]
+    source_ids: [alibaba-f2e-spec, google-typescript, go-code-review, huawei-codearts, cloudflare-codex]
     evidence: [type-check-or-lint-report, tool-identity, selected-snapshot]
     applicability: TypeScript and Go projects after an explicit adapter and report schema are configured.
     critical_adoption: A vendor rule set describes categories, not a portable parser or severity policy.

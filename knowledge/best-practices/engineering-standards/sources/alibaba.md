@@ -1,7 +1,8 @@
 # Alibaba
 
-Sources: [Alibaba Java Coding Guidelines](https://github.com/alibaba/Alibaba-Java-Coding-Guidelines)
-and [P3C](https://github.com/alibaba/p3c).
+Sources: [Alibaba Java Coding Guidelines](https://github.com/alibaba/Alibaba-Java-Coding-Guidelines),
+[P3C](https://github.com/alibaba/p3c), and [Alibaba Front-end Coding
+Guidelines and Relevant Tools](https://github.com/alibaba/f2e-spec).
 
 Authority: Alibaba's public engineering guidance for Java teams. It divides
 recommendations into mandatory, recommended, and reference levels.
@@ -24,3 +25,10 @@ the relevant semantic adapter is configured.
 P3C is a concrete PMD and IDE implementation of a subset of the guidelines. It
 supports a Java static-gate input without making its exact tool behavior a
 universal qualitygate rule.
+
+Alibaba's front-end guide extends the archive's TypeScript evidence with
+engineering, Git, documentation, and linter-package guidance. It informs the
+planned TypeScript static-gate lane only: its rules are not silently imported
+as a portable severity policy, and a selected TypeScript report still needs
+tool identity, selected-snapshot binding, complete scope, and suppression
+evidence before it can influence a gate.

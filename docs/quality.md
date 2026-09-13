@@ -34,7 +34,9 @@ Built-in rule catalog loading validates every `standard_refs` and
 so a rule cannot silently point at an unarchived source or claim an unimplemented
 design, analyzer, or benchmark input as an enforced check.
 Registry schema v3 also rejects incomplete source provenance, non-HTTPS links,
-unknown archive classifications, taxonomy drift, and status/outcome mismatches;
+unknown archive classifications, taxonomy drift, missing declared organization,
+language, lifecycle, or concern coverage, unused required organizations, and
+status/outcome mismatches;
 the native configuration tests cover these archive-contract failures separately
 from rule execution.
 
