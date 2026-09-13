@@ -26,6 +26,17 @@ it becomes enforced.[1]
 | Release | Are component and deployment decisions traceable? | evidence contract | inventory, release evidence, policy |
 | Operations | Do runtime objectives remain true after deployment? | operational evidence | SLO, telemetry, alerts, follow-up |
 
+The matrix makes the plan and release boundaries concrete: a risk-based
+security-verification plan records the selected system scope, risk
+classification, requirements, and verification plan; a release contract records
+the component inventory, selected snapshot, artifact digest, provenance, and
+release policy. These are selected evidence contracts, not universal default
+checks. [NIST SSDF](https://csrc.nist.gov/pubs/sp/800/218/final) and
+[OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+supply the former's vocabulary, while [SLSA](https://slsa.dev/spec/v1.2/) and
+[OpenSSF](https://scorecard.dev/) supply the latter's provenance and posture
+vocabulary.
+
 Google frames review as a code-health decision that balances forward progress
 with technical evidence, rather than a demand for perfection.[2] AWS treats
 review as shared change management with explicit completion criteria.[3] Those
@@ -58,6 +69,7 @@ comparable GPU workload and environment.[4] [5]
 | Static security | Did an analyzer inspect the selected snapshot with a valid configuration? | versioned analyzer report, scope, suppression record | a clean partial report can hide unscanned code |
 | Performance | Does a measured workload remain within agreed targets? | comparable baseline, environment, threshold, profile or telemetry | line count and code style are not performance measurements |
 | Operations | Are reliability and security objectives observed after release? | SLO, telemetry, alert policy, incident actions | a local Git snapshot has no production truth |
+| Supply chain | Can a consumer associate an artifact with reviewed source and declared components? | inventory, artifact digest, build provenance, release policy | an SBOM, signature, or aggregate score alone is not a release verdict |
 
 AWS directs teams to turn risk assessment and threat modeling into backlog
 items with tests.[6] Azure calls for a security baseline integrated through the

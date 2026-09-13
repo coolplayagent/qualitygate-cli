@@ -8,11 +8,13 @@ issue classes that a configured analyzer can actually inspect.
 ## Source synthesis
 
 Alibaba identifies authorization, input validation, SQL parameterization,
-output filtering, CSRF, and replay controls as Java security concerns.[1] AWS
+output filtering, CSRF, and replay controls as Java security concerns.[1] NIST
+SSDF supplies cross-SDLC secure-development outcomes, while OWASP ASVS supplies
+versioned web-application requirements and verification levels.[2] [3] AWS
 requires risk assessment and threat-model results to become requirements and
-tests.[2] Azure uses a progressively stronger security baseline with review and
-automated scans.[3] Meta explains that source-to-sink rules are validated for
-the issue classes they are meant to detect.[4]
+tests.[4] Azure uses a progressively stronger security baseline with review and
+automated scans.[5] Meta explains that source-to-sink rules are validated for
+the issue classes they are meant to detect.[6]
 
 ## Evidence requirements
 
@@ -33,11 +35,15 @@ partial, stale, unbound, or ambiguous. Neither outcome becomes a pass.
 ## Sources
 
 1. Alibaba, [Alibaba Java Coding Guidelines](https://github.com/alibaba/Alibaba-Java-Coding-Guidelines).
-2. AWS, [Application risk assessments for secure software design](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.st.3-use-application-risk-assessments-for-secure-software-design.html).
-3. Microsoft Azure, [Security maturity model](https://learn.microsoft.com/en-us/azure/well-architected/security/maturity-model).
-4. Meta, [Zoncolan: Using static analysis to prevent security issues](https://engineering.fb.com/2019/08/15/security/zoncolan/).
+2. NIST, [SP 800-218 SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final).
+3. OWASP, [ASVS 5.0.0](https://owasp.org/www-project-application-security-verification-standard/).
+4. AWS, [Application risk assessments for secure software design](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.st.3-use-application-risk-assessments-for-secure-software-design.html).
+5. Microsoft Azure, [Security maturity model](https://learn.microsoft.com/en-us/azure/wellarchitected/security/maturity-model).
+6. Meta, [Zoncolan: Using static analysis to prevent security issues](https://engineering.fb.com/2019/08/15/security/zoncolan/).
 
 [1]: https://github.com/alibaba/Alibaba-Java-Coding-Guidelines
-[2]: https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.st.3-use-application-risk-assessments-for-secure-software-design.html
-[3]: https://learn.microsoft.com/en-us/azure/well-architected/security/maturity-model
-[4]: https://engineering.fb.com/2019/08/15/security/zoncolan/
+[2]: https://csrc.nist.gov/pubs/sp/800/218/final
+[3]: https://owasp.org/www-project-application-security-verification-standard/
+[4]: https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.st.3-use-application-risk-assessments-for-secure-software-design.html
+[5]: https://learn.microsoft.com/en-us/azure/well-architected/security/maturity-model
+[6]: https://engineering.fb.com/2019/08/15/security/zoncolan/

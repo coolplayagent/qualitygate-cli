@@ -1,5 +1,5 @@
 schema_version: 1
-updated: 2026-09-12
+updated: 2026-09-13
 title: Qualitygate lifecycle rule input matrix
 policy:
   missing_required_evidence: incomplete
@@ -157,6 +157,17 @@ inputs:
     evidence: [design-record, threat-model, abuse-case-tests, system-scope]
     applicability: New or materially changed trust boundaries, externally reachable flows, identities, secrets, or sensitive data.
     critical_adoption: This is a required evidence contract when a task selects it; it is not implemented as a source-text rule.
+  - id: risk-based-security-verification
+    status: evidence-contract
+    lifecycle_stage: plan
+    languages: [all]
+    concerns: [architecture, security, testing, quality-gate]
+    enforcement: design-evidence
+    outcome: incomplete
+    source_ids: [nist-ssdf, owasp-asvs, aws-architecture, azure-waf]
+    evidence: [risk-classification, security-requirements, verification-plan, system-scope]
+    applicability: New or materially changed web/API surfaces, data flows, identities, sensitive data, or trust boundaries selected by task or repository policy.
+    critical_adoption: Pin ASVS version/control IDs where used; risk classification selects rigor, and a plan is not proof that controls were implemented or tested.
   - id: static-analysis-evidence
     status: evidence-contract
     lifecycle_stage: static-analysis
@@ -168,6 +179,17 @@ inputs:
     evidence: [tool-identity, analyzer-version, selected-snapshot, report, suppression-record]
     applicability: A configured language and analyzer with complete scope and normalized report output.
     critical_adoption: Static analysis detects selected issue classes, not every defect; suppressions need a scoped rationale and stale or partial reports cannot pass.
+  - id: supply-chain-posture
+    status: evidence-contract
+    lifecycle_stage: static-analysis
+    languages: [all]
+    concerns: [dependencies, security, quality-gate]
+    enforcement: external-report
+    outcome: incomplete
+    source_ids: [aws-component-management, openssf-developers, openssf-scorecard]
+    evidence: [tool-identity, selected-snapshot, component-inventory, report, exception-record]
+    applicability: Repositories or releases whose adopted policy requires source-control, dependency, build, or maintenance posture review.
+    critical_adoption: An aggregate posture score is advisory until a repository maps individual findings and approved exceptions to a risk-based severity policy.
   - id: performance-verification
     status: evidence-contract
     lifecycle_stage: verification
@@ -190,6 +212,17 @@ inputs:
     evidence: [slo-or-objective, telemetry, alert-policy, incident-follow-up]
     applicability: Services with production availability, security, or latency objectives.
     critical_adoption: Operational evidence is workload-specific and cannot be inferred from a local source snapshot.
+  - id: release-supply-chain-provenance
+    status: evidence-contract
+    lifecycle_stage: release
+    languages: [all]
+    concerns: [dependencies, security, reliability, quality-gate]
+    enforcement: external-report
+    outcome: incomplete
+    source_ids: [nist-ssdf, slsa-v1-2, openssf-developers, aws-component-management]
+    evidence: [component-inventory, artifact-digest, build-provenance, selected-snapshot, release-policy]
+    applicability: Releases or published artifacts for which repository policy selects component and provenance assurance.
+    critical_adoption: Provenance must be verified against declared expectations; an SBOM, signature, or build record alone does not establish vulnerability, authorization, or deployment safety.
   - id: rust-public-api-review
     status: planned
     lifecycle_stage: architecture
@@ -208,7 +241,7 @@ inputs:
     concerns: [coding, security, quality-gate]
     enforcement: external-report
     outcome: advisory
-    source_ids: [google-typescript, huawei-codearts, cloudflare-codex]
+    source_ids: [google-typescript, go-code-review, huawei-codearts, cloudflare-codex]
     evidence: [type-check-or-lint-report, tool-identity, selected-snapshot]
     applicability: TypeScript and Go projects after an explicit adapter and report schema are configured.
     critical_adoption: A vendor rule set describes categories, not a portable parser or severity policy.

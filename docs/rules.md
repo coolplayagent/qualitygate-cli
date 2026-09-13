@@ -49,6 +49,11 @@ verdict. The [critical adoption guide](../knowledge/best-practices/engineering-s
 records language, severity, tooling, and performance conflicts before a rule is
 promoted.
 
+The same matrix keeps risk-based security planning, supply-chain posture, and
+release provenance as evidence contracts. They are not hidden default rules:
+an adopting policy must select their scope and retain the specified requirement,
+snapshot, report, artifact, and exception evidence before a gate can use them.
+
 The `lang-java` package also provides `module-boundary`, which consumes Maven project facts from declared prerequisites. It requires an explicit module inventory and forbidden dependency directions; see [project rules](projects.md). This is a project semantic rule, separate from file syntax checks.
 
 Unknown or wrongly typed parameters are configuration errors. Structure rules support `parameters.paths` and `parameters.languages`; line-ending, commit-message and diff-size do not accept those filters. See [custom rules and packages](custom-rules.md) for versioned definitions, capability declarations and source hashes.

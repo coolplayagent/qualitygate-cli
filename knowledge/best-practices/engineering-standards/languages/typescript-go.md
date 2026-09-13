@@ -4,8 +4,10 @@
 
 Google TypeScript requires tool-enforced type checking and warns against unsafe
 assertions and dynamic code evaluation. Huawei CodeArts documents TypeScript
-and Go rule-set categories. Cloudflare describes TypeScript lint support and
-planned expansion across its common languages.[1] [2] [3]
+and Go rule-set categories. Go's own review guidance makes `gofmt` the
+mechanical baseline and treats contexts, cancellation, and documentation as
+explicit language/API concerns. Cloudflare describes TypeScript lint support
+and planned expansion across its common languages.[1] [2] [3] [4]
 
 ## Current status
 
@@ -19,14 +21,18 @@ claim a reliable type, lint, dependency, security, or performance result.
 An enforceable lane needs a configured tool invocation, pinned identity and
 version, complete selected-snapshot scope, normalized report location,
 suppression policy, and language-specific severity mapping. Until then, missing
-or unverifiable reports stay outside an automated verdict.
+or unverifiable reports stay outside an automated verdict. `gofmt` can
+establish formatting only; it cannot prove context propagation, correct
+cancellation, dependency risk, or security behavior.
 
 ## Sources
 
 1. Google, [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html).
 2. Huawei Cloud, [CodeArts Check Rule Set](https://support.huaweicloud.com/intl/en-us/usermanual-codecheck/devcloud_hlp_00116.html).
-3. Cloudflare, [How Cloudflare enforces engineering standards using AI](https://blog.cloudflare.com/engineering-standards-enforcement/).
+3. Go Project, [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments).
+4. Cloudflare, [How Cloudflare enforces engineering standards using AI](https://blog.cloudflare.com/engineering-standards-enforcement/).
 
 [1]: https://google.github.io/styleguide/tsguide.html
 [2]: https://support.huaweicloud.com/intl/en-us/usermanual-codecheck/devcloud_hlp_00116.html
-[3]: https://blog.cloudflare.com/engineering-standards-enforcement/
+[3]: https://go.dev/wiki/CodeReviewComments
+[4]: https://blog.cloudflare.com/engineering-standards-enforcement/

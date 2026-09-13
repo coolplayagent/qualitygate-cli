@@ -20,7 +20,9 @@ subset of guideline rules implemented in PMD and IDE checks.[2] Meta describes
 high-confidence static rules that are validated and applied before shipping,
 while noting their bounded issue coverage.[3] Cloudflare separates advisory
 guidance from enforced standards and uses fast linters for mechanically
-verifiable language rules.[4]
+verifiable language rules.[4] OpenSSF Scorecard adds repository-level
+source/build/dependency posture checks, but its aggregate score remains a
+prioritization signal rather than a portable severity mapping.[5]
 
 ## Gate behavior
 
@@ -38,8 +40,10 @@ The source archive uses this evidence hierarchy:
 2. Alibaba, [P3C](https://github.com/alibaba/p3c).
 3. Meta, [Zoncolan: Using static analysis to prevent security issues](https://engineering.fb.com/2019/08/15/security/zoncolan/).
 4. Cloudflare, [How Cloudflare enforces engineering standards using AI](https://blog.cloudflare.com/engineering-standards-enforcement/).
+5. OpenSSF, [Scorecard](https://scorecard.dev/).
 
 [1]: https://support.huaweicloud.com/intl/en-us/usermanual-codecheck/devcloud_hlp_00116.html
 [2]: https://github.com/alibaba/p3c
 [3]: https://engineering.fb.com/2019/08/15/security/zoncolan/
 [4]: https://blog.cloudflare.com/engineering-standards-enforcement/
+[5]: https://scorecard.dev/

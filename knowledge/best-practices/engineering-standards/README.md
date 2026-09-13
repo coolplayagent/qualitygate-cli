@@ -34,12 +34,15 @@ Source notes:
 - [Azure](sources/azure.md)
 - [Cloudflare](sources/cloudflare.md)
 - [Meta](sources/meta.md)
+- [Go Project supplemental language guidance](sources/go.md)
 - [Rust Project supplemental language guidance](sources/rust.md)
+- [cross-industry security and supply-chain foundations](sources/foundations.md)
 
 The archive is organized for review from three directions:
 
 - [lifecycle rulebook](guides/lifecycle-rulebook.md) and
-  [critical adoption](guides/critical-adoption.md);
+  [critical adoption](guides/critical-adoption.md), plus the
+  [research method](guides/research-method.md);
 - [language lanes](languages/java.md) for Java,
   [Python](languages/python.md), [Rust](languages/rust.md),
   [C++ and CUDA](languages/cpp-cuda.md), and
@@ -47,7 +50,8 @@ The archive is organized for review from three directions:
 - [architecture](concerns/architecture.md),
   [secure coding](concerns/secure-coding.md),
   [performance](concerns/performance.md), and
-  [static gates](concerns/static-gates.md).
+  [static gates](concerns/static-gates.md), and
+  [supply chain and release evidence](concerns/supply-chain.md).
 
-The research snapshot was reviewed on 2026-09-12. Recheck live pages before
+The research snapshot was reviewed on 2026-09-13. Recheck live pages before
 changing a rule, especially where a vendor guide is updated continuously.

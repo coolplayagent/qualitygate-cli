@@ -4,6 +4,7 @@ Sources: [C++ Style Guide](https://google.github.io/styleguide/cppguide.html),
 [Java Style Guide](https://google.github.io/styleguide/javaguide.html),
 [Python Style Guide](https://google.github.io/styleguide/pyguide.html),
 [TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html),
+[Go Code Review Comments](https://go.dev/wiki/CodeReviewComments),
 [The Standard of Code Review](https://google.github.io/eng-practices/review/reviewer/standard.html),
 and the [Google SRE books](https://sre.google/books/).
 
@@ -19,7 +20,9 @@ Authority: Google style guides for Google-originated open-source projects.
   `try`/`except` scopes, and no assertions as application precondition checks.
 - Naming and test structure are useful inputs for language adapters; linter
   and formatter results are stronger evidence than a text-only heuristic.
-- Java and TypeScript provide language-specific source and type-system inputs.
+- Java, TypeScript, and Go provide language-specific source, type-system, and
+  formatter inputs. Go's review guide treats `gofmt` as the mechanical baseline
+  and keeps context propagation explicit rather than inferred from names.
   The review guide sets a conflict rule: evidence and code health outweigh
   personal preference, while noncritical polish should not silently block work.
 - The SRE books extend the archive from code review into reliability, capacity,

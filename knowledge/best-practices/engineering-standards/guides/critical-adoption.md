@@ -31,6 +31,8 @@ universal Rust, Python, or C++ requirements.
 | Cloud architecture versus local module rules | AWS and Azure provide workload design criteria; a Rust CLI can only inspect explicit local facts. | module-boundary reports only a configured Maven direction with resolved facts. Cloud recommendations remain design-review prompts. |
 | AI review versus deterministic proof | Cloudflare uses governed standards throughout the lifecycle but promotes requirements before blocking.[2] | AI findings can direct review. A qualitygate violation requires deterministic snapshot evidence or verified external evidence. |
 | Tool popularity versus portability | Huawei provides language-specific rule sets; Alibaba P3C implements a subset of Java rules; Meta tools have their own language and model requirements.[6] [7] | Preserve rule identity and report provenance. Do not claim a vendor tool's category is a portable parser or severity policy. |
+| Assurance level versus applicability | [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) verification levels and [SLSA](https://slsa.dev/spec/v1.2/) source/build tracks are deliberately versioned and scoped; an assurance claim without its selected level or track is ambiguous. | Record the standard revision, selected control/track, system scope, and exceptions. Do not treat a general guide or a lower track as proof of a higher assurance level. |
+| Provenance versus software safety | [NIST](https://csrc.nist.gov/pubs/sp/800/218/final) and SLSA make provenance useful for tracing build inputs and process, but neither says an attestation proves secure behavior or absence of vulnerabilities. | Require an inventory, artifact digest, selected snapshot, provenance, and release policy. Keep vulnerability analysis, authorization testing, and operational acceptance separate. |
 
 ## Promotion criteria
 
@@ -55,6 +57,11 @@ P3C, Infer, and project coding guides demonstrate possible implementations;
 they do not establish that their current tools, supported languages, versions,
 or severities apply here. The archived Pysa GitHub Action is historical
 evidence of CI integration and is not recommended as a current default.
+
+ASVS references must include a released version and requirement ID. SLSA v1.2
+is the current approved source in this archive; its predecessor's level page is
+retired. OpenSSF Scorecard is useful for prioritization, but its aggregate score
+cannot silently become a merge or release severity.
 
 ## Sources
 

@@ -1,8 +1,8 @@
 schema_version: 2
-reviewed_on: 2026-09-12
+reviewed_on: 2026-09-13
 purpose: Reviewed primary engineering guidance mapped to qualitygate lifecycle inputs.
 source_policy:
-  authority_order: [repository-policy, language-ecosystem, official-company, project-guide, advisory]
+  authority_order: [repository-policy, task-contract, standards-body, industry-standard, industry-consortium, language-ecosystem, official-company, company-project, project-guide, advisory]
   adoption_rule: External guidance is evidence, not an implicit repository policy.
   freshness_rule: Recheck continuously maintained pages before changing enforcement.
 sources:
@@ -66,6 +66,16 @@ sources:
     lifecycle_stages: [implementation, static-analysis]
     concerns: [coding, architecture, security]
     summary: Type checking, module boundaries, unsafe assertion avoidance, and tool-enforced conformance guidance.
+  - id: go-code-review
+    organization: Go Project
+    title: Go Code Review Comments
+    authority: language-ecosystem
+    kind: web
+    url: https://go.dev/wiki/CodeReviewComments
+    languages: [go]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, documentation, architecture, reliability]
+    summary: Go-native review guidance treats gofmt as mechanical baseline and preserves explicit context propagation, API names, documentation, and cancellation semantics.
   - id: google-code-review
     organization: Google
     title: The Standard of Code Review
@@ -216,6 +226,56 @@ sources:
     lifecycle_stages: [architecture, implementation, review]
     concerns: [coding, architecture, documentation]
     summary: Reviewable API-design guidance for idiomatic, interoperable Rust crates; advisory rather than a universal mandate.
+  - id: nist-ssdf
+    organization: National Institute of Standards and Technology
+    title: NIST SP 800-218 Secure Software Development Framework (SSDF) Version 1.1
+    authority: standards-body
+    kind: standard-and-pdf
+    url: https://csrc.nist.gov/pubs/sp/800/218/final
+    languages: [all]
+    lifecycle_stages: [plan, architecture, implementation, static-analysis, verification, release, operations]
+    concerns: [architecture, security, dependencies, quality-gate, supply-chain]
+    summary: Outcome-oriented secure-development practices connect risk, requirements, provenance, vulnerability response, and secure development environments across an SDLC.
+  - id: owasp-asvs
+    organization: OWASP Foundation
+    title: OWASP Application Security Verification Standard 5.0.0
+    authority: industry-standard
+    kind: standard
+    url: https://owasp.org/www-project-application-security-verification-standard/
+    languages: [all]
+    lifecycle_stages: [plan, architecture, implementation, verification, release]
+    concerns: [architecture, security, testing, quality-gate]
+    summary: Versioned web-application security requirements and verification levels support risk-appropriate controls, test planning, and explicit requirement references.
+  - id: slsa-v1-2
+    organization: SLSA community / Linux Foundation
+    title: SLSA Specification v1.2
+    authority: industry-standard
+    kind: specification
+    url: https://slsa.dev/spec/v1.2/
+    languages: [all]
+    lifecycle_stages: [implementation, review, release]
+    concerns: [dependencies, security, supply-chain, quality-gate]
+    summary: Approved supply-chain specification defines incremental source and build tracks plus provenance and verification formats; provenance is useful only against declared expectations.
+  - id: openssf-developers
+    organization: Open Source Security Foundation
+    title: OpenSSF resources for software developers
+    authority: industry-consortium
+    kind: web
+    url: https://best.openssf.org/developers.html
+    languages: [all]
+    lifecycle_stages: [plan, implementation, static-analysis, release, operations]
+    concerns: [security, dependencies, supply-chain, reviewability]
+    summary: Curated secure-development, source-control, disclosure, signing, and supply-chain resources show how projects can select scoped controls rather than claim universal assurance.
+  - id: openssf-scorecard
+    organization: Open Source Security Foundation
+    title: OpenSSF Scorecard
+    authority: industry-consortium
+    kind: web
+    url: https://scorecard.dev/
+    languages: [all]
+    lifecycle_stages: [static-analysis, release, operations]
+    concerns: [security, dependencies, supply-chain, static-gate]
+    summary: Repository-level automated checks expose risky source, build, dependency, testing, and maintenance practices; its aggregate score is a prioritization signal, not a release verdict.
 notes:
   - Source summaries are short paraphrases and links, never copied vendor manuals.
   - Source authority describes provenance, not automatic precedence over an adopted repository policy.
