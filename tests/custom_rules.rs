@@ -181,6 +181,44 @@ fn definitions_defaults_discovery_enable_and_formats_share_effective_policy() {
 }
 
 #[test]
+fn project_rule_directory_is_loaded_from_selected_policy_snapshot() {
+    let root = fixture();
+    let root = root.path();
+    std::fs::create_dir_all(root.join("qualitygate/rules")).unwrap();
+    std::fs::write(root.join("AGENTS.md"), SOURCE).unwrap();
+    std::fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\ncustom_rules: qualitygate/rules\nrules: {project-rule: {}}\n",
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("qualitygate/rules/project.yaml"),
+        format!(
+            "id: project-rule\nversion: 1\nsource:\n  document: AGENTS.md\n  section: Team rules\n  content_hash: {}\nlanguage: [python]\nrequires_capabilities: [test_methods]\nwhen: {{entity: test_method, change: added}}\nthen: {{name_pattern: '^test_project_.+$'}}\nfix: Rename the test and rerun the check\n",
+            qualitygate::snapshot::digest(SOURCE.as_bytes())
+        ),
+    )
+    .unwrap();
+    reviews::record(root).unwrap();
+    std::fs::write(
+        root.join("test_project.py"),
+        "def test_wrong():\n    pass\n",
+    )
+    .unwrap();
+    let failed = check(root, 1);
+    assert_eq!(
+        failed["checks"][0]["metadata"]["rule_definition"]["origin"],
+        "qualitygate/rules/project.yaml"
+    );
+    std::fs::write(
+        root.join("test_project.py"),
+        "def test_project_name():\n    pass\n",
+    )
+    .unwrap();
+    check(root, 0);
+}
+
+#[test]
 fn changed_source_or_definition_invalidates_policy() {
     let root = fixture();
     let root = root.path();

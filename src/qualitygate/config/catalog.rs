@@ -1,9 +1,15 @@
 //! Versioned rule packages and snapshot-independent policy resolution.
 
-use super::{Config, CustomRule, RuleSetting, StandardReference, custom_validation, validation};
+use super::{
+    Config, CustomRule, RuleSetting, StandardReference, catalog_assets::packaged_rules,
+    custom_validation, validation,
+};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 use url::Url;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,63 +69,13 @@ pub struct Catalog {
     pub entries: BTreeMap<String, Entry>,
 }
 
-const PACKAGED: &[(&str, &str, &str)] = &[
-    (
-        "lang-java",
-        "used-undeclared.yaml",
-        include_str!("../../../qualitygate/rules/lang-java/used-undeclared.yaml"),
-    ),
-    (
-        "core",
-        "line-ending.yaml",
-        include_str!("../../../qualitygate/rules/core/line-ending.yaml"),
-    ),
-    (
-        "core",
-        "commit-message.yaml",
-        include_str!("../../../qualitygate/rules/core/commit-message.yaml"),
-    ),
-    (
-        "core",
-        "diff-size.yaml",
-        include_str!("../../../qualitygate/rules/core/diff-size.yaml"),
-    ),
-    (
-        "shared",
-        "test-naming.yaml",
-        include_str!("../../../qualitygate/rules/shared/test-naming.yaml"),
-    ),
-    (
-        "shared",
-        "parameterized-tests.yaml",
-        include_str!("../../../qualitygate/rules/shared/parameterized-tests.yaml"),
-    ),
-    (
-        "shared",
-        "comment-language.yaml",
-        include_str!("../../../qualitygate/rules/shared/comment-language.yaml"),
-    ),
-    (
-        "shared",
-        "ai-code-traceability.yaml",
-        include_str!("../../../qualitygate/rules/shared/ai-code-traceability.yaml"),
-    ),
-    (
-        "lang-java",
-        "module-boundary.yaml",
-        include_str!("../../../qualitygate/rules/lang-java/module-boundary.yaml"),
-    ),
-    (
-        "lang-java",
-        "junit-naming.yaml",
-        include_str!("../../../qualitygate/rules/lang-java/junit-naming.yaml"),
-    ),
-    (
-        "lang-python",
-        "pytest-naming.yaml",
-        include_str!("../../../qualitygate/rules/lang-python/pytest-naming.yaml"),
-    ),
-];
+pub const PROJECT_RULES_DIR: &str = "qualitygate/rules";
+
+/// Project rules stay under the selected policy snapshot and require an
+/// explicit normalized directory in `custom_rules`.
+pub fn project_rules_directory(config: &Config) -> Option<&str> {
+    config.custom_rules.as_deref()
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -766,39 +722,55 @@ pub(super) fn validate_builtin_mapping(rule_yaml: &str) -> Result<()> {
     validate_builtin_standards(&rule, &standards).map(|_| ())
 }
 
-/// Local discovery for config/list/enable; checks use `load` with immutable files.
-pub fn read(root: &std::path::Path, config: &Config) -> Result<Catalog> {
+fn project_rule_files(root: &Path, config: &Config) -> Result<BTreeMap<String, Vec<u8>>> {
     let mut files = BTreeMap::new();
-    if let Some(directory) = &config.custom_rules {
-        let mut pending = vec![crate::paths::confined(root, directory.as_ref())?];
-        let mut entries = 0;
-        let mut total = 0;
-        while let Some(directory) = pending.pop() {
-            for entry in std::fs::read_dir(&directory)
-                .with_context(|| format!("Cannot read rule directory {}", directory.display()))?
+    let Some(requested) = project_rules_directory(config) else {
+        return Ok(files);
+    };
+    let directory = crate::paths::confined(root, Path::new(requested))?;
+    if !directory.exists() {
+        bail!("Configured project rule directory does not exist: {requested}");
+    }
+    if !std::fs::metadata(&directory)?.is_dir() {
+        bail!("Project rule path is not a directory: {requested}");
+    }
+    let mut pending = vec![directory];
+    let mut entries = 0;
+    let mut total = 0;
+    while let Some(directory) = pending.pop() {
+        for entry in std::fs::read_dir(&directory)
+            .with_context(|| format!("Cannot read rule directory {}", directory.display()))?
+        {
+            let entry = entry?;
+            entries += 1;
+            if entries > 4096 {
+                bail!("Project rule directory exceeds discovery budget");
+            }
+            let relative = crate::paths::from_native(entry.path().strip_prefix(root)?)?;
+            let path = crate::paths::confined(root, relative.as_ref())?;
+            if entry.file_type()?.is_dir() {
+                pending.push(path);
+            } else if path
+                .extension()
+                .is_some_and(|extension| extension == "yaml" || extension == "yml")
             {
-                let entry = entry?;
-                entries += 1;
-                if entries > 4096 {
-                    bail!("Custom rule directory exceeds discovery budget");
+                total += entry.metadata()?.len();
+                if total > super::MAX_CONFIG_BYTES as u64 {
+                    bail!("Project rules exceed 1 MiB");
                 }
-                let relative = crate::paths::from_native(entry.path().strip_prefix(root)?)?;
-                let path = crate::paths::confined(root, relative.as_ref())?;
-                if entry.file_type()?.is_dir() {
-                    pending.push(path);
-                } else if path
-                    .extension()
-                    .is_some_and(|extension| extension == "yaml" || extension == "yml")
-                {
-                    total += entry.metadata()?.len();
-                    if total > super::MAX_CONFIG_BYTES as u64 {
-                        bail!("Custom rules exceed 1 MiB");
-                    }
-                    files.insert(relative, std::fs::read(path)?);
-                }
+                files.insert(relative, std::fs::read(path)?);
             }
         }
     }
+    if files.is_empty() {
+        bail!("Configured project rule directory contains no YAML definitions: {requested}");
+    }
+    Ok(files)
+}
+
+/// Local discovery for config/list/enable; checks use `load` with immutable files.
+pub fn read(root: &Path, config: &Config) -> Result<Catalog> {
+    let files = project_rule_files(root, config)?;
     Catalog::load(
         config,
         files
@@ -817,23 +789,36 @@ impl Catalog {
         let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX)?;
         let mut entries = BTreeMap::new();
         let mut mapped_inputs = BTreeSet::new();
-        for (package, path, yaml) in PACKAGED {
-            let rule: Builtin = super::parse_yaml(yaml.as_bytes())?;
+        for packaged in packaged_rules()? {
+            let rule: Builtin = super::parse_yaml(&packaged.bytes).with_context(|| {
+                format!(
+                    "Invalid built-in skill rule: references/rules/{}/{}",
+                    packaged.package, packaged.path
+                )
+            })?;
             mapped_inputs.extend(validate_builtin_standards(&rule, &standards)?);
-            if !["core", "shared"].contains(package)
-                && !config.rulesets.iter().any(|name| name == package)
+            if !["core", "shared"].contains(&packaged.package.as_str())
+                && !config.rulesets.iter().any(|name| name == &packaged.package)
             {
                 continue;
             }
-            entries.insert(
-                rule.id.clone(),
-                Entry {
-                    origin: format!("embedded:qualitygate/rules/{package}/{path}"),
-                    package: (*package).into(),
-                    builtin: Some(rule),
-                    custom: None,
-                },
-            );
+            if entries
+                .insert(
+                    rule.id.clone(),
+                    Entry {
+                        origin: format!(
+                            "skill:references/rules/{}/{}",
+                            packaged.package, packaged.path
+                        ),
+                        package: packaged.package,
+                        builtin: Some(rule),
+                        custom: None,
+                    },
+                )
+                .is_some()
+            {
+                bail!("Built-in skill rule assets contain duplicate rule IDs");
+            }
         }
         for input in standards.inputs.values() {
             if input.status == LifecycleInputStatus::Enforced && !mapped_inputs.contains(&input.id)
@@ -844,7 +829,7 @@ impl Catalog {
                 );
             }
         }
-        if let Some(directory) = &config.custom_rules {
+        if let Some(directory) = project_rules_directory(config) {
             let prefix = format!("{}/", directory.trim_end_matches('/'));
             let mut ids = BTreeSet::new();
             let mut total = 0;
@@ -878,7 +863,9 @@ impl Catalog {
                 );
             }
             if ids.is_empty() {
-                bail!("Custom rule directory contains no YAML definitions: {directory}");
+                bail!(
+                    "Configured project rule directory contains no YAML definitions: {directory}"
+                );
             }
         }
         Ok(Self { entries })

@@ -29,6 +29,7 @@ pub(super) fn evaluate_with_provenance(
         "parameterized-tests" => parameterized(result, setting, &changes),
         "comment-language" => comments(result, setting, &changes, snapshot),
         "ai-code-traceability" => markers(result, setting, &changes, snapshot, facts),
+        "import-boundary" => imports(result, setting, &changes, snapshot),
         _ => bail!("Unknown structure rule: {id}"),
     }
 }
@@ -129,6 +130,62 @@ fn naming(result: &mut CheckResult, setting: &RuleSetting, changes: &[Change]) -
             result.matched_entities += 1;
             if !regex.is_match(&test.name) {
                 result.diagnostics.push(diagnostic(&result.id, Some(&change.path), Some(test.range.clone()), format!("Test '{}' does not match {pattern}", test.name), serde_json::json!({"symbol":test.symbol,"language":change.view.language,"pattern":pattern}), "Rename the test while preserving the framework's discovery convention", &test.symbol));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Enforces only repository-configured import boundaries. A syntax import is a
+/// bounded source fact; it is not a replacement for resolved dependency or
+/// runtime data-flow evidence.
+fn imports(
+    result: &mut CheckResult,
+    setting: &RuleSetting,
+    changes: &[Change],
+    snapshot: &Snapshot,
+) -> Result<()> {
+    let patterns = super::rules::compiled_patterns(setting, "forbidden_imports")?;
+    for change in changes {
+        let mut active = std::collections::BTreeSet::new();
+        let selected: Vec<_> = patterns
+            .get("all")
+            .into_iter()
+            .chain(patterns.get(&change.view.language))
+            .flat_map(|entries| entries.iter())
+            .filter(|(pattern, _)| active.insert(pattern.as_str()))
+            .collect();
+        if selected.is_empty() {
+            continue;
+        }
+        let added_lines = &snapshot
+            .changes
+            .get(&change.path)
+            .context("Changed syntax view is missing snapshot change lines")?
+            .added_lines;
+        for import in &change.view.imports {
+            if !added_lines
+                .iter()
+                .any(|line| (import.range.start_line..=import.range.end_line).contains(line))
+            {
+                continue;
+            }
+            result.matched_entities += 1;
+            for (pattern, regex) in &selected {
+                if regex.is_match(&import.text) {
+                    result.diagnostics.push(diagnostic(
+                        &result.id,
+                        Some(&change.path),
+                        Some(import.range.clone()),
+                        format!("Changed import matches configured forbidden boundary {pattern:?}"),
+                        serde_json::json!({"language": change.view.language, "pattern": pattern}),
+                        "Move the dependency behind an approved boundary or update the reviewed boundary policy",
+                        &format!(
+                            "{}:{}-{}:{pattern}",
+                            change.path, import.range.start_line, import.range.end_line
+                        ),
+                    ));
+                }
             }
         }
     }

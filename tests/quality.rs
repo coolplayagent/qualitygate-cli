@@ -6,6 +6,8 @@ mod architecture;
 mod documentation;
 #[path = "quality/rust_references.rs"]
 mod rust_references;
+#[path = "quality/skill_package.rs"]
+mod skill_package;
 
 fn files(root: &Path) -> Vec<PathBuf> {
     let mut entries = Vec::new();

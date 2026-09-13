@@ -14,13 +14,15 @@ The table lists permitted direct dependencies between top-level production owner
 | `net` | `domain`, `env` |
 | `runner` | `domain`, `env` |
 | `snapshot` | `domain`, `net`, `paths`, `runner` |
-| `config` | `domain`, `paths` |
+| `config` | `domain`, `env`, `paths` |
 | `adapters` | `config`, `domain`, `paths`, `snapshot` |
 | `application` | `adapters`, `config`, `domain`, `env`, `net`, `paths`, `runner`, `snapshot` |
 | `interfaces` | `application`, `config`, `domain`, `snapshot` |
 | Binary entry point | `interfaces` |
 
 `lib.rs` declares physical owners and does not hide dependencies behind root re-exports. The CLI delegates candidate rule changes to `config::enable_rule`; configuration validation, confined atomic replacement and permission preservation remain owned by configuration code.
+
+`config` calls `env` only to resolve deployment-owned Skill rule assets. Project policy files remain owned by the selected configuration snapshot and confined through `paths`; this keeps runtime rule discovery separate from repository policy loading.
 
 Every top-level owner has an explicit directory below src/qualitygate:
 domain, env, paths, net, runner, snapshot, config, adapters, application, and

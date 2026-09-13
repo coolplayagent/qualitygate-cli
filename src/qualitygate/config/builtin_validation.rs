@@ -1,5 +1,6 @@
 use super::{Marker, RuleSetting};
 use anyhow::{Context, Result, bail};
+use std::collections::BTreeSet;
 
 pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
     if id == "used-undeclared" {
@@ -18,6 +19,8 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
         "parameterized-tests" => &["minimum_similar", "paths", "languages"],
         "comment-language" => &["language", "exempt_patterns", "paths", "languages"],
         "ai-code-traceability" => &["marker", "provenance_scope", "paths", "languages"],
+        "source-pattern" => &["prohibited_patterns", "paths", "languages"],
+        "import-boundary" => &["forbidden_imports", "paths", "languages"],
         _ => bail!("Unknown builtin implementation: {id}"),
     };
     for (key, value) in &rule.parameters {
@@ -36,6 +39,9 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
                 {
                     regex::Regex::new(value.as_str().context("patterns values must be strings")?)?;
                 }
+            }
+            "prohibited_patterns" | "forbidden_imports" => {
+                pattern_map(key, value)?;
             }
             "paths" | "exempt_patterns" | "languages" => {
                 for value in value
@@ -90,6 +96,46 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
                 }
             }
             _ => unreachable!("validated parameter key"),
+        }
+    }
+    if id == "source-pattern" && !rule.parameters.contains_key("prohibited_patterns") {
+        bail!("source-pattern requires prohibited_patterns");
+    }
+    if id == "import-boundary" && rule.enabled && !rule.parameters.contains_key("forbidden_imports")
+    {
+        bail!("import-boundary requires forbidden_imports when enabled");
+    }
+    Ok(())
+}
+
+fn pattern_map(key: &str, value: &serde_json::Value) -> Result<()> {
+    let values = value
+        .as_object()
+        .with_context(|| format!("{key} must map languages to regex arrays"))?;
+    if values.is_empty() || values.len() > 32 {
+        bail!("{key} requires 1..32 language entries");
+    }
+    for (language, entries) in values {
+        if language != "all"
+            && !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str())
+        {
+            bail!("{key} has unsupported language: {language}");
+        }
+        let entries = entries
+            .as_array()
+            .with_context(|| format!("{key}.{language} must be a regex array"))?;
+        if entries.is_empty() || entries.len() > 32 {
+            bail!("{key}.{language} requires 1..32 regex patterns");
+        }
+        let mut unique = BTreeSet::new();
+        for pattern in entries {
+            let pattern = pattern
+                .as_str()
+                .with_context(|| format!("{key}.{language} values must be strings"))?;
+            if pattern.is_empty() || pattern.len() > 512 || !unique.insert(pattern) {
+                bail!("{key}.{language} requires distinct regex patterns of 1..512 bytes");
+            }
+            regex::Regex::new(pattern)?;
         }
     }
     Ok(())

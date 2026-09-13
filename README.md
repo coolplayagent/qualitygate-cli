@@ -29,11 +29,13 @@ See [tool reports](docs/reports.md) for test counts, coverage, analyzer output a
 See [coverage reports](docs/coverage.md) for JaCoCo, Cobertura and coverage.py completeness and repair evidence.
 See [SARIF analysis](docs/sarif.md) for indexed locations, baseline identities and real Clippy acceptance.
 See [Java interface compatibility](docs/compatibility.md) for paired snapshot builds and binary/source API checks.
-See [built-in rules](docs/rules.md) for language adapters and team-specific configuration.
+See [built-in rules](docs/rules.md) for Skill-owned rule assets, language adapters and team-specific configuration.
 See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.
 See [source reviews](docs/source-reviews.md) for reviewed mappings from normative sections to executable rules.
 See [project facts](docs/projects.md) for Maven dependency pairing and rule/command prerequisites, and [Python project facts](docs/python-projects.md) for installed dependency verification.
 See [merge requests](docs/merge-requests.md) for GitHub/GitLab comparisons, credentials and snapshot evidence.
+See the [skill-over-CLI release package](docs/skill-package.md) for the
+versioned agent bundle, platform assets, and publication boundary.
 
 ## Current command surface
 

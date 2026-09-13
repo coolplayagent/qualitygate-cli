@@ -1,0 +1,17 @@
+id: import-boundary
+version: 1
+description: Enforce explicitly configured source import boundaries across supported languages
+implementation: import-boundary
+language: [java, python, rust, typescript, go]
+requires_capabilities: [imports]
+defaults:
+  enabled: false
+  required: true
+  severity: error
+  parameters: {}
+standard_refs:
+  - {source_id: aws-architecture, controls: [architecture-review, dependency-boundary]}
+  - {source_id: azure-waf, controls: [architecture, security-boundary]}
+  - {source_id: google-typescript, controls: [module-boundary, static-gate]}
+  - {source_id: cloudflare-codex, controls: [governed-standards, design-review]}
+lifecycle_inputs: [configured-import-boundary]

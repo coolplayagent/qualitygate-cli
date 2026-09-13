@@ -1,5 +1,13 @@
 # Built-in structure rules
 
+Built-in definitions are Skill resources, not compiled Rust string constants.
+The matching executable reads `references/rules/{core,shared,lang-java,lang-python}`
+from its installed Skill (or the explicit `QUALITYGATE_BUILTIN_RULES_DIR`). A
+missing or malformed asset package is an error; it cannot silently fall back to
+another rule set. Repository-local declarative rules are independently loaded
+from the `custom_rules` directory in the selected policy snapshot (typically
+`qualitygate/rules/`); see [custom rules and packages](custom-rules.md).
+
 The current syntax adapters parse Java/JUnit, Python/pytest, TypeScript/Jest or Vitest-style test calls, Go testing functions, Rust test attributes, and Shell comments. Parse failures are reported as incomplete checks. Source parsing has a two-second per-file deadline and 200,000-node traversal limit, in addition to the snapshot byte budgets.
 
 `test-naming` compares base and current entities and checks added tests. Default patterns preserve each framework's discovery conventions. Configure `parameters.pattern` for one pattern or `parameters.patterns` for a map keyed by language. `parameters.paths` confines the rule to explicit path globs.
@@ -9,6 +17,23 @@ The current syntax adapters parse Java/JUnit, Python/pytest, TypeScript/Jest or 
 `comment-language` requires `parameters.language` to be `chinese`, `english`, or `bilingual`. It checks changed parsed comments, with `parameters.exempt_patterns` for terminology and code fragments. Language classification is a documented heuristic and defaults to warning severity.
 
 `ai-code-traceability` requires an explicit `parameters.marker` binding with `type`, `name`, and optional `fields`. It checks declaration presence and fields. The default scope is all added tests; existing declarations retain their obligations. `parameters.provenance_scope: ai_only` selects agent-participating additions using [signed external run records](provenance.md). Missing scope evidence remains incomplete. [Git trailer bindings](git-trailers.md) associate declarations with actual entity-changing commits; uncommitted edits cannot borrow old trailers.
+
+`security-sensitive-api` examines bounded language-keyed regular expressions on
+changed Java, Python, Rust, TypeScript, and Go source lines. Its packaged
+patterns identify process execution, dynamic evaluation, pickle loading, and
+Rust `unsafe` use as warning-level review signals. A match is not proof of a
+vulnerability; repositories can narrow `parameters.prohibited_patterns`,
+`paths`, and `languages` only through an explicit policy change.
+
+`todo-marker` is a warning-level changed-line review signal for `TODO`,
+`FIXME`, and `XXX` in supported source files. It requires a disposition rather
+than assuming a marker is a defect or should be erased.
+
+`import-boundary` is a Java/Python/Rust/TypeScript/Go architecture rule. It is
+disabled by default and can be enabled only with explicit language-keyed
+`parameters.forbidden_imports` regex arrays. It evaluates added parsed imports,
+not resolved dependency ownership, runtime reachability, or a threat model. An
+enabled rule without a configured boundary is a configuration error.
 
 ```yaml
 schema_version: 1

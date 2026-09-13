@@ -5,8 +5,10 @@ use crate::{
     domain::*,
     snapshot::{Snapshot, digest},
 };
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
+use globset::{Glob, GlobSet, GlobSetBuilder};
 use regex::Regex;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub fn diagnostic(
     rule: &str,
@@ -109,15 +111,18 @@ pub fn evaluate_with_context(
             "used-undeclared" => {
                 super::project_rules::used_undeclared(&mut result, setting, snapshot, projects)
             }
-            "test-naming" | "parameterized-tests" | "comment-language" | "ai-code-traceability" => {
-                super::structure_rules::evaluate_with_provenance(
-                    implementation,
-                    &mut result,
-                    setting,
-                    snapshot,
-                    facts,
-                )
-            }
+            "source-pattern" => source_patterns(&mut result, setting, snapshot),
+            "test-naming"
+            | "parameterized-tests"
+            | "comment-language"
+            | "ai-code-traceability"
+            | "import-boundary" => super::structure_rules::evaluate_with_provenance(
+                implementation,
+                &mut result,
+                setting,
+                snapshot,
+                facts,
+            ),
             _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),
         }
     })();
@@ -245,3 +250,130 @@ fn diff_size(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapsho
     }
     Ok(())
 }
+
+/// Checks explicit, bounded review patterns on added source lines. This is a
+/// review signal: a matching API or marker is evidence for inspection, not a
+/// proof of exploitability, incomplete work, or policy noncompliance.
+fn source_patterns(
+    result: &mut CheckResult,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+) -> Result<()> {
+    let patterns = compiled_patterns(setting, "prohibited_patterns")?;
+    let paths = path_filter(setting)?;
+    let languages = string_parameter(setting, "languages")?;
+    for (path, change) in &snapshot.changes {
+        if !snapshot.includes(path) || !paths.as_ref().is_none_or(|filter| filter.is_match(path)) {
+            continue;
+        }
+        let Some(language) = super::syntax::language(path) else {
+            continue;
+        };
+        if !languages.is_empty() && !languages.iter().any(|value| value == language) {
+            continue;
+        }
+        let Some(file) = snapshot.files.get(path) else {
+            continue;
+        };
+        let text = std::str::from_utf8(&file.bytes)
+            .map_err(|_| anyhow::anyhow!("Changed source file is not UTF-8: {path}"))?;
+        let mut active = BTreeSet::new();
+        let selected = patterns
+            .get("all")
+            .into_iter()
+            .chain(patterns.get(language))
+            .flat_map(|entries| entries.iter())
+            .filter(|(pattern, _)| active.insert(pattern.as_str()));
+        let selected: Vec<_> = selected.collect();
+        if selected.is_empty() {
+            continue;
+        }
+        for (line_number, line) in text
+            .lines()
+            .enumerate()
+            .map(|(index, line)| (index + 1, line))
+        {
+            if !change.added_lines.contains(&line_number) {
+                continue;
+            }
+            result.matched_entities += 1;
+            for (pattern, regex) in &selected {
+                if regex.is_match(line) {
+                    result.diagnostics.push(diagnostic(
+                        &result.id,
+                        Some(path),
+                        Some(Range {
+                            start_line: line_number,
+                            end_line: line_number,
+                        }),
+                        format!("Changed source line matches configured review pattern {pattern:?}"),
+                        serde_json::json!({"language": language, "pattern": pattern}),
+                        "Review the changed API or marker against the repository's security and quality policy",
+                        &format!("{path}:{line_number}:{pattern}"),
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn compiled_patterns(
+    setting: &RuleSetting,
+    key: &str,
+) -> Result<BTreeMap<String, Vec<(String, Regex)>>> {
+    let values: BTreeMap<String, Vec<String>> = setting
+        .parameters
+        .get(key)
+        .context(format!("{key} requires language-keyed regex arrays"))
+        .and_then(|value| serde_json::from_value(value.clone()).map_err(Into::into))?;
+    if values.is_empty() || values.len() > 32 {
+        bail!("{key} requires 1..32 language entries");
+    }
+    let mut result = BTreeMap::new();
+    for (language, entries) in values {
+        if language != "all"
+            && !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str())
+        {
+            bail!("{key} has unsupported language: {language}");
+        }
+        if entries.is_empty() || entries.len() > 32 {
+            bail!("{key}.{language} requires 1..32 regex patterns");
+        }
+        let mut unique = BTreeSet::new();
+        let mut compiled = Vec::new();
+        for pattern in entries {
+            if pattern.is_empty() || pattern.len() > 512 || !unique.insert(pattern.clone()) {
+                bail!("{key}.{language} requires distinct regex patterns of 1..512 bytes");
+            }
+            compiled.push((pattern.clone(), Regex::new(&pattern)?));
+        }
+        result.insert(language, compiled);
+    }
+    Ok(result)
+}
+
+fn string_parameter(setting: &RuleSetting, key: &str) -> Result<Vec<String>> {
+    setting
+        .parameters
+        .get(key)
+        .map(|value| serde_json::from_value(value.clone()).map_err(Into::into))
+        .transpose()
+        .map(Option::unwrap_or_default)
+}
+
+fn path_filter(setting: &RuleSetting) -> Result<Option<GlobSet>> {
+    let paths = string_parameter(setting, "paths")?;
+    if paths.is_empty() {
+        return Ok(None);
+    }
+    let mut builder = GlobSetBuilder::new();
+    for path in paths {
+        builder.add(Glob::new(&path)?);
+    }
+    Ok(Some(builder.build()?))
+}
+
+#[cfg(test)]
+#[path = "rules_tests.rs"]
+mod tests;

@@ -62,6 +62,42 @@ inputs:
     evidence: [changed-comments, syntax-spans]
     applicability: Parsed changed comments in supported language adapters.
     critical_adoption: The language classifier is heuristic; terminology and code fragments require scoped exemptions.
+  - id: sensitive-api-review
+    status: enforced
+    rule_id: security-sensitive-api
+    lifecycle_stage: static-analysis
+    languages: [java, python, rust, typescript, go]
+    concerns: [security, static-gate, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-python, huawei-codearts, meta-zoncolan]
+    evidence: [changed-source-lines, regex-pattern]
+    applicability: Changed source lines in supported languages that match a packaged or repository-configured review pattern.
+    critical_adoption: A matched API is a review signal, not proof of exploitability, data exposure, or an unsafe call path; promote it only with scoped false-positive evidence.
+  - id: deferred-work-marker
+    status: enforced
+    rule_id: todo-marker
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [coding, reviewability, quality-gate]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [alibaba-ajcg, google-code-review, cloudflare-codex]
+    evidence: [changed-source-lines, regex-pattern]
+    applicability: Changed text source lines recognized by a supported syntax adapter.
+    critical_adoption: A TODO, FIXME, or XXX may be deliberate work tracking; the warning requires an explicit disposition, not removal or an automatic quality conclusion.
+  - id: configured-import-boundary
+    status: enforced
+    rule_id: import-boundary
+    lifecycle_stage: architecture
+    languages: [java, python, rust, typescript, go]
+    concerns: [architecture, dependencies, security]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [aws-architecture, azure-waf, google-typescript, cloudflare-codex]
+    evidence: [changed-imports, syntax-spans, configured-boundaries]
+    applicability: Added imports parsed by a supported adapter after the repository explicitly declares forbidden import patterns.
+    critical_adoption: This rule is disabled until the repository defines its boundaries; syntax imports cannot prove resolved dependency direction, runtime reachability, or threat-model coverage.
   - id: test-scenario-naming
     status: enforced
     rule_id: test-naming

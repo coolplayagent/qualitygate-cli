@@ -73,10 +73,11 @@ pub(super) async fn load(
             for asset in &config.verification_assets {
                 builder.add(globset::Glob::new(asset)?);
             }
-            if let Some(custom) = &config.custom_rules {
+            if let Some(project_rules) = crate::config::catalog::project_rules_directory(&config)
+            {
                 builder.add(globset::Glob::new(&format!(
                     "{}/**",
-                    custom.trim_end_matches('/')
+                    project_rules.trim_end_matches('/')
                 ))?);
             }
             let matcher = builder.build()?;

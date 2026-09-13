@@ -1,6 +1,7 @@
 //! Bazel-only entry point for configuration ownership.
 
 pub use qualitygate_domain::domain;
+pub use qualitygate_env::env;
 pub use qualitygate_paths::paths;
 
 #[path = "mod.rs"]

@@ -66,7 +66,7 @@ fn packaged_rules_expose_archived_standard_inputs() {
         ..Config::default()
     };
     let catalog = catalog::Catalog::load(&config, std::iter::empty()).unwrap();
-    assert!(catalog.entries.len() >= 10);
+    assert!(catalog.entries.len() >= 13);
     assert!(catalog.entries.values().any(|entry| {
         entry
             .builtin
@@ -103,7 +103,9 @@ fn embedded_archive_keeps_the_required_research_lanes() {
 
 #[test]
 fn builtins_reject_language_scopes_that_mismatch_lifecycle_inputs() {
-    let rule = include_str!("../../../qualitygate/rules/lang-java/junit-naming.yaml");
+    let rule = include_str!(
+        "../../../skills/qualitygate-cli/references/rules/lang-java/junit-naming.yaml"
+    );
     catalog::validate_builtin_mapping(rule).unwrap();
     for invalid in [
         rule.replace(r#"language: ["java"]"#, r#"language: ["python"]"#),
@@ -120,7 +122,9 @@ fn builtins_reject_language_scopes_that_mismatch_lifecycle_inputs() {
 
 #[test]
 fn builtins_reject_controls_not_declared_by_the_archived_source() {
-    let rule = include_str!("../../../qualitygate/rules/lang-java/junit-naming.yaml");
+    let rule = include_str!(
+        "../../../skills/qualitygate-cli/references/rules/lang-java/junit-naming.yaml"
+    );
     catalog::validate_builtin_mapping(rule).unwrap();
     let invalid = rule.replace(
         "controls: [naming, test-maintainability]",
@@ -592,6 +596,11 @@ fn misspelled_or_wrongly_typed_builtin_parameters_cannot_disable_assertions() {
         "{parameterized-tests: {parameters: {minimum_similar: 1}}}",
         "{ai-code-traceability: {parameters: {marker: {type: guessed, name: X}}}}",
         "{ai-code-traceability: {parameters: {provenance_scope: author_name}}}",
+        "{security-sensitive-api: {parameters: {prohibited_patterns: {rust: ['[']}}}}",
+        "{security-sensitive-api: {parameters: {prohibited_patterns: {ruby: ['danger']}}}}",
+        "{todo-marker: {parameters: {prohibited_patterns: {all: []}}}}",
+        "{import-boundary: {enabled: true}}",
+        "{import-boundary: {enabled: true, parameters: {forbidden_imports: {rust: '^use legacy'}}}}",
     ] {
         assert!(
             parse(format!("schema_version: 1\nrules: {rules}\n").as_bytes()).is_err(),
@@ -601,4 +610,27 @@ fn misspelled_or_wrongly_typed_builtin_parameters_cannot_disable_assertions() {
     for rulesets in ["[lang-typo]", "[core, core]"] {
         assert!(parse(format!("schema_version: 1\nrulesets: {rulesets}").as_bytes()).is_err());
     }
+}
+
+#[test]
+fn generic_quality_security_and_architecture_rules_have_strict_valid_configuration() {
+    let yaml = r#"
+schema_version: 1
+rules:
+  security-sensitive-api:
+    parameters:
+      prohibited_patterns:
+        rust: ['\bunsafe\s*\{']
+  todo-marker:
+    parameters:
+      prohibited_patterns:
+        all: ['(?i)\bTODO\b']
+  import-boundary:
+    enabled: true
+    parameters:
+      forbidden_imports:
+        rust: ['^use crate::application']
+"#;
+    let result = parse(yaml.as_bytes());
+    assert!(result.is_ok(), "{result:?}");
 }

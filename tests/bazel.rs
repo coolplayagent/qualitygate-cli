@@ -65,6 +65,8 @@ const NESTED_SOURCE_BUILDS: &[(&str, &str)] = &[
     ),
 ];
 
+const VERSIONED_OWNER_BUILDS: &[&str] = &["application", "config", "interfaces", "net"];
+
 const OWNER_DEPENDENCIES: &[(&str, &[&str])] = &[
     ("domain", &[]),
     ("env", &[]),
@@ -72,7 +74,7 @@ const OWNER_DEPENDENCIES: &[(&str, &[&str])] = &[
     ("net", &["domain", "env"]),
     ("runner", &["domain", "env"]),
     ("snapshot", &["domain", "net", "paths", "runner"]),
-    ("config", &["domain", "paths"]),
+    ("config", &["domain", "env", "paths"]),
     ("adapters", &["config", "domain", "paths", "snapshot"]),
     (
         "application",
@@ -112,6 +114,17 @@ fn bazel_uses_the_pinned_rust_toolchain_and_cargo_dependency_graph() {
     assert!(MODULE_LOCK.contains("rules_rust"));
     assert!(CARGO_ROOT_DEPS.contains("_CARGO_ROOT_PACKAGE = \"\""));
     assert!(CARGO_ROOT_DEPS.contains("package_name = _CARGO_ROOT_PACKAGE"));
+    assert!(CARGO_ROOT_DEPS.contains(&format!("_CARGO_PACKAGE_VERSION = \"{package_version}\"")));
+    for owner in VERSIONED_OWNER_BUILDS {
+        let source = OWNER_BUILDS
+            .iter()
+            .find_map(|(name, source)| (*name == *owner).then_some(*source))
+            .unwrap_or_else(|| panic!("missing Bazel package for {owner}"));
+        assert!(
+            source.contains("rustc_env = package_rustc_env()"),
+            "Bazel {owner} must receive the Cargo package version"
+        );
+    }
 }
 
 #[test]

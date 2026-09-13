@@ -2,6 +2,8 @@
 
 use std::path::PathBuf;
 
+pub const BUILTIN_RULES_DIR_ENV: &str = "QUALITYGATE_BUILTIN_RULES_DIR";
+
 pub fn artifact_base() -> PathBuf {
     std::env::var_os("QUALITYGATE_HOME")
         .map(PathBuf::from)
@@ -16,6 +18,38 @@ pub fn executable(program: &str, cwd: &std::path::Path) -> anyhow::Result<PathBu
 
 pub fn platform() -> (&'static str, &'static str) {
     (std::env::consts::OS, std::env::consts::ARCH)
+}
+
+/// Returns the caller-selected Skill asset directory, if any.
+pub fn builtin_rule_assets_override() -> Option<PathBuf> {
+    std::env::var_os(BUILTIN_RULES_DIR_ENV).map(PathBuf::from)
+}
+
+/// Finds deployment-owned Skill rule asset locations without inspecting a
+/// repository working directory, whose content belongs to policy instead.
+pub fn builtin_rule_asset_candidates() -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Ok(executable) = std::env::current_exe()
+        && let Some(skill_root) = executable.ancestors().nth(3)
+    {
+        candidates.push(skill_root.join("references/rules"));
+    }
+    for variable in ["TEST_SRCDIR", "RUNFILES_DIR"] {
+        if let Some(root) = std::env::var_os(variable) {
+            let root = PathBuf::from(root);
+            if let Some(workspace) = std::env::var_os("TEST_WORKSPACE") {
+                candidates.push(
+                    root.join(workspace)
+                        .join("skills/qualitygate-cli/references/rules"),
+                );
+            }
+            candidates.push(root.join("_main/skills/qualitygate-cli/references/rules"));
+        }
+    }
+    candidates.push(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("skills/qualitygate-cli/references/rules"),
+    );
+    candidates
 }
 
 pub fn provider_token(provider: &str, host: &str) -> Option<String> {

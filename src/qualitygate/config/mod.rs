@@ -3,6 +3,7 @@
 pub mod attestation;
 mod builtin_validation;
 pub mod catalog;
+mod catalog_assets;
 pub mod compatibility;
 mod constraints;
 mod custom_validation;

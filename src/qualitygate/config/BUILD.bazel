@@ -1,4 +1,4 @@
-load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition")
+load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition", "package_rustc_env")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -15,14 +15,17 @@ rust_library(
     crate_name = "qualitygate_config",
     crate_root = "bazel_lib.rs",
     srcs = [":sources"],
+    data = ["//:packaged_rules"],
     compile_data = [
         "//:engineering_standard_assets",
         "//:packaged_rules",
     ],
     aliases = aliases(),
     edition = crate_edition(),
+    rustc_env = package_rustc_env(),
     deps = [
         "//src/qualitygate/domain",
+        "//src/qualitygate/env",
         "//src/qualitygate/paths",
     ] + all_crate_deps(normal = True),
     proc_macro_deps = all_crate_deps(proc_macro = True),
@@ -31,6 +34,10 @@ rust_library(
 rust_test(
     name = "unit_tests",
     crate = ":config",
+    data = ["//:packaged_rules"],
+    env = {
+        "QUALITYGATE_BUILTIN_RULES_DIR": "skills/qualitygate-cli/references/rules",
+    },
     aliases = aliases(
         normal_dev = True,
         proc_macro_dev = True,

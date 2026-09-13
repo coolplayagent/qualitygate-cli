@@ -6,7 +6,15 @@ Rule definitions are loaded from the **selected policy snapshot**. Staged checks
 
 ## Packages and activation
 
-The binary embeds the YAML manifests under `qualitygate/rules/`. `core` contains line endings, commit subjects and diff size; `shared` contains test naming, parameterization suggestions, comment language and source declarations. These packages are always available. Selecting `lang-java` exposes `junit-naming` and the Maven `module-boundary` and `used-undeclared` rules; `lang-python` exposes `pytest-naming`.
+Built-in YAML manifests live in the installed Skill under
+`references/rules/`; the binary reads them at runtime through the Skill layout
+or `QUALITYGATE_BUILTIN_RULES_DIR`. There is no compiled rule-manifest fallback:
+missing, malformed, incomplete, or unsupported Skill assets make policy loading
+fail. `core` contains line endings, commit subjects and diff size; `shared`
+contains general test, comment, quality, security, and configurable source
+architecture rules. Selecting `lang-java` exposes `junit-naming` and the Maven
+`module-boundary` and `used-undeclared` rules; `lang-python` exposes
+`pytest-naming`.
 
 Package selection makes definitions available. A rule runs only when enabled in `rules` and selected by the profile. Detection never enables source declarations automatically. Parameterization, comment language and diff size default to warning severity; explicit policy settings take precedence.
 
@@ -19,7 +27,15 @@ rules:
   descriptive-tests: {}
 ```
 
-`custom_rules` names one repository subdirectory; its `.yaml` and `.yml` files are discovered recursively. Definitions are limited to 256 files and 1 MiB combined. Missing or empty configured directories, duplicate custom IDs, invalid YAML, unknown fields and unsupported protocol versions invalidate the configuration. Local discovery additionally limits directory traversal to 4,096 entries and rejects symlinks.
+Project rules are discovered recursively from the normalized repository
+subdirectory named by `custom_rules`; `qualitygate/rules` is the recommended
+project-local location. Project definitions come only from the selected policy
+snapshot: staged checks use staged bytes and `--policy-ref` uses the
+caller-selected commit. A configured directory must exist and contain YAML.
+Definitions are limited to 256 files and 1 MiB combined. Duplicate project IDs,
+invalid YAML, unknown fields and unsupported protocol versions invalidate the
+configuration. Local discovery additionally limits directory traversal to 4,096
+entries and rejects symlinks.
 
 An explicitly loaded custom definition can replace a packaged rule with the same ID. `rules list`, check metadata and the policy digest identify the selected definition and its origin. Changes are subject to the same policy-reference comparison. Two custom definitions with the same ID are always invalid.
 

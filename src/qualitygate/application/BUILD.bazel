@@ -1,4 +1,4 @@
-load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition")
+load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition", "package_rustc_env")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -15,6 +15,7 @@ rust_library(
     srcs = [":sources"],
     aliases = aliases(),
     edition = crate_edition(),
+    rustc_env = package_rustc_env(),
     deps = [
         "//src/qualitygate/adapters",
         "//src/qualitygate/config",

@@ -40,6 +40,13 @@ pub fn cli(root: &Path, args: &[&str]) -> Output {
             "QUALITYGATE_HOME",
             root.join(".git/qualitygate-test-evidence"),
         )
+        .env(
+            "QUALITYGATE_BUILTIN_RULES_DIR",
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/skills/qualitygate-cli/references/rules"
+            ),
+        )
         .arg("--root")
         .arg(root)
         .args(args)

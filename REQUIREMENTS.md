@@ -238,11 +238,13 @@ tree-sitter 提供语法树能力，不自动提供类型解析、包坐标映�
 生态包文件布局：
 
 ```
-qualitygate/rules/
-  core/          commit-message.yaml, line-ending.yaml
-  shared/        test-naming.yaml, comment-language.yaml
-  lang-java/     ai-code-traceability.yaml, junit-naming.yaml
-  lang-python/   pytest-naming.yaml, dep-declared.yaml
+skills/qualitygate-cli/references/rules/
+  core/          commit-message.yaml, diff-size.yaml, line-ending.yaml
+  shared/        test-naming.yaml, comment-language.yaml, ai-code-traceability.yaml,
+                 parameterized-tests.yaml, security-sensitive-api.yaml,
+                 todo-marker.yaml, import-boundary.yaml
+  lang-java/     junit-naming.yaml, module-boundary.yaml, used-undeclared.yaml
+  lang-python/   pytest-naming.yaml
 ```
 
 ### 6.2 规则配置与 DSL 演进
@@ -363,7 +365,7 @@ profiles:
     include: [ai-code-traceability, test-naming]
   full:
     include: [ai-code-traceability, test-naming, repository-verify]
-# 自定义规则接口稳定后支持 custom_rules: ./qualitygate/rules/custom/
+# 项目规则可通过 custom_rules 指向 qualitygate/rules/ 或其他项目内目录。
 ```
 
 生态探测结果不能自行决定团队必须采用某种规范。已有配置不应在重复 `init` 时被静默覆盖。

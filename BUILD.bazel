@@ -7,7 +7,7 @@ exports_files(["tests/common/http.rs"])
 
 filegroup(
     name = "packaged_rules",
-    srcs = glob(["qualitygate/rules/**/*.yaml"]),
+    srcs = glob(["skills/qualitygate-cli/references/rules/**/*.yaml"]),
 )
 
 filegroup(

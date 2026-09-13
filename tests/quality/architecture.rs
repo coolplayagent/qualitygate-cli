@@ -12,7 +12,7 @@ const OWNERS: &[(&str, &[&str])] = &[
     ("net", &["domain", "env"]),
     ("runner", &["domain", "env"]),
     ("snapshot", &["domain", "net", "paths", "runner"]),
-    ("config", &["domain", "paths"]),
+    ("config", &["domain", "env", "paths"]),
     ("adapters", &["config", "domain", "paths", "snapshot"]),
     (
         "application",

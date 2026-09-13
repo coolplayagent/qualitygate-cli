@@ -1,0 +1,21 @@
+id: security-sensitive-api
+version: 1
+description: Review changed calls to high-risk APIs with language-specific bounded patterns
+implementation: source-pattern
+language: [java, python, rust, typescript, go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    prohibited_patterns:
+      java: ['\b(?:Runtime\.getRuntime\(\)\.exec|ProcessBuilder)\b']
+      python: ['\b(?:eval|exec)\s*\(', '\bpickle\.loads\s*\(']
+      rust: ['\bunsafe\s*\{']
+      typescript: ['\b(?:eval|Function)\s*\(', '\b(?:exec|execSync)\s*\(']
+      go: ['\bexec\.Command(?:Context)?\s*\(']
+standard_refs:
+  - {source_id: google-python, controls: [exception-boundary, import-hygiene]}
+  - {source_id: huawei-codearts, controls: [security-quality, static-gate]}
+  - {source_id: meta-zoncolan, controls: [source-sink-analysis, rule-validation]}
+lifecycle_inputs: [sensitive-api-review]

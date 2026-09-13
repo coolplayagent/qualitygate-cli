@@ -8,6 +8,7 @@ load(
 )
 
 _CARGO_ROOT_PACKAGE = ""
+_CARGO_PACKAGE_VERSION = "0.2.0"
 
 def aliases(
         normal = False,
@@ -45,3 +46,6 @@ def all_crate_deps(
 
 def crate_edition():
     return _crate_edition(package_name = _CARGO_ROOT_PACKAGE)
+
+def package_rustc_env():
+    return {"CARGO_PKG_VERSION": _CARGO_PACKAGE_VERSION}

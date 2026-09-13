@@ -31,15 +31,22 @@ supplemented by language-ecosystem guidance where it is needed for coverage.
 Built-in rule catalog loading validates every `standard_refs` and
 `lifecycle_inputs` entry against the machine-readable
 [registry and lifecycle matrix](../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml),
-so a rule cannot silently point at an unarchived source or claim an unimplemented
-design, analyzer, or benchmark input as an enforced check.
-Registry schema v4 also rejects incomplete source provenance, non-HTTPS links,
+so a rule cannot silently point at an unarchived source, attach an undeclared
+normalized control to a reviewed source, or claim an unimplemented design,
+analyzer, or benchmark input as an enforced check. Registry schema v5 also
+rejects incomplete source provenance, non-HTTPS links,
 unknown archive classifications, taxonomy drift, missing declared organization,
 language, lifecycle, or concern coverage, absent direct lifecycle paths for
 those declared dimensions, attempts to narrow the embedded eight-company/full
 lifecycle research scope, and status/outcome mismatches;
 the native configuration tests cover these archive-contract failures separately
 from rule execution.
+
+The [skill-over-CLI package](skill-package.md) is also a versioned quality
+contract. Its Rust quality test checks that the skill metadata follows the Cargo
+version, preserves the policy/evidence safety boundary, and names the release
+assets; the tag workflow then validates the generated archive before any public
+publication.
 
 The Rust integration job and local integration check include `tests/init.rs`. Its temporary Cargo project executes a generated candidate, reports a real failed assertion, passes after repair, and rejects a zero-test result. The repository-owned fixture and initialization implementation are Rust.
 

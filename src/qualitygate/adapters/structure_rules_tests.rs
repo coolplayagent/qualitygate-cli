@@ -34,11 +34,20 @@ fn snapshot(path: &str, old: Option<&str>, current: &str) -> Snapshot {
 }
 
 fn run(id: &str, snapshot: &Snapshot, parameters: serde_json::Value) -> CheckResult {
+    run_as(id, id, snapshot, parameters)
+}
+
+fn run_as(
+    id: &str,
+    implementation: &str,
+    snapshot: &Snapshot,
+    parameters: serde_json::Value,
+) -> CheckResult {
     let setting = RuleSetting {
         parameters: serde_json::from_value(parameters).unwrap(),
         ..RuleSetting::default()
     };
-    crate::adapters::rules::evaluate(id, &setting, snapshot)
+    crate::adapters::rules::evaluate_as(id, implementation, &setting, snapshot)
 }
 
 #[test]
@@ -90,6 +99,31 @@ fn source_declarations_require_explicit_binding_and_nonempty_fields() {
         run("ai-code-traceability", &fixed, parameters).verdict,
         Some(Verdict::Pass)
     );
+}
+
+#[test]
+fn configured_import_boundaries_only_match_added_syntax_imports() {
+    let result = run_as(
+        "import-boundary",
+        "import-boundary",
+        &snapshot(
+            "src/lib.rs",
+            None,
+            "use crate::application::internal;\npub fn api() {}\n",
+        ),
+        serde_json::json!({"forbidden_imports":{"rust":["^use crate::application"]}}),
+    );
+    assert_eq!(result.verdict, Some(Verdict::Fail));
+    assert_eq!(result.matched_entities, 1);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].range.as_ref().unwrap().start_line, 1);
+    let incomplete = run_as(
+        "import-boundary",
+        "import-boundary",
+        &snapshot("src/lib.rs", None, "pub fn api() {}\n"),
+        serde_json::json!({}),
+    );
+    assert_eq!(incomplete.verdict, None);
 }
 
 #[test]

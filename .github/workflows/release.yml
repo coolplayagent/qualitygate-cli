@@ -1,0 +1,330 @@
+name: Release Skill Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '*.*.*'
+  workflow_dispatch:
+    inputs:
+      dry_run_tag:
+        description: Tag-like version to validate and package without publishing.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  BIN_NAME: qualitygate
+
+jobs:
+  verify:
+    name: Verify release inputs and quality gates
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Validate release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.dry_run_tag }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          if [[ ! "$tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "release tag must be v1.0.0, 1.0.0, or a SemVer prerelease: $tag" >&2
+            exit 1
+          fi
+          version="${tag#v}"
+          manifest_version="$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
+          if [[ "$version" != "$manifest_version" ]]; then
+            echo "tag $tag does not match Cargo.toml package.version $manifest_version" >&2
+            exit 1
+          fi
+          prerelease=false
+          if [[ "$version" == *-* || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            prerelease=true
+          fi
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+      - name: Format gate
+        run: cargo fmt --all -- --check
+      - name: Compilation gate
+        run: cargo check --locked --all-targets --all-features
+      - name: Clippy gate
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Test gate
+        run: cargo test --locked --all-targets --all-features
+      - name: Coverage gate
+        run: |
+          cargo install cargo-llvm-cov --locked
+          cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90
+      - name: Validate source skill package
+        run: cargo test --locked --test quality skill_package_contract_is_complete_and_matches_the_cli_version --all-features
+      - name: Package crate
+        run: cargo package --locked
+      - name: Verify checks did not rewrite repository inputs
+        run: git diff --exit-code
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            extension: ''
+            artifact: qualitygate-linux-x86_64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            extension: ''
+            artifact: qualitygate-linux-aarch64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            extension: '.exe'
+            artifact: qualitygate-windows-x86_64
+            msvc_arch: amd64
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            extension: '.exe'
+            artifact: qualitygate-windows-aarch64
+            msvc_arch: amd64_arm64
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Install release target
+        run: rustup target add ${{ matrix.target }}
+      - name: Set up MSVC toolchain
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+      - name: Build release binary
+        run: cargo build --release --locked --target ${{ matrix.target }} --bin qualitygate
+      - name: Smoke test Linux binary
+        if: runner.os == 'Linux'
+        run: target/${{ matrix.target }}/release/${{ env.BIN_NAME }} --version
+      - name: Smoke test Windows x64 binary
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: '& "target\\${{ matrix.target }}\\release\\${{ env.BIN_NAME }}.exe" --version'
+      - name: Verify Windows ARM64 executable architecture
+        if: matrix.target == 'aarch64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          $path = "target\\${{ matrix.target }}\\release\\${{ env.BIN_NAME }}.exe"
+          $bytes = [System.IO.File]::ReadAllBytes($path)
+          if ($bytes.Length -lt 64 -or $bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) {
+            throw "Expected a PE executable at $path"
+          }
+          $peOffset = [System.BitConverter]::ToInt32($bytes, 0x3C)
+          if ($peOffset -lt 0 -or $peOffset + 6 -gt $bytes.Length) {
+            throw "Invalid PE header offset in $path"
+          }
+          $machine = [System.BitConverter]::ToUInt16($bytes, $peOffset + 4)
+          if ($machine -ne 0xAA64) {
+            throw "Expected ARM64 PE machine type 0xAA64, got 0x{0:X4}" -f $machine
+          }
+      - name: Upload release binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact }}
+          path: target/${{ matrix.target }}/release/${{ env.BIN_NAME }}${{ matrix.extension }}
+          if-no-files-found: error
+
+  skill:
+    name: Package CLI skill
+    needs: [verify, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download Linux x64 binary
+        uses: actions/download-artifact@v7
+        with:
+          name: qualitygate-linux-x86_64
+          path: release-artifacts/linux-x86_64
+      - name: Download Linux ARM64 binary
+        uses: actions/download-artifact@v7
+        with:
+          name: qualitygate-linux-aarch64
+          path: release-artifacts/linux-aarch64
+      - name: Download Windows x64 binary
+        uses: actions/download-artifact@v7
+        with:
+          name: qualitygate-windows-x86_64
+          path: release-artifacts/windows-x86_64
+      - name: Download Windows ARM64 binary
+        uses: actions/download-artifact@v7
+        with:
+          name: qualitygate-windows-aarch64
+          path: release-artifacts/windows-aarch64
+      - name: Validate skill version inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest_version="$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
+          test "$manifest_version" = "${{ needs.verify.outputs.version }}"
+          grep -Fqx '  version: "'"$manifest_version"'"' skills/qualitygate-cli/SKILL.md
+      - name: Create and validate skill archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="qualitygate-cli-skill-${{ needs.verify.outputs.tag }}"
+          mkdir -p "dist/$package"
+          cp -R skills/qualitygate-cli/. "dist/$package/"
+          mkdir -p "dist/$package/assets/linux-x86_64" "dist/$package/assets/linux-aarch64"
+          mkdir -p "dist/$package/assets/windows-x86_64" "dist/$package/assets/windows-aarch64"
+          install -m 0755 release-artifacts/linux-x86_64/qualitygate "dist/$package/assets/linux-x86_64/qualitygate"
+          install -m 0755 release-artifacts/linux-aarch64/qualitygate "dist/$package/assets/linux-aarch64/qualitygate"
+          install -m 0755 release-artifacts/windows-x86_64/qualitygate.exe "dist/$package/assets/windows-x86_64/qualitygate.exe"
+          install -m 0755 release-artifacts/windows-aarch64/qualitygate.exe "dist/$package/assets/windows-aarch64/qualitygate.exe"
+          test -s "dist/$package/assets/linux-x86_64/qualitygate"
+          test -s "dist/$package/assets/linux-aarch64/qualitygate"
+          test -s "dist/$package/assets/windows-x86_64/qualitygate.exe"
+          test -s "dist/$package/assets/windows-aarch64/qualitygate.exe"
+          test -f "dist/$package/references/builtin-rules.md"
+          test -f "dist/$package/references/rules/core/line-ending.yaml"
+          test -f "dist/$package/references/rules/shared/security-sensitive-api.yaml"
+          test -f "dist/$package/references/rules/shared/todo-marker.yaml"
+          test -f "dist/$package/references/rules/shared/import-boundary.yaml"
+          test -f "dist/$package/references/rules/lang-java/module-boundary.yaml"
+          test -f "dist/$package/references/rules/lang-python/pytest-naming.yaml"
+          "dist/$package/assets/linux-x86_64/qualitygate" \
+            --root "$GITHUB_WORKSPACE" --format json rules list > "dist/rules-list.json"
+          grep -F '"origin": "skill:references/rules/shared/security-sensitive-api.yaml"' "dist/rules-list.json"
+          grep -F '"id": "import-boundary"' "dist/rules-list.json"
+          tar -C dist -czf "dist/$package.tar.gz" "$package"
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/SKILL.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/README.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/operations.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/builtin-rules.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/security-sensitive-api.yaml" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/todo-marker.yaml" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/import-boundary.yaml" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/linux-x86_64/qualitygate" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/linux-aarch64/qualitygate" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/windows-x86_64/qualitygate.exe" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/windows-aarch64/qualitygate.exe" >/dev/null
+      - name: Upload skill archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: qualitygate-cli-skill-${{ needs.verify.outputs.tag }}
+          path: dist/qualitygate-cli-skill-${{ needs.verify.outputs.tag }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    if: github.event_name == 'push'
+    needs: [verify, skill]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
+        with:
+          name: qualitygate-cli-skill-${{ needs.verify.outputs.tag }}
+          path: dist
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum qualitygate-cli-skill-${{ needs.verify.outputs.tag }}.tar.gz > checksums.txt
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ needs.verify.outputs.tag }}"
+          prerelease_args=()
+          if [[ "${{ needs.verify.outputs.prerelease }}" == "true" ]]; then
+            prerelease_args+=(--prerelease)
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" --clobber dist/*
+          else
+            gh release create "$tag" --title "$tag" --generate-notes "${prerelease_args[@]}" dist/*
+          fi
+
+  publish-skill:
+    name: Publish ClawHub skill
+    if: github.event_name == 'push'
+    needs: [verify, release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check ClawHub token
+        id: clawhub-token
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLAWHUB_TOKEN:-}" ]]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+      - name: Validate lightweight skill size
+        if: steps.clawhub-token.outputs.publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          limit = 10_000_000
+          oversized = [path for path in Path("skills/qualitygate-cli").rglob("*") if path.is_file() and path.stat().st_size >= limit]
+          if oversized:
+              raise SystemExit(f"ClawHub files must stay below 10 MB: {oversized}")
+          PY
+      - name: Install ClawHub CLI
+        if: steps.clawhub-token.outputs.publish == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Publish skill
+        if: steps.clawhub-token.outputs.publish == 'true'
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -g clawhub
+          tags="latest"
+          if [[ "${{ needs.verify.outputs.prerelease }}" == "true" ]]; then
+            tags="prerelease"
+          fi
+          clawhub --no-input login --token "$CLAWHUB_TOKEN"
+          clawhub publish skills/qualitygate-cli \
+            --slug qualitygate-cli \
+            --name "Qualitygate CLI" \
+            --version "${{ needs.verify.outputs.version }}" \
+            --changelog "qualitygate-cli ${{ needs.verify.outputs.tag }}" \
+            --tags "$tags"

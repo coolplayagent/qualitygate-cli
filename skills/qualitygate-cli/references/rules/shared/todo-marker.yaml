@@ -1,0 +1,17 @@
+id: todo-marker
+version: 1
+description: Review added TODO, FIXME, and XXX markers before deferred work reaches a change
+implementation: source-pattern
+language: []
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    prohibited_patterns:
+      all: ['(?i)\b(?:TODO|FIXME|XXX)\b']
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [maintainability, documentation]}
+  - {source_id: google-code-review, controls: [focused-change, code-health]}
+  - {source_id: cloudflare-codex, controls: [reviewability, merge-gate]}
+lifecycle_inputs: [deferred-work-marker]
