@@ -38,7 +38,10 @@ Each packaged definition declares `standard_refs` and
 `lifecycle_inputs`. The catalog resolves both against the reviewed
 [external standards archive](../knowledge/best-practices/engineering-standards/README.md)
 and rejects absent, unknown, mismatched, or non-enforced mappings. The
-definitions are exposed by `rules list` and rule metadata.
+`controls` for each reference must be declared by that source in the registry;
+they are normalized provenance labels, not vendor-verbatim policy or an
+independent enforcement decision. The definitions are exposed by `rules list`
+and rule metadata.
 
 When a packaged rule declares concrete `language` metadata, its exact language
 set must equal the union of its concrete lifecycle-input lanes; an `all` lane
@@ -61,7 +64,9 @@ The embedded archive accepts only its versioned registry schema and complete,
 HTTPS-linked source metadata. Its closed lifecycle taxonomy and the required
 status/outcome pairs (`enforced` → violation or warning, `evidence-contract` →
 incomplete, `planned` → advisory) prevent a source note from silently changing
-how an input can affect a verdict. Its declared organization, language, SDLC,
+how an input can affect a verdict. Source-local normalized control sets prevent
+a packaged rule from attributing an unarchived control to a reviewed source.
+Its declared organization, language, SDLC,
 and concern coverage is also checked: every dimension must reach a direct
 lifecycle input rather than remain an unused bibliography entry. A universal
 language input cannot stand in for a declared language lane.

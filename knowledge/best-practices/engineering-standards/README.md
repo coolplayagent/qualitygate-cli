@@ -7,20 +7,24 @@ it does not copy full pages or PDFs.
 The machine-readable index is [registry.yaml](registry.yaml); the rule-to-stage
 contracts are in [lifecycle-rule-matrix.yaml](lifecycle-rule-matrix.yaml).
 Each source note records the company, authority level, topics, and the evidence
-that qualitygate can reasonably consume. The source IDs in built-in rule files
-and their lifecycle input IDs are checked against both files when the rule
-catalog loads. The registry also declares its required organizations, language
-lanes, lifecycle stages, and concerns. Catalog loading rejects an archive that
+that qualitygate can reasonably consume. The source IDs and normalized control
+IDs in built-in rule files, and their lifecycle input IDs, are checked against
+both files when the rule catalog loads. The registry also declares its required
+organizations, language lanes, lifecycle stages, and concerns. Catalog loading rejects an archive that
 can no longer substantiate that breadth, or a lifecycle matrix that leaves any
 declared organization, language lane, stage, or concern without a direct
 rule-input path. A universal (`all`) input does not substitute for a declared
 language lane.
 
-Registry schema v4 fixes the requested research scope: Alibaba, Google, Huawei
+Registry schema v5 fixes the requested research scope: Alibaba, Google, Huawei
 Cloud, NVIDIA, AWS, Microsoft Azure, Cloudflare, and Meta; Java, Python, Rust,
 C++/CUDA, TypeScript, and Go; every lifecycle stage; and the coding,
 architecture, security, performance, static-gate, and quality-gate concerns.
 An edit cannot silently narrow that set while leaving a self-consistent archive.
+It also requires each source to declare its own normalized `controls`; a
+built-in reference cannot invent a control name for a source. These labels are
+archive vocabulary, not vendor-verbatim requirements, and a declaration is
+provenance only—not permission to enforce a rule.
 
 The archive covers six concerns:
 
@@ -28,7 +32,8 @@ The archive covers six concerns:
 - architecture: boundaries, dependency direction, threat modeling, and public surface;
 - security: authorization, input/output handling, secure design, and static analysis;
 - performance: bounded work, measurement, benchmarking, parallelism, memory and load;
-- gate: automated review, report normalization, change evidence, and CI feedback.
+- static gates: deterministic analysis, tool identity, bounded reports, and suppression evidence;
+- quality gates: automated review, report normalization, change evidence, and CI feedback.
 
 These references are inputs to policy design. They do not silently impose a
 company's complete internal standard on another repository. A rule must state

@@ -165,6 +165,7 @@ struct StandardSource {
     languages: Vec<String>,
     lifecycle_stages: Vec<String>,
     concerns: Vec<String>,
+    controls: Vec<String>,
     summary: String,
 }
 
@@ -227,6 +228,7 @@ struct LifecycleInput {
 #[derive(Debug)]
 struct Standards {
     source_ids: BTreeSet<String>,
+    source_controls: BTreeMap<String, BTreeSet<String>>,
     inputs: BTreeMap<String, LifecycleInput>,
 }
 
@@ -521,6 +523,11 @@ fn source_is_valid(source: &StandardSource, policy: &SourcePolicy) -> bool {
         && allowed(&source.languages, ARCHIVE_LANGUAGES)
         && allowed(&source.lifecycle_stages, LIFECYCLE_STAGES)
         && allowed(&source.concerns, ARCHIVE_CONCERNS)
+        && nonempty_unique(&source.controls)
+        && source
+            .controls
+            .iter()
+            .all(|control| super::constraints::id(control).is_ok())
         && valid_text(&source.summary, 2048)
 }
 
@@ -552,7 +559,7 @@ fn supported_enforced_input(input: &LifecycleInput) -> bool {
 fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
     let registry: StandardRegistry =
         serde_norway::from_str(registry_yaml).context("Invalid built-in standards registry")?;
-    if registry.schema_version != 4
+    if registry.schema_version != 5
         || registry.sources.is_empty()
         || !valid_date(&registry.reviewed_on)
         || !valid_text(&registry.purpose, 1024)
@@ -650,7 +657,20 @@ fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
         bail!("Lifecycle rule input matrix omits a required archive organization");
     }
     lifecycle_input_coverage_is_valid(&registry.coverage, &inputs)?;
-    Ok(Standards { source_ids, inputs })
+    let source_controls = sources
+        .iter()
+        .map(|(id, source)| {
+            (
+                id.clone(),
+                source.controls.iter().cloned().collect::<BTreeSet<_>>(),
+            )
+        })
+        .collect();
+    Ok(Standards {
+        source_ids,
+        source_controls,
+        inputs,
+    })
 }
 
 #[cfg(test)]
@@ -672,13 +692,20 @@ fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<B
     }
     let mut reference_sources = BTreeSet::new();
     for reference in &rule.standard_refs {
+        let declared_controls = standards.source_controls.get(&reference.source_id);
         if reference.source_id.trim().is_empty()
             || !nonempty_unique(&reference.controls)
             || !standards.source_ids.contains(&reference.source_id)
+            || !declared_controls.is_some_and(|controls| {
+                reference
+                    .controls
+                    .iter()
+                    .all(|control| controls.contains(control))
+            })
             || !reference_sources.insert(reference.source_id.clone())
         {
             bail!(
-                "Built-in rule {} references an invalid or unarchived standard source",
+                "Built-in rule {} references an invalid, unarchived, or unsupported standard control",
                 rule.id
             );
         }

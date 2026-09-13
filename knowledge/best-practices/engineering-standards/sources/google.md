@@ -23,6 +23,9 @@ Authority: Google style guides for Google-originated open-source projects.
 - Java, TypeScript, and Go provide language-specific source, type-system, and
   formatter inputs. Go's review guide treats `gofmt` as the mechanical baseline
   and keeps context propagation explicit rather than inferred from names.
+  The TypeScript guide distinguishes its internal setting from external use and
+  treats examples as explanatory rather than normative; its archive controls
+  therefore remain scoped candidates, not a portable TypeScript policy.
   The review guide sets a conflict rule: evidence and code health outweigh
   personal preference, while noncritical polish should not silently block work.
 - The SRE books extend the archive from code review into reliability, capacity,

@@ -55,7 +55,14 @@ direct matrix inputs; a repository-wide `all` entry cannot conceal a missing
 language lane. This makes the archive's directory structure a checkable input
 contract rather than a bibliography with unconnected coverage labels.
 
-Schema v4 also pins this archive's requested company and discipline coverage.
+Schema v5 additionally gives each source a nonempty, normalized `controls`
+set. A packaged rule may cite only controls declared by that same source, so
+the mapping is reviewable source by source rather than relying on a generic
+guide title. A control label is a paraphrased archive index, not quoted vendor
+policy or an independent severity decision; it remains eligible for enforcement
+only through a matching enforced lifecycle input and immutable evidence.
+
+Schema v5 also pins this archive's requested company and discipline coverage.
 The declared eight company families, seven language lanes, complete lifecycle,
 and six quality specialties cannot be removed merely by editing the registry's
 self-declared coverage list; catalog loading treats that as an invalid archive.

@@ -1,4 +1,4 @@
-schema_version: 4
+schema_version: 5
 reviewed_on: 2026-09-13
 purpose: Reviewed primary engineering guidance mapped to qualitygate lifecycle inputs.
 source_policy:
@@ -20,6 +20,7 @@ sources:
     languages: [java]
     lifecycle_stages: [implementation, review, static-analysis, release]
     concerns: [coding, architecture, security, performance, dependencies]
+    controls: [naming, documentation, maintainability, readability, performance, test-maintainability, architecture, dependency-boundary, input-validation, output-encoding, concurrency, dependency-management, api-compatibility]
     summary: Severity-tiered Java guidance for naming, concurrency, input and output controls, dependency versioning, API compatibility, and operational limits.
   - id: alibaba-p3c
     organization: Alibaba
@@ -30,6 +31,7 @@ sources:
     languages: [java]
     lifecycle_stages: [implementation, static-analysis]
     concerns: [coding, dependencies, static-gate]
+    controls: [dependency-rules, static-analysis, coding-style]
     summary: Public PMD and IDE implementation of a subset of Alibaba Java Coding Guidelines, including pre-check analysis.
   - id: alibaba-f2e-spec
     organization: Alibaba
@@ -40,6 +42,7 @@ sources:
     languages: [typescript]
     lifecycle_stages: [implementation, review, static-analysis]
     concerns: [coding, architecture, documentation, static-gate]
+    controls: [coding-style, module-boundary, documentation, static-gate]
     summary: Public front-end and engineering guidance covering TypeScript, React, Node.js, Git and documentation conventions, plus linter-based rule packages.
   - id: google-cpp
     organization: Google
@@ -50,6 +53,7 @@ sources:
     languages: [cpp]
     lifecycle_stages: [implementation, review]
     concerns: [coding, architecture, performance]
+    controls: [formatting, file-integrity, readability, documentation, self-contained-interface, direct-dependencies]
     summary: C++ source structure, self-contained interfaces, direct dependencies, readability, ownership, and maintainability conventions.
   - id: google-java
     organization: Google
@@ -60,6 +64,7 @@ sources:
     languages: [java]
     lifecycle_stages: [implementation, review]
     concerns: [coding, documentation]
+    controls: [formatting, source-file, documentation, naming]
     summary: Enforceable Java source-file, Unicode, naming, formatting, and Javadoc conventions.
   - id: google-python
     organization: Google
@@ -70,6 +75,7 @@ sources:
     languages: [python]
     lifecycle_stages: [implementation, review, static-analysis]
     concerns: [coding, security, testing]
+    controls: [naming, lint, test-clarity, exception-boundary, import-hygiene]
     summary: Python linting, naming, imports, documentation, exception boundaries, and test readability guidance.
   - id: google-typescript
     organization: Google
@@ -80,6 +86,7 @@ sources:
     languages: [typescript]
     lifecycle_stages: [implementation, static-analysis]
     concerns: [coding, architecture, security]
+    controls: [type-checking, module-boundary, unsafe-assertion, static-gate]
     summary: Type checking, module boundaries, unsafe assertion avoidance, and tool-enforced conformance guidance.
   - id: go-code-review
     organization: Go Project
@@ -90,6 +97,7 @@ sources:
     languages: [go]
     lifecycle_stages: [implementation, review, static-analysis]
     concerns: [coding, documentation, architecture, reliability]
+    controls: [gofmt, context-propagation, api-naming, documentation]
     summary: Go-native review guidance treats gofmt as mechanical baseline and preserves explicit context propagation, API names, documentation, and cancellation semantics.
   - id: google-code-review
     organization: Google
@@ -100,6 +108,7 @@ sources:
     languages: [all]
     lifecycle_stages: [review]
     concerns: [reviewability, quality-gate]
+    controls: [focused-change, code-health, test-design, evidence-over-preference]
     summary: Review favors demonstrable code-health improvement, evidence over preference, and escalation or recorded consensus for genuine conflict.
   - id: google-sre-books
     organization: Google
@@ -110,6 +119,7 @@ sources:
     languages: [all]
     lifecycle_stages: [architecture, verification, release, operations]
     concerns: [reliability, security, performance, operations]
+    controls: [slo, monitoring, release-engineering, capacity-planning]
     summary: Online books connect secure and reliable system design with deployment, monitoring, capacity, and operational feedback.
   - id: huawei-codearts
     organization: Huawei Cloud
@@ -120,6 +130,7 @@ sources:
     languages: [java, python, cpp, go, typescript]
     lifecycle_stages: [implementation, static-analysis, review]
     concerns: [coding, security, static-gate]
+    controls: [coding-style, static-gate, security-quality, rule-identity, suppression]
     summary: Language-specific critical, general, and comprehensive rule sets with configurable issue levels and exportable rules.
   - id: nvidia-cuda
     organization: NVIDIA
@@ -130,6 +141,7 @@ sources:
     languages: [cpp, cuda]
     lifecycle_stages: [architecture, implementation, verification, release]
     concerns: [performance, correctness]
+    controls: [apod, profiling, numerical-verification, memory-optimization, hardware-compatibility]
     summary: APOD performance cycle, profiling-led optimization, numerical verification, memory behavior, and target-specific CUDA deployment.
   - id: aws-code-review
     organization: AWS
@@ -140,6 +152,7 @@ sources:
     languages: [all]
     lifecycle_stages: [review]
     concerns: [reviewability, quality-gate, change-management]
+    controls: [change-review, completion-criteria, descriptive-commits, code-ownership]
     summary: Peer review and clear completion criteria provide shared responsibility and controlled change management.
   - id: aws-architecture
     organization: AWS
@@ -150,6 +163,7 @@ sources:
     languages: [all]
     lifecycle_stages: [architecture, verification]
     concerns: [architecture, security, quality-gate]
+    controls: [architecture-review, dependency-boundary, threat-modeling, abuse-case-tests]
     summary: Design review and threat modeling turn abuse cases into requirements and tests before implementation.
   - id: aws-performance
     organization: AWS
@@ -160,6 +174,7 @@ sources:
     languages: [all]
     lifecycle_stages: [architecture, verification, operations]
     concerns: [performance, operations]
+    controls: [performance-kpi, load-testing, monitoring, recurring-review]
     summary: KPIs, load tests, monitoring, automation, and recurring review support data-driven performance decisions.
   - id: aws-component-management
     organization: AWS
@@ -170,6 +185,7 @@ sources:
     languages: [all]
     lifecycle_stages: [implementation, static-analysis, release]
     concerns: [dependencies, security, supply-chain]
+    controls: [component-inventory, dependency-management, version-updates, ownership]
     summary: Component inventories, clear ownership, version updates, and relationship visibility support supply-chain security and integrity.
   - id: azure-waf
     organization: Microsoft Azure
@@ -180,6 +196,7 @@ sources:
     languages: [all]
     lifecycle_stages: [architecture, implementation, static-analysis, operations]
     concerns: [architecture, security, operations]
+    controls: [architecture, security-boundary, automated-scans, monitoring]
     summary: A progressive security baseline spanning identity, encryption, secure coding, automated scans, monitoring, and continuous refinement.
   - id: azure-performance-testing
     organization: Microsoft Azure
@@ -190,6 +207,7 @@ sources:
     languages: [all]
     lifecycle_stages: [architecture, verification, release, operations]
     concerns: [performance, reliability]
+    controls: [performance-baseline, performance-threshold, production-like-testing, progressive-exposure]
     summary: Production-like, hypothesis-driven performance testing with baselines, budgets, thresholds, and controlled progressive exposure.
   - id: cloudflare-codex
     organization: Cloudflare
@@ -200,6 +218,7 @@ sources:
     languages: [rust, typescript, go, all]
     lifecycle_stages: [architecture, implementation, review, static-analysis, operations]
     concerns: [governance, quality-gate, security, reliability]
+    controls: [governed-standards, merge-gate, reviewability, design-review, standards-promotion]
     summary: Governed standards can progress from approved advice to enforceable requirements and be consumed consistently in design, code, and incident review.
   - id: meta-velox
     organization: Meta
@@ -210,6 +229,7 @@ sources:
     languages: [cpp]
     lifecycle_stages: [implementation, review]
     concerns: [coding, architecture, performance]
+    controls: [formatting, reviewability, reader-focus, documentation, small-api, low-coupling]
     summary: Formatting, descriptive names, reader-focused comments, small public APIs, and low coupling for high-performance C++.
   - id: meta-zoncolan
     organization: Meta
@@ -220,6 +240,7 @@ sources:
     languages: [all]
     lifecycle_stages: [static-analysis, review]
     concerns: [security, privacy, static-gate]
+    controls: [source-sink-analysis, rule-validation, static-gate, suppression-review]
     summary: Security engineers codify high-confidence source-to-sink findings, validate rules, and run them across change volume.
   - id: meta-infer
     organization: Meta
@@ -230,6 +251,7 @@ sources:
     languages: [java, cpp, objective-c, c]
     lifecycle_stages: [static-analysis, verification]
     concerns: [security, correctness, performance, static-gate]
+    controls: [nullability, resource-safety, concurrency, taint-analysis, cost-analysis]
     summary: Static analysis categories cover memory, concurrency, resource, nullability, taint, and cost issues when analyzer inputs are complete.
   - id: rust-api-guidelines
     organization: Rust Project
@@ -240,6 +262,7 @@ sources:
     languages: [rust]
     lifecycle_stages: [architecture, implementation, review]
     concerns: [coding, architecture, documentation]
+    controls: [api-design, api-naming, public-documentation, compatibility-policy]
     summary: Reviewable API-design guidance for idiomatic, interoperable Rust crates; advisory rather than a universal mandate.
   - id: nist-ssdf
     organization: National Institute of Standards and Technology
@@ -250,6 +273,7 @@ sources:
     languages: [all]
     lifecycle_stages: [plan, architecture, implementation, static-analysis, verification, release, operations]
     concerns: [architecture, security, dependencies, quality-gate, supply-chain]
+    controls: [risk-management, secure-development, provenance, vulnerability-response]
     summary: Outcome-oriented secure-development practices connect risk, requirements, provenance, vulnerability response, and secure development environments across an SDLC.
   - id: owasp-asvs
     organization: OWASP Foundation
@@ -260,6 +284,7 @@ sources:
     languages: [all]
     lifecycle_stages: [plan, architecture, implementation, verification, release]
     concerns: [architecture, security, testing, quality-gate]
+    controls: [versioned-requirements, verification-level, security-testing]
     summary: Versioned web-application security requirements and verification levels support risk-appropriate controls, test planning, and explicit requirement references.
   - id: slsa-v1-2
     organization: SLSA community / Linux Foundation
@@ -270,6 +295,7 @@ sources:
     languages: [all]
     lifecycle_stages: [implementation, review, release]
     concerns: [dependencies, security, supply-chain, quality-gate]
+    controls: [source-track, build-track, provenance, artifact-verification]
     summary: Approved supply-chain specification defines incremental source and build tracks plus provenance and verification formats; provenance is useful only against declared expectations.
   - id: openssf-developers
     organization: Open Source Security Foundation
@@ -280,6 +306,7 @@ sources:
     languages: [all]
     lifecycle_stages: [plan, implementation, static-analysis, release, operations]
     concerns: [security, dependencies, supply-chain, reviewability]
+    controls: [source-control, dependency-security, signing, vulnerability-disclosure]
     summary: Curated secure-development, source-control, disclosure, signing, and supply-chain resources show how projects can select scoped controls rather than claim universal assurance.
   - id: openssf-scorecard
     organization: Open Source Security Foundation
@@ -290,6 +317,7 @@ sources:
     languages: [all]
     lifecycle_stages: [static-analysis, release, operations]
     concerns: [security, dependencies, supply-chain, static-gate]
+    controls: [repository-posture, static-gate, component-inventory, exception-review]
     summary: Repository-level automated checks expose risky source, build, dependency, testing, and maintenance practices; its aggregate score is a prioritization signal, not a release verdict.
 notes:
   - Source summaries are short paraphrases and links, never copied vendor manuals.

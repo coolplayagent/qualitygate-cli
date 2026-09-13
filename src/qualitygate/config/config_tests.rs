@@ -118,9 +118,23 @@ fn builtins_reject_language_scopes_that_mismatch_lifecycle_inputs() {
     }
 }
 
+#[test]
+fn builtins_reject_controls_not_declared_by_the_archived_source() {
+    let rule = include_str!("../../../qualitygate/rules/lang-java/junit-naming.yaml");
+    catalog::validate_builtin_mapping(rule).unwrap();
+    let invalid = rule.replace(
+        "controls: [naming, test-maintainability]",
+        "controls: [naming, unsupported-control]",
+    );
+    let error = catalog::validate_builtin_mapping(&invalid)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("unsupported standard control"), "{error}");
+}
+
 fn standards_registry(source_id: &str) -> String {
     format!(
-        r#"schema_version: 4
+        r#"schema_version: 5
 reviewed_on: 2026-09-13
 purpose: Reviewed source archive.
 source_policy:
@@ -142,6 +156,7 @@ sources:
     languages: [java]
     lifecycle_stages: [implementation]
     concerns: [coding]
+    controls: [example-control]
     summary: Example source summary.
 notes: [Source summaries are paraphrases.]
 "#
@@ -207,6 +222,11 @@ fn standards_registry_rejects_invalid_source_metadata() {
             "    summary: Example source summary.",
             "    unexpected: true\n    summary: Example source summary.",
         ),
+        registry.replace("    controls: [example-control]", "    controls: []"),
+        registry.replace(
+            "    controls: [example-control]",
+            "    controls: [invalid control]",
+        ),
     ] {
         assert!(catalog::validate_standard_inputs(&invalid, &matrix).is_err());
     }
@@ -240,7 +260,7 @@ fn standards_registry_requires_declared_breadth_and_input_coverage() {
         )
         .replace(
             "notes: [Source summaries are paraphrases.]",
-            "  - id: unmapped-source\n    organization: Missing Input Organization\n    title: Unmapped source\n    authority: official-company\n    kind: guide\n    url: https://example.com/unmapped\n    languages: [java]\n    lifecycle_stages: [implementation]\n    concerns: [coding]\n    summary: A valid but unmapped source.\nnotes: [Source summaries are paraphrases.]",
+            "  - id: unmapped-source\n    organization: Missing Input Organization\n    title: Unmapped source\n    authority: official-company\n    kind: guide\n    url: https://example.com/unmapped\n    languages: [java]\n    lifecycle_stages: [implementation]\n    concerns: [coding]\n    controls: [example-control]\n    summary: A valid but unmapped source.\nnotes: [Source summaries are paraphrases.]",
     );
     assert!(catalog::validate_standard_inputs(&unmapped_organization, &matrix).is_err());
     for (invalid, expected) in [
