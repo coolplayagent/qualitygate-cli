@@ -37,7 +37,7 @@ checks:
     depends_on: [check]
   - id: integration
     kind: command
-    argv: [cargo, test, --locked, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --test, init, --test, manual, --test, provenance, --test, git_trailers, --test, compatibility, --all-features]
+    argv: [cargo, test, --locked, --test, bazel, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --test, init, --test, manual, --test, provenance, --test, git_trailers, --test, compatibility, --test, sarif, --test, coverage, --test, source_reviews, --test, policy, --all-features]
     tools:
       - {id: cargo, argv: [cargo, --version]}
       - {id: rustc, argv: [rustc, --version, --verbose]}
@@ -51,14 +51,42 @@ checks:
       - {id: rustc, argv: [rustc, --version, --verbose]}
     timeout_seconds: 900
     depends_on: [check]
+  - id: bazel-module-lock
+    kind: command
+    argv: [bazel, mod, deps, "--lockfile_mode=error"]
+    tools:
+      - {id: bazel, argv: [bazel, --version]}
+    timeout_seconds: 900
+  - id: bazel-build
+    kind: command
+    argv: [bazel, build, "--lockfile_mode=error", "//:qualitygate"]
+    tools:
+      - {id: bazel, argv: [bazel, --version]}
+    timeout_seconds: 900
+    depends_on: [bazel-module-lock]
+  - id: bazel-test
+    kind: command
+    argv: [bazel, test, "--lockfile_mode=error", "//..."]
+    tools:
+      - {id: bazel, argv: [bazel, --version]}
+    timeout_seconds: 900
+    depends_on: [bazel-build]
 profiles:
   quick:
     include: [line-ending, format]
   full:
-    include: [line-ending, format, check, clippy, unit-test, integration, quality]
+    include: [line-ending, format, check, clippy, unit-test, integration, quality, bazel-module-lock, bazel-build, bazel-test]
 verification_assets:
   - qualitygate.yaml
   - Cargo.toml
   - rust-toolchain.toml
+  - .bazelrc
+  - .bazelignore
+  - .bazelversion
+  - BUILD.bazel
+  - MODULE.bazel
+  - MODULE.bazel.lock
+  - bazel/**
+  - src/qualitygate/**/BUILD.bazel
   - tests/**
   - .github/workflows/**

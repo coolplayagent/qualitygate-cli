@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/reviews.rs"]
+mod reviews;
 use common::*;
 use serde_json::{Value, json};
 use std::{path::Path, process::Command};
@@ -17,6 +19,7 @@ fn fixture_with_policy() -> tempfile::TempDir {
         qualitygate::snapshot::digest(SOURCE.as_bytes()))).unwrap();
     std::fs::write(root.path().join("qualitygate.yaml"),
         "schema_version: 1\ncustom_rules: rules\nrules:\n  private-trailer: {}\n  ai-code-traceability:\n    parameters:\n      languages: [python, java]\n      marker: {type: git_trailer, name: AI-Generated, fields: [author, reason]}\n").unwrap();
+    reviews::record(root.path()).unwrap();
     commit(root.path(), "policy");
     root
 }

@@ -3,10 +3,14 @@ use anyhow::{Context, Result, bail};
 use roxmltree::{Document, Node};
 
 pub(super) fn parse(format: ReportFormat, text: &str) -> Result<Data> {
-    if text.contains("<!DOCTYPE") {
-        bail!("DTD is not allowed in tool reports");
-    }
-    let document = Document::parse(text)?;
+    let text = super::xml_header::normalize(format, text)?;
+    let document = Document::parse_with_options(
+        &text,
+        roxmltree::ParsingOptions {
+            nodes_limit: 100_000,
+            ..Default::default()
+        },
+    )?;
     let root = document.root_element();
     let mut data = Data::default();
     let valid_root = match format {
@@ -54,6 +58,8 @@ fn junit(root: Node<'_, '_>, data: &mut Data) -> Result<()> {
         }
         tests.failures += 1;
         data.issues.push(Issue {
+            tool: None,
+            locations: vec![],
             rule: "test-failure".into(),
             file: case.attribute("file").map(Into::into),
             line: optional_number(*case, "line")?,
@@ -121,6 +127,8 @@ fn file_diagnostics(format: ReportFormat, root: Node<'_, '_>, data: &mut Data) -
             },
         )?;
         data.issues.push(Issue {
+            tool: None,
+            locations: vec![],
             rule: rule.into(),
             file: Some(file.into()),
             line,
@@ -155,6 +163,8 @@ fn spotbugs(root: Node<'_, '_>, data: &mut Data) -> Result<()> {
                     .find(|node| node.has_tag_name("SourceLine"))
             });
         data.issues.push(Issue {
+            tool: None,
+            locations: vec![],
             rule: bug
                 .attribute("type")
                 .context("SpotBugs bug type missing")?

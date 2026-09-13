@@ -77,6 +77,9 @@ fn setup() -> (SigningKey, TrustStore, Snapshot, ProvenanceRecord) {
     ];
     let snapshot = snapshot(base, repaired);
     let policy = PolicyEvidence {
+        resolved_commit: None,
+        task_contract_source: None,
+        source_reviews: Default::default(),
         source: "policy".into(),
         config_digest: "sha256:config".into(),
         rules_digest: "sha256:rules".into(),

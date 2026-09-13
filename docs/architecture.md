@@ -22,6 +22,16 @@ The table lists permitted direct dependencies between top-level production owner
 
 `lib.rs` declares physical owners and does not hide dependencies behind root re-exports. The CLI delegates candidate rule changes to `config::enable_rule`; configuration validation, confined atomic replacement and permission preservation remain owned by configuration code.
 
+Every top-level owner has an explicit directory below src/qualitygate:
+domain, env, paths, net, runner, snapshot, config, adapters, application, and
+interfaces. This keeps the ownership name in the physical source path and lets
+each owner define its Bazel target in its own BUILD.bazel file. Nested areas
+remain within their owner path, such as adapters/reports and
+config/discovery; they do not become unowned top-level buckets.
+Snapshot history is an explicit cross-owner data contract for declaration
+adapters; its consumer validates ancestry, tree digests, and comparison
+identity before producing evidence.
+
 ## Checked evidence
 
 The harness follows Rust module declarations from both crate roots. It parses grouped imports, re-exports, aliases, qualified/relative paths, inline modules and qualified references/imports inside macro arguments. File names containing `test` do not exclude production code. Only configurations proven inactive when `test=false` are omitted; platform and feature branches remain in the graph, including `cfg(not(test))`.
@@ -37,5 +47,8 @@ Run `cargo test --locked --test quality documentation`. A CommonMark parser extr
 Undefined link references, missing targets/anchors, repository escapes and unsupported local fragment formats fail with a file and, where available, line. HTML link/anchor values containing entities and fragments on non-Markdown files currently require explicit support. External HTTP(S), mail and data links are recognized without network availability checks. The gate does not claim a complete GitHub renderer.
 
 Authored files retain the 1,000-line limit (`Cargo.lock` is exempt); file inventory and input sizes are bounded and symlinks are rejected. Repository YAML files must parse as configuration mappings. Parser fixtures exercise both accepted Markdown and deliberate broken-link/fence cases.
+
+Production implementation sources are Rust. BUILD.bazel files below src are
+declared Bazel package metadata and are excluded from the Rust parser check.
 
 Reference semantics: [CommonMark parsing](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/) and [GitHub section links](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links).

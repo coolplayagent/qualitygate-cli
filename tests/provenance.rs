@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/reviews.rs"]
+mod reviews;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use common::*;
 use ed25519_dalek::{Signer, SigningKey};
@@ -52,6 +54,7 @@ impl Fixture {
         std::fs::write(root.path().join("qualitygate.yaml"),
             "schema_version: 1\ncustom_rules: rules\nrules:\n  ai-code-traceability:\n    provenance: {evidence_file: builtin.json}\n    parameters:\n      provenance_scope: ai_only\n      languages: [python, java]\n      marker: {type: comment, name: AI, fields: [author]}\n  private-ai:\n    provenance: {evidence_file: custom.json}\n").unwrap();
         std::fs::write(root.path().join("test_example.py"), BASE).unwrap();
+        reviews::record(root.path()).unwrap();
         git(root.path(), &["add", "."]);
         git(root.path(), &["commit", "-qm", "policy and baseline"]);
         let initial = capture(root.path());
@@ -366,6 +369,7 @@ fn signed_ai_scope_and_commit_trailer_binding_are_both_required() {
         .replace("test_methods, comments", "test_methods, commits")
         .replace("type: comment", "type: git_trailer");
     std::fs::write(rule_path, rule).unwrap();
+    reviews::record(fixture.root.path()).unwrap();
     git(fixture.root.path(), &["add", "."]);
     git(fixture.root.path(), &["commit", "-qm", "bind Git trailers"]);
     let initial = capture(fixture.root.path());

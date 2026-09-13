@@ -1,6 +1,8 @@
 //! Live pip installation and pytest repair acceptance; never replaced by mocks.
 
 mod common;
+#[path = "common/reviews.rs"]
+mod reviews;
 use common::*;
 use serde_json::{Value, json};
 use std::path::Path;
@@ -52,6 +54,7 @@ fn configure(root: &Path, python: &str) {
         serde_norway::to_string(&config).unwrap(),
     )
     .unwrap();
+    reviews::record(root).unwrap();
 }
 
 fn run(root: &Path, code: i32) -> Value {

@@ -131,6 +131,9 @@ mod tests {
             SnapshotBinding::new(&snapshot, None)
         );
         let policy = PolicyEvidence {
+            resolved_commit: None,
+            task_contract_source: None,
+            source_reviews: Default::default(),
             source: "trusted".into(),
             config_digest: "config".into(),
             rules_digest: "rules".into(),

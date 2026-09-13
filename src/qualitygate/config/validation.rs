@@ -15,6 +15,17 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         );
     }
     let mut ids: BTreeSet<&str> = config.rules.keys().map(String::as_str).collect();
+    if config.source_reviews.len() > 1024 {
+        bail!("Source review inventory exceeds 1024 records");
+    }
+    let mut review_ids = BTreeSet::new();
+    for (id, review) in &config.source_reviews {
+        validate_id(id)?;
+        review.validate().map_err(anyhow::Error::msg)?;
+        if !config.rules.contains_key(id) || !review_ids.insert(&review.id) {
+            bail!("Source reviews require configured rule keys and distinct review IDs");
+        }
+    }
     let mut packages = BTreeSet::new();
     for package in &config.rulesets {
         if !RULESETS.contains(&package.as_str()) || !packages.insert(package) {
@@ -139,6 +150,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             if [
                 ReportFormat::Lcov,
                 ReportFormat::Cobertura,
+                ReportFormat::CoveragePy,
                 ReportFormat::Jacoco,
             ]
             .contains(&report.format)

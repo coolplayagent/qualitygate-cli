@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --test cli --test custom_rules --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --all-features
+            command: cargo test --locked --test bazel --test cli --test custom_rules --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --all-features
           - gate: documentation
             command: cargo test --locked --test quality documentation --all-features
           - gate: architecture
@@ -131,6 +131,33 @@ jobs:
       - run: rustup show
       - name: Live binary/source compatibility and repair
         run: cargo test --locked --test compatibility_live -- --ignored --nocapture
+
+  sarif-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - run: rustup show
+      - run: cargo install clippy-sarif --version 0.8.0 --locked
+      - name: Live Clippy SARIF baseline and repair acceptance
+        run: cargo test --locked --test sarif_live -- --ignored --nocapture
+
+  coverage-producers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check coverage==7.10.7 pytest==8.4.2
+      - run: rustup show
+      - name: Live JaCoCo, coverage.py and LLVM coverage acceptance
+        run: cargo test --locked --test coverage_live --test coverage_llvm_live -- --ignored --nocapture
 
   miri:
     runs-on: ubuntu-latest

@@ -6,7 +6,7 @@ use std::{path::Path, process::Command, time::Duration};
 
 const URL: &str = "https://github.com/siom79/japicmp/releases/download/japicmp-base-0.26.2/japicmp-0.26.2-jar-with-dependencies.jar";
 const DIGEST: &str = "sha256:6c65dc29f205fdf57ea28255b901d817321fc1eda6e56afe266f36979a616466";
-const API: &str = "public class Api extends Base { public String greet(String value) { return value; } public java.util.List<String> values() { return java.util.Collections.emptyList(); } }\n";
+const API: &str = "public class Api extends Base { private void helper() {} public String greet(String value) { return value; } public java.util.List<String> values() { return java.util.Collections.emptyList(); } }\n";
 const BUILDER: &str = r#"fn main() {
     let args: Vec<_> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("--version") { println!("Java API fixture builder 1"); return; }
@@ -130,6 +130,16 @@ fn real_java_binary_source_and_classpath_compatibility_repair() {
     );
     std::fs::write(root.path().join("Api.java"), API).unwrap();
     run(root.path(), 0);
+    std::fs::write(
+        root.path().join("Api.java"),
+        API.replace("private void helper() {} ", ""),
+    )
+    .unwrap();
+    let internal = run(root.path(), 0);
+    assert_eq!(
+        internal["checks"][0]["metadata"]["compatibility"]["api_visibility"],
+        json!(["public", "protected"])
+    );
     // Explicit public construction remains available when adding a private overload.
     // japicmp 0.26.1 falsely reported this as CLASS_NOW_NOT_EXTENDABLE.
     std::fs::write(

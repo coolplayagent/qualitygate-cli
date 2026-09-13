@@ -17,6 +17,8 @@ acceptance:
 
 The same `kind` and `evidence_file` fields work in repository `checks`. The evidence filename is a normalized relative path under the external directory. It is not read from the checked snapshot. Manual checks cannot contain command arguments, tool probes, report mappings, project producers or command exit conditions.
 
+The [task selection contract](tasks.md) uses the same policy commit for configuration and task acceptance. Candidate contract deletion or corruption cannot replace the selected task identity or its required checks. Reported task digests and signed manual subjects refer to that selected contract.
+
 ```bash
 qualitygate check --task task.yaml --policy-ref "$TRUSTED_COMMIT" \
   --trust-store /trusted/qualitygate/trust.json \

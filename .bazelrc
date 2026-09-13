@@ -1,0 +1,12 @@
+# Bazel is an additional build entry point. Cargo remains supported and owns
+# the Rust package manifest and lockfile.
+common --enable_bzlmod
+
+# Reuse downloaded Bzlmod/crate archives and completed actions between local
+# invocations. Both locations are user-specific; command-line flags can
+# override them for CI or a shared remote cache.
+common --repository_cache=~/.cache/qualitygate-cli/bazel/repositories
+build --disk_cache=~/.cache/qualitygate-cli/bazel/actions
+
+# Keep Bazel test output compact unless a target fails.
+test --test_output=errors

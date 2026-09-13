@@ -1,0 +1,38 @@
+load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "cargo_library_entry",
+    srcs = ["lib.rs"],
+)
+
+rust_library(
+    name = "qualitygate_lib",
+    crate_name = "qualitygate",
+    crate_root = "bazel_lib.rs",
+    srcs = ["bazel_lib.rs"],
+    edition = crate_edition(),
+    deps = [
+        "//src/qualitygate/domain",
+        "//src/qualitygate/env",
+        "//src/qualitygate/paths",
+        "//src/qualitygate/net",
+        "//src/qualitygate/runner",
+        "//src/qualitygate/snapshot",
+        "//src/qualitygate/config",
+        "//src/qualitygate/adapters",
+        "//src/qualitygate/application",
+        "//src/qualitygate/interfaces",
+    ],
+)
+
+rust_binary(
+    name = "qualitygate",
+    crate_root = "main.rs",
+    srcs = ["main.rs"],
+    edition = crate_edition(),
+    deps = [":qualitygate_lib"] + all_crate_deps(normal = True),
+    proc_macro_deps = all_crate_deps(proc_macro = True),
+)

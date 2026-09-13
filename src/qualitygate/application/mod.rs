@@ -42,28 +42,12 @@ pub struct CheckOptions {
 
 pub async fn check(options: CheckOptions) -> Result<Report> {
     let snapshot = Arc::new(snapshot::capture(&options.root, &options.selection).await?);
-    if !snapshot.files.contains_key(&options.config) {
-        anyhow::bail!(
-            "Configuration is not present in the checked snapshot; run init and stage/commit it as appropriate"
-        );
-    }
     let mut invalid = Vec::new();
-    let (config, catalog, mut policy) = policy::load(&snapshot, &options, &mut invalid).await?;
-    let task_bytes = options
-        .task
-        .as_ref()
-        .map(|path| {
-            snapshot
-                .files
-                .get(path)
-                .with_context(|| format!("Task contract missing from checked snapshot: {path}"))
-        })
-        .transpose()?;
-    let task = task_bytes
-        .map(|file| config::parse_task(&file.bytes))
-        .transpose()?;
-    policy.task_contract_digest = task_bytes.map(|file| snapshot::digest(&file.bytes));
-    let plan = Plan::build(&config, task.as_ref(), &options.profile)?;
+    let policy::Loaded {
+        catalog,
+        evidence: policy,
+        plan,
+    } = policy::load(&snapshot, &options, &mut invalid).await?;
     let git_facts = git_trailers::load(&plan, &catalog, &snapshot).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
         (Some(store), Some(directory)) => {
@@ -204,12 +188,29 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         result
             .metadata
             .insert("depends_on".into(), serde_json::json!(dependencies));
+        if let Some(command) = command {
+            result
+                .metadata
+                .insert("command_definition".into(), serde_json::to_value(command)?);
+        }
         if rule.is_some() {
             let entry = &catalog.entries[id];
             result.rule_version = entry.version();
             result
                 .metadata
                 .insert("rule_definition".into(), serde_json::json!(entry));
+            if let Some(review) = policy.source_reviews.get(id) {
+                result.metadata.insert("source_review".into(), serde_json::json!({"binding":review,"policy_source":policy.source,"policy_trust":policy.trust}));
+                if review.status != ReviewStatus::Bound {
+                    let earlier = result
+                        .execution
+                        .reason
+                        .as_ref()
+                        .map(|reason| format!("{reason}; "))
+                        .unwrap_or_default();
+                    result.block(ExecutionStatus::Blocked, format!("{earlier}Rule source review is missing or stale; inspect rules list and record a review in the selected policy"));
+                }
+            }
         }
         results.push(result);
     }
@@ -259,7 +260,11 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         Ok(_) => {}
         Err(error) => invalid.push(format!("Cannot revalidate the source snapshot: {error:#}")),
     }
-    let recheck = recheck(&options, &snapshot.identity.base);
+    let recheck = recheck(
+        &options,
+        &snapshot.identity.base,
+        policy.resolved_commit.as_deref(),
+    );
     for result in &mut results {
         for diagnostic in &mut result.diagnostics {
             diagnostic.recheck.argv = recheck.clone();
@@ -272,7 +277,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         run_id,
         scope: if snapshot.path_filter.is_some() {
             "path"
-        } else if task.is_some() {
+        } else if plan.task_id.is_some() {
             "task"
         } else {
             "repository"
@@ -282,10 +287,12 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         snapshot: snapshot.identity.clone(),
         policy,
         plan: PlanSummary {
+            task_id: plan.task_id,
             execution_order: plan.order,
             required_checks: plan.required,
             pending_delivery_checks: plan.pending_delivery,
             acceptance: plan.acceptance,
+            acceptance_descriptions: plan.acceptance_descriptions,
         },
         gate,
         checks: results,
@@ -299,7 +306,7 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     Ok(report)
 }
 
-fn recheck(options: &CheckOptions, base: &str) -> Vec<String> {
+fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> Vec<String> {
     let mut argv = vec![
         "qualitygate".into(),
         "--root".into(),
@@ -333,8 +340,8 @@ fn recheck(options: &CheckOptions, base: &str) -> Vec<String> {
     if let Some(task) = &options.task {
         argv.extend(["--task".into(), task.clone()]);
     }
-    if let Some(reference) = &options.policy_ref {
-        argv.extend(["--policy-ref".into(), reference.clone()]);
+    if let Some(reference) = policy_commit.or(options.policy_ref.as_deref()) {
+        argv.extend(["--policy-ref".into(), reference.into()]);
     }
     if let Some(path) = &options.trust_store {
         argv.extend(["--trust-store".into(), path.display().to_string()]);

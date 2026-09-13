@@ -49,7 +49,9 @@ then:
 fix: Rename the test to describe its expected behavior and condition
 ```
 
-The source hash is SHA-256 over the exact UTF-8 section bytes, including its ATX Markdown heading, line endings and subsections, ending before the next heading of the same or shallower level. Supply 64 lowercase hexadecimal digits after `sha256:`. The section must occur exactly once outside fenced code blocks. Changes to that section require review and an updated mapping; unrelated sections do not invalidate it.
+The source hash is SHA-256 over the exact UTF-8 section bytes, including its top-level ATX Markdown heading, line endings and subsections, ending before the next supported heading of the same or shallower level. Supply 64 lowercase hexadecimal digits after `sha256:`. The section must occur exactly once as a CommonMark heading outside code, HTML blocks and quoted/list containers. The selector uses the raw ATX title after the heading markers, including inline markup. Setext headings are outside this source-selector profile. Changes to that section require review and an updated mapping; unrelated sections do not invalidate it.
+
+Every executed custom rule requires a [source review](source-reviews.md) in `source_reviews.<rule-id>` of the policy. Built-in rules require the same record when the policy assigns them a `source`. Missing or stale records keep required checks incomplete, including an initial mapping. The record binds the complete definition, version, source hashes and effective settings; changing only `content_hash` cannot restore a passing check. This tightens the earlier hash-only configuration contract. `rules list` reports the expected binding digest but does not issue an approval.
 
 `schema_version` identifies the DSL protocol and defaults to 1 for the original requirement examples. `version` is the positive revision number of this particular rule; increasing it does not require a new protocol. Both appear in definition evidence and affect the policy digest.
 

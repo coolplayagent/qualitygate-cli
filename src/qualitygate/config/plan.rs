@@ -11,13 +11,19 @@ pub struct Plan {
     pub pending_delivery: Vec<String>,
     pub task_id: Option<String>,
     pub acceptance: BTreeMap<String, String>,
+    pub acceptance_descriptions: BTreeMap<String, String>,
 }
 
 pub fn parse_task(bytes: &[u8]) -> Result<TaskContract> {
     if bytes.len() > MAX_CONFIG_BYTES {
         bail!("Task contract exceeds configuration budget");
     }
-    let task: TaskContract = serde_norway::from_slice(bytes)?;
+    let task: TaskContract = super::parse_yaml(bytes)?;
+    validate_task(&task)?;
+    Ok(task)
+}
+
+fn validate_task(task: &TaskContract) -> Result<()> {
     if task.schema_version != 1 || task.task_id.trim().is_empty() || task.acceptance.is_empty() {
         bail!("Task contract needs schema_version 1, task_id and acceptance items");
     }
@@ -28,7 +34,7 @@ pub fn parse_task(bytes: &[u8]) -> Result<TaskContract> {
             bail!("Task acceptance IDs must be unique and descriptions nonempty");
         }
     }
-    Ok(task)
+    Ok(())
 }
 
 impl Plan {
@@ -38,7 +44,9 @@ impl Plan {
         }
         let mut combined = config.clone();
         let mut acceptance = BTreeMap::new();
+        let mut acceptance_descriptions = BTreeMap::new();
         if let Some(task) = task {
+            validate_task(task)?;
             for item in &task.acceptance {
                 let v = &item.verification;
                 combined.checks.push(CommandCheck {
@@ -63,6 +71,7 @@ impl Plan {
                     full.include.push(v.check_id.clone());
                 }
                 acceptance.insert(item.id.clone(), v.check_id.clone());
+                acceptance_descriptions.insert(item.id.clone(), item.description.clone());
             }
         }
         validation::validate(&combined)?;
@@ -146,6 +155,52 @@ impl Plan {
             pending_delivery,
             task_id: task.map(|task| task.task_id.clone()),
             acceptance,
+            acceptance_descriptions,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn reusable_planning_validates_task_contracts_without_requiring_yaml_loading() {
+        let config = super::super::parse(b"schema_version: 1\nrules: {line-ending: {}}\n").unwrap();
+        let valid = json!({"schema_version":1,"task_id":"behavior","acceptance":[{
+            "id":"condition","description":"Observable condition","verification":{"check_id":"verify","argv":["git","--version"]}
+        }]});
+        let task: TaskContract = serde_json::from_value(valid.clone()).unwrap();
+        assert!(Plan::build(&config, Some(&task), "full").is_ok());
+        for field in [
+            "schema",
+            "task_id",
+            "empty",
+            "id",
+            "description",
+            "duplicate",
+        ] {
+            let mut value = valid.clone();
+            match field {
+                "schema" => value["schema_version"] = json!(2),
+                "task_id" => value["task_id"] = json!(" "),
+                "empty" => value["acceptance"] = json!([]),
+                "id" => value["acceptance"][0]["id"] = json!("invalid id"),
+                "description" => value["acceptance"][0]["description"] = json!(""),
+                _ => {
+                    let mut other = value["acceptance"][0].clone();
+                    other["verification"]["check_id"] = json!("another-check");
+                    value["acceptance"].as_array_mut().unwrap().push(other);
+                }
+            }
+            let task = serde_json::from_value(value).unwrap();
+            for profile in ["quick", "full"] {
+                assert!(
+                    Plan::build(&config, Some(&task), profile).is_err(),
+                    "{field}, {profile}"
+                );
+            }
+        }
     }
 }

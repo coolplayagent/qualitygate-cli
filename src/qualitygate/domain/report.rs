@@ -43,20 +43,30 @@ impl MergeRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyEvidence {
     pub source: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolved_commit: Option<String>,
     pub config_digest: String,
     pub rules_digest: String,
     pub task_contract_digest: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_contract_source: Option<String>,
     pub trust: String,
     pub changes: Vec<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub source_reviews: BTreeMap<String, super::SourceReviewEvidence>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlanSummary {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_id: Option<String>,
     #[serde(default)]
     pub execution_order: Vec<String>,
     pub required_checks: Vec<String>,
     pub pending_delivery_checks: Vec<String>,
     pub acceptance: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub acceptance_descriptions: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

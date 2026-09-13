@@ -1,30 +1,40 @@
 use super::*;
 use crate::{
-    config::{Config, Source, catalog::Catalog},
+    config::{Source, catalog::Catalog},
     snapshot::{File, Snapshot},
 };
 use anyhow::bail;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub(super) struct Loaded {
+    pub catalog: Catalog,
+    pub evidence: PolicyEvidence,
+    pub plan: Plan,
+}
+
 pub(super) async fn load(
     snapshot: &Snapshot,
     options: &CheckOptions,
     invalid: &mut Vec<String>,
-) -> Result<(Config, Catalog, PolicyEvidence)> {
-    let trusted = if let Some(reference) = &options.policy_ref {
-        Some(snapshot::read_commit(&snapshot.root, reference).await?)
+) -> Result<Loaded> {
+    let resolved_commit = if let Some(reference) = &options.policy_ref {
+        Some(snapshot::resolve_commit(&snapshot.root, reference).await?)
+    } else {
+        None
+    };
+    let trusted = if let Some(commit) = &resolved_commit {
+        Some(snapshot::read_commit(&snapshot.root, commit).await?)
     } else {
         None
     };
     let files = snapshot.files.clone();
     let options = options.clone();
-    let (config, catalog, policy, errors) = tokio::task::spawn_blocking(move || -> Result<_> {
+    let (loaded, errors) = tokio::task::spawn_blocking(move || -> Result<_> {
         let mut invalid = Vec::new();
-        let candidate = &files[&options.config];
         let selected = trusted.as_ref().unwrap_or(&files);
         let file = selected
             .get(&options.config)
-            .context("Selected policy reference has no qualitygate configuration")?;
+            .context("Selected policy snapshot has no qualitygate configuration; run init and stage/commit it as appropriate")?;
         let config = config::parse(&file.bytes)?;
         let catalog = Catalog::load(
             &config,
@@ -33,16 +43,31 @@ pub(super) async fn load(
                 .map(|(path, file)| (path.as_str(), file.bytes.as_slice())),
         )?;
         let config = catalog.resolve(&config)?;
-        let mut changes = Vec::new();
+        let task_file = options
+            .task
+            .as_ref()
+            .map(|path| {
+                selected.get(path).with_context(|| {
+                    format!("Task contract missing from selected policy snapshot: {path}")
+                })
+            })
+            .transpose()?;
+        let task = task_file
+            .map(|file| config::parse_task(&file.bytes))
+            .transpose()?;
+        let plan = Plan::build(&config, task.as_ref(), &options.profile)?;
+        let mut changes = BTreeSet::new();
         if trusted.is_some() {
-            if file.bytes != candidate.bytes {
-                changes.push(options.config.clone());
+            if Some((&file.bytes, file.executable))
+                != files.get(&options.config).map(|file| (&file.bytes, file.executable))
+            {
+                changes.insert(options.config.clone());
             }
             if let Some(task) = &options.task
-                && selected.get(task).map(|file| &file.bytes)
-                    != files.get(task).map(|file| &file.bytes)
+                && selected.get(task).map(|file| (&file.bytes, file.executable))
+                    != files.get(task).map(|file| (&file.bytes, file.executable))
             {
-                changes.push(task.clone());
+                changes.insert(task.clone());
             }
             let mut builder = globset::GlobSetBuilder::new();
             for asset in &config.verification_assets {
@@ -63,7 +88,7 @@ pub(super) async fn load(
                         .map(|file| (&file.bytes, file.executable))
                         != files.get(path).map(|file| (&file.bytes, file.executable))
                 {
-                    changes.push(path.clone());
+                    changes.insert(path.clone());
                 }
             }
             for path in &changes {
@@ -73,6 +98,8 @@ pub(super) async fn load(
             }
         }
         let policy = PolicyEvidence {
+            resolved_commit,
+            source_reviews: config::source_reviews::evidence(&config, &catalog)?,
             source: options
                 .policy_ref
                 .clone()
@@ -81,22 +108,24 @@ pub(super) async fn load(
             rules_digest: snapshot::digest(&serde_json::to_vec(&serde_json::json!({
                 "settings": config.rules,
                 "definitions": catalog,
+                "source_reviews": config.source_reviews,
                 "engine_version": env!("CARGO_PKG_VERSION"),
             }))?),
-            task_contract_digest: None,
+            task_contract_digest: task_file.map(|file| snapshot::digest(&file.bytes)),
+            task_contract_source: options.task.clone(),
             trust: if trusted.is_some() {
                 "caller_supplied_ref"
             } else {
                 "local_candidate"
             }
             .into(),
-            changes,
+            changes: changes.into_iter().collect(),
         };
-        Ok((config, catalog, policy, invalid))
+        Ok((Loaded { catalog, evidence: policy, plan }, invalid))
     })
     .await??;
     invalid.extend(errors);
-    Ok((config, catalog, policy))
+    Ok(loaded)
 }
 
 pub(super) fn validate_source(source: &Source, files: &BTreeMap<String, File>) -> Result<()> {
@@ -106,42 +135,29 @@ pub(super) fn validate_source(source: &Source, files: &BTreeMap<String, File>) -
         .bytes;
     let text = std::str::from_utf8(bytes)?;
     let mut headings = Vec::new();
-    let mut fence: Option<(char, usize)> = None;
-    let mut offset = 0;
-    for line in text.split_inclusive('\n') {
-        let trimmed = line.trim();
-        if let Some((character, length)) = fence {
-            if trimmed
-                .chars()
-                .take_while(|value| *value == character)
-                .count()
-                >= length
-                && trimmed.trim_matches(character).is_empty()
-            {
-                fence = None;
+    let mut depth = 0usize;
+    for (event, range) in pulldown_cmark::Parser::new(text).into_offset_iter() {
+        match event {
+            pulldown_cmark::Event::Start(tag) => {
+                if depth == 0
+                    && let pulldown_cmark::Tag::Heading { level, .. } = tag
+                {
+                    let line = text[range.start..].lines().next().unwrap_or_default();
+                    let hashes = line
+                        .chars()
+                        .take_while(|character| *character == '#')
+                        .count();
+                    // Preserve the documented raw ATX title and exact section
+                    // bytes; CommonMark determines whether this is a heading.
+                    if (1..=6).contains(&hashes) && line[hashes..].starts_with(' ') {
+                        headings.push((level as usize, line[hashes..].trim(), range.start));
+                    }
+                }
+                depth += 1;
             }
-            offset += line.len();
-            continue;
+            pulldown_cmark::Event::End(_) => depth -= 1,
+            _ => {}
         }
-        let character = trimmed.chars().next().unwrap_or(' ');
-        let length = trimmed
-            .chars()
-            .take_while(|value| *value == character)
-            .count();
-        if ['`', '~'].contains(&character) && length >= 3 {
-            fence = Some((character, length));
-            offset += line.len();
-            continue;
-        }
-        let title = line.trim_end();
-        let hashes = title
-            .chars()
-            .take_while(|character| *character == '#')
-            .count();
-        if (1..=6).contains(&hashes) && title[hashes..].starts_with(' ') {
-            headings.push((hashes, title[hashes..].trim(), offset));
-        }
-        offset += line.len();
     }
     let matching: Vec<_> = headings
         .iter()

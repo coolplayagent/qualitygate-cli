@@ -41,10 +41,25 @@ fn missing_ambiguous_and_code_only_headings_cannot_satisfy_a_source_mapping() {
         "```md\n# Policy\n```\n",
         "# Policy\nFirst\n# Policy\nSecond\n",
         "~~~md\n# Policy\n~~~\n",
+        "```md\n    ```\n# Policy\n```\n",
+        "<!--\n# Policy\n-->\n",
+        "> # Policy\n> quoted text\n",
+        "    # Policy\n",
     ] {
         let (rule, files) = source(document, "Policy", document);
         assert!(validate_source(&rule, &files).is_err(), "{document}");
     }
     let (rule, _) = source("# Policy\n", "Policy", "# Policy\n");
     assert!(validate_source(&rule, &BTreeMap::new()).is_err());
+}
+
+#[test]
+fn commonmark_recognition_preserves_raw_titles_and_exact_crlf_section_bytes() {
+    let expected = "## **Policy**\r\nKeep tests.\r\n";
+    let document = format!("# Intro\r\n\r\n{expected}## Other\r\nNotes\r\n");
+    let (rule, files) = source(&document, "**Policy**", expected);
+    validate_source(&rule, &files).unwrap();
+    let document = format!("```md\n    ```\n# Hidden\n```\n{expected}## Other\n");
+    let (rule, files) = source(&document, "**Policy**", expected);
+    validate_source(&rule, &files).unwrap();
 }

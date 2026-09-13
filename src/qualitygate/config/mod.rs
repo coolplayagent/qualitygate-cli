@@ -12,6 +12,7 @@ mod model;
 mod plan;
 pub mod project_rules;
 mod python;
+pub mod source_reviews;
 mod validation;
 pub use initialization::{Initialization, initialize_at};
 pub use model::*;
@@ -23,11 +24,18 @@ use std::path::Path;
 pub const CONFIG_FILE: &str = "qualitygate.yaml";
 pub const MAX_CONFIG_BYTES: usize = 1_048_576;
 
+/// Validate mapping uniqueness before deserializing typed maps, whose visitors
+/// would otherwise accept a later value for the same YAML key.
+pub(super) fn parse_yaml<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
+    let _: serde_norway::Value = serde_norway::from_slice(bytes)?;
+    Ok(serde_norway::from_slice(bytes)?)
+}
+
 pub fn parse(bytes: &[u8]) -> Result<Config> {
     if bytes.len() > MAX_CONFIG_BYTES {
         bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
     }
-    let config: Config = serde_norway::from_slice(bytes).context("Invalid qualitygate YAML")?;
+    let config: Config = parse_yaml(bytes).context("Invalid qualitygate YAML")?;
     validation::layout(&config, false)?;
     if config.custom_rules.is_none() {
         catalog::Catalog::load(&config, std::iter::empty())?.resolve(&config)?;

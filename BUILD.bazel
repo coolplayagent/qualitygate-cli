@@ -1,0 +1,92 @@
+load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition")
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["tests/common/http.rs"])
+
+filegroup(
+    name = "packaged_rules",
+    srcs = glob(["qualitygate/rules/**/*.yaml"]),
+)
+
+filegroup(
+    name = "engineering_standard_assets",
+    srcs = [
+        "knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml",
+        "knowledge/best-practices/engineering-standards/registry.yaml",
+    ],
+)
+
+alias(
+    name = "qualitygate_lib",
+    actual = "//src/qualitygate:qualitygate_lib",
+)
+
+alias(
+    name = "qualitygate",
+    actual = "//src/qualitygate:qualitygate",
+)
+
+test_suite(
+    name = "unit_tests",
+    tests = [
+        "//src/qualitygate/env:unit_tests",
+        "//src/qualitygate/paths:unit_tests",
+        "//src/qualitygate/adapters:unit_tests",
+        "//src/qualitygate/application:unit_tests",
+        "//src/qualitygate/config:unit_tests",
+        "//src/qualitygate/domain:unit_tests",
+        "//src/qualitygate/interfaces:unit_tests",
+        "//src/qualitygate/net:unit_tests",
+        "//src/qualitygate/runner:unit_tests",
+        "//src/qualitygate/snapshot:unit_tests",
+    ],
+)
+
+rust_test(
+    name = "bazel_contract_test",
+    crate_root = "tests/bazel.rs",
+    srcs = ["tests/bazel.rs"],
+    compile_data = [
+        ".bazelrc",
+        ".bazelignore",
+        ".bazelversion",
+        "BUILD.bazel",
+        "Cargo.lock",
+        "Cargo.toml",
+        "MODULE.bazel",
+        "MODULE.bazel.lock",
+        "qualitygate.yaml",
+        "rust-toolchain.toml",
+        "//bazel:BUILD.bazel",
+        "//bazel:rust_deps.bzl",
+        "//src/qualitygate:BUILD.bazel",
+        "//src/qualitygate/adapters:BUILD.bazel",
+        "//src/qualitygate/adapters/reports:BUILD.bazel",
+        "//src/qualitygate/adapters/syntax:BUILD.bazel",
+        "//src/qualitygate/application:BUILD.bazel",
+        "//src/qualitygate/config:BUILD.bazel",
+        "//src/qualitygate/config/discovery:BUILD.bazel",
+        "//src/qualitygate/domain:BUILD.bazel",
+        "//src/qualitygate/env:BUILD.bazel",
+        "//src/qualitygate/interfaces:BUILD.bazel",
+        "//src/qualitygate/net:BUILD.bazel",
+        "//src/qualitygate/paths:BUILD.bazel",
+        "//src/qualitygate/runner:BUILD.bazel",
+        "//src/qualitygate/snapshot:BUILD.bazel",
+    ],
+    aliases = aliases(
+        normal_dev = True,
+        proc_macro_dev = True,
+    ),
+    edition = crate_edition(),
+    deps = [":qualitygate_lib"] + all_crate_deps(
+        normal = True,
+        normal_dev = True,
+    ),
+    proc_macro_deps = all_crate_deps(
+        proc_macro = True,
+        proc_macro_dev = True,
+    ),
+)

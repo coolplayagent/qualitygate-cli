@@ -50,16 +50,17 @@ fn coverage_parsers_preserve_uncovered_lines_and_branches() {
         ),
         (1, 2)
     );
-    let jacoco = parse(ReportFormat::Jacoco, br#"<report><package name="com/acme"><sourcefile name="A.java"><line nr="2" mi="1" ci="2" mb="1" cb="1"/></sourcefile></package></report>"#).unwrap();
+    let counters = r#"<counter type="INSTRUCTION" missed="1" covered="2"/><counter type="LINE" missed="0" covered="1"/><counter type="BRANCH" missed="1" covered="1"/>"#;
+    let jacoco = parse(ReportFormat::Jacoco, format!(r#"<report><package name="com/acme"><sourcefile name="A.java"><line nr="2" mi="1" ci="2" mb="1" cb="1"/>{counters}</sourcefile>{counters}</package>{counters}</report>"#).as_bytes()).unwrap();
     assert_eq!(jacoco.coverage[0].file, "com/acme/A.java");
-    let cobertura = parse(ReportFormat::Cobertura, br#"<coverage><class filename="x.py"><lines><line number="3" hits="0" branch="true" condition-coverage="50% (1/2)"/></lines></class></coverage>"#).unwrap();
+    let cobertura = parse(ReportFormat::Cobertura, br#"<coverage><class filename="x.py"><lines><line number="3" hits="1" branch="true" condition-coverage="50% (1/2)"/></lines></class></coverage>"#).unwrap();
     assert_eq!(cobertura.coverage[0].branches_hit, 1);
     assert!(parse(ReportFormat::Lcov, b"SF:file\nDA:1,1").is_err());
 }
 
 #[test]
 fn sarif_and_generic_diagnostics_validate_shape() {
-    let sarif = parse(ReportFormat::Sarif, br#"{"version":"2.1.0","runs":[{"results":[{"ruleId":"r","message":{"text":"bad"},"locations":[{"physicalLocation":{"artifactLocation":{"uri":"src/x.rs"},"region":{"startLine":5}}}]}]}]}"#).unwrap();
+    let sarif = parse(ReportFormat::Sarif, br#"{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"fixture"}},"results":[{"ruleId":"r","message":{"text":"bad"},"locations":[{"physicalLocation":{"artifactLocation":{"uri":"src/x.rs"},"region":{"startLine":5}}}]}]}]}"#).unwrap();
     assert_eq!(sarif.issues[0].file.as_deref(), Some("src/x.rs"));
     assert!(parse(ReportFormat::Sarif, br#"{"version":"2.1.0","runs":[]}"#).is_err());
     assert!(parse(ReportFormat::Diagnostics, b"{}").is_err());
@@ -113,7 +114,7 @@ fn lcov_sections_merge_by_identity_and_validate_source_summaries() {
     .unwrap();
     assert!(empty.coverage.is_empty());
     assert_eq!(empty.coverage_files, ["src/empty.rs"]);
-    assert!(empty.branch_coverage);
+    assert!(!empty.branch_coverage);
 }
 
 #[test]
@@ -128,4 +129,39 @@ fn coverage_and_test_summary_counters_cannot_disagree_with_detail_records() {
         .is_err()
     );
     assert!(parse(ReportFormat::Diagnostics, br#"{"issues":[],"coverage":[{"file":"a.rs","line":0,"hits":0,"branches_found":0,"branches_hit":0}]}"#).is_err());
+}
+
+#[test]
+fn generic_location_inventory_preserves_ranges_and_cannot_contradict_primary_location() {
+    use serde_json::json;
+    let mut report = json!({"issues":[{"rule":"R","message":"A violation","file":"src/a.rs","line":2,"symbol":"fn",
+        "tool":"scan","locations":[{"file":"src/a.rs","line":2,"end_line":3,"symbol":"fn"}]}]});
+    let read = |value: &serde_json::Value| {
+        parse(
+            ReportFormat::Diagnostics,
+            &serde_json::to_vec(value).unwrap(),
+        )
+    };
+    assert_eq!(
+        read(&report).unwrap().issues[0].locations[0].end_line,
+        Some(3)
+    );
+    for (key, value) in [
+        ("file", json!("different.rs")),
+        ("line", json!(1)),
+        ("symbol", json!("different")),
+    ] {
+        let mut broken = report.clone();
+        broken["issues"][0]["locations"][0][key] = value;
+        assert!(read(&broken).is_err());
+    }
+    report["issues"][0]["locations"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"file":"src/b.rs","line":0}));
+    assert!(read(&report).is_err());
+    report["issues"][0]["locations"][1] = json!({"file":"src/b.rs","line":2,"end_line":1});
+    assert!(read(&report).is_err());
+    report["issues"][0]["locations"][1] = json!({"file":"src/b.rs","end_line":1});
+    assert!(read(&report).is_err());
 }

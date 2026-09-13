@@ -46,6 +46,8 @@ fn pending() -> CheckResult {
 }
 fn issue(file: &str, line: usize) -> Issue {
     Issue {
+        tool: None,
+        locations: vec![],
         rule: "rule".into(),
         file: Some(file.into()),
         line: Some(line),
@@ -64,6 +66,7 @@ fn coverage(records: &[(&str, usize, u64, usize, usize)]) -> Data {
         coverage: records
             .iter()
             .map(|(file, line, hits, found, hit)| CoverageLine {
+                excluded: false,
                 file: (*file).into(),
                 line: *line,
                 hits: *hits,
@@ -325,4 +328,203 @@ fn zero_selected_executable_lines_are_reported_as_null_rates_not_hundred_percent
         result.metadata["report:coverage"]["no_executable_lines_selected"],
         true
     );
+}
+
+#[test]
+fn coverage_source_roots_resolve_exactly_and_exclusions_remain_snapshot_bound() {
+    let mut data = coverage(&[("a.rs", 2, 0, 0, 0), ("b.rs", 1, 1, 0, 0)]);
+    data.coverage_files = vec!["a.rs".into(), "b.rs".into()];
+    data.coverage[0].excluded = true;
+    for root in ["src", "/checked/src", "/repo/src"] {
+        data.coverage_roots = vec![root.into()];
+        let mut result = pending();
+        apply_data(
+            &mut result,
+            &coverage_spec("changed_lines"),
+            data.clone(),
+            None,
+        )
+        .unwrap();
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(result.metadata["report:coverage"]["excluded_lines"], 1);
+        assert_eq!(result.metadata["report:coverage"]["lines"], 0);
+    }
+    for root in ["", "missing", "/foreign/src", "../src"] {
+        data.coverage_roots = vec![root.into()];
+        assert!(
+            apply_data(&mut pending(), &coverage_spec("full"), data.clone(), None).is_err(),
+            "{root}"
+        );
+    }
+    data.coverage_roots = vec!["src".into()];
+    data.coverage[0].line = 9;
+    assert!(apply_data(&mut pending(), &coverage_spec("full"), data.clone(), None).is_err());
+    data.coverage[0].line = 2;
+    data.coverage[0].hits = 1;
+    assert!(apply_data(&mut pending(), &coverage_spec("full"), data.clone(), None).is_err());
+    data.coverage[0].hits = 0;
+    let mut snapshot = snapshot();
+    snapshot
+        .files
+        .insert("tests/a.rs".into(), snapshot.files["src/a.rs"].clone());
+    data.coverage_roots.push("tests".into());
+    assert!(
+        apply(
+            &mut pending(),
+            &coverage_spec("full"),
+            data,
+            None,
+            &snapshot,
+            Path::new("/checked")
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn short_report_names_cannot_expand_unboundedly_when_mapped_to_long_source_paths() {
+    let mut snapshot = snapshot();
+    snapshot.files.clear();
+    snapshot.files.insert(
+        format!("src/{}/a.rs", "a".repeat(4000)),
+        File {
+            bytes: b"statement\n".repeat(1000),
+            executable: false,
+        },
+    );
+    let records = (1..=1000)
+        .map(|line| ("a.rs", line, 1, 0, 0))
+        .collect::<Vec<_>>();
+    let error = apply(
+        &mut pending(),
+        &coverage_spec("full"),
+        coverage(&records),
+        None,
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("16 MiB"));
+}
+
+#[test]
+fn multiple_locations_use_any_matching_range_and_keep_a_stable_identity() {
+    let mut finding = issue("src/b.rs", 1);
+    finding.tool = Some("scan".into());
+    finding.locations = vec![
+        IssueLocation {
+            file: finding.file.clone(),
+            line: finding.line,
+            end_line: None,
+            symbol: finding.symbol.clone(),
+        },
+        IssueLocation {
+            file: Some("src/a.rs".into()),
+            line: Some(1),
+            end_line: Some(3),
+            symbol: Some("other".into()),
+        },
+    ];
+    let mut full = pending();
+    apply_data(&mut full, &spec("full"), data(vec![finding.clone()]), None).unwrap();
+    let mut changed = pending();
+    apply_data(
+        &mut changed,
+        &spec("changed_lines"),
+        data(vec![finding.clone()]),
+        None,
+    )
+    .unwrap();
+    assert_eq!(changed.diagnostics[0].file.as_deref(), Some("src/a.rs"));
+    assert_eq!(changed.diagnostics[0].range.as_ref().unwrap().end_line, 3);
+    assert_eq!(
+        full.diagnostics[0].fingerprint,
+        changed.diagnostics[0].fingerprint
+    );
+    let mut affected = data(vec![finding.clone()]);
+    affected.affected_files = Some(vec!["src/a.rs".into()]);
+    let mut result = pending();
+    apply_data(&mut result, &spec("affected_scope"), affected, None).unwrap();
+    assert_eq!(result.diagnostics[0].file.as_deref(), Some("src/a.rs"));
+    finding.locations.reverse();
+    finding.file = finding.locations[0].file.clone();
+    finding.line = finding.locations[0].line;
+    finding.symbol = finding.locations[0].symbol.clone();
+    assert_eq!(
+        fingerprint(&finding),
+        fingerprint(&data_from_evidence(&full))
+    );
+}
+
+fn data_from_evidence(result: &CheckResult) -> Issue {
+    serde_json::from_value(result.diagnostics[0].evidence.clone()).unwrap()
+}
+
+#[test]
+fn unresolved_locations_and_impossible_source_ranges_cannot_disappear() {
+    let mut finding = issue("src/b.rs", 1);
+    finding.locations = vec![
+        IssueLocation {
+            file: finding.file.clone(),
+            line: finding.line,
+            end_line: None,
+            symbol: finding.symbol.clone(),
+        },
+        IssueLocation {
+            file: None,
+            line: None,
+            end_line: None,
+            symbol: Some("unmapped".into()),
+        },
+    ];
+    assert!(
+        apply_data(
+            &mut pending(),
+            &spec("changed_lines"),
+            data(vec![finding.clone()]),
+            None
+        )
+        .is_err()
+    );
+    let mut affected = data(vec![finding.clone()]);
+    affected.affected_files = Some(vec!["src/a.rs".into()]);
+    assert!(apply_data(&mut pending(), &spec("affected_scope"), affected, None).is_err());
+    // A proven matching location suffices even when a different one is unlocated.
+    finding.file = Some("src/a.rs".into());
+    finding.locations[0].file = Some("src/a.rs".into());
+    finding.locations[0].end_line = Some(2);
+    apply_data(
+        &mut pending(),
+        &spec("changed_lines"),
+        data(vec![finding.clone()]),
+        None,
+    )
+    .unwrap();
+    for (line, end) in [(0, None), (4, None), (2, Some(1)), (1, Some(4))] {
+        finding.locations[0].line = Some(line);
+        finding.locations[0].end_line = end;
+        assert!(
+            apply_data(
+                &mut pending(),
+                &spec("full"),
+                data(vec![finding.clone()]),
+                None
+            )
+            .is_err()
+        );
+    }
+}
+
+#[test]
+fn producer_identity_without_locations_still_includes_primary_path_and_symbol() {
+    let mut finding = issue("src/a.rs", 1);
+    finding.tool = Some("scan".into());
+    let identity = fingerprint(&finding);
+    finding.line = Some(2);
+    assert_eq!(identity, fingerprint(&finding));
+    finding.file = Some("src/b.rs".into());
+    assert_ne!(identity, fingerprint(&finding));
+    finding.file = Some("src/a.rs".into());
+    finding.tool = Some("different scan".into());
+    assert_ne!(identity, fingerprint(&finding));
 }

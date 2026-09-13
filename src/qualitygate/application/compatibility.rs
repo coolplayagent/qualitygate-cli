@@ -250,46 +250,100 @@ async fn run(
         inputs: vec![],
         timeout_seconds: 30,
     }];
-    let compared = commands::execute(
-        &comparator,
-        workspace.path(),
-        artifacts,
-        &Arc::new(comparison),
-        &guard,
-    )
-    .await;
-    let retained = std::mem::take(&mut result.execution.artifacts);
-    result.execution = compared.execution.clone();
-    result.execution.artifacts.extend(retained);
-    result.metadata.extend(compared.metadata.clone());
-    result.diagnostics.extend(compared.diagnostics);
-    if compared.execution.status != ExecutionStatus::Completed
-        || compared.verdict != Some(Verdict::Pass)
-    {
-        bail!("Compatibility analyzer did not complete successfully");
-    }
-    let bytes = super::generated_reports::read_report(workspace.path(), "comparison.xml").await?;
-    result
-        .execution
-        .artifacts
-        .push(super::evidence::persist(artifacts, &check.id, "compatibility.xml", &bytes).await?);
-    let expected_classes = baseline.classes.union(&current.classes).cloned().collect();
+    let comparison = Arc::new(comparison);
+    let mut expected_classes = baseline.classes.union(&current.classes).cloned().collect();
     let level = spec.level;
-    let comparison = tokio::task::spawn_blocking(move || {
-        compatibility::parse(&bytes, &old, &new, &expected_classes, level)
-    })
-    .await??;
-    guard.verify().await?;
-    result
-        .metadata
-        .get_mut("compatibility")
-        .expect("compatibility metadata")["comparison"] = serde_json::to_value(&comparison)?;
-    for finding in comparison.findings {
-        result.diagnostics.push(diagnostic(&check.id,None,None,
-            format!("{}: {}",finding.symbol,finding.change),
-            serde_json::to_value(&finding)?,
-            "Restore the compatible API or obtain an approved change to the compatibility contract, then rebuild both versions and recheck",
-            &format!("{}:{}",finding.symbol,finding.change)));
+    for (inventory, suffix, access) in [(true, "inventory", "private"), (false, "api", "protected")]
+    {
+        let report_name = format!("comparison-{suffix}.xml");
+        let mut command = comparator.clone();
+        command.id = if inventory {
+            format!("{}/inventory", check.id)
+        } else {
+            check.id.clone()
+        };
+        let output_index = command
+            .argv
+            .iter()
+            .position(|arg| arg == "--xml-file")
+            .unwrap()
+            + 1;
+        command.argv[output_index] = workspace
+            .path()
+            .join(&report_name)
+            .to_str()
+            .context("Invalid report path")?
+            .into();
+        let access_index = command.argv.iter().position(|arg| arg == "-a").unwrap() + 1;
+        command.argv[access_index] = access.into();
+        let compared =
+            commands::execute(&command, workspace.path(), artifacts, &comparison, &guard).await;
+        let retained = std::mem::take(&mut result.execution.artifacts);
+        result.execution = compared.execution.clone();
+        result.execution.artifacts.extend(retained);
+        result.metadata.extend(compared.metadata.clone());
+        if inventory {
+            result.metadata.insert(
+                "compatibility_inventory_execution".into(),
+                serde_json::to_value(&compared)?,
+            );
+        }
+        result.diagnostics.extend(compared.diagnostics);
+        if compared.execution.status != ExecutionStatus::Completed
+            || compared.verdict != Some(Verdict::Pass)
+        {
+            bail!("Compatibility {suffix} analyzer did not complete successfully");
+        }
+        if !inventory {
+            tool_evidence::comparable(
+                &result.metadata["tools"],
+                &serde_json::from_value::<Vec<tool_evidence::ToolEvidence>>(
+                    result.metadata["compatibility_inventory_execution"]["metadata"]["tools"]
+                        .clone(),
+                )?,
+            )?;
+        }
+        let bytes = super::generated_reports::read_report(workspace.path(), &report_name).await?;
+        result.execution.artifacts.push(
+            super::evidence::persist(
+                artifacts,
+                &check.id,
+                &format!("compatibility-{suffix}.xml"),
+                &bytes,
+            )
+            .await?,
+        );
+        let (old, new) = (old.clone(), new.clone());
+        let (parsed, next_classes) = tokio::task::spawn_blocking(move || {
+            let parsed =
+                compatibility::parse(&bytes, &old, &new, &expected_classes, level, inventory)?;
+            let next_classes = if inventory {
+                compatibility::api_inventory(&bytes)?
+            } else {
+                expected_classes
+            };
+            Ok::<_, anyhow::Error>((parsed, next_classes))
+        })
+        .await??;
+        expected_classes = next_classes;
+        guard.verify().await?;
+        let metadata = result
+            .metadata
+            .get_mut("compatibility")
+            .expect("compatibility metadata");
+        if inventory {
+            metadata["inventory_classes"] = serde_json::json!(parsed.classes_compared);
+            metadata["api_visibility"] = serde_json::json!(["public", "protected"]);
+        } else {
+            metadata["comparison"] = serde_json::to_value(&parsed)?;
+            for finding in parsed.findings {
+                result.diagnostics.push(diagnostic(&check.id,None,None,
+                    format!("{}: {}",finding.symbol,finding.change),
+                    serde_json::to_value(&finding)?,
+                    "Restore the compatible API or obtain an approved change to the compatibility contract, then rebuild both versions and recheck",
+                    &format!("{}:{}",finding.symbol,finding.change)));
+            }
+        }
     }
     Ok(())
 }

@@ -2,6 +2,8 @@
 //! use parser fixtures and do not silently substitute a mock for this evidence.
 
 mod common;
+#[path = "common/reviews.rs"]
+mod reviews;
 use common::*;
 use serde_json::{Value, json};
 use std::path::Path;
@@ -34,6 +36,7 @@ fn configure(root: &Path, maven: &str, cache: &Path) {
     )
     .unwrap();
     pom(root, DEPENDENCY);
+    reviews::record(root).unwrap();
     std::fs::write(
         root.join("src/test/java/T.java"),
         "class T { @Test @Generated(author=\"fixture\") void test() {} }\n",

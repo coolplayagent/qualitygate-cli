@@ -16,7 +16,7 @@ pub fn relative(path: &Path) -> Result<String> {
 }
 
 /// Normalizes an OS-produced relative path after root confinement. Windows
-/// separators are structural here; user policy paths go through `relative`.
+/// separators are structural here; user policy paths go through relative.
 pub fn from_native(path: &Path) -> Result<String> {
     let mut parts = Vec::new();
     for part in path.components() {

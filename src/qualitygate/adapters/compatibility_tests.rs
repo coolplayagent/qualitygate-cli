@@ -29,6 +29,7 @@ fn compare(report: &str, level: CompatibilityLevel) -> Result<Comparison> {
         "new.jar",
         &BTreeSet::from(["Api".into()]),
         level,
+        true,
     )
 }
 
@@ -83,7 +84,8 @@ fn complete_inventory_and_unfiltered_report_are_required() {
             "old.jar",
             "new.jar",
             &BTreeSet::new(),
-            CompatibilityLevel::Both
+            CompatibilityLevel::Both,
+            true
         )
         .is_err()
     );
@@ -93,7 +95,67 @@ fn complete_inventory_and_unfiltered_report_are_required() {
             "old.jar",
             "new.jar",
             &BTreeSet::new(),
-            CompatibilityLevel::Both
+            CompatibilityLevel::Both,
+            true
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn api_inventory_is_derived_from_complete_class_visibility() {
+    let class = |name, old, new| {
+        format!(
+            r#"<class fullyQualifiedName="{name}" binaryCompatible="true" sourceCompatible="true"><modifiers><modifier oldValue="{old}" newValue="{new}"/></modifiers></class>"#
+        )
+    };
+    let body = [
+        class("Api", "PUBLIC", "PUBLIC"),
+        class("Added", "n.a.", "PROTECTED"),
+        class("Hidden", "PRIVATE", "n.a."),
+        class("Package", "PACKAGE_PROTECTED", "PACKAGE_PROTECTED"),
+    ]
+    .join("");
+    assert_eq!(
+        api_inventory(xml(&body).as_bytes()).unwrap(),
+        BTreeSet::from(["Api".into(), "Added".into()])
+    );
+    for body in [
+        CLASS.into(),
+        class("Api", "PUBLIC", "unknown"),
+        class("Hidden", "PRIVATE", "PRIVATE"),
+        class("Api", "OTHER", "OTHER"),
+        class("Api", "PUBLIC", "PUBLIC").replace(
+            "</modifiers>",
+            "<modifier oldValue=\"PRIVATE\" newValue=\"PRIVATE\"/></modifiers>",
+        ),
+    ] {
+        assert!(api_inventory(xml(&body).as_bytes()).is_err());
+    }
+    assert!(api_inventory(b"<japicmp/>").is_err());
+    assert!(api_inventory(b"invalid").is_err());
+    assert!(api_inventory(&vec![b' '; snapshot::MAX_FILE_BYTES + 1]).is_err());
+    let report = xml(CLASS).replace("accessModifier=\"PRIVATE\"", "accessModifier=\"PROTECTED\"");
+    let expected = BTreeSet::from(["Api".into()]);
+    assert!(
+        parse(
+            report.as_bytes(),
+            "old.jar",
+            "new.jar",
+            &expected,
+            CompatibilityLevel::Both,
+            false
+        )
+        .is_ok()
+    );
+    assert!(
+        parse(
+            report.as_bytes(),
+            "old.jar",
+            "new.jar",
+            &expected,
+            CompatibilityLevel::Both,
+            true
         )
         .is_err()
     );

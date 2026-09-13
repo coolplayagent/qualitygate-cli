@@ -13,18 +13,28 @@ pub const MAX_HISTORY_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_TREE_ENTRIES: usize = 200_000;
 
 #[derive(Debug)]
-pub(crate) struct Commit {
-    pub(crate) oid: String,
-    pub(crate) parents: Vec<String>,
-    pub(crate) files: BTreeMap<String, Arc<File>>,
-    pub(crate) content_digest: String,
-    pub(crate) message: String,
-    pub(crate) trailers: BTreeMap<String, Vec<String>>,
+pub struct Commit {
+    /// Object identity captured from the immutable Git input.
+    pub oid: String,
+    /// Ordered parent object identities.
+    pub parents: Vec<String>,
+    /// Interned tree contents keyed by repository-relative path.
+    pub files: BTreeMap<String, Arc<File>>,
+    /// Digest of the tree contents used to validate cross-domain consumers.
+    pub content_digest: String,
+    /// Commit message captured without executing configured Git hooks.
+    pub message: String,
+    /// Normalized trailer values keyed by lower-case trailer name.
+    pub trailers: BTreeMap<String, Vec<String>>,
 }
 
 #[derive(Debug)]
 pub struct History {
-    pub(crate) commits: Vec<Commit>,
+    /// Ordered, bounded commits consumed by declaration adapters.
+    ///
+    /// The declaration analyzer treats this as untrusted input and validates
+    /// topology, content digests, and comparison identities.
+    pub commits: Vec<Commit>,
 }
 
 type BlobPool = BTreeMap<(String, bool), Arc<File>>;

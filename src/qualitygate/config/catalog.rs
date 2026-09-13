@@ -398,7 +398,7 @@ impl Catalog {
         let mut entries = BTreeMap::new();
         let mut mapped_inputs = BTreeSet::new();
         for (package, path, yaml) in PACKAGED {
-            let rule: Builtin = serde_norway::from_str(yaml)?;
+            let rule: Builtin = super::parse_yaml(yaml.as_bytes())?;
             mapped_inputs.extend(validate_builtin_standards(&rule, &standards)?);
             if !["core", "shared"].contains(package)
                 && !config.rulesets.iter().any(|name| name == package)
@@ -438,7 +438,7 @@ impl Catalog {
                 if total > super::MAX_CONFIG_BYTES || ids.len() >= 256 {
                     bail!("Custom rule package exceeds 256 files or 1 MiB");
                 }
-                let rule: CustomRule = serde_norway::from_slice(bytes)
+                let rule: CustomRule = super::parse_yaml(bytes)
                     .with_context(|| format!("Invalid custom rule: {path}"))?;
                 custom_validation::validate(&rule)
                     .with_context(|| format!("Invalid rule {path}"))?;
@@ -495,6 +495,7 @@ impl Catalog {
             }
         }
         validation::validate(&effective)?;
+        super::source_reviews::evidence(&effective, self)?;
         Ok(effective)
     }
 }

@@ -52,3 +52,5 @@ promoted.
 The `lang-java` package also provides `module-boundary`, which consumes Maven project facts from declared prerequisites. It requires an explicit module inventory and forbidden dependency directions; see [project rules](projects.md). This is a project semantic rule, separate from file syntax checks.
 
 Unknown or wrongly typed parameters are configuration errors. Structure rules support `parameters.paths` and `parameters.languages`; line-ending, commit-message and diff-size do not accept those filters. See [custom rules and packages](custom-rules.md) for versioned definitions, capability declarations and source hashes.
+
+Assigning `source` to a built-in rule also requires a [bound source review](source-reviews.md). This review is separate from packaged `standard_refs` catalog validation: it records the team's mapping from its own normative section to the effective executable rule.

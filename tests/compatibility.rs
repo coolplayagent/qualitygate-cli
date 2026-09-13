@@ -42,10 +42,13 @@ fn main() {
     let arg = |name| args.iter().position(|arg| arg == name).map(|index| args[index+1].as_str()).unwrap();
     let old = arg("--old");
     let new = arg("--new");
+    let access = arg("-a").to_uppercase();
     let bytes = fs::read(new).unwrap();
     let contains = |mode:&str| bytes.windows(mode.len()).any(|window| window == mode.as_bytes());
+    if access == "PROTECTED" && contains("api-only-missing") { return; }
+    if access == "PROTECTED" && contains("api-only-timeout") { std::thread::sleep(std::time::Duration::from_secs(3)); }
     if contains("missing-report") { return; }
-    if contains("timeout") { std::thread::sleep(std::time::Duration::from_secs(3)); }
+    if contains("timeout") && !contains("api-only-timeout") { std::thread::sleep(std::time::Duration::from_secs(3)); }
     if contains("crash") { process::exit(1); }
     if contains("mutate-archive") { let mut bytes=fs::read(old).unwrap(); bytes.push(b' '); fs::write(old,bytes).unwrap(); }
     let binary = !contains("breaking");
@@ -56,10 +59,10 @@ fn main() {
         let changes = if binary && source { String::new() } else { format!(
             "<methods><method name=\"greet\" binaryCompatible=\"{binary}\" sourceCompatible=\"{source}\"><parameters><parameter type=\"java.lang.String\"/></parameters><compatibilityChanges><compatibilityChange type=\"METHOD_REMOVED\" binaryCompatible=\"{binary}\" sourceCompatible=\"{source}\"/></compatibilityChanges></method></methods>"
         )};
-        format!("<class fullyQualifiedName=\"Api\" binaryCompatible=\"{binary}\" sourceCompatible=\"{source}\">{changes}</class>")
+        format!("<class fullyQualifiedName=\"Api\" binaryCompatible=\"{binary}\" sourceCompatible=\"{source}\"><modifiers><modifier oldValue=\"PUBLIC\" newValue=\"PUBLIC\"/></modifiers>{changes}</class>")
     };
     fs::write(arg("--xml-file"),format!(
-        "<japicmp oldJar=\"{old}\" newJar=\"{new}\" accessModifier=\"PRIVATE\" packagesInclude=\"all\" packagesExclude=\"n.a.\" ignoreMissingClasses=\"false\" ignoreMissingClassesByRegularExpressions=\"\" onlyModifications=\"false\" onlyBinaryIncompatibleModifications=\"false\"><classes>{classes}</classes></japicmp>"
+        "<japicmp oldJar=\"{old}\" newJar=\"{new}\" accessModifier=\"{access}\" packagesInclude=\"all\" packagesExclude=\"n.a.\" ignoreMissingClasses=\"false\" ignoreMissingClassesByRegularExpressions=\"\" onlyModifications=\"false\" onlyBinaryIncompatibleModifications=\"false\"><classes>{classes}</classes></japicmp>"
     )).unwrap();
 }
 "#;
@@ -201,12 +204,20 @@ fn incomplete_analyzer_output_timeout_and_input_mutation_never_pass() {
         "crash",
         "mutate-archive",
         "timeout",
+        "api-only-missing",
+        "api-only-timeout",
     ] {
         fixture.set_mode(mode);
         let output = fixture.run(&[], 2);
         assert_eq!(output["checks"][0]["verdict"], Value::Null, "{mode}");
-        if mode == "timeout" {
+        if mode.ends_with("timeout") {
             assert_eq!(output["checks"][0]["execution"]["status"], "timed_out");
+        }
+        if mode.starts_with("api-only-") {
+            assert_eq!(
+                output["checks"][0]["metadata"]["compatibility_inventory_execution"]["execution"]["status"],
+                "completed"
+            );
         }
         assert!(
             !output["checks"][0]["execution"]["artifacts"]
@@ -278,7 +289,11 @@ fn internal_build_evidence_cannot_collide_with_named_checks() {
     fixture.configure(&policy);
     let output = fixture.run(&[], 0);
     let check = &output["checks"][0];
-    for build in ["baseline_build", "current_build"] {
+    for build in [
+        "baseline_build",
+        "current_build",
+        "compatibility_inventory_execution",
+    ] {
         for artifact in check["metadata"][build]["execution"]["artifacts"]
             .as_array()
             .unwrap()

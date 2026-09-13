@@ -1189,6 +1189,7 @@ dependencies = [
  "globset",
  "ignore",
  "pep508_rs",
+ "percent-encoding",
  "proc-macro2",
  "process-wrap",
  "pulldown-cmark",
@@ -1211,6 +1212,7 @@ dependencies = [
  "tree-sitter-python",
  "tree-sitter-rust",
  "tree-sitter-typescript",
+ "url",
  "which",
  "zip",
 ]

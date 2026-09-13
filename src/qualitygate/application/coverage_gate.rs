@@ -3,6 +3,7 @@ use crate::{
     adapters::{reports::Data, rules::diagnostic},
     config::{IncrementMode, ReportSpec},
     domain::CheckResult,
+    paths,
     snapshot::Snapshot,
 };
 use anyhow::{Result, bail};
@@ -46,21 +47,45 @@ pub(super) fn apply(
         })
         .cloned()
         .collect();
+    let mut mapped = BTreeMap::new();
+    for file in data
+        .coverage_files
+        .iter()
+        .chain(data.coverage.iter().map(|record| &record.file))
+    {
+        if !mapped.contains_key(file) {
+            mapped.insert(file.clone(), map_source(file, data, snapshot, workspace)?);
+        }
+    }
     let mut inventory = BTreeSet::new();
+    let mut budget = 16 * 1024 * 1024usize;
+    for file in data
+        .coverage_files
+        .iter()
+        .chain(data.coverage.iter().map(|record| &record.file))
+    {
+        budget = budget
+            .checked_sub(mapped[file].len() * 6 + 256)
+            .ok_or_else(|| anyhow::anyhow!("Mapped coverage exceeds its 16 MiB budget"))?;
+    }
     for file in &data.coverage_files {
-        inventory.insert(map_file(file, snapshot, workspace, false)?);
+        inventory.insert(mapped[file].clone());
     }
     let mut records = BTreeMap::new();
     let mut counts = BTreeMap::new();
     for record in &data.coverage {
-        let file = map_file(&record.file, snapshot, workspace, false)?;
+        let file = mapped[&record.file].clone();
         let lines = *counts.entry(file.clone()).or_insert_with(|| {
             snapshot.files[&file]
                 .bytes
                 .split_inclusive(|byte| *byte == b'\n')
                 .count()
         });
-        if record.line == 0 || record.line > lines || record.branches_hit > record.branches_found {
+        if record.line == 0
+            || record.line > lines
+            || record.branches_hit > record.branches_found
+            || (record.excluded && (record.hits > 0 || record.branches_found > 0))
+        {
             bail!(
                 "Coverage record is outside checked source or has invalid counters: {file}:{}",
                 record.line
@@ -88,6 +113,7 @@ pub(super) fn apply(
     let mut hit = 0usize;
     let mut branches = 0usize;
     let mut branches_hit = 0usize;
+    let mut excluded_lines = 0usize;
     for ((file, line), record) in records {
         if !expected.contains(&file) {
             continue;
@@ -95,6 +121,10 @@ pub(super) fn apply(
         if spec.mode == IncrementMode::ChangedLines
             && !snapshot.changes[&file].added_lines.contains(&line)
         {
+            continue;
+        }
+        if record.excluded {
+            excluded_lines += 1;
             continue;
         }
         total += 1;
@@ -112,7 +142,7 @@ pub(super) fn apply(
     let branch_percent = percentage(branches_hit, branches);
     let threshold = spec.minimum_coverage.unwrap_or(100.0);
     result.matched_entities += total;
-    let evidence = serde_json::json!({"coverage_paths":spec.coverage_paths,"source_files":expected,"lines":total,"lines_hit":hit,"line_percent":line_percent,"branches":branches,"branches_hit":branches_hit,"branch_percent":branch_percent,"require_branch_coverage":spec.require_branch_coverage,"threshold":threshold,"no_executable_lines_selected":total == 0});
+    let evidence = serde_json::json!({"coverage_paths":spec.coverage_paths,"source_files":expected,"lines":total,"lines_hit":hit,"line_percent":line_percent,"branches":branches,"branches_hit":branches_hit,"branch_percent":branch_percent,"require_branch_coverage":spec.require_branch_coverage,"threshold":threshold,"no_executable_lines_selected":total == 0,"excluded_lines":excluded_lines,"branch_measurement":data.branch_coverage,"producer":data.coverage_producer,"report_source_roots":data.coverage_roots});
     result
         .metadata
         .insert(format!("{}:coverage", spec.path), evidence.clone());
@@ -132,4 +162,34 @@ pub(super) fn apply(
         ));
     }
     Ok(())
+}
+
+fn map_source(file: &str, data: &Data, snapshot: &Snapshot, workspace: &Path) -> Result<String> {
+    if data.coverage_roots.is_empty() || Path::new(file).is_absolute() {
+        return map_file(file, snapshot, workspace, false);
+    }
+    let mut candidates = BTreeSet::new();
+    for root in &data.coverage_roots {
+        let candidate = Path::new(root).join(file);
+        let relative = if candidate.is_absolute() {
+            candidate
+                .strip_prefix(workspace)
+                .or_else(|_| candidate.strip_prefix(&snapshot.root))
+                .ok()
+        } else {
+            Some(candidate.as_path())
+        };
+        if let Some(relative) = relative
+            && let Ok(path) = paths::from_native(relative)
+            && snapshot.files.contains_key(&path)
+        {
+            candidates.insert(path);
+        }
+    }
+    match candidates.len() {
+        1 => Ok(candidates.into_iter().next().unwrap()),
+        _ => bail!(
+            "Coverage source roots cannot map a file uniquely to the checked snapshot: {file}"
+        ),
+    }
 }

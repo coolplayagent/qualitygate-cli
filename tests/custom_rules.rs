@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/reviews.rs"]
+mod reviews;
 use common::*;
 use std::path::Path;
 
@@ -22,6 +24,11 @@ fn definition(root: &Path, body: &str) {
         "id: private-rule\nversion: 1\nsource:\n  document: AGENTS.md\n  section: Team rules\n  content_hash: {}\nfix: Follow the team convention and rerun the check\n{body}\n",
         qualitygate::snapshot::digest(SOURCE.as_bytes()),
     )).unwrap();
+    // Malformed-definition/configuration cases intentionally have no reviewable
+    // binding; the CLI must still report their original configuration error.
+    if let Err(error) = reviews::record(root) {
+        eprintln!("Fixture is not reviewable: {error:#}");
+    }
 }
 
 fn check(root: &Path, code: i32) -> serde_json::Value {
@@ -241,6 +248,8 @@ fn rule_revision_and_protocol_version_are_independent() {
         .unwrap()
         .replace("version: 1", "version: 2");
     std::fs::write(&path, format!("schema_version: 1\n{revised}")).unwrap();
+    check(root, 2);
+    reviews::record(root).unwrap();
     let updated = check(root, 0);
     assert_eq!(updated["checks"][0]["rule_version"], 2);
     assert_ne!(
@@ -269,6 +278,7 @@ fn replacing_builtin_definition_is_explicit_and_fully_reported() {
     )
     .unwrap();
     std::fs::write(root.join("test_x.py"), "def test_wrong():\n    pass\n").unwrap();
+    reviews::record(root).unwrap();
     let result = check(root, 1);
     assert_eq!(result["checks"][0]["id"], "line-ending");
     assert_eq!(

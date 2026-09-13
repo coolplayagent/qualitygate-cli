@@ -163,6 +163,7 @@ pub fn parse(
     new: &str,
     expected_classes: &BTreeSet<String>,
     level: CompatibilityLevel,
+    inventory: bool,
 ) -> Result<Comparison> {
     if bytes.len() > snapshot::MAX_FILE_BYTES {
         bail!("Compatibility report exceeds its byte budget");
@@ -172,7 +173,7 @@ pub fn parse(
     if !root.has_tag_name("japicmp")
         || attribute(root, "oldJar")? != old
         || attribute(root, "newJar")? != new
-        || attribute(root, "accessModifier")? != "PRIVATE"
+        || attribute(root, "accessModifier")? != if inventory { "PRIVATE" } else { "PROTECTED" }
         || attribute(root, "packagesInclude")? != "all"
         || attribute(root, "packagesExclude")? != "n.a."
         || boolean(root, "ignoreMissingClasses")?
@@ -259,6 +260,54 @@ pub fn parse(
         source_compatible: all_source,
         findings,
     })
+}
+
+/// Derive the public/protected class inventory from the verified, unfiltered run.
+/// The second analyzer pass applies member visibility and compatibility semantics.
+pub fn api_inventory(bytes: &[u8]) -> Result<BTreeSet<String>> {
+    if bytes.len() > snapshot::MAX_FILE_BYTES {
+        bail!("Compatibility report exceeds its byte budget");
+    }
+    let document = roxmltree::Document::parse(std::str::from_utf8(bytes)?)?;
+    let classes = document
+        .root_element()
+        .children()
+        .find(|node| node.has_tag_name("classes"))
+        .context("Missing complete class inventory")?;
+    let mut result = BTreeSet::new();
+    for class in classes.children().filter(Node::is_element) {
+        let modifiers = class
+            .children()
+            .find(|node| node.has_tag_name("modifiers"))
+            .context("Missing class visibility inventory")?;
+        let mut visibility = 0;
+        let mut exported = false;
+        for modifier in modifiers.children().filter(Node::is_element) {
+            let old = attribute(modifier, "oldValue")?;
+            let new = attribute(modifier, "newValue")?;
+            let access =
+                |value| ["PUBLIC", "PROTECTED", "PACKAGE_PROTECTED", "PRIVATE"].contains(&value);
+            if access(old) || access(new) {
+                if (!access(old) && old != "n.a.") || (!access(new) && new != "n.a.") {
+                    bail!("Invalid class visibility transition");
+                }
+                visibility += 1;
+                exported = [old, new]
+                    .iter()
+                    .any(|value| ["PUBLIC", "PROTECTED"].contains(value));
+            }
+        }
+        if visibility != 1 {
+            bail!("Class visibility must occur exactly once");
+        }
+        if exported {
+            result.insert(attribute(class, "fullyQualifiedName")?.into());
+        }
+    }
+    if result.is_empty() {
+        bail!("Compatibility requires a nonempty public/protected API class inventory");
+    }
+    Ok(result)
 }
 
 #[cfg(test)]

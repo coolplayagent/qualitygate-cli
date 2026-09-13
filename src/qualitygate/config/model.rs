@@ -41,6 +41,8 @@ pub struct Config {
     pub custom_rules: Option<String>,
     #[serde(default)]
     pub verification_assets: Vec<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub source_reviews: BTreeMap<String, crate::domain::SourceReview>,
 }
 
 /// A stable identifier connecting a built-in rule to the reviewed standards archive.
@@ -62,6 +64,7 @@ impl Default for Config {
             profiles: BTreeMap::new(),
             custom_rules: None,
             verification_assets: Vec::new(),
+            source_reviews: BTreeMap::new(),
         }
     }
 }
@@ -296,6 +299,7 @@ pub enum ReportFormat {
     Sarif,
     Lcov,
     Cobertura,
+    CoveragePy,
     Jacoco,
     Diagnostics,
 }

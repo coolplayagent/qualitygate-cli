@@ -197,8 +197,9 @@ async fn run_rules(
                 let config = config::read(&root, path.as_ref())?;
                 let catalog = config::catalog::read(&root, &config)?;
                 let config = catalog.resolve(&config)?;
+                let reviews = config::source_reviews::evidence(&config, &catalog)?;
                 let rules: Vec<_> = catalog.entries.iter().map(|(id, entry)| serde_json::json!({"id":id,"definition":entry,"configuration":config.rules.get(id),"enabled":config.rules.get(id).is_some_and(|setting| setting.enabled)})).collect();
-                Ok(serde_json::json!({"schema_version":1,"rules":rules}))
+                Ok(serde_json::json!({"schema_version":1,"rules":rules,"source_reviews":reviews,"review_trust":"local_candidate"}))
             }
             Rules::Enable { rule_id } => {
                 config::enable_rule(&root, path.as_ref(), &rule_id)?;

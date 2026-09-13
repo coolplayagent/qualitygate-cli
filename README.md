@@ -17,15 +17,20 @@ cargo test --all-targets --all-features
 The CLI, checks and test harnesses are implemented in Rust. Git is required for repository snapshots; configured build and test commands require their own project toolchains.
 
 See [quality gates](docs/quality.md) for CI, coverage and deep verification.
+See [Bazel builds](docs/bazel.md) for cached Bzlmod builds and Cargo-aligned dependency checks.
 See [external engineering standards](knowledge/best-practices/engineering-standards/README.md) for the reviewed Alibaba, Google, Huawei, NVIDIA, AWS, Azure, Cloudflare and Meta source archive, lifecycle matrix, and rule mapping.
 See [initialization](docs/init.md) for nested project discovery, capability gaps and command suggestions.
 See [manual acceptance](docs/manual-acceptance.md) for signed review records and caller-controlled trust.
+See [task plans](docs/tasks.md) for acceptance contracts, selected policy versions and reproducible rechecks.
 See [agent-run provenance](docs/provenance.md) for authenticated transformation histories and AI-only test scope.
 See [Git trailer bindings](docs/git-trailers.md) for declarations associated with actual test-changing commits.
 See [tool reports](docs/reports.md) for test counts, coverage, analyzer output and incremental comparison.
+See [coverage reports](docs/coverage.md) for JaCoCo, Cobertura and coverage.py completeness and repair evidence.
+See [SARIF analysis](docs/sarif.md) for indexed locations, baseline identities and real Clippy acceptance.
 See [Java interface compatibility](docs/compatibility.md) for paired snapshot builds and binary/source API checks.
 See [built-in rules](docs/rules.md) for language adapters and team-specific configuration.
 See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.
+See [source reviews](docs/source-reviews.md) for reviewed mappings from normative sections to executable rules.
 See [project facts](docs/projects.md) for Maven dependency pairing and rule/command prerequisites, and [Python project facts](docs/python-projects.md) for installed dependency verification.
 See [merge requests](docs/merge-requests.md) for GitHub/GitLab comparisons, credentials and snapshot evidence.
 

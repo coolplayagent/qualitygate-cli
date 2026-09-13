@@ -14,8 +14,10 @@ fn files(root: &Path) -> Vec<PathBuf> {
     while let Some(directory) = pending.pop() {
         for entry in std::fs::read_dir(directory).unwrap() {
             let entry = entry.unwrap();
-            if ["target", ".git", ".qualitygate", ".coverage"]
-                .contains(&entry.file_name().to_string_lossy().as_ref())
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if ["target", ".git", ".qualitygate", ".coverage"].contains(&name.as_ref())
+                || name.starts_with("bazel-")
             {
                 continue;
             }
@@ -40,7 +42,9 @@ fn files(root: &Path) -> Vec<PathBuf> {
 fn documentation_authored_file_lengths_are_valid() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     for file in files(root) {
-        if file.file_name().unwrap() == "Cargo.lock" {
+        if ["Cargo.lock", "MODULE.bazel.lock"]
+            .contains(&file.file_name().unwrap().to_string_lossy().as_ref())
+        {
             continue;
         }
         assert!(
@@ -61,9 +65,12 @@ fn documentation_authored_file_lengths_are_valid() {
 }
 
 #[test]
-fn architecture_authored_sources_are_rust_and_parseable() {
+fn architecture_authored_sources_are_rust_or_bazel_metadata_and_parseable() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     for file in files(&root.join("src")) {
+        if file.file_name().is_some_and(|name| name == "BUILD.bazel") {
+            continue;
+        }
         assert_eq!(
             file.extension().unwrap(),
             "rs",

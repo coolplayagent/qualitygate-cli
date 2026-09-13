@@ -202,6 +202,13 @@ async fn baseline(
             {
                 issue.file = Some(paths::from_native(relative)?);
             }
+            for location in &mut issue.locations {
+                if let Some(file) = &location.file
+                    && let Ok(relative) = Path::new(file).strip_prefix(workspace.path())
+                {
+                    location.file = Some(paths::from_native(relative)?);
+                }
+            }
         }
         reports.insert(index, data);
     }

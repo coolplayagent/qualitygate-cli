@@ -68,6 +68,24 @@ pub(super) fn report(
         "Gate: {:?} | complete: {} | scope: {} | profile: {}\n",
         report.gate.decision, report.gate.complete, report.scope, report.profile
     );
+    if let Some(task) = &report.plan.task_id {
+        out.push_str(&format!(
+            "Task: {}\n",
+            task.replace(['\n', '\r', '\t'], " ")
+        ));
+        for (id, check) in &report.plan.acceptance {
+            let description = report
+                .plan
+                .acceptance_descriptions
+                .get(id)
+                .map(String::as_str)
+                .unwrap_or_default();
+            out.push_str(&format!(
+                "Acceptance {id} ({check}): {}\n",
+                description.replace(['\n', '\r', '\t'], " ")
+            ));
+        }
+    }
     if let Some(comparison) = &report.snapshot.merge_request {
         out.push_str(&format!(
             "MR: {}\nTarget: {}\nSource: {}\nMerge base: {}\n",

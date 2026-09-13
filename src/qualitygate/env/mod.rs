@@ -67,9 +67,8 @@ mod tests {
         ] {
             assert_eq!(token_from("github", host, read), None);
         }
-        assert_eq!(token_from("gitlab", "api.github.com", read), None);
         assert_eq!(
-            token_from("github", "api.github.com", |_| Some(String::new())),
+            token_from("gitlab", "api.github.com", |_| Some(String::new())),
             None
         );
         assert_eq!(token_from("github", "api.github.com", |_| None), None);

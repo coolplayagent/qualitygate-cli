@@ -20,11 +20,13 @@ pub(super) fn parse(text: &str) -> Result<Data> {
     };
     let mut lines: BTreeMap<(String, usize), u64> = BTreeMap::new();
     let mut branches = BTreeMap::new();
+    let mut budget = 16 * 1024 * 1024;
     for line in text.lines() {
         if let Some(file) = line.strip_prefix("SF:") {
             if current.is_some() || file.is_empty() {
                 bail!("Malformed LCOV source record");
             }
+            super::coverage_budget(&mut budget, file)?;
             current = Some(Section {
                 file: file.into(),
                 ..Section::default()
@@ -36,10 +38,12 @@ pub(super) fn parse(text: &str) -> Result<Data> {
                 section.counters.contains_key("BRF") && section.counters.contains_key("BRH");
             data.coverage_files.push(section.file.clone());
             for (line, hits) in section.lines {
+                super::coverage_budget(&mut budget, &section.file)?;
                 let total = lines.entry((section.file.clone(), line)).or_default();
                 *total = total.saturating_add(hits);
             }
             for ((line, block, branch), hit) in section.branches {
+                super::coverage_budget(&mut budget, &section.file)?;
                 *branches
                     .entry((section.file.clone(), line, block, branch))
                     .or_insert(false) |= hit;
@@ -90,12 +94,16 @@ pub(super) fn parse(text: &str) -> Result<Data> {
     if current.is_some() || data.coverage_files.is_empty() {
         bail!("LCOV report is incomplete or has no source records");
     }
+    // Exporters can emit BRF:0/BRH:0 without branch instrumentation. Positive
+    // records establish measurement; zero-only summaries cannot prove it.
+    data.branch_coverage &= !branches.is_empty();
     let mut records: BTreeMap<_, _> = lines
         .into_iter()
         .map(|((file, line), hits)| {
             (
                 (file.clone(), line),
                 CoverageLine {
+                    excluded: false,
                     file,
                     line,
                     hits,

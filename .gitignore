@@ -1,4 +1,8 @@
 /target/
+/bazel-bin
+/bazel-out
+/bazel-testlogs
+/bazel-qualitygate-cli
 /.qualitygate/
 /.coverage/
 *.profraw

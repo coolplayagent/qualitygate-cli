@@ -2,7 +2,7 @@
 
 use crate::{
     adapters::{
-        reports::{Data, Issue},
+        reports::{Data, Issue, IssueLocation},
         rules::diagnostic,
     },
     config::{IncrementMode, ReportSpec},
@@ -20,6 +20,12 @@ pub(super) fn apply(
     snapshot: &Snapshot,
     workspace: &Path,
 ) -> Result<()> {
+    if !data.sarif_runs.is_empty() {
+        result.metadata.insert(
+            format!("{}:sarif_runs", spec.path),
+            serde_json::to_value(&data.sarif_runs)?,
+        );
+    }
     if let Some(tests) = &data.tests {
         let minimum = spec.minimum_tests.unwrap_or(1);
         result
@@ -60,9 +66,10 @@ pub(super) fn apply(
         bail!("Configured coverage gate requires a source inventory and coverage records");
     }
     let mut previous = BTreeMap::new();
+    let mut line_counts = BTreeMap::new();
     if spec.mode == IncrementMode::NewDiagnostics {
         for mut issue in baseline.context("Missing baseline analysis")?.issues {
-            normalize_issue(&mut issue, snapshot, workspace, true)?;
+            normalize_issue(&mut issue, snapshot, workspace, true, &mut line_counts)?;
             *previous.entry(fingerprint(&issue)).or_insert(0usize) += 1;
         }
     }
@@ -80,30 +87,43 @@ pub(super) fn apply(
     };
     let mut filtered = 0;
     for mut issue in data.issues {
-        normalize_issue(&mut issue, snapshot, workspace, false)?;
+        normalize_issue(&mut issue, snapshot, workspace, false, &mut line_counts)?;
+        let identity = fingerprint(&issue);
+        let mut displayed = IssueLocation {
+            file: issue.file.clone(),
+            line: issue.line,
+            end_line: None,
+            symbol: issue.symbol.clone(),
+        };
+        if let Some(first) = issue.locations.first() {
+            displayed = first.clone();
+        }
         let include = match spec.mode {
             IncrementMode::Full => true,
-            IncrementMode::ChangedLines => {
-                let file = issue
+            IncrementMode::ChangedLines => select_location(&issue, &mut displayed, |location| {
+                let file = location
                     .file
                     .as_ref()
                     .context("Cannot map a location-free diagnostic to changed lines")?;
-                let line = issue
+                let line = location
                     .line
                     .context("Cannot map a diagnostic without a line to changed lines")?;
-                snapshot
-                    .changes
-                    .get(file)
-                    .is_some_and(|change| change.added_lines.contains(&line))
-            }
-            IncrementMode::AffectedScope => {
-                let file = issue
+                Ok(snapshot.changes.get(file).is_some_and(|change| {
+                    change
+                        .added_lines
+                        .range(line..=location.end_line.unwrap_or(line))
+                        .next()
+                        .is_some()
+                }))
+            })?,
+            IncrementMode::AffectedScope => select_location(&issue, &mut displayed, |location| {
+                let file = location
                     .file
                     .as_ref()
                     .context("Cannot map diagnostic to affected scope")?;
-                affected.as_ref().is_some_and(|files| files.contains(file))
-            }
-            IncrementMode::NewDiagnostics => match previous.get_mut(&fingerprint(&issue)) {
+                Ok(affected.as_ref().is_some_and(|files| files.contains(file)))
+            })?,
+            IncrementMode::NewDiagnostics => match previous.get_mut(&identity) {
                 Some(count) if *count > 0 => {
                     *count -= 1;
                     false
@@ -115,19 +135,27 @@ pub(super) fn apply(
             filtered += 1;
             continue;
         }
-        let identity = fingerprint(&issue);
-        result.diagnostics.push(diagnostic(
+        // Multi-location identity already includes the complete set of paths. Its
+        // selected display location must not change the repair-feedback identity.
+        let identity_file = if issue.tool.is_some() || !issue.locations.is_empty() {
+            None
+        } else {
+            displayed.file.as_deref()
+        };
+        let mut normalized = diagnostic(
             &result.id,
-            issue.file.as_deref(),
-            issue.line.map(|line| Range {
+            identity_file,
+            displayed.line.map(|line| Range {
                 start_line: line,
-                end_line: line,
+                end_line: displayed.end_line.unwrap_or(line),
             }),
             issue.message.clone(),
             serde_json::to_value(&issue)?,
             "Repair the reported issue and rerun the same analyzer",
             &identity,
-        ));
+        );
+        normalized.file = displayed.file;
+        result.diagnostics.push(normalized);
     }
     result.metadata.insert(
         format!("{}:mode", spec.path),
@@ -144,6 +172,21 @@ pub(super) fn apply(
 mod tests;
 
 fn fingerprint(issue: &Issue) -> String {
+    if issue.tool.is_some() || !issue.locations.is_empty() {
+        let mut locations: std::collections::BTreeSet<_> = issue
+            .locations
+            .iter()
+            .map(|location| (&location.file, &location.symbol))
+            .collect();
+        if locations.is_empty() {
+            locations.insert((&issue.file, &issue.symbol));
+        }
+        return snapshot::digest(
+            serde_json::to_string(&(&issue.tool, &issue.rule, locations, &issue.message))
+                .expect("serializable identity")
+                .as_bytes(),
+        );
+    }
     snapshot::digest(
         format!(
             "{}\0{}\0{}\0{}",
@@ -161,10 +204,58 @@ fn normalize_issue(
     snapshot: &Snapshot,
     workspace: &Path,
     base: bool,
+    line_counts: &mut BTreeMap<(bool, String), usize>,
 ) -> Result<()> {
-    if let Some(file) = &issue.file {
+    for location in &mut issue.locations {
+        normalize_location(location, snapshot, workspace, base, line_counts)?;
+    }
+    let mut location = IssueLocation {
+        file: issue.file.clone(),
+        line: issue.line,
+        end_line: None,
+        symbol: issue.symbol.clone(),
+    };
+    normalize_location(&mut location, snapshot, workspace, base, line_counts)?;
+    issue.file = location.file;
+    Ok(())
+}
+
+fn normalize_location(
+    location: &mut IssueLocation,
+    snapshot: &Snapshot,
+    workspace: &Path,
+    base: bool,
+    line_counts: &mut BTreeMap<(bool, String), usize>,
+) -> Result<()> {
+    if let Some(file) = &location.file {
         let mapped = map_file(file, snapshot, workspace, base)?;
-        issue.file = Some(if base {
+        if let Some(line) = location.line {
+            let key = (base, mapped.clone());
+            let count = if let Some(count) = line_counts.get(&key) {
+                *count
+            } else {
+                let files = if base {
+                    &snapshot.base_files
+                } else {
+                    &snapshot.files
+                };
+                let count = std::str::from_utf8(&files[&mapped].bytes)?
+                    .lines()
+                    .count()
+                    .max(1);
+                line_counts.insert(key, count);
+                count
+            };
+            if line == 0
+                || line > count
+                || location
+                    .end_line
+                    .is_some_and(|end| end < line || end > count)
+            {
+                bail!("Report location is outside the selected source: {file}");
+            }
+        }
+        location.file = Some(if base {
             snapshot
                 .changes
                 .iter()
@@ -178,6 +269,34 @@ fn normalize_issue(
         });
     }
     Ok(())
+}
+
+fn select_location(
+    issue: &Issue,
+    displayed: &mut IssueLocation,
+    matches: impl Fn(&IssueLocation) -> Result<bool>,
+) -> Result<bool> {
+    let fallback = [displayed.clone()];
+    let locations = if issue.locations.is_empty() {
+        &fallback[..]
+    } else {
+        &issue.locations
+    };
+    let mut unresolved = None;
+    for location in locations {
+        match matches(location) {
+            Ok(true) => {
+                *displayed = location.clone();
+                return Ok(true);
+            }
+            Ok(false) => {}
+            Err(error) => unresolved = Some(error),
+        }
+    }
+    if let Some(error) = unresolved {
+        return Err(error);
+    }
+    Ok(false)
 }
 
 pub(super) fn map_file(
