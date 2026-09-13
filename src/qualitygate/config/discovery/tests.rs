@@ -89,6 +89,31 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
 }
 
 #[test]
+fn language_scoped_builtins_are_not_advertised_outside_lifecycle_lanes() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "native/main.cpp", "int main() { return 0; }\n");
+    let report = discover(root.path()).unwrap();
+    assert_eq!(
+        report
+            .languages
+            .iter()
+            .map(|value| value.language.as_str())
+            .collect::<Vec<_>>(),
+        ["cpp"]
+    );
+    let shared = report.available_rulesets.get("shared").unwrap();
+    assert!(shared.iter().all(|rule| {
+        !["test-naming", "parameterized-tests"].contains(&rule["id"].as_str().unwrap())
+    }));
+    assert!(
+        report
+            .gaps
+            .iter()
+            .any(|gap| gap.reason == "No syntax adapter for cpp")
+    );
+}
+
+#[test]
 fn command_suggestions_preserve_declared_tools_and_report_requirements() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "rust/Cargo.toml", "[workspace]\nmembers=[]\n");

@@ -54,3 +54,8 @@ The registry's declared language, SDLC, and concern breadth must also occur in
 direct matrix inputs; a repository-wide `all` entry cannot conceal a missing
 language lane. This makes the archive's directory structure a checkable input
 contract rather than a bibliography with unconnected coverage labels.
+
+Schema v4 also pins this archive's requested company and discipline coverage.
+The declared eight company families, seven language lanes, complete lifecycle,
+and six quality specialties cannot be removed merely by editing the registry's
+self-declared coverage list; catalog loading treats that as an invalid archive.

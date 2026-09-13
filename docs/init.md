@@ -21,7 +21,7 @@ JSON retains `schema_version`, `source`, `config` and `status: candidate`, addin
 | `languages` | Language, source-file count, available syntax capabilities and marker binding options |
 | `projects` | Repository-relative root, ecosystem, manifest, metadata inspection status and available project capabilities |
 | `inputs` | SHA-256 digests of inspected manifests and local ignore files |
-| `available_rulesets` | Relevant embedded package/rule IDs, versions and required capabilities |
+| `available_rulesets` | Relevant embedded package/rule IDs, versions and required capabilities; a language-scoped builtin appears only when its lifecycle lane matches a detected language |
 | `suggested_checks` | Copyable command configuration, purpose, source, review requirements and adoption status |
 | `gaps` | Unsupported metadata/languages, missing project-fact configuration, missing test/report conventions and provenance limits |
 

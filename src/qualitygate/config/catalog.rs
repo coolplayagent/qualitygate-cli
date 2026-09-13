@@ -334,6 +334,26 @@ const ENFORCEMENT_KINDS: &[&str] = &[
 ];
 const OUTCOMES: &[&str] = &["violation", "warning", "incomplete", "advisory"];
 const INPUT_STATUSES: &[&str] = &["enforced", "evidence-contract", "planned"];
+const REQUIRED_ARCHIVE_ORGANIZATIONS: &[&str] = &[
+    "Alibaba",
+    "Google",
+    "Huawei Cloud",
+    "NVIDIA",
+    "AWS",
+    "Microsoft Azure",
+    "Cloudflare",
+    "Meta",
+];
+const REQUIRED_ARCHIVE_LANGUAGES: &[&str] =
+    &["java", "python", "rust", "cpp", "cuda", "typescript", "go"];
+const REQUIRED_ARCHIVE_CONCERNS: &[&str] = &[
+    "coding",
+    "architecture",
+    "security",
+    "performance",
+    "static-gate",
+    "quality-gate",
+];
 
 fn nonempty_unique(values: &[String]) -> bool {
     !values.is_empty()
@@ -347,6 +367,12 @@ fn allowed(values: &[String], choices: &[&str]) -> bool {
 
 fn exact_membership(values: &[String], choices: &[&str]) -> bool {
     allowed(values, choices) && values.len() == choices.len()
+}
+
+fn exact_labels(values: &[String], required: &[&str]) -> bool {
+    values.len() == required.len()
+        && values.iter().map(String::as_str).collect::<BTreeSet<_>>()
+            == required.iter().copied().collect()
 }
 
 fn valid_text(value: &str, maximum: usize) -> bool {
@@ -415,6 +441,25 @@ fn coverage_is_valid(coverage: &ArchiveCoverage) -> bool {
         && !coverage.languages.iter().any(|language| language == "all")
         && allowed(&coverage.lifecycle_stages, LIFECYCLE_STAGES)
         && allowed(&coverage.concerns, INPUT_CONCERNS)
+}
+
+/// This bundled archive implements the research scope promised by this CLI,
+/// rather than accepting a self-consistent but narrower future bibliography.
+/// Fixture registries use `standards_from` directly and deliberately do not
+/// inherit this product-level contract.
+fn required_archive_coverage_is_valid(registry_yaml: &str) -> Result<()> {
+    let registry: StandardRegistry =
+        serde_norway::from_str(registry_yaml).context("Invalid bundled standards registry")?;
+    if !exact_labels(
+        &registry.coverage.organizations,
+        REQUIRED_ARCHIVE_ORGANIZATIONS,
+    ) || !exact_labels(&registry.coverage.languages, REQUIRED_ARCHIVE_LANGUAGES)
+        || !exact_membership(&registry.coverage.lifecycle_stages, LIFECYCLE_STAGES)
+        || !exact_labels(&registry.coverage.concerns, REQUIRED_ARCHIVE_CONCERNS)
+    {
+        bail!("Built-in standards registry no longer covers the required research lanes");
+    }
+    Ok(())
 }
 
 /// Declared archive breadth is only meaningful when it reaches the lifecycle
@@ -507,7 +552,7 @@ fn supported_enforced_input(input: &LifecycleInput) -> bool {
 fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
     let registry: StandardRegistry =
         serde_norway::from_str(registry_yaml).context("Invalid built-in standards registry")?;
-    if registry.schema_version != 3
+    if registry.schema_version != 4
         || registry.sources.is_empty()
         || !valid_date(&registry.reviewed_on)
         || !valid_text(&registry.purpose, 1024)
@@ -613,6 +658,11 @@ pub(super) fn validate_standard_inputs(registry_yaml: &str, matrix_yaml: &str) -
     standards_from(registry_yaml, matrix_yaml).map(|_| ())
 }
 
+#[cfg(test)]
+pub(super) fn validate_required_archive_coverage(registry_yaml: &str) -> Result<()> {
+    required_archive_coverage_is_valid(registry_yaml)
+}
+
 fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<BTreeSet<String>> {
     if rule.standard_refs.is_empty() || rule.lifecycle_inputs.is_empty() {
         bail!(
@@ -635,6 +685,7 @@ fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<B
     }
     let mut input_sources = BTreeSet::new();
     let mut input_ids = BTreeSet::new();
+    let mut input_languages = BTreeSet::new();
     for input_id in &rule.lifecycle_inputs {
         let input = standards.inputs.get(input_id).with_context(|| {
             format!(
@@ -652,6 +703,7 @@ fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<B
             );
         }
         input_sources.extend(input.source_ids.iter().cloned());
+        input_languages.extend(input.languages.iter().map(String::as_str));
     }
     if reference_sources != input_sources {
         bail!(
@@ -659,7 +711,32 @@ fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<B
             rule.id
         );
     }
+    if !rule.language.is_empty()
+        && (!allowed(&rule.language, INPUT_LANGUAGES)
+            || rule.language.iter().any(|language| language == "all"))
+    {
+        bail!(
+            "Built-in rule {} declares an invalid lifecycle language scope",
+            rule.id
+        );
+    }
+    let rule_languages: BTreeSet<_> = rule.language.iter().map(String::as_str).collect();
+    if !rule_languages.is_empty()
+        && (input_languages.contains("all") || rule_languages != input_languages)
+    {
+        bail!(
+            "Built-in rule {} language scope does not match its lifecycle inputs",
+            rule.id
+        );
+    }
     Ok(input_ids)
+}
+
+#[cfg(test)]
+pub(super) fn validate_builtin_mapping(rule_yaml: &str) -> Result<()> {
+    let rule: Builtin = super::parse_yaml(rule_yaml.as_bytes())?;
+    let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX)?;
+    validate_builtin_standards(&rule, &standards).map(|_| ())
 }
 
 /// Local discovery for config/list/enable; checks use `load` with immutable files.
@@ -709,6 +786,7 @@ impl Catalog {
         config: &Config,
         files: impl IntoIterator<Item = (&'a str, &'a [u8])>,
     ) -> Result<Self> {
+        required_archive_coverage_is_valid(STANDARD_REGISTRY)?;
         let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX)?;
         let mut entries = BTreeMap::new();
         let mut mapped_inputs = BTreeSet::new();

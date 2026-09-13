@@ -16,7 +16,13 @@ declared organization, language lane, stage, or concern without a direct
 rule-input path. A universal (`all`) input does not substitute for a declared
 language lane.
 
-The archive covers five concerns:
+Registry schema v4 fixes the requested research scope: Alibaba, Google, Huawei
+Cloud, NVIDIA, AWS, Microsoft Azure, Cloudflare, and Meta; Java, Python, Rust,
+C++/CUDA, TypeScript, and Go; every lifecycle stage; and the coding,
+architecture, security, performance, static-gate, and quality-gate concerns.
+An edit cannot silently narrow that set while leaving a self-consistent archive.
+
+The archive covers six concerns:
 
 - coding: naming, formatting, comments, exceptions, and API shape;
 - architecture: boundaries, dependency direction, threat modeling, and public surface;

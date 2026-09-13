@@ -83,9 +83,44 @@ fn packaged_rules_expose_archived_standard_inputs() {
     }));
 }
 
+#[test]
+fn embedded_archive_keeps_the_required_research_lanes() {
+    let registry =
+        include_str!("../../../knowledge/best-practices/engineering-standards/registry.yaml");
+    catalog::validate_required_archive_coverage(registry).unwrap();
+    for invalid in [
+        registry.replace("Alibaba, ", ""),
+        registry.replace("rust, ", ""),
+        registry.replace("release, ", ""),
+        registry.replace("static-gate, ", ""),
+    ] {
+        let error = catalog::validate_required_archive_coverage(&invalid)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("required research lanes"), "{error}");
+    }
+}
+
+#[test]
+fn builtins_reject_language_scopes_that_mismatch_lifecycle_inputs() {
+    let rule = include_str!("../../../qualitygate/rules/lang-java/junit-naming.yaml");
+    catalog::validate_builtin_mapping(rule).unwrap();
+    for invalid in [
+        rule.replace(r#"language: ["java"]"#, r#"language: ["python"]"#),
+        rule.replace(r#"language: ["java"]"#, "language: [all]"),
+        rule.replace(r#"language: ["java"]"#, "language: [java, python]"),
+        rule.replace(r#"language: ["java"]"#, "language: [unknown]"),
+    ] {
+        let error = catalog::validate_builtin_mapping(&invalid)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("language scope"), "{error}");
+    }
+}
+
 fn standards_registry(source_id: &str) -> String {
     format!(
-        r#"schema_version: 3
+        r#"schema_version: 4
 reviewed_on: 2026-09-13
 purpose: Reviewed source archive.
 source_policy:

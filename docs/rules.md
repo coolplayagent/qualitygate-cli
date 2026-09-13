@@ -40,6 +40,14 @@ Each packaged definition declares `standard_refs` and
 and rejects absent, unknown, mismatched, or non-enforced mappings. The
 definitions are exposed by `rules list` and rule metadata.
 
+When a packaged rule declares concrete `language` metadata, its exact language
+set must equal the union of its concrete lifecycle-input lanes; an `all` lane
+cannot make a Java- or Python-specific rule appear portable. An empty language
+set remains the explicit form for a genuinely generic rule, whose lifecycle
+input declares the supported adapter lanes. The catalog regression
+`builtins_reject_language_scopes_that_mismatch_lifecycle_inputs` covers this
+boundary.
+
 The [lifecycle matrix](../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml)
 labels an input as enforced, evidence-contract, or planned. An enforced input
 has deterministic snapshot evidence. Design review, security analysis,

@@ -33,10 +33,11 @@ Built-in rule catalog loading validates every `standard_refs` and
 [registry and lifecycle matrix](../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml),
 so a rule cannot silently point at an unarchived source or claim an unimplemented
 design, analyzer, or benchmark input as an enforced check.
-Registry schema v3 also rejects incomplete source provenance, non-HTTPS links,
+Registry schema v4 also rejects incomplete source provenance, non-HTTPS links,
 unknown archive classifications, taxonomy drift, missing declared organization,
 language, lifecycle, or concern coverage, absent direct lifecycle paths for
-those declared dimensions, and status/outcome mismatches;
+those declared dimensions, attempts to narrow the embedded eight-company/full
+lifecycle research scope, and status/outcome mismatches;
 the native configuration tests cover these archive-contract failures separately
 from rule execution.
 
