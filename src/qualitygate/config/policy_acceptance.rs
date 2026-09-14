@@ -129,7 +129,8 @@ impl ProtectedFile {
             .ancestors()
             .last()
             .context("Protected input has no filesystem root")?;
-        if paths::confined(anchor, path.strip_prefix(anchor)?)? != path {
+        let relative = paths::from_native(path.strip_prefix(anchor)?)?;
+        if paths::confined(anchor, Path::new(&relative))? != path {
             bail!("Protected path is not confined");
         }
         let metadata = std::fs::symlink_metadata(&path)?;
@@ -318,6 +319,42 @@ pub fn validate_suite(suite: &ValidationSuite) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn native_protected_paths_preserve_confinement_and_read_limits() {
+        use super::ProtectedFile;
+
+        let root = tempfile::tempdir().unwrap();
+        let external =
+            tempfile::tempdir_in(dunce::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+        let nested = external.path().join("nested");
+        std::fs::create_dir(&nested).unwrap();
+        let path = nested.join("evidence.json");
+        std::fs::write(&path, b"evidence").unwrap();
+        let file = ProtectedFile::read_limited(root.path(), &path, 8).unwrap();
+        assert_eq!(file.bytes, b"evidence");
+        file.unchanged(root.path()).unwrap();
+        assert!(ProtectedFile::read_limited(root.path(), &path, 7).is_err());
+        let traversal = nested.join("..").join("nested").join("evidence.json");
+        assert!(ProtectedFile::read(root.path(), &traversal).is_err());
+        let internal = root.path().join("evidence.json");
+        std::fs::write(&internal, b"evidence").unwrap();
+        assert!(ProtectedFile::read(root.path(), &internal).is_err());
+        std::fs::write(&path, b"modified").unwrap();
+        assert!(file.unchanged(root.path()).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn native_protected_paths_reject_symlink_ancestors() {
+        let root = tempfile::tempdir().unwrap();
+        let external = tempfile::tempdir().unwrap();
+        let target = tempfile::tempdir().unwrap();
+        std::fs::write(target.path().join("evidence.json"), b"evidence").unwrap();
+        let link = external.path().join("link");
+        std::os::unix::fs::symlink(target.path(), &link).unwrap();
+        assert!(super::ProtectedFile::read(root.path(), &link.join("evidence.json")).is_err());
+    }
+
     #[test]
     fn suite_parser_rejects_oversized_and_duplicate_input() {
         let oversized = vec![b' '; crate::config::MAX_CONFIG_BYTES + 1];

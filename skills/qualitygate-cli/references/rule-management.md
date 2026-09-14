@@ -65,7 +65,11 @@ After signed promotion, `rules context`, inventory and ordinary checks select
 the immutable active package; category edits cannot weaken mandatory rules.
 
 For an authorized policy evolution workflow, use externally supplied suite,
-trust and approval files. `policy candidate validate` compares pinned replay,
+trust and approval files. External protected files and retained logs accept
+native absolute paths on Windows and POSIX; they must remain outside the
+checked repository, without traversal or symlink ancestors, within read limits.
+Repository-relative rule paths still require forward slashes.
+`policy candidate validate` compares pinned replay,
 held-out and anchor tasks with bounded parallelism. `policy candidate
 approval-subject` produces the exact signing subject, `approve` verifies the
 independent human signature, and `promote` rechecks it before activation.

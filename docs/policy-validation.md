@@ -86,6 +86,14 @@ the live case count times `snapshot_jobs`. Baseline and candidate share one
 than duplicating the entire repository in memory. Only scheduled checks get
 execution directories. Results are sorted deterministically.
 
+External protected files and retained logs accept native absolute Windows
+paths as well as POSIX paths. Native separators are normalized before walking
+the original path's ancestors; traversal, symlink ancestors, repository-owned
+files and bounded-read violations remain errors. The
+`config::policy_acceptance::tests` confinement tests and
+`config::policy_artifacts::tests` log-retention tests cover this contract,
+including the native Windows path regression in the cross-platform CI gate.
+
 Completed full reports are archived pair by pair instead of retaining all
 case reports in memory. Execution artifacts and declared tool-probe logs are
 copied into content-addressed objects after verifying their digest and byte
