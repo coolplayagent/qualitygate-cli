@@ -33,6 +33,11 @@ pub struct Config {
     pub rulesets: Vec<String>,
     #[serde(default)]
     pub rules: BTreeMap<String, RuleSetting>,
+    /// None inherits the starter categories; Some is the complete mutable registry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub categories: Option<BTreeMap<String, super::categories::Category>>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub rule_categories: BTreeMap<String, String>,
     #[serde(default)]
     pub checks: Vec<CommandCheck>,
     #[serde(default)]
@@ -60,6 +65,8 @@ impl Default for Config {
             languages: Vec::new(),
             rulesets: vec!["core".into()],
             rules: BTreeMap::new(),
+            categories: None,
+            rule_categories: BTreeMap::new(),
             checks: Vec::new(),
             profiles: BTreeMap::new(),
             custom_rules: None,

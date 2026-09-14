@@ -1,5 +1,9 @@
 # Built-in structure rules
 
+See [rule management](rule-management.md) for `rules categories`, category
+filters and assignments, `describe`, `configure`, and `disable`. Category labels
+are mutable discovery metadata and do not enable checks.
+
 Go import facts represent each single/grouped import spec once. Patterns see
 the `import ` prefix plus the optional alias and package path. This preserves
 individual changed ranges and avoids duplicate or historical group findings;

@@ -55,7 +55,7 @@ enum Command {
         #[arg(long)]
         rule: Option<String>,
     },
-    /// Inspect available rules or enable a local candidate rule.
+    /// Discover rules and manage validated candidate configuration.
     Rules {
         #[command(subcommand)]
         command: Rules,
@@ -75,9 +75,36 @@ enum Rules {
         language: Option<String>,
         #[arg(long, default_value = "all", value_parser = ["all", "builtin", "project"])]
         source: String,
+        #[arg(long)]
+        category: Option<String>,
     },
     Enable {
         rule_id: String,
+    },
+    Disable {
+        rule_id: String,
+    },
+    Describe {
+        rule_id: String,
+    },
+    Assign {
+        rule_id: String,
+        #[arg(long)]
+        category: String,
+    },
+    Configure {
+        rule_id: String,
+        /// JSON values, for example --param 'patterns.rust="^test_"'.
+        #[arg(long = "param")]
+        parameters: Vec<String>,
+        #[arg(long, value_enum)]
+        severity: Option<Severity>,
+        #[arg(long, action = clap::ArgAction::Set)]
+        required: Option<bool>,
+    },
+    Categories {
+        #[command(subcommand)]
+        command: Option<Categories>,
     },
     /// Export the shipped project-rule JSON Schema (always JSON).
     Schema,
@@ -97,6 +124,24 @@ enum Rules {
     Generate {
         #[arg(long)]
         input: String,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum Categories {
+    Create {
+        name: String,
+        #[arg(long, default_value = "")]
+        description: String,
+    },
+    Rename {
+        name: String,
+        new_name: String,
+    },
+    Delete {
+        name: String,
+        #[arg(long)]
+        force: bool,
     },
 }
 
@@ -278,10 +323,25 @@ async fn run_rules(
 ) -> Result<(String, u8)> {
     let (value, code) = tokio::task::spawn_blocking(move || -> Result<(serde_json::Value, u8)> {
         match command {
-            Rules::List { language, source } => Ok((config::rule_query::list(&root, &path, language.as_deref(), &source)?, 0)),
+            Rules::List { language, source, category } => Ok((config::rule_query::list_filtered(&root, &path, language.as_deref(), &source, category.as_deref())?, 0)),
             Rules::Enable { rule_id } => {
-                config::enable_rule(&root, path.as_ref(), &rule_id)?;
-                Ok((serde_json::json!({"schema_version":1,"enabled":rule_id,"status":"candidate"}), 0))
+                let mut result = config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Enable(rule_id.clone()))?;
+                result["enabled"] = serde_json::json!(rule_id);
+                Ok((result, 0))
+            }
+            Rules::Disable { rule_id } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Disable(rule_id))?, 0)),
+            Rules::Describe { rule_id } => Ok((config::rule_query::describe(&root, &path, &rule_id)?, 0)),
+            Rules::Assign { rule_id, category } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Assign { id: rule_id, category })?, 0)),
+            Rules::Configure { rule_id, parameters, severity, required } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Configure { id: rule_id, parameters, severity, required })?, 0)),
+            Rules::Categories { command: None } => Ok((config::rule_query::categories(&root, &path)?, 0)),
+            Rules::Categories { command: Some(command) } => {
+                use config::rule_management::Mutation;
+                let mutation = match command {
+                    Categories::Create { name, description } => Mutation::Create { name, description },
+                    Categories::Rename { name, new_name } => Mutation::Rename { name, new_name },
+                    Categories::Delete { name, force } => Mutation::Delete { name, force },
+                };
+                Ok((config::rule_management::update(&root, path.as_ref(), mutation)?, 0))
             }
             Rules::Schema => unreachable!("schema export does not require a repository"),
             Rules::Validate { path } => {

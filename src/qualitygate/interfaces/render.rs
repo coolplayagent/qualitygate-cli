@@ -10,9 +10,9 @@ pub(super) fn metadata(
     }
     if let Some(rules) = value["rules"].as_array() {
         let mut out: String = if format == Format::Markdown {
-            "| Rule | Enabled | Origin | Capabilities | Source | Language |\n|---|---|---|---|---|---|\n".into()
+            "| Rule | Enabled | Origin | Capabilities | Source | Language | Category |\n|---|---|---|---|---|---|---|\n".into()
         } else {
-            "Rule\tEnabled\tOrigin\tCapabilities\tSource\tLanguage\n".into()
+            "Rule\tEnabled\tOrigin\tCapabilities\tSource\tLanguage\tCategory\n".into()
         };
         for rule in rules {
             let definition = &rule["definition"];
@@ -28,6 +28,7 @@ pub(super) fn metadata(
                 details["requires_capabilities"].to_string(),
                 rule["source"].as_str().unwrap_or_default().into(),
                 rule["language"].to_string(),
+                rule["category"].as_str().unwrap_or("-").into(),
             ];
             let fields: Vec<_> = fields
                 .into_iter()

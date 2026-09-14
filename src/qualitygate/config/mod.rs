@@ -4,16 +4,21 @@ pub mod attestation;
 mod builtin_validation;
 pub mod catalog;
 mod catalog_assets;
+pub mod categories;
 pub mod compatibility;
 mod constraints;
 mod custom_validation;
 pub mod discovery;
 mod initialization;
 mod model;
+mod parallel;
+pub mod parameters;
 mod plan;
+mod project_inventory;
 pub mod project_rules;
 mod python;
 pub mod rule_authoring;
+pub mod rule_management;
 pub mod rule_query;
 pub mod rule_schema;
 pub mod selfcheck;
@@ -69,38 +74,11 @@ pub fn init_at(root: &Path, configuration: &Path) -> Result<Config> {
 
 /// Enables a candidate rule without changing the policy trust decision.
 pub fn enable_rule(root: &Path, path: &Path, rule_id: &str) -> Result<()> {
-    use std::io::Write;
-    let config = read(root, path)?;
-    let catalog = catalog::read(root, &config)?;
-    let mut config = catalog.resolve(&config)?;
-    let entry = catalog
-        .entries
-        .get(rule_id)
-        .with_context(|| format!("Unknown rule: {rule_id}"))?;
-    config
-        .rules
-        .entry(rule_id.into())
-        .or_insert_with(|| entry.defaults())
-        .enabled = true;
-    for profile in config.profiles.values_mut() {
-        if !profile.include.iter().any(|id| id == rule_id) {
-            profile.include.push(rule_id.into());
-        }
-    }
-    let data = serde_norway::to_string(&config)?;
-    parse(data.as_bytes())?;
-    let target = crate::paths::confined(root, path)?;
-    let mut temporary = tempfile::NamedTempFile::new_in(
-        target
-            .parent()
-            .context("Configuration has no parent directory")?,
+    rule_management::update(
+        root,
+        path,
+        rule_management::Mutation::Enable(rule_id.into()),
     )?;
-    temporary
-        .as_file()
-        .set_permissions(std::fs::metadata(&target)?.permissions())?;
-    temporary.write_all(data.as_bytes())?;
-    temporary.as_file().sync_all()?;
-    temporary.persist(target)?;
     Ok(())
 }
 

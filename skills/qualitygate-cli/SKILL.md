@@ -104,6 +104,13 @@ directory, severity, or rule selection to make a result pass.
 
 ## Select bundled rules deliberately
 
+For progressive discovery and authorized candidate edits, use
+[rule management](references/rule-management.md): mutable categories,
+category filters, assignment, describe, configure, enable and disable. Start
+with `rules categories --format json`, then drill down with `rules list
+--category <name>` and `rules describe <id>`. Category changes do not enable
+checks or approve policy adoption.
+
 For language-specific discovery use `rules list --language rust --source builtin`
 or `--source project` / `--source all`, preferably with `--format json`.
 The inventory includes language-neutral rules and unselected built-in packages;

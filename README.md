@@ -31,6 +31,10 @@ See [coverage reports](docs/coverage.md) for JaCoCo, Cobertura and coverage.py c
 See [SARIF analysis](docs/sarif.md) for indexed locations, baseline identities and real Clippy acceptance.
 See [Java interface compatibility](docs/compatibility.md) for paired snapshot builds and binary/source API checks.
 See [built-in rules](docs/rules.md) for Skill-owned rule assets, language adapters and team-specific configuration.
+
+Use [rule management](docs/rule-management.md) for dynamic categories,
+progressive discovery, enable/disable, parameter descriptions and atomic
+configuration changes. Large rule directories use bounded parallel loading.
 See [custom rules](docs/custom-rules.md) for rule packages, the versioned DSL and its capability limits.
 See [source reviews](docs/source-reviews.md) for reviewed mappings from normative sections to executable rules.
 See [project facts](docs/projects.md) for Maven dependency pairing and rule/command prerequisites, and [Python project facts](docs/python-projects.md) for installed dependency verification.

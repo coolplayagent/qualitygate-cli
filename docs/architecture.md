@@ -20,7 +20,13 @@ The table lists permitted direct dependencies between top-level production owner
 | `interfaces` | `application`, `config`, `domain`, `snapshot` |
 | Binary entry point | `interfaces` |
 
-`lib.rs` declares physical owners and does not hide dependencies behind root re-exports. The CLI delegates candidate rule changes to `config::enable_rule`; configuration validation, confined atomic replacement and permission preservation remain owned by configuration code.
+`lib.rs` declares physical owners and does not hide dependencies behind root re-exports. The CLI delegates candidate rule changes to `config::rule_management`; configuration validation, confined atomic replacement and permission preservation remain owned by configuration code. `config::enable_rule` delegates to the same transaction implementation for reusable callers.
+
+Dynamic category schemas, parameter contracts and mutation validation belong to
+`config`. Its project-rule inventory uses bounded blocking threads for file
+reads and schema parsing, then combines results in deterministic path order.
+The interfaces layer invokes discovery and mutations through `spawn_blocking`.
+No owner dependency direction changes. See [rule management](rule-management.md).
 
 `config` calls `env` only to resolve deployment-owned Skill rule assets. Project policy files remain owned by the selected configuration snapshot and confined through `paths`; this keeps runtime rule discovery separate from repository policy loading.
 

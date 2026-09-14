@@ -22,7 +22,7 @@ The independent `python-project` job uses Python 3.12/pip 26.0.1 to run real ins
 
 ```bash
 cargo test --locked --lib --bins --all-features
-cargo test --locked --test bazel --test cli --test custom_rules --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --all-features
+cargo test --locked --test bazel --test cli --test custom_rules --test rule_authoring --test rule_management --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --all-features
 cargo test --locked --test quality --all-features
 cargo test --locked --test benchmarks --all-features
 cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90

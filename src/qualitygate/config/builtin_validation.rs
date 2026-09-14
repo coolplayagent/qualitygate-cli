@@ -11,18 +11,7 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
         super::project_rules::module_boundary(rule)?;
         return Ok(());
     }
-    let specific: &[&str] = match id {
-        "line-ending" => &[],
-        "commit-message" => &["pattern"],
-        "diff-size" => &["max_added_lines"],
-        "test-naming" => &["pattern", "patterns", "paths", "languages"],
-        "parameterized-tests" => &["minimum_similar", "paths", "languages"],
-        "comment-language" => &["language", "exempt_patterns", "paths", "languages"],
-        "ai-code-traceability" => &["marker", "provenance_scope", "paths", "languages"],
-        "source-pattern" => &["prohibited_patterns", "paths", "languages"],
-        "import-boundary" => &["forbidden_imports", "paths", "languages"],
-        _ => bail!("Unknown builtin implementation: {id}"),
-    };
+    let specific = super::parameters::names(id)?;
     for (key, value) in &rule.parameters {
         if !specific.contains(&key.as_str()) {
             bail!("Unsupported {id} parameter: {key}");

@@ -1,5 +1,8 @@
 # Large repository acquisition
 
+Rule catalog discovery has a separate [bounded parallel loading and query
+performance contract](rule-management.md#large-repository-performance-contract).
+
 [Issue #2](https://github.com/coolplayagent/qualitygate-cli/issues/2) reported a
 16 MiB Git capture failure with approximately 18,000 tracked files and a 9 KiB
 diff. The old implementation requested every blob in one `cat-file --batch`

@@ -8,6 +8,7 @@ pub(super) fn validate(config: &Config) -> Result<()> {
 }
 
 pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
+    super::categories::validate(config)?;
     if config.schema_version != 1 {
         bail!(
             "Unsupported configuration schema_version: {}",

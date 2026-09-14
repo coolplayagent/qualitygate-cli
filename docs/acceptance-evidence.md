@@ -70,6 +70,45 @@ Rust 1.100.0-nightly (4b6d04e70, 2026-09-13). Logs are retained locally under
 `target/issue2-selfcheck-final.json`. These are worktree observations, not a
 published release or a claim of native Windows/macOS execution.
 
+## Issue #3 rule management acceptance
+
+See [the command and performance contract](rule-management.md). Evidence is
+kept separate from the existing project-rule authoring and snapshot gates.
+
+| Requirement | Authoritative evidence |
+|---|---|
+| Dynamic defaults, category overview, creation, atomic rename/deletion and forced fallback | `tests/rule_management.rs::progressive_discovery_categories_are_mutable_and_do_not_enable_rules`; `config/categories.rs::registry_bounds_origins_and_assignments_are_strict` |
+| Composable category/language/source filters and one assignment per rule | The progressive-discovery integration test covers mixed filters, reassignment, empty/new categories, starter rename/deletion and custom provenance |
+| Disable and enable preserve settings, profiles and candidate/trusted-policy separation | `configure_validates_types_merges_dotted_defaults_and_preserves_overrides`; `configure_preserves_deliberately_scoped_profiles_and_validates_required_promotion`; `cli_disabled_rule_stays_blocked_by_selected_trusted_policy`; `category_edits_preserve_reviews_and_executable_edits_expose_stale_bindings`; existing snapshot-policy suites |
+| Describe versions, implementations, capabilities, defaults, languages, references and accepted parameters | `every_builtin_parameter_contract_describes_and_validates_its_packaged_default`; project discovery test covers custom DSL descriptions |
+| Configure validates parameter names/types/semantics and applies multiple edits atomically | `configure_validates_types_merges_dotted_defaults_and_preserves_overrides`; malformed JSON, bad regex, type errors, unknown keys, overlapping paths and unsupported project parameters preserve original bytes |
+| Atomic publication, conflict detection, permission/path confinement and reproducible records | `category_errors_and_lock_conflicts_never_partially_publish`; Unix permission/symlink integration test; `rule_management::tests::optimistic_conflict_preserves_the_other_writers_bytes`; successful mutations return operation and before/after byte digests |
+| Bounded parallelism with deterministic results and no partial success | `config/parallel.rs` verifies concurrent overlap, maximum active workers, ordered errors, expiration and worker panic; `project_inventory.rs::full_rule_package_parallel_parsing_matches_serial_and_has_a_time_budget` compares 256 parsed definitions with serial/four-worker execution |
+| Large-repository performance requirements | `project_discovery_and_assignment_work_before_activation_with_bounded_large_repo_cost`: 18,000 unrelated files and 256 project rules, five-second per-query thresholds and category JSON below 2 KiB; existing `tests/large_repository.rs` retains snapshot capture/quick-check budgets |
+
+The Rust integration CI/local policy includes the new rule-management suite;
+worker and schema tests remain in the separate native unit gate. Timings are
+controlled-host observations, not a universal speedup or deployment guarantee.
+
+The 2026-09-14 Linux worktree verification passed `cargo fmt --all -- --check`,
+`cargo check --all-targets --all-features`, Clippy with warnings denied, and
+`cargo test --all-targets --all-features`: **303 passed**, with the existing
+**9 external-producer tests ignored** for their dedicated integration jobs.
+`cargo llvm-cov --all-targets --all-features --fail-under-lines 90` passed at
+**95.58% Rust lines** (14,270 lines, 631 missed). The complete selfcheck passed
+all **249** minimal/typical/stress fixtures against their independent goldens:
+“在已验证形态下未发现问题”. Synthetic fixture agreement does not establish live
+producer, unrepresented framework, runtime-configuration or deployment behavior.
+
+The architecture report contains **107** current source digests and **837**
+file/line dependency references, with no digest mismatch or violation.
+The affected configuration/interface Bazel targets passed. Separate nightly
+verification passed **13** pure-domain Miri tests and **172** native ASan tests
+with leak detection. No native Windows/macOS result is claimed here.
+Logs and JSON evidence are retained locally in `target/issue3-*-final.log`,
+`target/issue3-miri.log`, `target/issue3-selfcheck-final.json` and
+`target/architecture/report.json`. These are local development observations.
+
 ## Pilot and rollout (§9.2–§10)
 
 `docs/pilot.md` defines the immutable case record, baseline attribution,

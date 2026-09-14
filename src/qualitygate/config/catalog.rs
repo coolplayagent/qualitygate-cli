@@ -721,59 +721,9 @@ pub(super) fn validate_builtin_mapping(rule_yaml: &str) -> Result<()> {
     validate_builtin_standards(&rule, &standards).map(|_| ())
 }
 
-fn project_rule_files(root: &Path, config: &Config) -> Result<BTreeMap<String, Vec<u8>>> {
-    let mut files = BTreeMap::new();
-    let Some(requested) = project_rules_directory(config) else {
-        return Ok(files);
-    };
-    let directory = crate::paths::confined(root, Path::new(requested))?;
-    if !directory.exists() {
-        bail!("Configured project rule directory does not exist: {requested}");
-    }
-    if !std::fs::metadata(&directory)?.is_dir() {
-        bail!("Project rule path is not a directory: {requested}");
-    }
-    let mut pending = vec![directory];
-    let mut entries = 0;
-    let mut total = 0;
-    while let Some(directory) = pending.pop() {
-        for entry in std::fs::read_dir(&directory)
-            .with_context(|| format!("Cannot read rule directory {}", directory.display()))?
-        {
-            let entry = entry?;
-            entries += 1;
-            if entries > 4096 {
-                bail!("Project rule directory exceeds discovery budget");
-            }
-            let relative = crate::paths::from_native(entry.path().strip_prefix(root)?)?;
-            let path = crate::paths::confined(root, relative.as_ref())?;
-            if entry.file_type()?.is_dir() {
-                pending.push(path);
-            } else if path
-                .extension()
-                .is_some_and(|extension| extension == "yaml" || extension == "yml")
-            {
-                if files.len() >= 256 {
-                    bail!("Project rule package exceeds 256 files");
-                }
-                let bytes = super::rule_authoring::read_file(root, &relative)?;
-                total += bytes.len();
-                if total > super::MAX_CONFIG_BYTES {
-                    bail!("Project rules exceed 1 MiB");
-                }
-                files.insert(relative, bytes);
-            }
-        }
-    }
-    if files.is_empty() {
-        bail!("Configured project rule directory contains no YAML definitions: {requested}");
-    }
-    Ok(files)
-}
-
 /// Local discovery for config/list/enable; checks use `load` with immutable files.
 pub fn read(root: &Path, config: &Config) -> Result<Catalog> {
-    let files = project_rule_files(root, config)?;
+    let files = super::project_inventory::read(root, config)?;
     Catalog::load(
         config,
         files
@@ -832,43 +782,11 @@ impl Catalog {
                 );
             }
         }
-        if let Some(directory) = project_rules_directory(config) {
-            let prefix = format!("{}/", directory.trim_end_matches('/'));
-            let mut ids = BTreeSet::new();
-            let mut total = 0;
-            for (path, bytes) in files {
-                if !path.starts_with(&prefix)
-                    || !(path.ends_with(".yaml") || path.ends_with(".yml"))
-                {
-                    continue;
-                }
-                total += bytes.len();
-                if total > super::MAX_CONFIG_BYTES || ids.len() >= 256 {
-                    bail!("Custom rule package exceeds 256 files or 1 MiB");
-                }
-                let rule: CustomRule = super::rule_schema::parse(bytes)
-                    .with_context(|| format!("Invalid custom rule: {path}"))?;
-                if !ids.insert(rule.id.clone()) {
-                    bail!("Duplicate custom rule id: {}", rule.id);
-                }
-                // Selecting a custom definition explicitly replaces a packaged definition
-                // with the same ID. Its origin and complete definition remain in evidence.
-                entries.insert(
-                    rule.id.clone(),
-                    Entry {
-                        origin: path.into(),
-                        package: "custom".into(),
-                        builtin: None,
-                        custom: Some(rule),
-                    },
-                );
-            }
-            if ids.is_empty() {
-                bail!(
-                    "Configured project rule directory contains no YAML definitions: {directory}"
-                );
-            }
-        }
+        entries.extend(super::project_inventory::parse(
+            config,
+            files,
+            super::parallel::jobs(),
+        )?);
         Ok(Self { entries })
     }
 
