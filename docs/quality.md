@@ -10,6 +10,12 @@ The workflow structure follows `/opt/workspace/relay-knowledge`:
 - The local policy records Rustfmt, Cargo, Rustc and Clippy versions through actual probes. The execution integration gate covers command input mutation, baseline validity, version failures and durable evidence.
 - The separate `maven-project` job runs three live Maven dependency/repair tests with JDK 21: test-dependency pairing, compiled module directions and used-but-undeclared bytecode analysis. Ordinary Rust suites explicitly ignore these network-dependent tests; the dedicated job executes them and fails on missing tools/evidence. See [project verification](projects.md).
 
+When a Maven fixture returns an unexpected exit code, its harness prints up to
+eight fixture-local producer artifacts, at most 16 KiB each, before temporary
+cleanup. This keeps the actual tool failure visible in CI rather than only
+recording paths to deleted logs. The expected exit codes and assertions remain
+unchanged; a retry cannot substitute for diagnosing a repeated failure.
+
 Rust is pinned to 1.97.1 by `rust-toolchain.toml`; nightly is required only for Miri and ASan. The local host's `stable` alias is unusable despite the installed pinned toolchain, so local builds use that explicit pin without changing global toolchains.
 
 The independent `python-project` job uses Python 3.12/pip 26.0.1 to run real installation, declaration-retention and pytest repair checks. It runs the explicitly ignored `tests/python.rs` fixture; missing tools or installation evidence fail the job. See [Python project verification](python-projects.md).

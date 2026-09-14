@@ -2,6 +2,31 @@
 
 This ledger preserves the complete v0.2 requirements while implementation proceeds. Pending items are not advertised as supported. No milestone or coverage threshold replaces the full requirement scope.
 
+## Release CI repair verification (2026-09-14)
+
+The Windows package validator rejected CRLF frontmatter because it matched
+literal LF delimiters. It now accepts LF/CRLF without changing the YAML bytes
+or metadata assertions; a regression checks both line endings and rejects
+missing, indented and malformed delimiters. The complete package contract is
+still mandatory on every native test platform.
+
+The original Maven job at `9671f4d` had three nonzero producer exits. An
+unchanged-commit [Maven rerun](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34802927656/job/103852150461)
+passed all three live tests in 72.20 seconds. The first attempt did not retain
+the producer log contents, so its underlying cause remains unproven; no
+Maven rule, timeout, expected exit code or acceptance assertion was relaxed.
+Unexpected Maven fixture outcomes now print bounded fixture-local producer
+logs before temporary cleanup to make any recurrence diagnosable.
+
+The repaired local stable suite passes formatting, all-target/all-feature
+compilation, Clippy with warnings denied and 272 tests (nine live-tool tests
+remain assigned to their independent jobs). LLVM line coverage is 95.29%;
+all 249 selfcheck fixtures agree with their goldens. Evidence is in
+`target/ci-repair-tests.log`, `target/ci-repair-coverage.log`,
+`target/ci-repair-selfcheck.json` and `target/architecture/report.json`.
+These local results do not claim that the repaired Windows build or the
+release workflow has already passed.
+
 ## Issue #1 selfcheck verification (2026-09-14)
 
 Version 0.3.0 implements the revised §9 falsification contract. The three-suite

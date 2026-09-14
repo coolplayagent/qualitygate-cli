@@ -45,10 +45,34 @@ fn configure(root: &Path, maven: &str, cache: &Path) {
 }
 
 fn run(root: &Path, code: i32) -> Value {
-    report(
-        &cli(root, &["check", "--profile", "quick", "--format", "json"]),
-        code,
-    )
+    let output = cli(root, &["check", "--profile", "quick", "--format", "json"]);
+    if output.status.code() != Some(code)
+        && let Ok(value) = serde_json::from_slice::<Value>(&output.stdout)
+        && let Some(checks) = value["checks"].as_array()
+    {
+        // Print bounded producer evidence before the temporary fixture is dropped.
+        // A CI assertion otherwise retains only paths to already deleted logs.
+        use std::io::Read;
+        for artifact in checks
+            .iter()
+            .filter_map(|check| check["execution"]["artifacts"].as_array())
+            .flatten()
+            .take(8)
+        {
+            if let Some(path) = artifact["path"].as_str()
+                && Path::new(path).starts_with(root)
+            {
+                let mut bytes = Vec::new();
+                match std::fs::File::open(path)
+                    .and_then(|file| file.take(16 * 1024).read_to_end(&mut bytes))
+                {
+                    Ok(_) => eprintln!("producer log {path}:\n{}", String::from_utf8_lossy(&bytes)),
+                    Err(error) => eprintln!("cannot read producer log {path}: {error}"),
+                }
+            }
+        }
+    }
+    report(&output, code)
 }
 
 #[test]

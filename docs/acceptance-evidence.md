@@ -64,6 +64,14 @@ a completed pilot.
 
 ## Current repository verification
 
+Release portability is exercised by
+`tests/quality/skill_package.rs::skill_frontmatter_accepts_lf_and_crlf_without_accepting_malformed_delimiters`
+and the existing complete package contract. The same YAML and metadata checks
+apply on Windows and Unix; malformed delimiters remain failures. Live Maven
+acceptance retains all three dependency/repair scenarios and prints bounded
+fixture-local producer logs on unexpected outcomes, so incomplete execution
+remains distinguishable from a rule violation.
+
 For commit `aef969a5777d296592c97478e69398003c96841c`, the local mandatory
 suite passed formatting, compilation, Clippy with warnings denied, all targets
 and features, and LLVM coverage at 94.84% lines. The self-hosted full profile

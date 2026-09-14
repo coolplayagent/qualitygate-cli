@@ -45,13 +45,47 @@ fn read(root: &Path, relative: &str) -> String {
     std::fs::read_to_string(root.join(relative)).unwrap()
 }
 
-fn frontmatter(text: &str) -> &str {
-    let body = text
-        .strip_prefix("---\n")
-        .expect("SKILL.md must begin with YAML frontmatter");
-    body.split_once("\n---\n")
-        .expect("SKILL.md must close YAML frontmatter")
-        .0
+fn frontmatter(text: &str) -> Result<&str, &'static str> {
+    let mut lines = text.split_inclusive('\n');
+    let opening = lines.next().ok_or("missing YAML frontmatter")?;
+    if opening != "---\n" && opening != "---\r\n" {
+        return Err("SKILL.md must begin with YAML frontmatter");
+    }
+    let start = opening.len();
+    let mut end = start;
+    for line in lines {
+        if matches!(line, "---\n" | "---\r\n" | "---") {
+            return Ok(&text[start..end]);
+        }
+        end += line.len();
+    }
+    Err("SKILL.md must close YAML frontmatter")
+}
+
+#[test]
+fn skill_frontmatter_accepts_lf_and_crlf_without_accepting_malformed_delimiters() {
+    for newline in ["\n", "\r\n"] {
+        for suffix in ["", newline] {
+            let yaml = format!("name: qualitygate-cli{newline}");
+            let text = format!("---{newline}{yaml}---{suffix}");
+            assert_eq!(frontmatter(&text), Ok(yaml.as_str()));
+            let parsed: serde_norway::Value =
+                serde_norway::from_str(frontmatter(&text).unwrap()).unwrap();
+            assert_eq!(parsed["name"], "qualitygate-cli");
+        }
+    }
+    for malformed in [
+        "",
+        "---",
+        "prefix\n---\nname: skill\n---\n",
+        " ---\nname: skill\n---\n",
+        "---\rname: skill\r---\r",
+        "---\nname: skill\n",
+        "---\nname: skill\n---trailing\n",
+        "---\r\nname: skill\r\n ---\r\n",
+    ] {
+        assert!(frontmatter(malformed).is_err(), "accepted {malformed:?}");
+    }
 }
 
 #[test]
@@ -59,7 +93,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let cargo: CargoManifest = toml::from_str(&read(root, "Cargo.toml")).unwrap();
     let skill_text = read(root, "skills/qualitygate-cli/SKILL.md");
-    let skill: SkillManifest = serde_norway::from_str(frontmatter(&skill_text)).unwrap();
+    let skill: SkillManifest = serde_norway::from_str(frontmatter(&skill_text).unwrap()).unwrap();
     let openai: OpenAiManifest =
         serde_norway::from_str(&read(root, "skills/qualitygate-cli/agents/openai.yaml")).unwrap();
     let package_readme = read(root, "skills/qualitygate-cli/README.md");

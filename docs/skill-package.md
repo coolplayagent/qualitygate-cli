@@ -76,3 +76,8 @@ alignment, UI metadata, safety instructions, and release-workflow asset
 contract. It runs with the repository documentation/architecture quality gate;
 the release workflow validates the produced archive again before it is
 published.
+
+The package validator accepts both LF and CRLF YAML frontmatter delimiters,
+including a closing delimiter at end of file. It preserves the original YAML
+bytes and still rejects missing, indented or malformed delimiters; Windows
+checkout line endings do not exempt any metadata or safety assertion.
