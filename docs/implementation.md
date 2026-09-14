@@ -2,6 +2,36 @@
 
 This ledger preserves the complete v0.2 requirements while implementation proceeds. Pending items are not advertised as supported. No milestone or coverage threshold replaces the full requirement scope.
 
+## Issue #1 selfcheck verification (2026-09-14)
+
+Version 0.3.0 implements the revised §9 falsification contract. The three-suite
+corpus contains 249 fixtures, including compliant/violating pairs for all 14
+built-in rule IDs, ten report formats, custom DSL, manual-signature and
+compatibility boundaries, policy/gate evidence, native Git snapshots and
+bounded subprocess behavior. A mutation test makes the active commit rule
+accept empty subjects and requires unchanged goldens to fail. The corpus also
+exposed and now guards a repaired duplicate Go import-spec diagnostic.
+
+Local Rustfmt, all-target/all-feature compilation, Clippy with warnings denied,
+and the full Rust suite passed: 271 tests passed, with nine existing live-tool
+tests explicitly ignored by the stable suite. LLVM line coverage passed at
+95.29% (12,758 lines, 601 missed). Architecture evidence contains 95 source
+digests and no violations. Bazel's locked module check and all 11 test targets
+passed; its binary and the optimized Cargo binary each matched all 249 goldens.
+Cargo packaging independently compiled 295 files from the archive using a
+separate target directory, avoiding source-checkout cache contamination.
+
+Evidence is retained under `target/issue-1-tests.log`,
+`target/issue-1-coverage.log`, `target/architecture/report.json`,
+`target/issue-1-bazel-test.log`, `target/issue-1-bazel-selfcheck.json`,
+`target/issue-1-package.log` and `target/issue-1-release-selfcheck.json`.
+The installed Codex skill and Linux runtime were updated to this 0.3.0
+development build after verification; its own full corpus passed, recorded in
+`target/issue-1-installed-selfcheck.json`. The prior installation is preserved
+outside the skill search directory for recovery. This is a local development
+update, not a published release. Remote Windows/macOS, Miri, ASan and nightly
+workflow results are not inferred from these local checks.
+
 | Requirement | Implementation and authoritative verification | State |
 |---|---|---|
 | §1–2 harness boundaries, strict results and exit codes | `domain/gate.rs`, gate truth-table tests and CLI 0/1/2 scenarios | Core verified; delivery audit pending |
@@ -17,7 +47,7 @@ This ledger preserves the complete v0.2 requirements while implementation procee
 | §6.6 source mapping, trusted policy and changed verification assets | CommonMark section digests and bound source reviews; one resolved policy commit for configuration, custom rules and tasks; candidate content/mode comparison and policy-tampering CLI fixtures | Review and task-selection contracts locally verified; comprehensive trust deployment and verification-asset audit remain |
 | §7 all CLI commands and MR providers | `--mr`, bounded GitHub/GitLab HTTP adapters, local merge-base resolution and `tests/merge_request.rs` | MR implementation added; verification checkpoint below, live-service audit pending |
 | §8 JSON/table/Markdown, fingerprints, executions and snapshot binding | Resolved policy commit and pinned rechecks; retained task conditions in JSON/table/Markdown; durable artifacts, actual tool versions, executable/lockfile identities, per-command/baseline guards and retained evidence after source invalidation | Core evidence implemented; comprehensive lifecycle/environment audit remains |
-| §9.1 acceptance scenarios | [Acceptance evidence audit](acceptance-evidence.md) maps every item to controlled unit/integration evidence and preserves the real-pilot repair boundary | Partially verified: §9.1.3 real-pilot agent repair/recheck remains pending |
+| §9.1 acceptance scenarios | [Acceptance evidence audit](acceptance-evidence.md) maps controlled unit/integration evidence and issue #1's independent fixture goldens to the revised falsification contract | Verified shapes remain bounded; real-pilot agent repair/recheck is separately pending under §9.2 |
 | §9.2 pilot measurement and actual repair loop | [Pilot protocol](pilot.md) specifies selection, baseline attribution, immutable cases, reviewer classifications, repair budgets and denominators | Protocol prepared; team-selected repository, thresholds and measured acceptance remain pending |
 | §10 rollout and stable extensibility | Complete implementation and compatibility fixtures plus the [skill-over-CLI release package](skill-package.md), whose metadata, operation boundaries, platform assets, and tag workflow are contract-tested | Release-ready package mechanics are implemented; an authorized rollout still requires the team-selected pilot evidence |
 | Reference-equivalent quality YAML | `code_quality.yml`, Rust PR matrix, ≥90% coverage gate, Miri/ASan, native Windows/macOS, packaging; local `qualitygate.yaml`; executable owner graph and Markdown anchors | [PR Checks run 34746651406](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34746651406) passed all 20 jobs and [Bazel run 34746651386](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34746651386) passed for `aef969a` |

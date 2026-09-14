@@ -65,6 +65,12 @@ its [operations reference](../skills/qualitygate-cli/references/operations.md).
 
 ## Verification
 
+Version 0.3.0 adds the selfcheck workflow reference and compiles the repository
+fixture/golden corpus into each platform binary. The installed binary can run
+selfcheck without a source checkout. A user-requested development update may
+replace the local Skill runtime after full verification, with the previous
+runtime preserved; this does not publish a release.
+
 `tests/quality/skill_package.rs` validates the package structure, version
 alignment, UI metadata, safety instructions, and release-workflow asset
 contract. It runs with the repository documentation/architecture quality gate;

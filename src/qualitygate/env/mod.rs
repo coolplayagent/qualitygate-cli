@@ -20,6 +20,34 @@ pub fn platform() -> (&'static str, &'static str) {
     (std::env::consts::OS, std::env::consts::ARCH)
 }
 
+pub fn current_executable() -> anyhow::Result<PathBuf> {
+    Ok(std::env::current_exe()?)
+}
+
+/// Native selfcheck must not let inherited Git overrides redirect temporary
+/// repository writes into another repository or object/index store.
+pub fn require_isolated_git_environment() -> anyhow::Result<()> {
+    for name in [
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_COMMON_DIR",
+        "GIT_INDEX_FILE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_NAMESPACE",
+        "GIT_CONFIG",
+        "GIT_CONFIG_COUNT",
+        "GIT_CONFIG_PARAMETERS",
+    ] {
+        if std::env::var_os(name).is_some() {
+            anyhow::bail!(
+                "Native fixture cannot safely isolate Git while {name} is set; run selfcheck without that override"
+            );
+        }
+    }
+    Ok(())
+}
+
 /// Returns the caller-selected Skill asset directory, if any.
 pub fn builtin_rule_assets_override() -> Option<PathBuf> {
     std::env::var_os(BUILTIN_RULES_DIR_ENV).map(PathBuf::from)

@@ -65,9 +65,14 @@ pub(super) fn report(
         return Ok(serde_json::to_string_pretty(&report)?);
     }
     let mut out = format!(
-        "Gate: {:?} | complete: {} | scope: {} | profile: {}\n",
-        report.gate.decision, report.gate.complete, report.scope, report.profile
+        "{}\nGate code: {} | complete: {} | scope: {} | profile: {}\n",
+        report.verification.conclusion,
+        report.gate.decision.exit_code(),
+        report.gate.complete,
+        report.scope,
+        report.profile
     );
+    render_boundary(&mut out, &report.verification);
     if let Some(task) = &report.plan.task_id {
         out.push_str(&format!(
             "Task: {}\n",
@@ -135,5 +140,62 @@ pub(super) fn report(
         "Snapshot: {}\nFiltered diagnostics: {}\n",
         report.snapshot.content_digest, report.summary.diagnostics_filtered
     ));
+    Ok(out)
+}
+
+fn render_boundary(out: &mut String, boundary: &crate::domain::VerificationBoundary) {
+    for (label, entries) in [
+        ("已验证形态 / Verified shapes", &boundary.verified_shapes),
+        ("已知边界 / Known limits", &boundary.known_limits),
+        (
+            "未验证假设 / Unverified assumptions",
+            &boundary.unverified_assumptions,
+        ),
+    ] {
+        out.push_str(&format!(
+            "{label}: {}\n",
+            entries.join("; ").replace(['\n', '\r'], " ")
+        ));
+    }
+}
+
+pub(super) fn selfcheck(
+    report: &crate::domain::selfcheck::SelfcheckReport,
+    format: super::cli::Format,
+) -> anyhow::Result<String> {
+    if format == super::cli::Format::Json {
+        return Ok(serde_json::to_string_pretty(report)?);
+    }
+    let mut out = format!(
+        "{}\nSelfcheck: {} fixtures | exit code: {} | complete: {}\n",
+        report.verification.conclusion,
+        report.fixtures.len(),
+        report.decision.exit_code(),
+        report.complete
+    );
+    render_boundary(&mut out, &report.verification);
+    for result in &report.fixtures {
+        out.push_str(&format!(
+            "{}/{} [{}]: {:?}; input: {}\n",
+            result.suite, result.fixture, result.rule, result.decision, result.input
+        ));
+        for mismatch in &result.mismatches {
+            out.push_str(&format!(
+                "  assertion {}: expected {}, actual {}\n",
+                mismatch.assertion,
+                mismatch.expected,
+                mismatch
+                    .actual
+                    .as_ref()
+                    .map_or_else(|| "<missing>".into(), ToString::to_string)
+            ));
+        }
+        if let Some(error) = &result.error {
+            out.push_str(&format!("  {error}\n"));
+        }
+    }
+    for error in &report.errors {
+        out.push_str(&format!("Error: {error}\n"));
+    }
     Ok(out)
 }

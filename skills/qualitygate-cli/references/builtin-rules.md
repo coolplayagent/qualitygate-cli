@@ -50,6 +50,11 @@ resolved dependency direction, runtime reachability, or a complete threat
 model. For Java Maven dependency facts, use the separate `module-boundary` and
 `used-undeclared` rules with their documented project prerequisites.
 
+Go imports are represented once per import spec, including grouped imports.
+Patterns see `import ` followed by the optional alias and quoted package path;
+diagnostic ranges identify the individual spec. Existing grouped imports do
+not become new findings merely because another entry is added to the group.
+
 After the user authorizes a policy change and supplies the intended boundary,
 the candidate configuration can contain:
 

@@ -1,0 +1,30 @@
+name: Full Fixture Regression
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selfcheck:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - run: rustup show
+      - name: Run complete minimal, typical and stress corpus
+        run: cargo run --locked -- selfcheck --format json > selfcheck-report.json
+      - name: Preserve fixture assertions and execution gaps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfcheck-${{ matrix.os }}
+          path: selfcheck-report.json
+          if-no-files-found: error

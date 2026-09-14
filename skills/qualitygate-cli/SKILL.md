@@ -1,8 +1,8 @@
 ---
 name: qualitygate-cli
-description: "Operate Qualitygate CLI for snapshot-bound repository policy and task acceptance checks; use when a user asks to inspect, initialize, configure, or run quality gates, not for generic code-review advice or bypassing evidence requirements."
+description: "Operate Qualitygate CLI for snapshot-bound policy/task gates and bundled selfcheck regression; use for quality-gate configuration, execution, and fixture diagnostics, not generic code-review advice or evidence bypasses."
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
@@ -80,6 +80,16 @@ needed rather than changing the repository or global tool configuration.
 
 ## Select a safe workflow
 
+For tool regression, installation verification, or an authorized Qualitygate
+implementation repair, use the bundled fixture workflow in
+[selfcheck](references/selfcheck.md). It needs no repository policy. A full
+corpus agreement is evidence only for its tested shapes and assumptions;
+retain golden mismatches and execution gaps separately. After implementation
+changes, run the full selfcheck and relevant repository gates before updating
+the installed skill/runtime. An explicitly requested local development update
+may install that verified build; identify it as a development build rather
+than a published release.
+
 Start with read-only discovery when the user has not asked to change policy:
 
 ```bash
@@ -140,3 +150,8 @@ the computed gate.
 This skill operates through the CLI only. It does not configure MCP, create
 manual approvals, alter Git configuration, publish external results, or bypass
 the caller's authorization boundary.
+
+When reporting `check` or `selfcheck`, preserve `verification.conclusion`,
+`verified_shapes`, `known_limits` and `unverified_assumptions`. A clean result
+means “在已验证形态下未发现问题”, not proof that a real deployment is problem-free.
+Retain warning findings even if the blocking gate is satisfied.

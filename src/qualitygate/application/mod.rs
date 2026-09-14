@@ -15,6 +15,9 @@ mod provenance;
 mod python_install;
 mod report_gate;
 mod rule_execution;
+pub mod selfcheck;
+mod selfcheck_evidence;
+mod selfcheck_io;
 mod test_counts;
 mod tool_evidence;
 
@@ -273,6 +276,12 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
     let summary = Summary::from_checks(&results);
     let gate = evaluate(&results, &plan.required, &invalid);
     let report = Report {
+        verification: VerificationBoundary::for_check(
+            &gate,
+            &results,
+            &options.profile,
+            snapshot.path_filter.is_some(),
+        ),
         schema_version: 1,
         run_id,
         scope: if snapshot.path_filter.is_some() {

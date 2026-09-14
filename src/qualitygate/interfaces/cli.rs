@@ -35,6 +35,11 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    #[command(hide = true)]
+    SelfcheckProbe {
+        #[arg(value_parser = ["success", "failure", "timeout", "overflow"])]
+        mode: String,
+    },
     /// Discover the repository and create a candidate policy without overwriting.
     Init {
         /// Include structurally complete command suggestions in a new candidate.
@@ -43,6 +48,13 @@ enum Command {
     },
     /// Execute policy and acceptance checks against a selected Git snapshot.
     Check(Box<CheckArgs>),
+    /// Compare bundled minimal/typical/stress fixtures with independent goldens.
+    Selfcheck {
+        #[arg(long, value_parser = ["minimal", "typical", "stress"])]
+        fixture: Option<String>,
+        #[arg(long)]
+        rule: Option<String>,
+    },
     /// Inspect available rules or enable a local candidate rule.
     Rules {
         #[command(subcommand)]
@@ -98,11 +110,25 @@ struct CheckArgs {
 
 impl Cli {
     pub async fn run(self) -> Result<(String, u8)> {
+        if let Command::SelfcheckProbe { mode } = self.command {
+            return Ok(application::selfcheck::probe(&mode).await);
+        }
+        if let Command::Selfcheck { fixture, rule } = self.command {
+            let report = application::selfcheck::run(fixture, rule).await;
+            let code = report.decision.exit_code();
+            return Ok((super::render::selfcheck(&report, self.format)?, code));
+        }
         let root = self
             .root
             .canonicalize()
             .context("Repository root does not exist")?;
         match self.command {
+            Command::SelfcheckProbe { .. } => {
+                unreachable!("fixed probe handled before repository discovery")
+            }
+            Command::Selfcheck { .. } => {
+                unreachable!("selfcheck is independent of repository inputs")
+            }
             Command::Init { with_checks } => {
                 let path = self.config.clone();
                 let initialized = tokio::task::spawn_blocking(move || {

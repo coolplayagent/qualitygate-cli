@@ -37,11 +37,18 @@ checks:
     depends_on: [check]
   - id: integration
     kind: command
-    argv: [cargo, test, --locked, --test, bazel, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --test, init, --test, manual, --test, provenance, --test, git_trailers, --test, compatibility, --test, sarif, --test, coverage, --test, source_reviews, --test, policy, --all-features]
+    argv: [cargo, test, --locked, --test, bazel, --test, cli, --test, custom_rules, --test, merge_request, --test, execution, --test, init, --test, manual, --test, provenance, --test, git_trailers, --test, compatibility, --test, sarif, --test, coverage, --test, source_reviews, --test, policy, --test, selfcheck, --all-features]
     tools:
       - {id: cargo, argv: [cargo, --version]}
       - {id: rustc, argv: [rustc, --version, --verbose]}
     timeout_seconds: 900
+    depends_on: [check]
+  - id: selfcheck
+    kind: command
+    argv: [cargo, run, --locked, --, selfcheck, --format, json]
+    tools:
+      - {id: cargo, argv: [cargo, --version]}
+    timeout_seconds: 180
     depends_on: [check]
   - id: quality
     kind: command
@@ -75,7 +82,7 @@ profiles:
   quick:
     include: [line-ending, format]
   full:
-    include: [line-ending, format, check, clippy, unit-test, integration, quality, bazel-module-lock, bazel-build, bazel-test]
+    include: [line-ending, format, check, clippy, unit-test, integration, selfcheck, quality, bazel-module-lock, bazel-build, bazel-test]
 verification_assets:
   - qualitygate.yaml
   - Cargo.toml
@@ -89,4 +96,5 @@ verification_assets:
   - bazel/**
   - src/qualitygate/**/BUILD.bazel
   - tests/**
+  - fixtures/**
   - .github/workflows/**

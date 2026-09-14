@@ -51,7 +51,7 @@ pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
     let Some(language) = language(path) else {
         return Ok(None);
     };
-    std::str::from_utf8(bytes).context("Source file is not UTF-8")?;
+    std::str::from_utf8(bytes).with_context(|| format!("Source file is not UTF-8: {path}"))?;
     let grammar: Language = match language {
         "java" => tree_sitter_java::LANGUAGE.into(),
         "python" => tree_sitter_python::LANGUAGE.into(),
@@ -100,16 +100,25 @@ pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
                 range: range(node),
             });
         }
-        if matches!(
-            node.kind(),
-            "import_declaration"
-                | "import_statement"
-                | "import_from_statement"
-                | "import_spec"
-                | "use_declaration"
-        ) {
+        // Go has a declaration wrapper around each spec, including a single
+        // import. Capture only specs so grouped imports retain individual
+        // locations and the wrapper cannot duplicate a finding.
+        if (language == "go" && node.kind() == "import_spec")
+            || (language != "go"
+                && matches!(
+                    node.kind(),
+                    "import_declaration"
+                        | "import_statement"
+                        | "import_from_statement"
+                        | "use_declaration"
+                ))
+        {
             result.imports.push(Import {
-                text: text(node, bytes).into(),
+                text: if language == "go" {
+                    format!("import {}", text(node, bytes))
+                } else {
+                    text(node, bytes).into()
+                },
                 range: range(node),
             });
         }
@@ -120,6 +129,7 @@ pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
         pending.extend(node.named_children(&mut cursor));
     }
     result.tests.sort_by_key(|test| test.range.start_line);
+    result.imports.sort_by_key(|import| import.range.start_line);
     result
         .comments
         .sort_by_key(|comment| comment.range.start_line);

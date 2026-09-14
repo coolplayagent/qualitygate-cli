@@ -11,6 +11,11 @@ filegroup(
 )
 
 filegroup(
+    name = "fixture_assets",
+    srcs = glob(["fixtures/**/*.json"]),
+)
+
+filegroup(
     name = "engineering_standard_assets",
     srcs = [
         "knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml",

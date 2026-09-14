@@ -81,6 +81,8 @@ pub struct Report {
     pub gate: super::Gate,
     pub checks: Vec<CheckResult>,
     pub summary: Summary,
+    #[serde(default)]
+    pub verification: super::VerificationBoundary,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]

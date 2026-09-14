@@ -1,5 +1,10 @@
 # Built-in structure rules
 
+Go import facts represent each single/grouped import spec once. Patterns see
+the `import ` prefix plus the optional alias and package path. This preserves
+individual changed ranges and avoids duplicate or historical group findings;
+the [selfcheck corpus](selfcheck.md) includes both forms.
+
 Built-in definitions are Skill resources, not compiled Rust string constants.
 The matching executable reads `references/rules/{core,shared,lang-java,lang-python}`
 from its installed Skill (or the explicit `QUALITYGATE_BUILTIN_RULES_DIR`). A

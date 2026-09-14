@@ -19,7 +19,7 @@ async fn main() -> std::process::ExitCode {
         Err(error) => {
             println!(
                 "{}",
-                serde_json::json!({"schema_version":1,"gate":{"complete":false,"decision":"incomplete","blockers":[format!("{error:#}")]}})
+                qualitygate::interfaces::incomplete_report(&format!("{error:#}"))
             );
             std::process::ExitCode::from(2)
         }

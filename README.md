@@ -18,6 +18,7 @@ cargo test --all-targets --all-features
 The CLI, checks and test harnesses are implemented in Rust. Git is required for repository snapshots; configured build and test commands require their own project toolchains.
 
 See [quality gates](docs/quality.md) for CI, coverage and deep verification.
+See [selfcheck](docs/selfcheck.md) for bundled fixture regression and explicit verification boundaries.
 See [Bazel builds](docs/bazel.md) for cached Bzlmod builds and Cargo-aligned dependency checks.
 See [external engineering standards](knowledge/best-practices/engineering-standards/README.md) for the reviewed Alibaba, Google, Huawei, NVIDIA, AWS, Azure, Cloudflare and Meta source archive, lifecycle matrix, and rule mapping.
 See [initialization](docs/init.md) for nested project discovery, capability gaps and command suggestions.
@@ -49,6 +50,8 @@ cargo run -- check --mr https://github.com/owner/repository/pull/123 --format ma
 cargo run -- rules list
 cargo run -- rules enable commit-message
 cargo run -- config --show
+cargo run -- selfcheck
+cargo run -- selfcheck --fixture minimal --rule commit-message
 ```
 
 `check` returns 0 for a complete passing gate, 1 for blocking violations, and 2 for incomplete validation. `quick` and `--path` cover only their selected scope and cannot establish delivery readiness. Generated logs and reports live under `QUALITYGATE_HOME` (default: a qualitygate directory in the OS temporary directory); `--output-dir` overrides the evidence location. Commands run against a disposable materialization of the selected snapshot.

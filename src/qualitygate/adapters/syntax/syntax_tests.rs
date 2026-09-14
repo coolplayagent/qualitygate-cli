@@ -1,6 +1,23 @@
 use super::*;
 
 #[test]
+fn go_imports_have_one_fact_per_spec_and_preserve_grouped_locations() {
+    let source = b"package sample\nimport \"example/one\"\nimport (\n alias \"example/two\"\n _ \"example/three\"\n)\n";
+    let structure = parse("sample.go", source).unwrap().unwrap();
+    assert_eq!(structure.imports.len(), 3);
+    assert_eq!(
+        structure
+            .imports
+            .iter()
+            .map(|import| import.range.start_line)
+            .collect::<Vec<_>>(),
+        [2, 4, 5]
+    );
+    assert_eq!(structure.imports[0].text, "import \"example/one\"");
+    assert_eq!(structure.imports[1].text, "import alias \"example/two\"");
+}
+
+#[test]
 fn parses_framework_tests_and_annotations_in_java_python_rust_go_and_typescript() {
     let cases = [
         (

@@ -34,6 +34,13 @@ Snapshot history is an explicit cross-owner data contract for declaration
 adapters; its consumer validates ancestry, tree digests, and comparison
 identity before producing evidence.
 
+Selfcheck fixture/golden loading belongs to `config`; compiled JSON assets are
+declared as Bazel compile data. `application` runs bounded production evaluator
+and native temporary-repository scenarios on a blocking worker. Pure golden
+comparison, result contracts and verification boundaries belong to `domain`;
+`interfaces` selects filters and renders those results. Selfcheck adds no owner
+or dependency direction and executes no candidate project commands.
+
 ## Checked evidence
 
 The harness follows Rust module declarations from both crate roots. It parses grouped imports, re-exports, aliases, qualified/relative paths, inline modules and qualified references/imports inside macro arguments. File names containing `test` do not exclude production code. Only configurations proven inactive when `test=false` are omitted; platform and feature branches remain in the graph, including `cfg(not(test))`.

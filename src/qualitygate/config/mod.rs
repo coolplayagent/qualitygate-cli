@@ -13,6 +13,7 @@ mod model;
 mod plan;
 pub mod project_rules;
 mod python;
+pub mod selfcheck;
 pub mod source_reviews;
 mod validation;
 pub use initialization::{Initialization, initialize_at};
