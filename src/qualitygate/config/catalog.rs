@@ -1,8 +1,7 @@
 //! Versioned rule packages and snapshot-independent policy resolution.
 
 use super::{
-    Config, CustomRule, RuleSetting, StandardReference, catalog_assets::packaged_rules,
-    custom_validation, validation,
+    Config, CustomRule, RuleSetting, StandardReference, catalog_assets::packaged_rules, validation,
 };
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
@@ -754,11 +753,15 @@ fn project_rule_files(root: &Path, config: &Config) -> Result<BTreeMap<String, V
                 .extension()
                 .is_some_and(|extension| extension == "yaml" || extension == "yml")
             {
-                total += entry.metadata()?.len();
-                if total > super::MAX_CONFIG_BYTES as u64 {
+                if files.len() >= 256 {
+                    bail!("Project rule package exceeds 256 files");
+                }
+                let bytes = super::rule_authoring::read_file(root, &relative)?;
+                total += bytes.len();
+                if total > super::MAX_CONFIG_BYTES {
                     bail!("Project rules exceed 1 MiB");
                 }
-                files.insert(relative, std::fs::read(path)?);
+                files.insert(relative, bytes);
             }
         }
     }
@@ -843,10 +846,8 @@ impl Catalog {
                 if total > super::MAX_CONFIG_BYTES || ids.len() >= 256 {
                     bail!("Custom rule package exceeds 256 files or 1 MiB");
                 }
-                let rule: CustomRule = super::parse_yaml(bytes)
+                let rule: CustomRule = super::rule_schema::parse(bytes)
                     .with_context(|| format!("Invalid custom rule: {path}"))?;
-                custom_validation::validate(&rule)
-                    .with_context(|| format!("Invalid rule {path}"))?;
                 if !ids.insert(rule.id.clone()) {
                     bail!("Duplicate custom rule id: {}", rule.id);
                 }

@@ -9,6 +9,13 @@ rules, while the executable owns evaluation.
 
 ## Selection boundary
 
+Use `rules list --language java --source builtin --format json` for built-ins,
+`--source project` for `qualitygate/rules` (or an explicit legacy policy path),
+and `--source all` for both. Empty definition language scopes apply to every
+language. Inventory queries need no initialized policy and include all shipped
+packages, even unselected ones; listing does not enable enforcement. When IDs
+overlap, both origins remain visible and only the selected one can be enabled.
+
 Listing a rule is read-only. Adding a rule to `qualitygate.yaml`, running
 `qualitygate init`, or using `qualitygate rules enable` changes a candidate
 policy and needs the user's explicit authorization. A rule's archived

@@ -11,6 +11,11 @@ filegroup(
 )
 
 filegroup(
+    name = "rule_schemas",
+    srcs = glob(["skills/qualitygate-cli/references/schemas/*.json"]),
+)
+
+filegroup(
     name = "fixture_assets",
     srcs = glob(["fixtures/**/*.json"]),
 )

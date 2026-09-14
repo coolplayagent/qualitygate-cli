@@ -3,9 +3,11 @@
 mod attestation;
 mod gate;
 pub mod language;
+pub mod normative;
 mod project;
 mod provenance;
 mod report;
+mod rule_validation;
 pub mod selfcheck;
 mod source_review;
 mod verification;
@@ -15,5 +17,6 @@ pub use gate::{Decision, Gate, evaluate};
 pub use project::*;
 pub use provenance::*;
 pub use report::*;
+pub use rule_validation::*;
 pub use source_review::*;
 pub use verification::*;

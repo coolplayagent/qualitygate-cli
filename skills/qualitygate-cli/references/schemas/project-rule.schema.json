@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:project-rule:1",
+  "title": "Qualitygate project rule, protocol 1",
+  "description": "Generate project rules under qualitygate/rules. This schema defines the finite rule DSL, not arbitrary commands. The CLI additionally verifies Rust regex/glob syntax, confined paths and source-section evidence. Schema validity is not a source review or policy approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "source", "requires_capabilities", "when", "then", "fix"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1, "default": 1},
+    "id": {"$ref": "#/$defs/id"},
+    "version": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+    "source": {"$ref": "#/$defs/source"},
+    "language": {
+      "description": "Canonical programming language names, e.g. java, python, rust, typescript, go, shell, cpp. Empty means language-neutral; it does not grant missing adapter capabilities.",
+      "type": "array", "uniqueItems": true, "default": [],
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_+-]{0,63}$", "not": {"const": "all"}}
+    },
+    "required": {"type": "boolean", "default": true},
+    "severity": {"enum": ["error", "warning", "info"], "default": "error"},
+    "applies_to": {"$ref": "#/$defs/applies_to", "default": {}},
+    "requires_capabilities": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"enum": ["test_methods", "annotations", "comments", "imports", "files", "commits", "dependency_resolution", "external_provenance"]}
+    },
+    "binding": {"anyOf": [{"$ref": "#/$defs/binding"}, {"type": "null"}]},
+    "when": {"$ref": "#/$defs/trigger"},
+    "then": {"$ref": "#/$defs/assertions"},
+    "fix": {"$ref": "#/$defs/nonblank", "description": "Actionable repair instructions derived from the selected source section."}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "test_method"}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "test_methods"}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "comment"}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "comments"}}, "when": {"properties": {"change": {"enum": ["added", "any", null]}}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "import"}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "imports"}}, "when": {"properties": {"change": {"enum": ["added", "any", null]}}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "file"}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "files"}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "commit"}}}}},
+      "then": {"properties": {
+        "requires_capabilities": {"contains": {"const": "commits"}},
+        "language": {"maxItems": 0},
+        "applies_to": {"properties": {"paths": {"maxItems": 0}}},
+        "when": {"properties": {"change": {"enum": ["added", null]}}}
+      }}
+    },
+    {
+      "if": {"properties": {"then": {"required": ["require_marker"], "properties": {"require_marker": {"const": true}}}}},
+      "then": {
+        "required": ["binding", "applies_to"],
+        "properties": {
+          "when": {"properties": {"entity": {"const": "test_method"}}},
+          "binding": {"$ref": "#/$defs/binding"},
+          "applies_to": {"required": ["provenance_scope"], "properties": {"provenance_scope": {"enum": ["all_added_tests", "ai_only"]}}}
+        }
+      },
+      "else": {"properties": {"binding": {"type": "null"}, "applies_to": {"properties": {"provenance_scope": {"type": "null"}}}}}
+    },
+    {
+      "if": {"required": ["binding"], "properties": {"binding": {"type": "object", "properties": {"marker": {"properties": {"type": {"const": "annotation"}}}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "annotations"}}}}
+    },
+    {
+      "if": {"required": ["binding"], "properties": {"binding": {"type": "object", "properties": {"marker": {"properties": {"type": {"const": "comment"}}}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "comments"}}}}
+    },
+    {
+      "if": {"required": ["binding"], "properties": {"binding": {"type": "object", "properties": {"marker": {"properties": {"type": {"const": "git_trailer"}}}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "commits"}}}}
+    },
+    {
+      "if": {"properties": {"then": {"required": ["require_dependency"], "properties": {"require_dependency": {"type": "object"}}}}},
+      "then": {"properties": {"when": {"properties": {"entity": {"const": "test_method"}}}, "requires_capabilities": {"contains": {"const": "dependency_resolution"}}}}
+    }
+  ],
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_.-]+$"},
+    "nonblank": {"type": "string", "pattern": "\\S"},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["document", "section", "content_hash"],
+      "properties": {
+        "document": {"$ref": "#/$defs/nonblank", "description": "Confined repository-relative normative document, e.g. AGENTS.md or docs/standards.md."},
+        "section": {"$ref": "#/$defs/nonblank", "description": "Unique top-level-container ATX heading title. Use rules source to obtain the exact source binding."},
+        "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "SHA-256 of exact section UTF-8 bytes, including heading and line endings; never invent this digest."}
+      }
+    },
+    "applies_to": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "paths": {"type": "array", "items": {"type": "string"}, "default": []},
+        "provenance_scope": {"enum": ["all_added_tests", "ai_only", null], "description": "Required only for marker assertions. AI-only scope still needs authenticated run evidence at execution."}
+      }
+    },
+    "trigger": {
+      "type": "object", "additionalProperties": false, "required": ["entity"],
+      "properties": {
+        "entity": {"enum": ["test_method", "comment", "import", "file", "commit"]},
+        "change": {"enum": ["added", "modified", "renamed", "any", null], "default": "added"}
+      }
+    },
+    "assertions": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "require_marker": {"type": "boolean", "default": false},
+        "require_dependency": {"anyOf": [{"$ref": "#/$defs/dependency"}, {"type": "null"}]},
+        "name_pattern": {"type": ["string", "null"], "description": "Rust regex required to match the entity name; CLI checks regex syntax."},
+        "forbid_pattern": {"type": ["string", "null"], "description": "Rust regex forbidden in entity text; CLI checks regex syntax."},
+        "max_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615}
+      },
+      "anyOf": [
+        {"required": ["require_marker"], "properties": {"require_marker": {"const": true}}},
+        {"required": ["require_dependency"], "properties": {"require_dependency": {"type": "object"}}},
+        {"required": ["name_pattern"], "properties": {"name_pattern": {"type": "string"}}},
+        {"required": ["forbid_pattern"], "properties": {"forbid_pattern": {"type": "string"}}},
+        {"required": ["max_count"], "properties": {"max_count": {"type": "integer"}}}
+      ]
+    },
+    "binding": {
+      "type": "object", "additionalProperties": false, "required": ["marker"],
+      "properties": {"marker": {
+        "type": "object", "additionalProperties": false, "required": ["type", "name"],
+        "properties": {
+          "type": {"enum": ["annotation", "comment", "git_trailer"]},
+          "name": {"$ref": "#/$defs/nonblank"},
+          "fields": {"type": "array", "items": {"$ref": "#/$defs/id"}, "default": []}
+        }
+      }}
+    },
+    "dependency": {
+      "type": "object", "additionalProperties": false, "required": ["artifact"],
+      "properties": {"group": {"type": ["string", "null"]}, "artifact": {"$ref": "#/$defs/nonblank"}}
+    }
+  }
+}

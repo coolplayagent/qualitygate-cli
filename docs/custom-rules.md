@@ -21,15 +21,16 @@ Package selection makes definitions available. A rule runs only when enabled in 
 ```yaml
 schema_version: 1
 rulesets: [core, lang-python]
-custom_rules: team-rules
+custom_rules: qualitygate/rules
 rules:
   pytest-naming: {}
   descriptive-tests: {}
 ```
 
 Project rules are discovered recursively from the normalized repository
-subdirectory named by `custom_rules`; `qualitygate/rules` is the recommended
-project-local location. Project definitions come only from the selected policy
+subdirectory named by `custom_rules`; `qualitygate/rules` is the standard
+project-local discovery and generation location. Explicit older configured
+paths remain supported for compatibility. Project definitions come only from the selected policy
 snapshot: staged checks use staged bytes and `--policy-ref` uses the
 caller-selected commit. A configured directory must exist and contain YAML.
 Definitions are limited to 256 files and 1 MiB combined. Duplicate project IDs,
@@ -39,7 +40,60 @@ entries and rejects symlinks.
 
 An explicitly loaded custom definition can replace a packaged rule with the same ID. `rules list`, check metadata and the policy digest identify the selected definition and its origin. Changes are subject to the same policy-reference comparison. Two custom definitions with the same ID are always invalid.
 
-`qualitygate rules list --format json` shows definitions, sources, capabilities and enabled settings. `rules enable <id>` atomically updates the candidate configuration and its profiles. `config --show` includes the effective defaults and catalog. These commands support JSON, table and Markdown output. `init --config <path>` respects that path and never overwrites existing configuration.
+`qualitygate rules list --language java --source builtin --format json` retrieves
+all built-ins for Java, including language-neutral rules and unselected packages.
+Use `--source project` for project definitions or `--source all` (the default)
+for both. Omit `--language` for every scope. Identifiers are lowercase, with no
+implicit aliases (`typescript` includes the JavaScript adapter's forms).
+Queries work before `init`, discover `qualitygate/rules` by default and never
+enable rules. An explicit policy `custom_rules` path takes precedence; malformed
+available policy/assets fail closed. Both origins remain visible for duplicate
+built-in/project IDs; only the selected definition can have `enabled: true`.
+JSON includes `definition`, `language`, `source`, `overrides_builtin`, effective
+configuration and source review bindings. `rules enable <id>` atomically updates
+the candidate configuration and profiles, using only policy-selected definitions.
+`config --show` includes the effective defaults and active catalog. Inventory
+is not the execution plan. These commands support JSON, table and Markdown.
+`init --config <path>` respects that path and never overwrites existing configuration.
+
+## Schema-guided generation and validation
+
+The Skill ships [project-rule.schema.json](../skills/qualitygate-cli/references/schemas/project-rule.schema.json)
+and a complete [authoring workflow](../skills/qualitygate-cli/references/rule-authoring.md).
+The CLI compiles that same Draft 2020-12 schema with external HTTP/file resolution
+disabled. Both authoring and selected-snapshot loading enforce it, followed by
+the Rust DSL validator; schema errors report instance and schema JSON Pointers.
+Unknown keys, duplicate YAML keys, custom tags and non-JSON YAML shapes are rejected.
+Languages are unique lowercase identifiers, with an empty list meaning universal.
+
+```bash
+qualitygate rules schema
+qualitygate rules source --document AGENTS.md --section "Test naming" --format json
+qualitygate rules validate candidate.yaml --format json
+qualitygate rules generate --input candidate.yaml --format json
+qualitygate rules validate --format json
+```
+
+`schema` always exports JSON and needs no repository. `source` computes the exact
+current section binding. Construct a complete YAML/JSON candidate from actual
+normative prose and the schema; the CLI does not infer obligations from prose.
+`generate` checks schema, DSL semantics and the current source digest, then
+atomically creates `qualitygate/rules/<id>.yaml` without overwriting or enabling
+it. It checks the serialized output again. Project rule adoption still requires
+an explicit `custom_rules: qualitygate/rules` policy and normal source review.
+Generation also rejects ID collisions under other filenames and package budget
+overflow. Use a single authoring writer; path checks are not an OS sandbox
+against concurrent filesystem changes. The result reports `policy_changed: false`,
+not an assertion that no existing policy already selects that ID.
+
+`validate [path]` accepts a confined file or recursive YAML directory, defaulting
+to `qualitygate/rules`. It returns 0 for valid candidates, 1 for invalid schema,
+DSL, duplicate IDs or stale/ambiguous source bindings, and 2 for inaccessible
+inputs or exceeded budgets. Reports retain violations when execution is
+incomplete. Validation is not execution evidence or approval. The authoring
+budget is 1 MiB per source/input, 1 MiB combined rule bytes, 256 rule files and
+4,096 directory entries; diagnostics are bounded. Existing policy snapshot
+source-review and trust requirements are unchanged.
 
 ## Definition
 
@@ -66,6 +120,10 @@ fix: Rename the test to describe its expected behavior and condition
 ```
 
 The source hash is SHA-256 over the exact UTF-8 section bytes, including its top-level ATX Markdown heading, line endings and subsections, ending before the next supported heading of the same or shallower level. Supply 64 lowercase hexadecimal digits after `sha256:`. The section must occur exactly once as a CommonMark heading outside code, HTML blocks and quoted/list containers. The selector uses the raw ATX title after the heading markers, including inline markup. Setext headings are outside this source-selector profile. Changes to that section require review and an updated mapping; unrelated sections do not invalidate it.
+
+The start is CommonMark's ATX marker offset; up to three spaces preceding the
+first heading marker are outside the bound section. Use `rules source` so
+authoring and snapshot validation agree on these exact offsets.
 
 Every executed custom rule requires a [source review](source-reviews.md) in `source_reviews.<rule-id>` of the policy. Built-in rules require the same record when the policy assigns them a `source`. Missing or stale records keep required checks incomplete, including an initial mapping. The record binds the complete definition, version, source hashes and effective settings; changing only `content_hash` cannot restore a passing check. This tightens the earlier hash-only configuration contract. `rules list` reports the expected binding digest but does not issue an approval.
 

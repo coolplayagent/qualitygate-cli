@@ -135,49 +135,7 @@ pub(super) fn validate_source(source: &Source, files: &BTreeMap<String, File>) -
         .with_context(|| format!("Missing source document: {}", source.document))?
         .bytes;
     let text = std::str::from_utf8(bytes)?;
-    let mut headings = Vec::new();
-    let mut depth = 0usize;
-    for (event, range) in pulldown_cmark::Parser::new(text).into_offset_iter() {
-        match event {
-            pulldown_cmark::Event::Start(tag) => {
-                if depth == 0
-                    && let pulldown_cmark::Tag::Heading { level, .. } = tag
-                {
-                    let line = text[range.start..].lines().next().unwrap_or_default();
-                    let hashes = line
-                        .chars()
-                        .take_while(|character| *character == '#')
-                        .count();
-                    // Preserve the documented raw ATX title and exact section
-                    // bytes; CommonMark determines whether this is a heading.
-                    if (1..=6).contains(&hashes) && line[hashes..].starts_with(' ') {
-                        headings.push((level as usize, line[hashes..].trim(), range.start));
-                    }
-                }
-                depth += 1;
-            }
-            pulldown_cmark::Event::End(_) => depth -= 1,
-            _ => {}
-        }
-    }
-    let matching: Vec<_> = headings
-        .iter()
-        .enumerate()
-        .filter(|(_, (_, title, _))| *title == source.section)
-        .collect();
-    if matching.len() != 1 {
-        bail!(
-            "Normative section must exist exactly once: {} (found {})",
-            source.section,
-            matching.len()
-        );
-    }
-    let (index, (level, _, start)) = matching[0];
-    let end = headings[index + 1..]
-        .iter()
-        .find(|(next_level, _, _)| next_level <= level)
-        .map_or(text.len(), |(_, _, offset)| *offset);
-    let selected = &text[*start..end];
+    let selected = crate::domain::normative::section(text, &source.section)?;
     if snapshot::digest(selected.as_bytes()) != source.content_hash {
         bail!("Normative section digest changed: {}", source.section);
     }

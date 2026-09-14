@@ -1,8 +1,8 @@
 ---
 name: qualitygate-cli
-description: "Operate Qualitygate CLI for snapshot-bound policy/task gates and bundled selfcheck regression; use for quality-gate configuration, execution, and fixture diagnostics, not generic code-review advice or evidence bypasses."
+description: "Operate Qualitygate CLI for snapshot-bound gates, language-filtered built-in/project rules, schema-validated extraction from AGENTS.md and project policies, and bundled selfcheck regression; not generic review advice or evidence bypasses."
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
@@ -104,6 +104,14 @@ directory, severity, or rule selection to make a result pass.
 
 ## Select bundled rules deliberately
 
+For language-specific discovery use `rules list --language rust --source builtin`
+or `--source project` / `--source all`, preferably with `--format json`.
+The inventory includes language-neutral rules and unselected built-in packages;
+it is not the active enforcement plan. Project discovery defaults to
+`qualitygate/rules`, including before `init`. A policy's explicit legacy
+`custom_rules` directory is retained for compatibility. Inspect `enabled`,
+`source`, `language`, and the complete `definition`; no query changes policy.
+
 Before proposing a built-in rule, read the relevant exact definition under
 `references/rules/` and the [bundled rule guide](references/builtin-rules.md).
 Those YAML files travel with this skill and are read by the matching CLI at
@@ -139,6 +147,16 @@ tooling, credentials, timeout behavior, and output location visible to the
 user; do not treat an absent tool, missing report, timeout, or partial evidence
 as a success. Read [operations](references/operations.md) before handling task,
 merge-request, manual-acceptance, or trusted-policy flows.
+
+## Extract project rules with the schema
+
+When asked to extract AGENTS.md, Agent.md, or another project policy into
+rules, first read [rule authoring](references/rule-authoring.md) and the complete
+[project rule schema](references/schemas/project-rule.schema.json). Use the
+schema to construct each candidate, then the matching CLI to validate and
+publish it under `qualitygate/rules`. Do not substitute a prose example for
+schema validation. Source hashes, capabilities, and source review remain
+separate obligations; generation does not enable rules or issue approvals.
 
 ## Interpret results
 

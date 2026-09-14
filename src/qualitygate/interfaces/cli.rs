@@ -69,8 +69,35 @@ enum Command {
 
 #[derive(Debug, Subcommand)]
 enum Rules {
-    List,
-    Enable { rule_id: String },
+    /// Inventory all available rule packages, without enabling them.
+    List {
+        #[arg(long)]
+        language: Option<String>,
+        #[arg(long, default_value = "all", value_parser = ["all", "builtin", "project"])]
+        source: String,
+    },
+    Enable {
+        rule_id: String,
+    },
+    /// Export the shipped project-rule JSON Schema (always JSON).
+    Schema,
+    /// Validate YAML/JSON rules, DSL semantics and current source bindings.
+    Validate {
+        #[arg(default_value = config::catalog::PROJECT_RULES_DIR)]
+        path: String,
+    },
+    /// Compute a source binding from one exact normative ATX section.
+    Source {
+        #[arg(long)]
+        document: String,
+        #[arg(long)]
+        section: String,
+    },
+    /// Validate and publish a candidate to qualitygate/rules/<id>.yaml.
+    Generate {
+        #[arg(long)]
+        input: String,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -117,6 +144,13 @@ impl Cli {
             let report = application::selfcheck::run(fixture, rule).await;
             let code = report.decision.exit_code();
             return Ok((super::render::selfcheck(&report, self.format)?, code));
+        }
+        if let Command::Rules {
+            command: Rules::Schema,
+        } = self.command
+        {
+            let schema = tokio::task::spawn_blocking(config::rule_schema::document).await??;
+            return Ok((serde_json::to_string_pretty(&schema)?, 0));
         }
         let root = self
             .root
@@ -217,21 +251,22 @@ async fn run_rules(
     command: Rules,
     format: Format,
 ) -> Result<(String, u8)> {
-    let value = tokio::task::spawn_blocking(move || -> Result<serde_json::Value> {
+    let (value, code) = tokio::task::spawn_blocking(move || -> Result<(serde_json::Value, u8)> {
         match command {
-            Rules::List => {
-                let config = config::read(&root, path.as_ref())?;
-                let catalog = config::catalog::read(&root, &config)?;
-                let config = catalog.resolve(&config)?;
-                let reviews = config::source_reviews::evidence(&config, &catalog)?;
-                let rules: Vec<_> = catalog.entries.iter().map(|(id, entry)| serde_json::json!({"id":id,"definition":entry,"configuration":config.rules.get(id),"enabled":config.rules.get(id).is_some_and(|setting| setting.enabled)})).collect();
-                Ok(serde_json::json!({"schema_version":1,"rules":rules,"source_reviews":reviews,"review_trust":"local_candidate"}))
-            }
+            Rules::List { language, source } => Ok((config::rule_query::list(&root, &path, language.as_deref(), &source)?, 0)),
             Rules::Enable { rule_id } => {
                 config::enable_rule(&root, path.as_ref(), &rule_id)?;
-                Ok(serde_json::json!({"schema_version":1,"enabled":rule_id,"status":"candidate"}))
+                Ok((serde_json::json!({"schema_version":1,"enabled":rule_id,"status":"candidate"}), 0))
             }
+            Rules::Schema => unreachable!("schema export does not require a repository"),
+            Rules::Validate { path } => {
+                let report = config::rule_authoring::validate(&root, &path)?;
+                let code = report.decision.exit_code();
+                Ok((serde_json::to_value(report)?, code))
+            }
+            Rules::Source { document, section } => Ok((serde_json::json!({"schema_version":1,"source":config::rule_authoring::source(&root, &document, &section)?,"review_trust":"local_candidate"}), 0)),
+            Rules::Generate { input } => Ok((config::rule_authoring::generate(&root, &input)?, 0)),
         }
     }).await??;
-    Ok((super::render::metadata(&value, format)?, 0))
+    Ok((super::render::metadata(&value, format)?, code))
 }

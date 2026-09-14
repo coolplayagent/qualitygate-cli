@@ -2,6 +2,42 @@
 
 This ledger preserves the complete v0.2 requirements while implementation proceeds. Pending items are not advertised as supported. No milestone or coverage threshold replaces the full requirement scope.
 
+## Language inventories and schema-guided project rules (0.4.0 development)
+
+| Requirement | Implementation | Regression evidence |
+|---|---|---|
+| Retrieve built-in/project rules by language | `config/rule_query.rs`; all shipped packages, neutral scopes, separate origins and no implicit enablement | `tests/rule_authoring.rs::language_inventory_works_without_policy_and_keeps_origins_distinct` |
+| Standard project rule location | Discovery and candidate creation at `qualitygate/rules`; explicit older configured paths retained for compatibility | Generation, directory and symlink tests in `tests/rule_authoring.rs` |
+| Skill carries an executable generation/validation schema | Skill `references/schemas/project-rule.schema.json`, authoring guide and `config/rule_schema.rs`; same schema enforced in snapshot loading | Schema export, invalid-field/pointer, snapshot-bypass and conditional-shape tests; `tests/quality/skill_package.rs` |
+| Preserve source binding, review and evidence distinctions | Shared pure CommonMark selector in `domain/normative.rs`; candidate validation/generation never enables policy or approves source reviews | Source change/missing-input, no-overwrite and schema roundtrip tests; existing source-review and snapshot suites |
+
+Validation remains bounded, offline and fail-closed. The finite DSL cannot
+automatically translate arbitrary policy prose or prove that a translation is
+faithful; the skill requires an actual source and clarification for unspecified
+semantics. This development revision passes Rustfmt, all-target/all-feature
+compilation, Clippy with warnings denied and 280 stable tests. LLVM line coverage
+is 95.30% (13,192 lines, 620 missed), with the unchanged 90% threshold. All 249
+selfcheck fixtures agree with their goldens; Bazel's locked build and all 11
+test targets pass. Architecture evidence covers 100 sources with no violations.
+Cargo packaging verifies compilation of 303 archived files, including the schema
+and authoring guide. Logs are `target/rules-verification-tests.log`,
+`target/rules-coverage-final.log`, `target/rules-selfcheck.json`,
+`target/rules-bazel-final.log`, `target/rules-package.log` and
+`target/architecture/report.json`. Nine live-tool tests remain outside the
+stable suite; native Windows/macOS, Miri, ASan and new remote CI were not run for
+this uncommitted revision. No new push, tag or release was performed.
+
+An independent Skill forward-test used an isolated `Agent.md` containing an
+explicit Rust `^test_` naming requirement and a separate human architecture
+approval requirement. It successfully exported/compared the schema, bound the
+actual source, generated and validated the candidate under `qualitygate/rules`,
+and listed ten Rust-applicable built-ins without creating or enabling policy.
+It left human approval unconverted and unverified. The retained trial is
+`/tmp/qualitygate-skill-authoring.0Bgow8/acceptance-output/REPORT.md`; this is
+bounded synthetic authoring evidence, not real-project acceptance. The observed
+JSON formatting difference led to an explicit structural schema-comparison
+instruction, without changing the schema or validation rules.
+
 ## Release CI repair verification (2026-09-14)
 
 The Windows package validator rejected CRLF frontmatter because it matched

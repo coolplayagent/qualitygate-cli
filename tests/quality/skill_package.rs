@@ -99,6 +99,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     let package_readme = read(root, "skills/qualitygate-cli/README.md");
     let operations = read(root, "skills/qualitygate-cli/references/operations.md");
     let rule_guide = read(root, "skills/qualitygate-cli/references/builtin-rules.md");
+    let authoring = read(root, "skills/qualitygate-cli/references/rule-authoring.md");
     let release = read(root, ".github/workflows/release.yml");
 
     assert_eq!(skill.name, "qualitygate-cli");
@@ -111,6 +112,27 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     assert!(skill_text.contains("windows-aarch64"));
     assert!(skill_text.contains("QUALITYGATE_BUILTIN_RULES_DIR"));
     assert!(!skill_text.contains("TODO"));
+    assert!(skill_text.contains("references/schemas/project-rule.schema.json"));
+    for expected in [
+        "rules validate candidate.yaml",
+        "rules generate --input",
+        "qualitygate/rules",
+        "not constitute that review",
+    ] {
+        assert!(
+            authoring.contains(expected),
+            "missing authoring boundary: {expected}"
+        );
+    }
+    let schema: serde_json::Value = serde_json::from_str(&read(
+        root,
+        "skills/qualitygate-cli/references/schemas/project-rule.schema.json",
+    ))
+    .unwrap();
+    assert_eq!(
+        schema,
+        qualitygate::config::rule_schema::document().unwrap()
+    );
     assert!(openai.policy.allow_implicit_invocation);
     assert_eq!(openai.interface.display_name, "Qualitygate CLI");
     assert!((25..=64).contains(&openai.interface.short_description.len()));
@@ -126,6 +148,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "assets/windows-x86_64/qualitygate.exe",
         "assets/windows-aarch64/qualitygate.exe",
         "references/rules/{core,shared,lang-java,lang-python}/*.yaml",
+        "references/schemas/project-rule.schema.json",
         "ClawHub",
         "workflow_dispatch",
     ] {
@@ -163,6 +186,8 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "clawhub publish skills/qualitygate-cli",
         "references/rules/shared/security-sensitive-api.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
+        "references/schemas/project-rule.schema.json",
+        "qualitygate\" rules schema",
     ] {
         assert!(
             release.contains(expected),

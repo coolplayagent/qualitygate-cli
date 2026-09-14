@@ -17,6 +17,7 @@ rust_library(
     srcs = [":sources"],
     data = ["//:packaged_rules"],
     compile_data = [
+        "//:rule_schemas",
         "//:fixture_assets",
         "//:engineering_standard_assets",
         "//:packaged_rules",

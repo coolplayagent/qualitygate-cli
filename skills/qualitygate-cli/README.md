@@ -17,6 +17,9 @@ The tracked skill directory is intentionally lightweight:
   the shipped general-language, quality, security, and architecture rules.
 - `references/rules/**` contains the versioned built-in YAML assets read by the
   matching CLI release at runtime.
+- [rule authoring](references/rule-authoring.md) and the executable
+  [project rule schema](references/schemas/project-rule.schema.json) guide
+  schema-validated extraction into `qualitygate/rules`.
 
 A tag release creates `qualitygate-cli-skill-<tag>.tar.gz`. Its root is this
 skill directory plus these platform-specific runtime assets:
@@ -28,6 +31,8 @@ qualitygate-cli-skill-<tag>/
 ├── agents/openai.yaml
 ├── references/operations.md
 ├── references/builtin-rules.md
+├── references/rule-authoring.md
+├── references/schemas/project-rule.schema.json
 ├── references/rules/{core,shared,lang-java,lang-python}/*.yaml
 ├── assets/linux-x86_64/qualitygate
 ├── assets/linux-aarch64/qualitygate

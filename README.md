@@ -48,6 +48,8 @@ cargo run -- check --staged --format markdown
 cargo run -- check --diff HEAD~1..HEAD --format json
 cargo run -- check --mr https://github.com/owner/repository/pull/123 --format markdown
 cargo run -- rules list
+cargo run -- rules list --language rust --source all --format json
+cargo run -- rules schema
 cargo run -- rules enable commit-message
 cargo run -- config --show
 cargo run -- selfcheck
