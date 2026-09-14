@@ -86,6 +86,18 @@ the live case count times `snapshot_jobs`. Baseline and candidate share one
 than duplicating the entire repository in memory. Only scheduled checks get
 execution directories. Results are sorted deterministically.
 
+Snapshot materialization creates each parent directory once and writes files
+with at most four blocking I/O workers per executing check. Input guards use
+the same worker bound while preserving per-file bytes, identity, mode and
+before/after stamps. Both retain their shared 30-second deadlines and join all
+workers before returning an error; partial inventories never become evidence.
+The protected global check limit therefore bounds these I/O workers to at most
+32. `snapshot::io_workers::tests` covers ordering, concurrent execution,
+timeouts, errors and worker panics; the parallel materialization/input-guard
+test covers every file and restored-input rejection. The unchanged
+`policy_performance` integration test compares serial and parallel validation
+over 18,000 files with identical resource budgets on every CI platform.
+
 External protected files and retained logs accept native absolute Windows
 paths as well as POSIX paths. Native separators are normalized before walking
 the original path's ancestors; traversal, symlink ancestors, repository-owned

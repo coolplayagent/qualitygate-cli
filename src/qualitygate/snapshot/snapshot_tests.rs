@@ -1,5 +1,52 @@
 use super::*;
 
+#[tokio::test]
+async fn parallel_materialization_and_input_guards_cover_every_file() {
+    let files: BTreeMap<_, _> = (0..128)
+        .map(|index| {
+            (
+                format!("group-{}/file-{index:03}", index % 2),
+                File {
+                    bytes: format!("frozen input {index}\n").into_bytes(),
+                    executable: index % 7 == 0,
+                },
+            )
+        })
+        .collect();
+    let workspace = materialize_files(&files).unwrap();
+    for (name, file) in &files {
+        let path = workspace.path().join(name);
+        assert_eq!(std::fs::read(&path).unwrap(), file.bytes);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                std::fs::metadata(&path).unwrap().permissions().mode() & 0o111 != 0,
+                file.executable
+            );
+        }
+    }
+    let guard = InputGuard::new(workspace.path(), files.clone())
+        .await
+        .unwrap();
+    guard.verify().await.unwrap();
+    let (name, original) = files.last_key_value().unwrap();
+    let path = workspace.path().join(name);
+    std::fs::write(&path, b"edited").unwrap();
+    assert!(guard.verify().await.is_err());
+    std::fs::write(&path, &original.bytes).unwrap();
+    assert!(guard.verify().await.is_err());
+    let mut unsafe_files = files;
+    unsafe_files.insert(
+        "../escape".into(),
+        File {
+            bytes: vec![],
+            executable: false,
+        },
+    );
+    assert!(materialize_files(&unsafe_files).is_err());
+}
+
 #[cfg(unix)]
 #[test]
 fn materialized_workspaces_expose_physical_paths_and_keep_cleanup_ownership() {

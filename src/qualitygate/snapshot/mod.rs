@@ -4,6 +4,7 @@ mod changes;
 mod git;
 pub mod history;
 mod input_guard;
+mod io_workers;
 mod limits;
 mod merge_request;
 mod worktree;
@@ -216,24 +217,39 @@ pub async fn materialize_shared(snapshot: std::sync::Arc<Snapshot>) -> Result<Ma
 
 fn materialize_files(files: &BTreeMap<String, File>) -> Result<Materialized> {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    let timeout = "Snapshot materialization exceeded its 30-second budget";
+    if files.len() > MAX_FILES {
+        anyhow::bail!("Snapshot I/O exceeds the file-count limit");
+    }
     let directory = Materialized::new(
         tempfile::Builder::new()
             .prefix("qualitygate-snapshot-")
             .tempdir()?,
     )?;
-    for (name, file) in files {
+    let mut parents = std::collections::BTreeSet::new();
+    for name in files.keys() {
         if std::time::Instant::now() >= deadline {
-            anyhow::bail!("Snapshot materialization exceeded its 30-second budget");
+            anyhow::bail!("{timeout}");
         }
+        crate::paths::relative(Path::new(name))?;
+        parents.insert(Path::new(name).parent().context("File has no parent")?);
+    }
+    for parent in parents {
+        if std::time::Instant::now() >= deadline {
+            anyhow::bail!("{timeout}");
+        }
+        std::fs::create_dir_all(crate::paths::confined(directory.path(), parent)?)?;
+    }
+    io_workers::map(files, deadline, timeout, |name, file| {
         let path = crate::paths::confined(directory.path(), Path::new(name))?;
-        std::fs::create_dir_all(path.parent().context("File has no parent")?)?;
         std::fs::write(&path, &file.bytes)?;
         #[cfg(unix)]
         if file.executable {
             use std::os::unix::fs::PermissionsExt;
             std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
         }
-    }
+        Ok(())
+    })?;
     Ok(directory)
 }
 

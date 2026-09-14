@@ -68,6 +68,11 @@ hashing; `env` owns inherited-environment enumeration. All blocking reads and
 serialization run outside asynchronous orchestration. See the
 [validation boundary](policy-validation.md).
 
+`snapshot::io_workers` owns bounded parallel materialization and input-guard
+I/O, with four workers per executing check and a shared 30-second deadline.
+It joins all workers before returning and preserves ordered results; path
+confinement remains in `paths`, without a dependency on configuration loading.
+
 `config` calls `env` only to resolve deployment-owned Skill rule assets. Project policy files remain owned by the selected configuration snapshot and confined through `paths`; this keeps runtime rule discovery separate from repository policy loading.
 
 Every top-level owner has an explicit directory below src/qualitygate:

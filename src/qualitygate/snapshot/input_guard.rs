@@ -123,43 +123,44 @@ impl InputGuard {
 }
 
 fn inspect(root: &Path, files: &BTreeMap<String, File>) -> Result<BTreeMap<String, Stamp>> {
-    let start = Instant::now();
-    let mut stamps = BTreeMap::new();
-    for (name, expected) in files {
-        if start.elapsed() > Duration::from_secs(30) {
-            bail!("Input validation exceeded its 30-second work budget");
-        }
-        let path = crate::paths::confined(root, Path::new(name)).with_context(|| {
-            format!("Checked input removed or replaced during execution: {name}")
-        })?;
-        let metadata = std::fs::metadata(&path).with_context(|| {
-            format!("Checked input removed or replaced during execution: {name}")
-        })?;
-        if !metadata.is_file() || metadata.len() != expected.bytes.len() as u64 {
-            bail!("Checked input modified during execution: {name}");
-        }
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if (metadata.permissions().mode() & 0o111 != 0) != expected.executable {
-                bail!("Checked input executable mode changed during execution: {name}");
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let stamps = super::io_workers::map(
+        files,
+        deadline,
+        "Input validation exceeded its 30-second work budget",
+        |name, expected| {
+            let path = crate::paths::confined(root, Path::new(name)).with_context(|| {
+                format!("Checked input removed or replaced during execution: {name}")
+            })?;
+            let metadata = std::fs::metadata(&path).with_context(|| {
+                format!("Checked input removed or replaced during execution: {name}")
+            })?;
+            if !metadata.is_file() || metadata.len() != expected.bytes.len() as u64 {
+                bail!("Checked input modified during execution: {name}");
             }
-        }
-        let before = Stamp::from(&metadata, &path)?;
-        let file = std::fs::File::open(&path)?;
-        let mut bytes = Vec::new();
-        file.take(expected.bytes.len() as u64 + 1)
-            .read_to_end(&mut bytes)?;
-        if bytes != expected.bytes {
-            bail!("Checked input modified during execution: {name}");
-        }
-        let after = Stamp::from(&std::fs::metadata(&path)?, &path)?;
-        if before != after {
-            bail!("Checked input changed while being validated: {name}");
-        }
-        stamps.insert(name.clone(), after);
-    }
-    Ok(stamps)
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if (metadata.permissions().mode() & 0o111 != 0) != expected.executable {
+                    bail!("Checked input executable mode changed during execution: {name}");
+                }
+            }
+            let before = Stamp::from(&metadata, &path)?;
+            let file = std::fs::File::open(&path)?;
+            let mut bytes = Vec::new();
+            file.take(expected.bytes.len() as u64 + 1)
+                .read_to_end(&mut bytes)?;
+            if bytes != expected.bytes {
+                bail!("Checked input modified during execution: {name}");
+            }
+            let after = Stamp::from(&std::fs::metadata(&path)?, &path)?;
+            if before != after {
+                bail!("Checked input changed while being validated: {name}");
+            }
+            Ok((name.to_owned(), after))
+        },
+    )?;
+    Ok(stamps.into_iter().collect())
 }
 
 #[cfg(test)]

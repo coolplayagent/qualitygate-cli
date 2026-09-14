@@ -69,6 +69,9 @@ trust and approval files. External protected files and retained logs accept
 native absolute paths on Windows and POSIX; they must remain outside the
 checked repository, without traversal or symlink ancestors, within read limits.
 Repository-relative rule paths still require forward slashes.
+Snapshot materialization and input verification each use at most four I/O
+workers per executing check within their 30-second budget. A timeout or changed
+input remains incomplete; reducing the checked inventory is not a repair.
 `policy candidate validate` compares pinned replay,
 held-out and anchor tasks with bounded parallelism. `policy candidate
 approval-subject` produces the exact signing subject, `approve` verifies the
