@@ -30,10 +30,8 @@ pub(super) fn observe(input: &EvolutionFixture) -> Result<Value> {
             )))
         }
         EvolutionFixture::Acceptance { content } => {
-            let result = crate::config::parse_yaml::<
-                crate::config::policy_acceptance::ValidationSuite,
-            >(content.as_bytes())
-            .and_then(|suite| crate::config::policy_acceptance::validate_suite(&suite));
+            let result =
+                crate::config::policy_acceptance::parse_suite(content.as_bytes()).map(|_| ());
             Ok(outcome(result))
         }
         EvolutionFixture::Paired {

@@ -42,6 +42,16 @@ pub struct ValidationSuite {
     pub cases: Vec<ValidationCase>,
 }
 
+/// Parses and validates a bounded suite without granting trust or approval.
+pub fn parse_suite(bytes: &[u8]) -> Result<ValidationSuite> {
+    if bytes.len() > super::MAX_CONFIG_BYTES {
+        bail!("Validation suite exceeds {} bytes", super::MAX_CONFIG_BYTES);
+    }
+    let suite = super::parse_yaml(bytes)?;
+    validate_suite(&suite)?;
+    Ok(suite)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApprovalKey {
@@ -168,9 +178,8 @@ impl ProtectedInputs {
     pub fn load(root: &Path, suite_path: &Path, trust_path: &Path) -> Result<Self> {
         let suite_file = ProtectedFile::read(root, suite_path)?;
         let trust_file = ProtectedFile::read(root, trust_path)?;
-        let suite: ValidationSuite = super::parse_yaml(&suite_file.bytes)?;
+        let suite = parse_suite(&suite_file.bytes)?;
         let trust: EvolutionTrust = super::parse_yaml(&trust_file.bytes)?;
-        validate_suite(&suite)?;
         validate_trust(&trust)?;
         if Path::new(&trust.repository) != dunce::canonicalize(root)? {
             bail!("Trust root belongs to a different repository");
@@ -305,4 +314,24 @@ pub fn validate_suite(suite: &ValidationSuite) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn suite_parser_rejects_oversized_and_duplicate_input() {
+        let oversized = vec![b' '; crate::config::MAX_CONFIG_BYTES + 1];
+        assert!(
+            super::parse_suite(&oversized)
+                .unwrap_err()
+                .to_string()
+                .contains("Validation suite exceeds")
+        );
+        assert!(
+            super::parse_suite(b"schema_version: 1\nschema_version: 1\n")
+                .unwrap_err()
+                .to_string()
+                .contains("duplicate")
+        );
+    }
 }

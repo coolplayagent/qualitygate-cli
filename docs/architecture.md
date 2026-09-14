@@ -34,6 +34,13 @@ Active-policy reads authenticate again. Public storage records and transactions
 are not an authorization boundary. `policy_promotion` integration tests retain
 tampering/revocation rejection; the affected Bazel owner tests verify linkage.
 
+Acceptance fixtures and protected-input loading share the public, bounded
+`config::policy_acceptance::parse_suite` entry point. Strict YAML parsing and
+suite validation stay within configuration ownership; the generic YAML helper
+remains private. The suite-parser unit test rejects duplicate keys and oversized
+inputs, existing `evolution-suite-*` fixtures retain their goldens, and the
+application Bazel target checks that the separate owner crates link correctly.
+
 Dynamic category schemas, parameter contracts and mutation validation belong to
 `config`. Its project-rule inventory uses bounded blocking threads for file
 reads and schema parsing, then combines results in deterministic path order.
