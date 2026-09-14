@@ -4,20 +4,23 @@ mod changes;
 mod git;
 pub mod history;
 mod input_guard;
+mod limits;
 mod merge_request;
+mod worktree;
 pub use changes::{Change, compare as compare_files};
-pub use git::{read_commit, resolve_commit, run_git};
+pub use git::{read_commit, read_commit_with_options, resolve_commit, run_git};
 pub use input_guard::InputGuard;
+pub use limits::CaptureOptions;
 
 pub use crate::domain::SnapshotIdentity as Identity;
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 pub const MAX_FILE_BYTES: usize = 2 * 1024 * 1024;
-pub const MAX_SNAPSHOT_BYTES: usize = 12 * 1024 * 1024;
-pub const MAX_FILES: usize = 20_000;
+pub const MAX_SNAPSHOT_BYTES: usize = 256 * 1024 * 1024;
+pub const MAX_FILES: usize = 100_000;
 
 #[derive(Debug, Clone)]
 pub enum Selection {
@@ -62,18 +65,50 @@ pub fn digest(bytes: &[u8]) -> String {
 
 /// Includes path, executable bit and length framing, not only concatenated bytes.
 pub fn content_digest(files: &BTreeMap<String, File>) -> String {
+    content_digest_until(files, None).expect("hashing without a deadline cannot time out")
+}
+
+fn content_digest_until(
+    files: &BTreeMap<String, File>,
+    deadline: Option<std::time::Instant>,
+) -> Result<String> {
+    changes::check_deadline(deadline)?;
     let mut hash = Sha256::new();
     for (path, file) in files {
+        changes::check_deadline(deadline)?;
         hash.update((path.len() as u64).to_le_bytes());
         hash.update(path.as_bytes());
         hash.update([u8::from(file.executable)]);
         hash.update((file.bytes.len() as u64).to_le_bytes());
         hash.update(&file.bytes);
     }
-    format!("sha256:{:x}", hash.finalize())
+    changes::check_deadline(deadline)?;
+    Ok(format!("sha256:{:x}", hash.finalize()))
 }
 
 pub async fn capture(root: &Path, selection: &Selection) -> Result<Snapshot> {
+    capture_with_options(root, selection, &CaptureOptions::default()).await
+}
+
+pub async fn capture_with_options(
+    root: &Path,
+    selection: &Selection,
+    options: &CaptureOptions,
+) -> Result<Snapshot> {
+    let acquisition = limits::Acquisition::new(options)?;
+    tokio::time::timeout(
+        options.timeout,
+        capture_inner(root, selection, &acquisition),
+    )
+    .await
+    .context("Snapshot acquisition timed out")?
+}
+
+async fn capture_inner(
+    root: &Path,
+    selection: &Selection,
+    acquisition: &limits::Acquisition,
+) -> Result<Snapshot> {
     let root_text = run_git(root, &["rev-parse", "--show-toplevel"], None).await?;
     let root = PathBuf::from(std::str::from_utf8(&root_text)?.trim());
     let head = resolve_commit(&root, "HEAD").await?;
@@ -104,86 +139,46 @@ pub async fn capture(root: &Path, selection: &Selection) -> Result<Snapshot> {
     };
     let base = resolve_commit(&root, base).await?;
     let target = resolve_commit(&root, target).await?;
-    let base_files = read_commit(&root, &base).await?;
-    let files = match selection {
-        Selection::Diff { .. } | Selection::MergeRequest { .. } => {
-            read_commit(&root, &target).await?
+    let path_filter = acquisition
+        .options
+        .path_filter
+        .as_ref()
+        .map(|path| crate::paths::relative(Path::new(path)))
+        .transpose()?
+        .or(path_filter);
+    let read_target = async {
+        match selection {
+            Selection::Diff { .. } | Selection::MergeRequest { .. } => {
+                git::commit(&root, &target, acquisition).await
+            }
+            Selection::Staged => git::read_index(&root, acquisition).await,
+            _ => worktree::read(&root, acquisition).await,
         }
-        Selection::Staged => git::read_index(&root).await?,
-        _ => read_worktree(&root).await?,
     };
-    let commits = git::messages(&root, &base, &target).await?;
-    let changes = changes::compare(&base_files, &files);
-    Ok(Snapshot {
-        root,
-        identity: Identity {
-            mode: mode.into(),
-            base,
-            head: target,
-            content_digest: content_digest(&files),
-            merge_request,
-        },
-        files,
-        base_files,
-        changes,
-        path_filter,
-        commits,
-    })
-}
-
-async fn read_worktree(root: &Path) -> Result<BTreeMap<String, File>> {
-    let listing = run_git(
-        root,
-        &[
-            "ls-files",
-            "--cached",
-            "--others",
-            "--exclude-standard",
-            "-z",
-        ],
-        None,
-    )
-    .await?;
-    let names: std::collections::BTreeSet<String> = listing
-        .split(|byte| *byte == 0)
-        .filter(|entry| !entry.is_empty())
-        .map(|entry| String::from_utf8(entry.to_vec()))
-        .collect::<std::result::Result<_, _>>()?;
-    if names.len() > MAX_FILES {
-        bail!("Snapshot exceeds {MAX_FILES} files");
-    }
-    let root = root.to_path_buf();
+    let (base_files, files, commits) = tokio::try_join!(
+        git::commit(&root, &base, acquisition),
+        read_target,
+        git::messages(&root, &base, &target)
+    )?;
+    // Diffing and hashing scale with snapshot contents and must not occupy an async worker.
+    let deadline = Some(acquisition.deadline);
     tokio::task::spawn_blocking(move || {
-        let mut files = BTreeMap::new();
-        let mut total = 0;
-        for name in names {
-            let path = crate::paths::confined(&root, Path::new(&name))?;
-            let metadata = match std::fs::metadata(&path) {
-                Ok(value) => value,
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
-                Err(error) => return Err(error.into()),
-            };
-            if !metadata.is_file() {
-                bail!("Unsupported snapshot entry (including submodule): {name}");
-            }
-            if metadata.len() > MAX_FILE_BYTES as u64 {
-                bail!("File exceeds {MAX_FILE_BYTES} bytes: {name}");
-            }
-            let bytes = std::fs::read(&path)?;
-            total += bytes.len();
-            if total > MAX_SNAPSHOT_BYTES || bytes.len() > MAX_FILE_BYTES {
-                bail!("Snapshot input budget exceeded at {name}");
-            }
-            #[cfg(unix)]
-            let executable = {
-                use std::os::unix::fs::PermissionsExt;
-                metadata.permissions().mode() & 0o111 != 0
-            };
-            #[cfg(not(unix))]
-            let executable = false;
-            files.insert(name, File { bytes, executable });
-        }
-        Ok(files)
+        let changes = changes::compare_until(&base_files, &files, deadline)?;
+        Ok(Snapshot {
+            root,
+            identity: Identity {
+                mode: mode.into(),
+                base,
+                head: target,
+                content_digest: content_digest_until(&files, deadline)?,
+                merge_request,
+            },
+            files,
+            base_files,
+            changes,
+            path_filter,
+            commits,
+        })
     })
     .await?
 }

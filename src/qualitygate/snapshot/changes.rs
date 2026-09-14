@@ -1,7 +1,9 @@
 use super::File;
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use similar::{ChangeTag, TextDiff};
 use std::collections::{BTreeMap, BTreeSet};
+use std::time::Instant;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Change {
@@ -14,26 +16,70 @@ pub fn compare(
     base: &BTreeMap<String, File>,
     head: &BTreeMap<String, File>,
 ) -> BTreeMap<String, Change> {
+    compare_until(base, head, None).expect("comparison without a deadline cannot time out")
+}
+
+pub(super) fn check_deadline(deadline: Option<Instant>) -> Result<()> {
+    if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+        bail!("Snapshot acquisition timed out during change mapping or hashing");
+    }
+    Ok(())
+}
+
+pub(super) fn compare_until(
+    base: &BTreeMap<String, File>,
+    head: &BTreeMap<String, File>,
+    deadline: Option<Instant>,
+) -> Result<BTreeMap<String, Change>> {
+    check_deadline(deadline)?;
     let mut changes = BTreeMap::new();
+    // Index only removed content once. A rename storm must not scan the entire
+    // baseline for each newly named file. BTreeMap order keeps tie-breaking stable.
+    let mut removed: BTreeMap<String, Vec<(&String, &File)>> = BTreeMap::new();
+    for (path, file) in base.iter().filter(|(path, _)| !head.contains_key(*path)) {
+        check_deadline(deadline)?;
+        removed
+            .entry(super::digest(&file.bytes))
+            .or_default()
+            .push((path, file));
+    }
+    let mut renamed = BTreeSet::new();
     for (path, file) in head {
+        check_deadline(deadline)?;
         let old = base.get(path);
         if old.is_some_and(|old| old.bytes == file.bytes && old.executable == file.executable) {
             continue;
         }
         let moved = if old.is_none() {
-            base.iter()
-                .find(|(name, old)| !head.contains_key(*name) && old.bytes == file.bytes)
+            removed
+                .get(&super::digest(&file.bytes))
+                .and_then(|entries| {
+                    entries
+                        .iter()
+                        .copied()
+                        .find(|(_, old)| old.bytes == file.bytes)
+                })
         } else {
             None
         };
+        if let Some((path, _)) = moved {
+            renamed.insert(path);
+        }
         let old_bytes = old.map(|file| file.bytes.as_slice()).unwrap_or_default();
         let old_text = String::from_utf8_lossy(old_bytes);
         let text = String::from_utf8_lossy(&file.bytes);
         let added_lines = if moved.is_some() {
             BTreeSet::new()
         } else {
-            TextDiff::from_lines(old_text.as_ref(), text.as_ref())
-                .iter_all_changes()
+            let mut config = TextDiff::configure();
+            if let Some(deadline) = deadline {
+                config.deadline(deadline);
+            }
+            let diff = config.diff_lines(old_text.as_ref(), text.as_ref());
+            // The diff library may return an approximation when its deadline
+            // expires. Such partial mapping cannot become successful evidence.
+            check_deadline(deadline)?;
+            diff.iter_all_changes()
                 .filter(|change| change.tag() == ChangeTag::Insert)
                 .filter_map(|change| change.new_index().map(|index| index + 1))
                 .collect()
@@ -57,10 +103,8 @@ pub fn compare(
         );
     }
     for path in base.keys().filter(|path| !head.contains_key(*path)) {
-        if changes
-            .values()
-            .any(|change| change.old_path.as_ref() == Some(path))
-        {
+        check_deadline(deadline)?;
+        if renamed.contains(path) {
             continue;
         }
         changes.insert(
@@ -72,5 +116,6 @@ pub fn compare(
             },
         );
     }
-    changes
+    check_deadline(deadline)?;
+    Ok(changes)
 }

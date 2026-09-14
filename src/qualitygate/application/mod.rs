@@ -35,6 +35,7 @@ pub struct CheckOptions {
     pub root: PathBuf,
     pub config: String,
     pub selection: Selection,
+    pub snapshot_options: snapshot::CaptureOptions,
     pub profile: String,
     pub task: Option<String>,
     pub policy_ref: Option<String>,
@@ -44,7 +45,14 @@ pub struct CheckOptions {
 }
 
 pub async fn check(options: CheckOptions) -> Result<Report> {
-    let snapshot = Arc::new(snapshot::capture(&options.root, &options.selection).await?);
+    let snapshot = Arc::new(
+        snapshot::capture_with_options(
+            &options.root,
+            &options.selection,
+            &options.snapshot_options,
+        )
+        .await?,
+    );
     let mut invalid = Vec::new();
     let policy::Loaded {
         catalog,
@@ -244,7 +252,13 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
             }
         }
     }
-    match snapshot::capture(&options.root, &options.selection).await {
+    match snapshot::capture_with_options(
+        &options.root,
+        &options.selection,
+        &options.snapshot_options,
+    )
+    .await
+    {
         Ok(current)
             if current.identity.content_digest != snapshot.identity.content_digest
                 || current.identity.base != snapshot.identity.base
@@ -339,6 +353,12 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
         }
     }
     argv.extend([
+        "--snapshot-max-mib".into(),
+        (options.snapshot_options.max_bytes / (1024 * 1024)).to_string(),
+        "--snapshot-jobs".into(),
+        options.snapshot_options.jobs.to_string(),
+        "--snapshot-timeout-secs".into(),
+        options.snapshot_options.timeout.as_secs().to_string(),
         "--config".into(),
         options.config.clone(),
         "--profile".into(),
@@ -346,6 +366,9 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
         "--format".into(),
         "json".into(),
     ]);
+    if let Some(path) = &options.snapshot_options.path_filter {
+        argv.extend(["--path".into(), path.clone()]);
+    }
     if let Some(task) = &options.task {
         argv.extend(["--task".into(), task.clone()]);
     }

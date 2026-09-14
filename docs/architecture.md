@@ -34,6 +34,14 @@ Snapshot history is an explicit cross-owner data contract for declaration
 adapters; its consumer validates ancestry, tree digests, and comparison
 identity before producing evidence.
 
+Snapshot acquisition owns caller budgets and a semaphore shared by base/target
+Git batches and worktree content reads. Object preflight and batch framing stay
+in `snapshot`; process lifetime, stream limits and cancellation remain in
+`runner`. Filesystem reads, parsing, change mapping and hashing use blocking
+workers, with bounded task queues. The CLI passes budget/path options through
+the application to snapshot acquisition and revalidation. No owner direction
+changes; see [large repository acquisition](large-repositories.md).
+
 Selfcheck fixture/golden loading belongs to `config`; compiled JSON assets are
 declared as Bazel compile data. `application` runs bounded production evaluator
 and native temporary-repository scenarios on a blocking worker. Pure golden

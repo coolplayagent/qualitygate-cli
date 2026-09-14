@@ -97,7 +97,7 @@ fn read_metadata(workspace: &Path, target: &str) -> Result<Vec<(String, Vec<u8>)
             .read_to_end(&mut bytes)?;
         total += bytes.len();
         if bytes.len() > snapshot::MAX_FILE_BYTES
-            || total > snapshot::MAX_SNAPSHOT_BYTES
+            || total > 12 * 1024 * 1024
             || metadata.len() >= 4096
         {
             bail!("Installed Python metadata exceeds size budget");

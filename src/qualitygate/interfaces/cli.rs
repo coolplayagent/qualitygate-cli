@@ -109,7 +109,8 @@ struct CheckArgs {
     staged: bool,
     #[arg(long, group = "selection")]
     worktree: bool,
-    #[arg(long, group = "selection")]
+    /// Restrict feedback to a file or directory within the selected snapshot.
+    #[arg(long)]
     path: Option<String>,
     #[arg(long, group = "selection")]
     mr: Option<String>,
@@ -133,6 +134,15 @@ struct CheckArgs {
     evidence_dir: Option<PathBuf>,
     #[arg(long, value_enum)]
     severity: Option<Severity>,
+    /// Maximum total content bytes per snapshot, in MiB (1..=1024).
+    #[arg(long, default_value_t = 256, value_parser = clap::value_parser!(u32).range(1..=1024))]
+    snapshot_max_mib: u32,
+    /// Shared maximum concurrent snapshot content readers (1..=16).
+    #[arg(long, default_value_t = 4, value_parser = clap::value_parser!(u32).range(1..=16))]
+    snapshot_jobs: u32,
+    /// Deadline for each complete snapshot acquisition (1..=3600 seconds).
+    #[arg(long, default_value_t = 120, value_parser = clap::value_parser!(u32).range(1..=3600))]
+    snapshot_timeout_secs: u32,
 }
 
 impl Cli {
@@ -213,9 +223,13 @@ impl Cli {
                     }
                 } else if args.staged {
                     Selection::Staged
-                } else if let Some(path) = args.path {
+                } else if args.worktree {
+                    Selection::Worktree {
+                        base: args.base.unwrap_or_else(|| "HEAD".into()),
+                    }
+                } else if let Some(path) = &args.path {
                     Selection::Path {
-                        path,
+                        path: path.clone(),
                         base: args.base.unwrap_or_else(|| "HEAD".into()),
                     }
                 } else {
@@ -223,10 +237,21 @@ impl Cli {
                         base: args.base.unwrap_or_else(|| "HEAD".into()),
                     }
                 };
+                let path_filter = if matches!(selection, Selection::Path { .. }) {
+                    None
+                } else {
+                    args.path
+                };
                 let options = CheckOptions {
                     root,
                     config: self.config,
                     selection,
+                    snapshot_options: crate::snapshot::CaptureOptions {
+                        max_bytes: args.snapshot_max_mib as usize * 1024 * 1024,
+                        jobs: args.snapshot_jobs as usize,
+                        timeout: std::time::Duration::from_secs(args.snapshot_timeout_secs.into()),
+                        path_filter,
+                    },
                     profile: args.profile,
                     task: args.task,
                     policy_ref: args.policy_ref,

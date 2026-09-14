@@ -65,7 +65,7 @@ History is acquired once per check invocation when a selected rule uses this bin
 | Base/head ancestor union | 1,000 commits |
 | Unique historical file bytes and commit/trailer text | 64 MiB |
 | Total historical tree entries | 200,000 |
-| Historical tree | Existing 20,000-file, 2 MiB-per-file and 12 MiB snapshot limits |
+| Historical tree | 100,000 files, 2 MiB per file and default 256 MiB snapshot limit; history totals below remain independently bounded |
 | Test entities | 50,000 per state and 200,000 across analyzed states |
 | Retained declaration metadata | 8 MiB |
 | Time | Cooperative 60-second acquisition and analysis budgets; existing Git, parser and structure-collection deadlines also apply |

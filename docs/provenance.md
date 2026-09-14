@@ -77,7 +77,7 @@ Participation is relative to the comparison base. The CLI does not infer histori
 | Shared external inputs | 8 MiB total including trust store and manual/provenance records; at most 128 selected record files |
 | Runs and steps | 256 each |
 | File changes | 8,192 across the ledger |
-| Replayed snapshot | 20,000 files, 2 MiB per file, 12 MiB total |
+| Replayed snapshot | 100,000 files, 2 MiB per file, 256 MiB total |
 | Tracked test entities | 50,000 |
 | Time | Cooperative 30-second load, signature-verification and replay budgets, plus bounded syntax parsing |
 

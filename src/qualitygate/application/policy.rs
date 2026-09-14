@@ -13,7 +13,7 @@ pub(super) struct Loaded {
 }
 
 pub(super) async fn load(
-    snapshot: &Snapshot,
+    snapshot: &Arc<Snapshot>,
     options: &CheckOptions,
     invalid: &mut Vec<String>,
 ) -> Result<Loaded> {
@@ -23,15 +23,19 @@ pub(super) async fn load(
         None
     };
     let trusted = if let Some(commit) = &resolved_commit {
-        Some(snapshot::read_commit(&snapshot.root, commit).await?)
+        Some(
+            snapshot::read_commit_with_options(&snapshot.root, commit, &options.snapshot_options)
+                .await?,
+        )
     } else {
         None
     };
-    let files = snapshot.files.clone();
+    let candidate = Arc::clone(snapshot);
     let options = options.clone();
     let (loaded, errors) = tokio::task::spawn_blocking(move || -> Result<_> {
+        let files = &candidate.files;
         let mut invalid = Vec::new();
-        let selected = trusted.as_ref().unwrap_or(&files);
+        let selected = trusted.as_ref().unwrap_or(files);
         let file = selected
             .get(&options.config)
             .context("Selected policy snapshot has no qualitygate configuration; run init and stage/commit it as appropriate")?;

@@ -16,6 +16,20 @@ Do not substitute one selector for another. Use `--path` only for explicitly
 scoped feedback, and do not describe it as full delivery validation. Keep
 `--profile quick` and `--profile full` distinct for the same reason.
 
+`--path` can be combined with `--staged`, `--worktree`, or `--diff`; it filters
+feedback while retaining the complete snapshot for policy and build inputs.
+For large repositories, the default acquisition budget is 256 MiB per tree,
+100,000 files, 2 MiB per file, four concurrent content readers and 120 seconds.
+Git content is size-checked and acquired in batches of at most 4 MiB and 1,024
+objects; the runner's 16 MiB per-stream limit remains unchanged. Caller controls
+are `--snapshot-max-mib` (1–1024), `--snapshot-jobs` (1–16) and
+`--snapshot-timeout-secs` (1–3600). Choose them for available memory and retain
+budget errors as incomplete execution. Recheck commands preserve these options.
+
+```bash
+qualitygate check --root "$REPOSITORY_ROOT" --staged --path src --profile quick --snapshot-jobs 4
+```
+
 The configuration, task, and custom rules come from the selected snapshot
 unless the caller supplies `--policy-ref`. A policy reference resolves to a
 commit, but it is not proof of approval. Never guess a protected reference or

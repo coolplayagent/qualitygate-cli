@@ -41,6 +41,35 @@ The full command's JSON is the current corpus evidence. Workflow configuration
 alone does not establish that remote OS runs passed. Live producers, actual
 human review and production deployments remain outside synthetic fixtures.
 
+## Issue #2 large-repository acceptance
+
+| Requirement | Authoritative evidence |
+|---|---|
+| Small diff with a tree larger than the old 16 MiB capture limit works for staged, worktree, diff and path | `tests/large_repository.rs::eighteen_thousand_files_with_small_diff_support_all_selectors_and_bounded_parallelism`: 18,000 unique blobs, over 32 MiB, one changed file; complete violation reports rather than acquisition failures |
+| Bound parallel content readers and preserve results | Shared acquisition semaphore in `snapshot/limits.rs`, bounded task queues in `git.rs`/`worktree.rs`; the large-repository fixture compares serial/four-reader digests, line maps and messages and enforces 60-second capture / 120-second quick thresholds |
+| Preflight budgets and strict protocol validation | `snapshot/git_tests.rs`: batch bytes/count, missing/mismatched objects, malformed sizes/framing and file-count bound; `snapshot_tests.rs::oversized_committed_objects_fail_preflight_and_worktree_limits_are_bounded` |
+| Caller budgets, timeouts and incomplete execution | `snapshot_tests.rs::acquisition_budgets_timeout_and_filtered_scope_remain_explicit`, `expired_mapping_and_hashing_deadlines_never_return_partial_evidence` and `git_and_worktree_readers_share_the_acquisition_limit_and_release_on_cancellation`; large-repository CLI rejects a 16 MiB total budget with exit 2; existing runner tests exercise process-tree timeout/cancellation |
+| Composable path scope and reproducible repair | `tests/large_repository.rs::path_combines_with_selectors_preserves_bytes_and_recheck_options`; existing policy and execution tests continue to require full-tree policy/snapshot consistency |
+| Large rename sets avoid quadratic baseline scans | Digest-indexed removed-file lookup in `snapshot/changes.rs`; `tests/benchmarks.rs::rename_storm_preserves_lines_and_deterministic_old_paths` |
+
+See [the acquisition and performance contract](large-repositories.md). Local
+measurements cover the controlled Linux fixture. Native Windows/macOS and the
+reporter's actual repository require their own execution evidence.
+
+The 2026-09-14 Linux worktree verification passed format, all-target/all-feature
+check, Clippy with warnings denied, and 289 stable tests. The nine external
+producer scenarios remain separate ignored tests with dedicated CI jobs.
+LLVM line coverage passed at **95.51%** (13,485 lines, 605 missed).
+All **249** full selfcheck fixtures agreed with their goldens. The architecture
+report covered **102** current source digests and **820** file/line dependency
+references with no violations. Snapshot/application/interface Bazel test
+targets also passed. Separate nightly checks passed **13** pure-domain tests
+under Miri and **167** native unit tests under ASan with leak detection, using
+Rust 1.100.0-nightly (4b6d04e70, 2026-09-13). Logs are retained locally under
+`target/issue2-*.log`; the selfcheck report is
+`target/issue2-selfcheck-final.json`. These are worktree observations, not a
+published release or a claim of native Windows/macOS execution.
+
 ## Pilot and rollout (§9.2–§10)
 
 `docs/pilot.md` defines the immutable case record, baseline attribution,

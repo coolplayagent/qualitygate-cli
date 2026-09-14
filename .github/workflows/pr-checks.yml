@@ -42,7 +42,7 @@ jobs:
           - gate: architecture
             command: cargo test --locked --test quality architecture --all-features
           - gate: benchmark
-            command: cargo test --locked --test benchmarks --all-features
+            command: cargo test --locked --test benchmarks --test large_repository --all-features -- --nocapture
           - gate: build
             command: cargo build --locked --all-targets --all-features
     steps:
