@@ -9,6 +9,16 @@ pub(super) fn validate(config: &Config) -> Result<()> {
 
 pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
     super::categories::validate(config)?;
+    if config.rule_lifecycle.len() > 512 {
+        bail!("Rule lifecycle inventory exceeds 512 records");
+    }
+    for (id, lifecycle) in &config.rule_lifecycle {
+        validate_id(id)?;
+        lifecycle.validate().map_err(anyhow::Error::msg)?;
+        if !config.rules.contains_key(id) {
+            bail!("Rule lifecycle requires an explicit rule setting: {id}");
+        }
+    }
     if config.schema_version != 1 {
         bail!(
             "Unsupported configuration schema_version: {}",

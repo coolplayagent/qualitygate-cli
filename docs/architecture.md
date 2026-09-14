@@ -28,6 +28,27 @@ reads and schema parsing, then combines results in deterministic path order.
 The interfaces layer invokes discovery and mutations through `spawn_blocking`.
 No owner dependency direction changes. See [rule management](rule-management.md).
 
+Category memberships and evidence/candidate/version/transition records belong
+to `domain`. `config::policy_store` owns confined content-addressed objects,
+bounded reads and atomic archive-index publication; `policy_candidates` validates
+and archives policy inputs and mutations. Application code acquires the chosen
+Git parent and passes borrowed bytes for only policy-owned files. Context reads
+parse the selected immutable Git bytes on a blocking worker without materializing
+the repository. CLI parsing
+delegates these operations without filesystem access. No dependency direction
+changes; see the [policy evolution contract](policy-evolution.md).
+
+Paired scheduling and signed activation/rollback orchestration belong to
+`application`; Ed25519/DSSE authentication stays in `adapters`. Configuration
+owns strict external acceptance schemas, immutable publication, lifecycle
+selection and bounded history reads. Pure oracle decisions and longitudinal
+measurements belong to `domain`. The scheduler shares one immutable snapshot
+between baseline and candidate, bounds live cases and global execution permits,
+and archives completed pairs incrementally. `runner` owns executable identity
+hashing; `env` owns inherited-environment enumeration. All blocking reads and
+serialization run outside asynchronous orchestration. See the
+[validation boundary](policy-validation.md).
+
 `config` calls `env` only to resolve deployment-owned Skill rule assets. Project policy files remain owned by the selected configuration snapshot and confined through `paths`; this keeps runtime rule discovery separate from repository policy loading.
 
 Every top-level owner has an explicit directory below src/qualitygate:

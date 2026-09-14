@@ -35,6 +35,11 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Evidence retention, candidate revisions and immutable policy history.
+    Policy {
+        #[command(subcommand)]
+        command: super::policy::Policy,
+    },
     #[command(hide = true)]
     SelfcheckProbe {
         #[arg(value_parser = ["success", "failure", "timeout", "overflow"])]
@@ -69,6 +74,27 @@ enum Command {
 
 #[derive(Debug, Subcommand)]
 enum Rules {
+    #[command(alias = "evidence")]
+    History {
+        rule_id: String,
+        #[arg(long, default_value_t = 0)]
+        offset: usize,
+        #[arg(long, default_value_t = 32, value_parser = clap::value_parser!(u16).range(1..=256))]
+        limit: u16,
+    },
+    /// Prepare a fresh candidate for protected revalidation; approval is still required.
+    Revalidate(super::rule_lifecycle::Change),
+    Demote(super::rule_lifecycle::Change),
+    Deprecate(super::rule_lifecycle::Change),
+    Retire(super::rule_lifecycle::Change),
+    Revoke(super::rule_lifecycle::Change),
+    /// Load selected categories together with all mandatory policy constraints.
+    Context {
+        #[arg(long)]
+        category: Option<String>,
+        #[arg(long)]
+        policy_ref: Option<String>,
+    },
     /// Inventory all available rule packages, without enabling them.
     List {
         #[arg(long)]
@@ -88,6 +114,11 @@ enum Rules {
         rule_id: String,
     },
     Assign {
+        rule_id: String,
+        #[arg(long)]
+        category: String,
+    },
+    Unassign {
         rule_id: String,
         #[arg(long)]
         category: String,
@@ -129,6 +160,7 @@ enum Rules {
 
 #[derive(Debug, Subcommand)]
 enum Categories {
+    List,
     Create {
         name: String,
         #[arg(long, default_value = "")]
@@ -233,22 +265,15 @@ impl Cli {
                 ))
             }
             Command::Config { .. } => {
-                let path = self.config.clone();
-                let (config, catalog) = tokio::task::spawn_blocking(move || -> Result<_> {
-                    let config = config::read(&root, path.as_ref())?;
-                    let catalog = config::catalog::read(&root, &config)?;
-                    Ok((catalog.resolve(&config)?, catalog))
-                })
-                .await??;
-                Ok((
-                    super::render::metadata(
-                        &serde_json::json!({"schema_version":1,"source": self.config, "config":config,"catalog":catalog}),
-                        self.format,
-                    )?,
-                    0,
-                ))
+                let value =
+                    application::policy_active::configuration(root, self.config.clone()).await?;
+                Ok((super::render::metadata(&value, self.format)?, 0))
             }
             Command::Rules { command } => run_rules(root, self.config, command, self.format).await,
+            Command::Policy { command } => {
+                let (value, code) = super::policy::run(root, self.config, command).await?;
+                Ok((super::render::metadata(&value, self.format)?, code))
+            }
             Command::Check(args) => {
                 let selection = if let Some(url) = args.mr {
                     Selection::MergeRequest {
@@ -321,8 +346,41 @@ async fn run_rules(
     command: Rules,
     format: Format,
 ) -> Result<(String, u8)> {
-    let (value, code) = tokio::task::spawn_blocking(move || -> Result<(serde_json::Value, u8)> {
+    use crate::domain::rule_lifecycle::RuleState;
+    let lifecycle = match &command {
+        Rules::Revalidate(_) => Some(RuleState::Revalidate),
+        Rules::Demote(_) => Some(RuleState::Demoted),
+        Rules::Deprecate(_) => Some(RuleState::Deprecated),
+        Rules::Retire(_) => Some(RuleState::Retired),
+        Rules::Revoke(_) => Some(RuleState::Revoked),
+        _ => None,
+    };
+    if let Some(state) = lifecycle {
+        let (Rules::Revalidate(change)
+        | Rules::Demote(change)
+        | Rules::Deprecate(change)
+        | Rules::Retire(change)
+        | Rules::Revoke(change)) = command
+        else {
+            unreachable!("selected lifecycle operation")
+        };
+        let result = super::rule_lifecycle::run(root, change, state).await?;
+        return Ok((super::render::metadata(&result, format)?, 0));
+    }
+    if let Rules::Context {
+        category,
+        policy_ref,
+    } = command
+    {
+        let value = application::rule_context::read(root, path, category, policy_ref).await?;
+        return Ok((super::render::metadata(&value, format)?, 0));
+    }
+    let active = application::policy_active::load(root.clone()).await?;
+    let (mut value, code) = tokio::task::spawn_blocking(move || -> Result<(serde_json::Value, u8)> {
         match command {
+            Rules::History { rule_id, offset, limit } => Ok((config::policy_effectiveness::rule_history(&root, &rule_id, offset, limit.into())?, 0)),
+            Rules::Revalidate(_) | Rules::Demote(_) | Rules::Deprecate(_) | Rules::Retire(_) | Rules::Revoke(_) => unreachable!("lifecycle transitions are dispatched above"),
+            Rules::Context { .. } => unreachable!("context loads its selected policy asynchronously"),
             Rules::List { language, source, category } => Ok((config::rule_query::list_filtered(&root, &path, language.as_deref(), &source, category.as_deref())?, 0)),
             Rules::Enable { rule_id } => {
                 let mut result = config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Enable(rule_id.clone()))?;
@@ -332,11 +390,13 @@ async fn run_rules(
             Rules::Disable { rule_id } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Disable(rule_id))?, 0)),
             Rules::Describe { rule_id } => Ok((config::rule_query::describe(&root, &path, &rule_id)?, 0)),
             Rules::Assign { rule_id, category } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Assign { id: rule_id, category })?, 0)),
+            Rules::Unassign { rule_id, category } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Unassign { id: rule_id, category })?, 0)),
             Rules::Configure { rule_id, parameters, severity, required } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Configure { id: rule_id, parameters, severity, required })?, 0)),
-            Rules::Categories { command: None } => Ok((config::rule_query::categories(&root, &path)?, 0)),
+            Rules::Categories { command: None | Some(Categories::List) } => Ok((config::rule_query::categories(&root, &path)?, 0)),
             Rules::Categories { command: Some(command) } => {
                 use config::rule_management::Mutation;
                 let mutation = match command {
+                    Categories::List => unreachable!("category list is read-only"),
                     Categories::Create { name, description } => Mutation::Create { name, description },
                     Categories::Rename { name, new_name } => Mutation::Rename { name, new_name },
                     Categories::Delete { name, force } => Mutation::Delete { name, force },
@@ -353,5 +413,8 @@ async fn run_rules(
             Rules::Generate { input } => Ok((config::rule_authoring::generate(&root, &input)?, 0)),
         }
     }).await??;
+    if active.is_some() && value.get("review_trust").is_some() {
+        value["review_trust"] = serde_json::json!("signed_active_policy");
+    }
     Ok((super::render::metadata(&value, format)?, code))
 }

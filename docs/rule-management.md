@@ -5,9 +5,11 @@ categories and validated candidate configuration changes. Every command supports
 global `--root`, `--config` and `--format json|table|markdown` options.
 
 ```bash
-qualitygate rules categories --format json
+qualitygate rules categories list --format json
 qualitygate rules categories create migration --description "API migration rules" --format json
 qualitygate rules assign import-boundary --category migration --format json
+qualitygate rules assign import-boundary --category security --format json
+qualitygate rules context --category migration --policy-ref HEAD --format json
 qualitygate rules list --category migration --language rust --source builtin --format json
 qualitygate rules describe import-boundary --format json
 qualitygate rules configure import-boundary --param 'forbidden_imports.rust=["^crate::interfaces"]' --format json
@@ -35,8 +37,11 @@ misleading empty inventory. Empty existing categories return an empty list.
 
 Without a `categories` field, a policy inherits the starter registry. Category
 creation, rename and deletion materialize the complete registry in
-`qualitygate.yaml`. `rule_categories` maps rule IDs to explicit single-category
-assignments, including unselected rules. The optional category `origin` retains
+`qualitygate.yaml`. `rule_categories` maps rule IDs to one category name or a
+nonempty array of distinct category names, including unselected rules. Repeated
+`rules assign` calls add memberships; `rules unassign <id> --category <name>`
+removes one explicit membership. A single name retains its compatible scalar
+encoding. Each rule may belong to up to 256 categories. The optional category `origin` retains
 the starter identity across renames, so implicit assignments follow the rename
 and `custom` remains false. Newly created categories have no origin and report
 `custom: true`. Names use the existing 1–128 byte rule-ID alphabet: ASCII
@@ -46,11 +51,29 @@ assignments, within the existing 1 MiB policy limit.
 
 Rename updates explicit assignments and the registry in one transaction.
 Delete refuses explicit assignments unless `--force` is supplied; forced
-deletion removes those assignments so rules return to their origin category's
+deletion removes only memberships in the deleted category. Other memberships
+remain. Removing the last explicit membership restores the origin category's
 current name. Starter categories are also mutable. When their origin has been
 deleted, affected rules have `category: null` until explicitly reassigned.
 Deleted starter categories are not silently recreated; creating a new custom
 category with the same name does not reclaim that origin.
+
+Every list returns `mandatory` rule rows and `mandatory_checks` separately,
+without applying category, source or language filters to those fields. They
+contain enabled required rules and required commands from the selected policy.
+`policy_digest` binds the exact policy bytes. The table/Markdown renderers show
+this baseline too. `rules context` returns `selected` and `mandatory` views;
+`--policy-ref <Git ref>` freezes the caller-selected policy and ignores local
+configuration changes. Without a ref the view is explicitly `local_candidate`.
+Counts charge every explicit membership once; the legacy `category` field
+contains the first membership while `categories` contains all memberships.
+
+The [policy evolution contract](policy-evolution.md) describes evidence-linked
+candidate revisions. [Protected validation](policy-validation.md) documents
+independent approval, promotion, active inheritance, rollback and lifecycle
+operations. After archive creation, semantic edits require a candidate ID;
+category operations remain navigation-only. Active discovery includes the
+signed mandatory baseline even when local YAML disables those rules.
 
 Read-only discovery works before `init`, including `qualitygate/rules` when
 present. An explicit `custom_rules` directory retains precedence. Mutations

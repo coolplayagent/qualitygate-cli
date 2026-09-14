@@ -37,7 +37,9 @@ pub struct Config {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub categories: Option<BTreeMap<String, super::categories::Category>>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub rule_categories: BTreeMap<String, String>,
+    pub rule_categories: BTreeMap<String, crate::domain::CategoryMembership>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub rule_lifecycle: BTreeMap<String, crate::domain::rule_lifecycle::RuleLifecycle>,
     #[serde(default)]
     pub checks: Vec<CommandCheck>,
     #[serde(default)]
@@ -67,6 +69,7 @@ impl Default for Config {
             rules: BTreeMap::new(),
             categories: None,
             rule_categories: BTreeMap::new(),
+            rule_lifecycle: BTreeMap::new(),
             checks: Vec::new(),
             profiles: BTreeMap::new(),
             custom_rules: None,

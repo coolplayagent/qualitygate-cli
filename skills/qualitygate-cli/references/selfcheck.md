@@ -6,6 +6,7 @@ Use the resolved Qualitygate binary and the active Skill rule asset directory:
 "$QUALITYGATE_BIN" selfcheck --format json
 "$QUALITYGATE_BIN" selfcheck --fixture minimal --format json
 "$QUALITYGATE_BIN" selfcheck --rule commit-message --format json
+"$QUALITYGATE_BIN" selfcheck --rule policy-evolution --format json
 "$QUALITYGATE_BIN" selfcheck --fixture stress --rule import-boundary --format json
 ```
 
@@ -20,6 +21,17 @@ The corpus covers minimal, typical and stress shapes. Each built-in rule has
 compliant/violating pairs, with additional parser, policy, manual evidence,
 compatibility, snapshot and runner boundaries. Full selfcheck runs sequentially
 with bounded inputs and execution. A filter provides partial feedback only.
+
+The 334-case corpus includes 85 policy-evolution regressions: paired independent
+oracles, category context, protected suite limits, synthetic approval/rollback
+signatures, native immutable archives/lifecycle, and nine real paired Git
+workflows. This filter is a fixture group, not a selectable rule. Fixed Git
+probes and the CLI's fixed timeout child run only in disposable directories;
+the timeout child is launched through a quoted, fixed Git shell alias. Fixture
+signatures never authorize policy in the caller's repository. Goldens pin actual
+timeout/missing-tool statuses, preserve pass/block/incomplete, and require
+promotion to use retained artifacts after deleting the original run directory.
+An evaluator mutation integration test must break the unchanged promotion golden.
 
 | Exit | Interpretation |
 |---|---|

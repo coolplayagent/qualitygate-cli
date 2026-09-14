@@ -43,6 +43,15 @@ pub fn list_filtered(
         bail!("Unknown rule source: {source}");
     }
     let inventory = Inventory::load(root, path, source != "builtin")?;
+    filtered(&inventory, language, source, category)
+}
+
+fn filtered(
+    inventory: &Inventory,
+    language: Option<&str>,
+    source: &str,
+    category: Option<&str>,
+) -> Result<Value> {
     let policy = inventory.policy.clone().unwrap_or_default();
     let categories = super::categories::registry(&policy);
     if let Some(name) = category
@@ -58,8 +67,8 @@ pub fn list_filtered(
         .filter(|_| source != "project")
         .chain(inventory.projects.iter().filter(|_| source != "builtin"));
     for (id, entry) in entries {
-        let assignment = super::categories::assigned(&policy, &categories, id, entry);
-        if category.is_some_and(|name| assignment != Some(name)) {
+        let assignments = super::categories::assignments(&policy, &categories, id, entry);
+        if category.is_some_and(|name| !assignments.contains(&name)) {
             continue;
         }
         let scope = languages(entry);
@@ -71,9 +80,69 @@ pub fn list_filtered(
         rows.push(inventory.row(id, entry, &categories));
     }
     Ok(
-        json!({"schema_version":1,"rules":rows,"language":language,"source":source,"category":category,
+        json!({"schema_version":1,"rules":rows,"mandatory":inventory.mandatory(&categories),
+        "mandatory_checks":inventory.mandatory_checks(),"policy_digest":inventory.policy_digest,
+        "language":language,"source":source,"category":category,
         "project_rules_directory":inventory.directory,"source_reviews":inventory.reviews,"review_trust":"local_candidate"}),
     )
+}
+
+/// Context always carries the entire mandatory baseline, independent of filters.
+pub fn context(root: &Path, path: &str, category: Option<&str>) -> Result<Value> {
+    context_rows(list_filtered(root, path, None, "all", category)?)
+}
+
+/// Read frozen Git bytes directly, without materializing an unrelated source tree.
+pub fn context_from_files<'a>(
+    path: &str,
+    files: impl IntoIterator<Item = (&'a str, &'a [u8])>,
+    category: Option<&str>,
+) -> Result<Value> {
+    use anyhow::Context;
+    use sha2::{Digest, Sha256};
+    let files: std::collections::BTreeMap<_, _> = files.into_iter().collect();
+    let bytes = files
+        .get(path)
+        .context("Selected policy snapshot has no configuration")?;
+    let config = super::parse(bytes)?;
+    let all = Config {
+        rulesets: RULESETS.iter().map(|name| (*name).into()).collect(),
+        ..Config::default()
+    };
+    let builtins = Catalog::load(&all, std::iter::empty())?;
+    let directory = config
+        .custom_rules
+        .clone()
+        .unwrap_or_else(|| PROJECT_RULES_DIR.into());
+    let project_config = Config {
+        custom_rules: Some(directory.clone()),
+        ..Config::default()
+    };
+    let has_projects = files.keys().any(|name| {
+        name.starts_with(&format!("{directory}/"))
+            && (name.ends_with(".yaml") || name.ends_with(".yml"))
+    });
+    let projects = if has_projects || config.custom_rules.is_some() {
+        super::project_inventory::parse(
+            &project_config,
+            files.iter().map(|(name, bytes)| (*name, *bytes)),
+            super::parallel::jobs(),
+        )?
+    } else {
+        Default::default()
+    };
+    let mut inventory = Inventory::from_catalogs(Some(config), builtins, projects, directory)?;
+    inventory.policy_digest = Some(format!("sha256:{:x}", Sha256::digest(bytes)));
+    context_rows(filtered(&inventory, None, "all", category)?)
+}
+
+fn context_rows(mut result: Value) -> Result<Value> {
+    result["selected"] = result["rules"].take();
+    result
+        .as_object_mut()
+        .expect("inventory object")
+        .remove("rules");
+    Ok(result)
 }
 
 pub fn categories(root: &Path, path: &str) -> Result<Value> {
@@ -86,7 +155,7 @@ pub fn categories(root: &Path, path: &str) -> Result<Value> {
     entries.extend(inventory.projects.clone());
     entries.extend(inventory.active.entries.clone());
     for (id, entry) in &entries {
-        if let Some(name) = super::categories::assigned(&policy, &categories, id, entry) {
+        for name in super::categories::assignments(&policy, &categories, id, entry) {
             let count = counts.entry(name).or_default();
             count.0 += 1;
             count.1 += usize::from(inventory.enabled(id, entry));
@@ -121,7 +190,7 @@ pub fn describe(root: &Path, path: &str, id: &str) -> Result<Value> {
     Ok(
         json!({"schema_version":1,"id":id,"version":definition["version"],
         "description": if builtin.is_null() { &custom["fix"] } else { &builtin["description"] },
-        "category":row["category"],"implementation":builtin["implementation"].as_str().unwrap_or("project-dsl"),
+        "category":row["category"],"categories":row["categories"],"implementation":builtin["implementation"].as_str().unwrap_or("project-dsl"),
         "language":row["language"],"requires_capabilities":definition["requires_capabilities"],
         "defaults":if builtin.is_null() { json!({"enabled":true,"severity":custom["severity"],"required":custom["required"]}) } else { builtin["defaults"].clone() },
         "enabled":row["enabled"],"configuration":row["configuration"],"parameters":parameters,
@@ -138,14 +207,34 @@ pub(super) struct Inventory {
     effective: Option<Config>,
     directory: String,
     reviews: serde_json::Value,
+    policy_digest: Option<String>,
 }
 
 impl Inventory {
     fn load(root: &Path, path: &str, discover_projects: bool) -> Result<Self> {
+        if let Some(mut active) = super::policy_active::load(root)? {
+            super::policy_active::navigation(root, path, &mut active.config)?;
+            let directory = active
+                .config
+                .custom_rules
+                .clone()
+                .unwrap_or_else(|| PROJECT_RULES_DIR.into());
+            let mut inventory = Self::from_catalogs(
+                Some(active.config),
+                active.frozen.builtins,
+                active.frozen.projects,
+                directory,
+            )?;
+            inventory.policy_digest = Some(active.reference);
+            return Ok(inventory);
+        }
         let policy_path = crate::paths::confined(root, path.as_ref())?;
+        let mut policy_digest = None;
         let policy = match std::fs::metadata(policy_path) {
             Ok(_) => {
                 let bytes = super::rule_authoring::read_file(root, path)?;
+                use sha2::{Digest, Sha256};
+                policy_digest = Some(format!("sha256:{:x}", Sha256::digest(&bytes)));
                 let config: Config = super::parse_yaml(&bytes)?;
                 super::validation::layout(&config, false)?;
                 Some(config)
@@ -157,7 +246,9 @@ impl Inventory {
             }
             Err(error) => return Err(error.into()),
         };
-        Self::for_policy(root, policy, discover_projects)
+        let mut inventory = Self::for_policy(root, policy, discover_projects)?;
+        inventory.policy_digest = policy_digest;
+        Ok(inventory)
     }
 
     pub fn for_policy(
@@ -188,6 +279,15 @@ impl Inventory {
                 Err(error) => return Err(error.into()),
             }
         }
+        Self::from_catalogs(policy, builtins, projects, directory)
+    }
+
+    pub fn from_catalogs(
+        policy: Option<Config>,
+        builtins: Catalog,
+        projects: std::collections::BTreeMap<String, Entry>,
+        directory: String,
+    ) -> Result<Self> {
         let mut inventory = Self {
             policy,
             builtins,
@@ -198,6 +298,7 @@ impl Inventory {
             effective: None,
             directory,
             reviews: json!({}),
+            policy_digest: None,
         };
         if let Some(config) = &inventory.policy {
             inventory.active = inventory.selected(config);
@@ -244,6 +345,29 @@ impl Inventory {
             .is_some_and(|rule| rule.enabled)
     }
 
+    fn mandatory(
+        &self,
+        categories: &std::collections::BTreeMap<String, super::categories::Category>,
+    ) -> Vec<Value> {
+        self.active
+            .entries
+            .iter()
+            .filter(|(id, entry)| {
+                self.configuration(id, entry)
+                    .is_some_and(|rule| rule.enabled && rule.required)
+            })
+            .map(|(id, entry)| self.row(id, entry, categories))
+            .collect()
+    }
+
+    fn mandatory_checks(&self) -> Vec<&super::CommandCheck> {
+        self.effective
+            .iter()
+            .flat_map(|config| &config.checks)
+            .filter(|check| check.required)
+            .collect()
+    }
+
     fn row(
         &self,
         id: &str,
@@ -253,7 +377,9 @@ impl Inventory {
         let default_policy = Config::default();
         let policy = self.policy.as_ref().unwrap_or(&default_policy);
         json!({"id":id,"definition":entry,"language":languages(entry),
+            "lifecycle":policy.rule_lifecycle.get(id),
             "category":super::categories::assigned(policy, categories, id, entry),
+            "categories":super::categories::assignments(policy, categories, id, entry),
             "source":if entry.custom.is_some() { "project" } else { "builtin" },
             "configuration":self.configuration(id, entry),"enabled":self.enabled(id, entry),
             "overrides_builtin":entry.custom.is_some() && self.builtins.entries.contains_key(id)})

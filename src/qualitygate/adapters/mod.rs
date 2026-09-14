@@ -9,6 +9,8 @@ pub mod git_trailers;
 mod markers;
 pub mod maven;
 pub mod maven_usage;
+pub mod policy_approval;
+pub mod policy_rollback;
 mod project_rules;
 pub mod provenance;
 pub mod python;

@@ -1,5 +1,14 @@
 # Tool report contract
 
+Real check reports retain snapshot, configuration/rule/task digests and explicit
+policy trust, plus `evaluator_digest` (the running executable) and
+`environment_digest` (framed inherited environment entries without values).
+Signed active checks identify the immutable package as their policy source.
+The [protected validation contract](policy-validation.md) specifies paired
+baseline/candidate report retention, independent oracles, approvals and
+longitudinal observations. A negative check verdict can satisfy an explicitly
+negative oracle; incomplete execution never becomes passing validation.
+
 Command checks run argv directly inside a materialized snapshot. Configure `cwd`, `timeout_seconds`, `expected_exit_code`, `findings_exit_codes`, `required_args`, `depends_on`, `tools`, and `reports`. Standard output, standard error and generated reports are saved as digest-bearing evidence. A prerequisite must complete and pass before dependents run.
 
 Supported report formats are `junit`, `checkstyle`, `spotbugs`, `pmd`, `sarif` (2.1.0), `lcov`, `cobertura`, `jacoco`, `coverage_py` (native coverage.py JSON v2/v3), and `diagnostics` (the JSON contract below). Missing, empty, malformed or oversized reports make checks incomplete. Configured output files are removed from the isolated workspace before execution, preventing a previous report from masquerading as a new run. Do not track generated report paths as checked source inputs.

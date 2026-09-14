@@ -6,6 +6,7 @@ Read-only commands work before `init` and do not change rule selection:
 qualitygate rules categories --format json
 qualitygate rules list --category test --language rust --source builtin --format json
 qualitygate rules describe test-naming --format json
+qualitygate rules context --category test --policy-ref HEAD --format json
 ```
 
 For an authorized candidate-policy change, use validated CLI mutations:
@@ -24,8 +25,17 @@ Use only the caller's actual import boundary. Categories are mutable labels;
 assignment does not activate a rule. Starter names are core, test, security,
 architecture, style and project. Rename preserves starter identity and moves
 assignments atomically. Delete needs `--force` when explicit assignments remain;
-forced removal restores origin-based defaults. If that starter origin was also
-deleted, the rule has no category until reassigned.
+forced removal removes only that category's memberships. Repeated assignments
+add categories, and `rules unassign <id> --category <name>` removes one. Removing
+the last explicit membership restores the origin default; if that origin was
+deleted, the rule has no category until reassigned. Rule rows expose the full
+`categories` array and a legacy first `category`.
+
+Filtered reads always retain `mandatory` rules and `mandatory_checks` separately
+from selected rows. Use `rules context --policy-ref <caller-selected Git ref>`
+to freeze the baseline; its exact `policy_digest` and trust label accompany the
+result. Omitting the ref reads the local candidate and cannot establish trusted
+policy selection. `rules categories list` is also accepted.
 
 Describe exposes parameter types, descriptions, defaults and schema fragments.
 `--param key=JSON` requires JSON values, including quoted strings. Dotted paths
@@ -48,6 +58,28 @@ evidence. Neither a category operation nor configuration success approves a
 policy or establishes a passing gate.
 
 Discovery reads policy/rule directories without scanning repository sources.
+Once an evidence/policy archive exists, semantic commands require an explicit
+candidate ID. Use `policy candidate create` with the caller-selected parent,
+actor, reason and retained evidence, followed by `policy candidate rules`.
+After signed promotion, `rules context`, inventory and ordinary checks select
+the immutable active package; category edits cannot weaken mandatory rules.
+
+For an authorized policy evolution workflow, use externally supplied suite,
+trust and approval files. `policy candidate validate` compares pinned replay,
+held-out and anchor tasks with bounded parallelism. `policy candidate
+approval-subject` produces the exact signing subject, `approve` verifies the
+independent human signature, and `promote` rechecks it before activation.
+Never manufacture an approval or private key. Missing tools/evidence and
+timeouts remain incomplete. `policy rollback-subject` and `policy rollback`
+require a distinct external signature and preserve the historical transition.
+
+`rules revalidate`, `demote`, `deprecate`, `retire` and `revoke` take
+`--candidate`, `--actor` and `--reason`; they prepare candidate changes and do
+not grant approval. `rules history` exposes evidence and lifecycle states.
+`policy effectiveness` separates oracle validity, observed rule/check use and
+runtime from unknown downstream benefit, context tokens and review effort.
+Only results with matching suite, parent, evaluator epoch/digest, environment,
+budget and job count share a longitudinal group.
 Project rule reads and schema parsing use at most eight workers, with 256 files,
 1 MiB content and 4,096 directory-entry limits. Catalog errors and timeouts remain
 errors even when the selected category would otherwise be empty.

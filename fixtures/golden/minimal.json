@@ -65,5 +65,15 @@
   "manual-approved": {"/status":"completed","/decision":"approved"},
   "compatibility-compatible": {"/status":"completed","/data/classes_compared":1,"/data/binary_compatible":true,"/data/source_compatible":true},
   "manual-rejected": {"/status":"completed","/decision":"rejected"},
-  "compatibility-break": {"/status":"completed","/data/classes_compared":1,"/data/binary_compatible":false,"/data/source_compatible":false}
+  "compatibility-break": {"/status":"completed","/data/classes_compared":1,"/data/binary_compatible":false,"/data/source_compatible":false},
+  "evolution-negative-oracle":{"/conclusion":"pass","/exit_code":0,"/gates/0/candidate/decision":"fail","/cases/0/candidate/mismatches":[],"/effectiveness/oracle_improvement":1,"/effectiveness/baseline/completed_checks":5,"/effectiveness/candidate/completed_checks":6,"/effectiveness/candidate/findings":1},
+  "evolution-minimum-improvement":{"/conclusion":"block","/exit_code":1,"/reasons/0":{"$contains":"acceptance requires 2"}},
+  "evolution-held-out-regression":{"/conclusion":"block","/exit_code":1,"/cases/1/candidate/mismatches/0":"line-ending: expected Pass, observed Fail"},
+  "evolution-anchor-regression":{"/conclusion":"block","/exit_code":1},
+  "evolution-approval-none":{"/status":"completed","/value/decision":"approved","/value/signer":"fixture-key"},
+  "evolution-rollback-none":{"/status":"completed","/value/decision":"approved","/value/signer":"fixture-key"},
+  "evolution-candidate-edit":{"/active_policy":null,"/parent_unchanged":true,"/original_unchanged":true,"/evidence_trust":"unverified_evidence","/operation/status":"completed","/state":"candidate","/revision_changed":true,"/rule/enabled":true,"/patch/0/actor/id":"editor","/operation/value/revision/created_by/id":"generator","/operation/value/revision/evaluation_ref":null,"/operation/value/revision/approval_ref":null},
+  "evolution-candidate-rejected":{"/active_policy":null,"/parent_unchanged":true,"/original_unchanged":true,"/evidence_trust":"unverified_evidence","/operation/status":"incomplete","/operation/reason":{"$contains":"frozen in Rejected"},"/state":"rejected","/history_actions/0":"candidate_rejected"},
+  "evolution-context-empty":{"/status":"completed","/value/mandatory/0/id":"line-ending","/value/mandatory_checks/0/id":"required-test","/value/selected":[]},
+  "evolution-suite-valid":{"/status":"completed"}
 }

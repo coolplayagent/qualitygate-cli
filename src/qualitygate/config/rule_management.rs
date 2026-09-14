@@ -13,6 +13,10 @@ use std::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "operation", content = "arguments", rename_all = "snake_case")]
 pub enum Mutation {
+    Lifecycle {
+        id: String,
+        record: crate::domain::rule_lifecycle::RuleLifecycle,
+    },
     Enable(String),
     Disable(String),
     Configure {
@@ -22,6 +26,10 @@ pub enum Mutation {
         required: Option<bool>,
     },
     Assign {
+        id: String,
+        category: String,
+    },
+    Unassign {
         id: String,
         category: String,
     },
@@ -70,6 +78,18 @@ fn typed(value: &Value) -> Result<Config> {
 /// No source review or trusted-policy approval is manufactured by this operation.
 pub fn update(root: &Path, path: &Path, mutation: Mutation) -> Result<Value> {
     let root = dunce::canonicalize(root)?;
+    if matches!(
+        mutation,
+        Mutation::Enable(_)
+            | Mutation::Disable(_)
+            | Mutation::Configure { .. }
+            | Mutation::Lifecycle { .. }
+    ) && super::policy_store::Store::optional(&root)?.is_some()
+    {
+        bail!(
+            "Semantic edits in a governed repository require policy candidate rules with evidence and independent validation"
+        );
+    }
     let target = crate::paths::confined(&root, path)?;
     let _lock = lock(&root, path)?;
     let original = super::rule_authoring::read_file(&root, &crate::paths::from_native(path)?)?;
@@ -79,7 +99,7 @@ pub fn update(root: &Path, path: &Path, mutation: Mutation) -> Result<Value> {
     // Load every package once so a discovered, unselected built-in can be managed.
     // Project definitions remain explicitly selected through custom_rules.
     let inventory = Inventory::for_policy(&root, Some(config.clone()), true)?;
-    let result = apply(&mut value, &config, &inventory, &mutation)?;
+    let result = edit_value(&mut value, &config, &inventory, &mutation)?;
     let candidate = typed(&value)?;
     inventory.selected(&candidate).resolve(&candidate)?;
     let bytes = serde_norway::to_string(&value)?.into_bytes();
@@ -130,7 +150,7 @@ fn object<'a>(value: &'a mut Value, name: &str) -> Result<&'a mut serde_json::Ma
         .with_context(|| format!("{name} must be a mapping"))
 }
 
-fn apply(
+pub(super) fn edit_value(
     value: &mut Value,
     config: &Config,
     inventory: &Inventory,
@@ -158,10 +178,19 @@ fn apply(
                 .remove(name)
                 .with_context(|| format!("Unknown category: {name}"))?;
             registry.insert(new_name.clone(), category);
-            for assignment in object(value, "rule_categories")?.values_mut() {
-                if assignment == name {
-                    *assignment = json!(new_name);
-                }
+            for (id, membership) in &config.rule_categories {
+                let names: Vec<_> = membership
+                    .names()
+                    .iter()
+                    .map(|current| {
+                        if current == name {
+                            new_name.clone()
+                        } else {
+                            current.clone()
+                        }
+                    })
+                    .collect();
+                object(value, "rule_categories")?.insert(id.clone(), membership_value(names));
             }
         }
         Mutation::Delete { name, force } => {
@@ -172,13 +201,25 @@ fn apply(
                 && config
                     .rule_categories
                     .values()
-                    .any(|category| category == name)
+                    .any(|membership| membership.contains(name))
             {
                 bail!("Category {name} has explicit assignments; use --force to restore defaults");
             }
-            object(value, "rule_categories")?.retain(|_, category| category != name);
+            for (id, membership) in &config.rule_categories {
+                let names: Vec<_> = membership
+                    .names()
+                    .iter()
+                    .filter(|current| *current != name)
+                    .cloned()
+                    .collect();
+                if names.is_empty() {
+                    object(value, "rule_categories")?.remove(id);
+                } else {
+                    object(value, "rule_categories")?.insert(id.clone(), membership_value(names));
+                }
+            }
         }
-        Mutation::Assign { id, category } => {
+        Mutation::Assign { id, category } | Mutation::Unassign { id, category } => {
             if !inventory.builtins.entries.contains_key(id) && !inventory.projects.contains_key(id)
             {
                 bail!("Unknown rule: {id}");
@@ -186,8 +227,57 @@ fn apply(
             if !registry.contains_key(category) {
                 bail!("Unknown category: {category}");
             }
-            object(value, "rule_categories")?.insert(id.clone(), json!(category));
-            return Ok(json!({"id":id,"category":category}));
+            let mut names = config
+                .rule_categories
+                .get(id)
+                .map(|membership| membership.names().to_vec())
+                .unwrap_or_default();
+            if matches!(mutation, Mutation::Unassign { .. }) {
+                if !names.contains(category) {
+                    bail!("Rule {id} has no explicit membership in {category}");
+                }
+                names.retain(|name| name != category);
+            } else if !names.contains(category) {
+                names.push(category.clone());
+            }
+            if names.is_empty() {
+                object(value, "rule_categories")?.remove(id);
+            } else {
+                object(value, "rule_categories")?
+                    .insert(id.clone(), membership_value(names.clone()));
+            }
+            return Ok(json!({"id":id,"categories":names}));
+        }
+        Mutation::Lifecycle { id, record } => {
+            use crate::domain::rule_lifecycle::RuleState;
+            record.validate().map_err(anyhow::Error::msg)?;
+            let change = match record.state {
+                RuleState::Revalidate => Mutation::Enable(id.clone()),
+                RuleState::Demoted => Mutation::Configure {
+                    id: id.clone(),
+                    parameters: Vec::new(),
+                    severity: Some(crate::domain::Severity::Warning),
+                    required: Some(false),
+                },
+                RuleState::Deprecated => Mutation::Configure {
+                    id: id.clone(),
+                    parameters: Vec::new(),
+                    severity: None,
+                    required: Some(
+                        inventory
+                            .selected(config)
+                            .resolve(config)?
+                            .rules
+                            .get(id)
+                            .with_context(|| format!("Unknown selected rule: {id}"))?
+                            .required,
+                    ),
+                },
+                RuleState::Retired | RuleState::Revoked => Mutation::Disable(id.clone()),
+            };
+            let result = edit_value(value, config, inventory, &change)?;
+            object(value, "rule_lifecycle")?.insert(id.clone(), serde_json::to_value(record)?);
+            return Ok(json!({"id":id,"lifecycle":record,"configuration":result["configuration"]}));
         }
         Mutation::Enable(id) | Mutation::Disable(id) | Mutation::Configure { id, .. } => {
             let active = inventory.selected(config);
@@ -277,6 +367,14 @@ fn apply(
         }
         Mutation::Delete { name, force } => Ok(json!({"deleted":name,"force":force})),
         _ => unreachable!("rule mutations return their own result"),
+    }
+}
+
+fn membership_value(names: Vec<String>) -> Value {
+    if names.len() == 1 {
+        json!(names[0])
+    } else {
+        json!(names)
     }
 }
 

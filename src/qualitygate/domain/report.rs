@@ -75,6 +75,10 @@ pub struct Report {
     pub run_id: String,
     pub scope: String,
     pub profile: String,
+    #[serde(default)]
+    pub evaluator_digest: String,
+    #[serde(default)]
+    pub environment_digest: String,
     pub snapshot: SnapshotIdentity,
     pub policy: PolicyEvidence,
     pub plan: PlanSummary,

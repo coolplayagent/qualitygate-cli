@@ -1,3 +1,9 @@
 # Requirements
 
 This directory is governed by `codespec/codespec-map.yaml`. Update its map entry through `relay-knowledge map directory` and keep reviewed source material within the declared content scope.
+
+The [issue #4 requirement-to-test matrix](../../docs/policy-evolution.md)
+tracks dynamic categories, evidence-linked candidates, protected validation,
+independent approval, versioned inheritance and longitudinal effectiveness.
+The [large repository contract](../../docs/large-repositories.md) defines
+bounded parallel execution and reproducible performance evidence.

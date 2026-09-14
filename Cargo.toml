@@ -66,3 +66,9 @@ unsafe_code = "forbid"
 [profile.release]
 lto = "thin"
 strip = "debuginfo"
+
+# Identity and snapshot hashing stream large immutable inputs, including debug
+# executables. Keep the cryptographic compression loop optimized in dev/test
+# builds without changing its digest, byte budget or execution deadline.
+[profile.dev.package."sha2@0.10.9"]
+opt-level = 3

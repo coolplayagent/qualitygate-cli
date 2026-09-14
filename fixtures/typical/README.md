@@ -8,3 +8,9 @@ Historical findings and a real staged/worktree disagreement test change scope.
 Project facts and analyzer reports are synthetic normalized inputs. Agreement
 with [the typical golden](../golden/typical.json) does not prove that a real
 compiler, dependency resolver or framework can produce those inputs.
+
+Seventeen policy-evolution cases cover cost/activation accounting, absent and
+skipped oracles, temporary producer paths, signed rejection, all five candidate
+lifecycle states, multi-category/scalar context, and native serial/parallel
+promotion plus signed rollback. Promotion uses retained report artifacts after
+the original execution directory has been removed.

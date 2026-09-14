@@ -53,6 +53,7 @@ fn empty_report(fixture: Option<String>, rule: Option<String>) -> SelfcheckRepor
                 "Golden agreement only covers the selected named fixtures and assertions; it is falsification evidence, not proof of production correctness.".into(),
                 "Synthetic project/report facts do not execute Maven, Python, compilers or external analyzers.".into(),
                 "Filtered selfcheck is partial regression evidence; run the full corpus before delivery.".into(),
+                "Policy fixtures use public synthetic keys and disposable archives; they grant no real approval and do not establish production rollout or downstream benefit.".into(),
             ],
             unverified_assumptions: vec![
                 "Unrepresented frameworks, configuration centers, runtime behavior and third-party tool versions remain unverified.".into(),
@@ -185,6 +186,7 @@ fn validate_coverage(cases: &[Case], catalog: &Catalog) -> Result<()> {
 
 fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
     match &case.fixture.input {
+        Input::Evolution { scenario } => super::selfcheck_policy::observe(scenario),
         Input::Manual {
             record,
             expected,

@@ -17,3 +17,11 @@ capabilities produce incomplete evidence, not silent skips. CI runs the same
 corpus on Linux, Windows and macOS.
 
 See [the stress golden](../golden/stress.json) for the expected failure reasons.
+
+Fifty-eight policy-evolution cases add incomplete paired inventories, changed
+snapshots/inputs/producers, signature identity/tampering/expiry/revocation,
+corrupt or untrusted archive records, lifecycle binding errors, strict suite
+budgets and independence requirements, invalid categories, real missing-tool
+and timeout execution, contribution blocking, wrong parents and stale rollback.
+Execution-status assertions prevent unrelated incomplete results from standing
+in for the intended timeout or missing tool.

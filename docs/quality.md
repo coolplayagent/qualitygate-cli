@@ -5,6 +5,7 @@ The workflow structure follows `/opt/workspace/relay-knowledge`:
 - `.github/workflows/code_quality.yml` preserves its manually triggered Qodana Rust scan. Repository maintainers configure `QODANA_TOKEN` to use that optional workflow.
 - `.github/workflows/pr-checks.yml` keeps formatting, compilation, Clippy, unit tests, Rust integration, documentation, architecture, benchmark, coverage (90%), Miri and AddressSanitizer as distinct gates. Windows/macOS tests and Cargo packaging validate CLI portability and distribution.
 - Minimal `selfcheck` is a separate PR gate; `.github/workflows/selfcheck.yml` runs the full fixture corpus nightly on Linux, Windows and macOS and preserves JSON diagnostics. See [fixture regression](selfcheck.md).
+- The 334-fixture corpus includes 85 policy-evolution cases. `tests/selfcheck.rs` requires unchanged goldens to detect weakened commit and policy evaluators, actual timeout/tool-error evidence, serial/parallel agreement, and isolated native Git setup.
 - Project-specific browser, graph-service and knowledge-map checks from the reference do not apply to this CLI. Documentation and architecture harnesses are Rust tests rather than Python scripts.
 - `qualitygate.yaml` runs the regular local checks through the CLI itself; `.pre-commit-config.yaml` exposes stable Rust commands as local hooks. Miri and ASan remain separate nightly gates.
 - The local policy records Rustfmt, Cargo, Rustc and Clippy versions through actual probes. The execution integration gate covers command input mutation, baseline validity, version failures and durable evidence.
@@ -22,7 +23,7 @@ The independent `python-project` job uses Python 3.12/pip 26.0.1 to run real ins
 
 ```bash
 cargo test --locked --lib --bins --all-features
-cargo test --locked --test bazel --test cli --test custom_rules --test rule_authoring --test rule_management --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --all-features
+cargo test --locked --test bazel --test cli --test custom_rules --test rule_authoring --test rule_management --test policy_categories --test policy_candidates --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --all-features
 cargo test --locked --test quality --all-features
 cargo test --locked --test benchmarks --all-features
 cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90

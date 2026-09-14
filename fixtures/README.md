@@ -11,5 +11,12 @@ suite. Catalog growth without those pairs makes selfcheck incomplete. The
 corpus also exercises all ten external report formats, the custom file DSL,
 strict policy loading, gate decisions, native Git snapshots and process capture.
 
+The 334-case corpus includes 85 policy-evolution fixtures. Run
+`qualitygate selfcheck --rule policy-evolution --format json` for paired oracles,
+category context, protected suite budgets, synthetic signatures, immutable
+archives, lifecycle changes, and nine real paired Git workflows. Native cases
+use disposable repositories/trust roots and fixed producers; they never sign
+or promote a policy in the caller's repository.
+
 See [selfcheck](../docs/selfcheck.md) for commands, diagnostics, budgets and
 the distinction between falsification evidence and production assumptions.

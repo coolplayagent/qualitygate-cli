@@ -28,7 +28,8 @@ pub struct Builtin {
     pub lifecycle_inputs: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Entry {
     pub origin: String,
     pub package: String,
@@ -63,7 +64,8 @@ impl Entry {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Catalog {
     pub entries: BTreeMap<String, Entry>,
 }
@@ -818,6 +820,21 @@ impl Catalog {
             }
             if setting.source.is_none() {
                 setting.source = defaults.source;
+            }
+        }
+        for (id, lifecycle) in &config.rule_lifecycle {
+            use crate::domain::rule_lifecycle::RuleState;
+            let rule = effective
+                .rules
+                .get_mut(id)
+                .with_context(|| format!("Unknown lifecycle rule: {id}"))?;
+            match lifecycle.state {
+                RuleState::Retired | RuleState::Revoked => rule.enabled = false,
+                RuleState::Demoted => {
+                    rule.required = false;
+                    rule.severity = crate::domain::Severity::Warning;
+                }
+                RuleState::Revalidate | RuleState::Deprecated => {}
             }
         }
         validation::validate(&effective)?;

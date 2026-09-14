@@ -12,6 +12,49 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
     assert_eq!(result["decision"], "pass");
     assert!(result["errors"].as_array().unwrap().is_empty());
     let cases = result["fixtures"].as_array().unwrap();
+    assert_eq!(cases.len(), 334, "Shipped fixture inventory changed");
+    let evolution: Vec<_> = cases
+        .iter()
+        .filter(|case| case["rule"] == "policy-evolution")
+        .collect();
+    assert_eq!(evolution.len(), 85);
+    let observed =
+        |id: &str| &evolution.iter().find(|case| case["fixture"] == id).unwrap()["observed"];
+    assert_eq!(
+        observed("evolution-negative-oracle")["gates"][0]["candidate"]["decision"],
+        "fail"
+    );
+    assert_eq!(
+        observed("evolution-held-out-regression")["conclusion"],
+        "block"
+    );
+    assert_eq!(
+        observed("evolution-workflow-timeout-4")["probe_statuses"],
+        serde_json::json!(["timed_out"])
+    );
+    assert_eq!(
+        observed("evolution-workflow-missing-tool-2")["probe_statuses"],
+        serde_json::json!(["tool_error"])
+    );
+    let pairs = |id| {
+        observed(id)["validation"]["evaluation"]["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|case| {
+                serde_json::json!([
+                    case["kind"],
+                    case["snapshot_digest"],
+                    case["baseline"]["mismatches"],
+                    case["candidate"]["mismatches"]
+                ])
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        pairs("evolution-workflow-promote-1"),
+        pairs("evolution-workflow-promote-4")
+    );
     let suites: BTreeSet<_> = cases
         .iter()
         .map(|case| case["suite"].as_str().unwrap())
@@ -180,6 +223,109 @@ fn missing_rule_assets_are_structured_incomplete_evidence() {
             .unwrap()
             .contains("Cannot load active rule assets")
     );
+}
+
+#[test]
+fn weakening_the_policy_workflow_evaluator_is_falsified_by_unchanged_independent_goldens() {
+    let root = tempfile::tempdir().unwrap();
+    let assets = root.path().join("rules");
+    rule_assets(&assets);
+    let path = assets.join("core/line-ending.yaml");
+    let mut rule: Value = serde_norway::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    // A different real evaluator accepts the CRLF replay. The acceptance oracle
+    // and bundled fixture goldens must continue to demand its rejection.
+    rule["implementation"] = serde_json::json!("diff-size");
+    std::fs::write(path, serde_norway::to_string(&rule).unwrap()).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_qualitygate"))
+        .env("QUALITYGATE_BUILTIN_RULES_DIR", &assets)
+        .current_dir(root.path())
+        .args([
+            "selfcheck",
+            "--fixture",
+            "typical",
+            "--rule",
+            "policy-evolution",
+            "--format",
+            "json",
+        ])
+        .output()
+        .unwrap();
+    let result = report(&output, 1);
+    for id in [
+        "evolution-workflow-promote-1",
+        "evolution-workflow-promote-4",
+    ] {
+        let case = result["fixtures"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["fixture"] == id)
+            .unwrap();
+        assert_eq!(case["decision"], "fail");
+        assert_eq!(
+            case["observed"]["validation"]["evaluation"]["conclusion"],
+            "block"
+        );
+        assert_eq!(case["observed"]["has_active"], false);
+        assert!(case["mismatches"].as_array().unwrap().iter().any(
+            |mismatch| mismatch["assertion"] == "/validation/evaluation/conclusion"
+                && mismatch["expected"] == "pass"
+                && mismatch["actual"] == "block"
+        ));
+        assert!(
+            case["input_digest"]
+                .as_str()
+                .unwrap()
+                .starts_with("sha256:")
+        );
+        assert!(
+            case["golden_digest"]
+                .as_str()
+                .unwrap()
+                .starts_with("sha256:")
+        );
+    }
+}
+
+#[test]
+fn native_policy_workflows_reject_inherited_git_redirection_before_setup() {
+    let protected = fixture();
+    let before = std::fs::read(protected.path().join(".git/index")).unwrap();
+    let run_root = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_qualitygate"))
+        .env("GIT_DIR", protected.path().join(".git"))
+        .current_dir(run_root.path())
+        .args([
+            "selfcheck",
+            "--fixture",
+            "typical",
+            "--rule",
+            "policy-evolution",
+            "--format",
+            "json",
+        ])
+        .output()
+        .unwrap();
+    let result = report(&output, 2);
+    let workflows: Vec<_> = result["fixtures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|case| {
+            case["fixture"]
+                .as_str()
+                .unwrap()
+                .starts_with("evolution-workflow-")
+        })
+        .collect();
+    assert_eq!(workflows.len(), 3);
+    assert!(workflows.iter().all(|case| case["decision"] == "incomplete"
+        && case["error"].as_str().unwrap().contains("GIT_DIR")));
+    assert_eq!(
+        std::fs::read(protected.path().join(".git/index")).unwrap(),
+        before
+    );
+    assert_eq!(std::fs::read_dir(run_root.path()).unwrap().count(), 0);
 }
 
 #[test]

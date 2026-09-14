@@ -72,6 +72,15 @@ published release or a claim of native Windows/macOS execution.
 
 ## Issue #3 rule management acceptance
 
+Issue #4's complete requirements and current implementation evidence are tracked
+in [policy evolution](policy-evolution.md). Category, candidate, protected
+validation, promotion/rollback, lifecycle and performance suites are separate
+integration targets (`policy_categories`, `policy_candidates`,
+`policy_validation`, `policy_promotion`, `policy_lifecycle`,
+`policy_performance`). Pure oracle/measurement and storage boundary tests stay
+in the unit target. [Validation contracts](policy-validation.md) describe the
+external authorization boundary and the limits of each reported observation.
+
 See [the command and performance contract](rule-management.md). Evidence is
 kept separate from the existing project-rule authoring and snapshot gates.
 

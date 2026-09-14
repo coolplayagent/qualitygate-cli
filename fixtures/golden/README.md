@@ -15,3 +15,8 @@ Never regenerate these assertions from observed output to make a regression
 green. Change an expectation only when the intended contract changes and the
 new fixture and requirement are reviewed together. The mutation integration
 test deliberately weakens the active commit rule while keeping these goldens.
+The policy mutation test substitutes the line-ending evaluator while retaining
+the protected CRLF oracle and promotion golden. Native policy goldens check
+actual child execution status, lifecycle/activation state, preserved parent and
+original revision, and signed authorization outcomes. Synthetic paired cases
+separately pin gate verdicts and oracle conclusions.

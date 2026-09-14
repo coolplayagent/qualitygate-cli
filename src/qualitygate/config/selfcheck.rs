@@ -37,6 +37,9 @@ pub struct Fixture {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Input {
+    Evolution {
+        scenario: Box<super::selfcheck_policy::EvolutionFixture>,
+    },
     Manual {
         record: Box<crate::domain::ManualRecord>,
         expected: Box<crate::domain::ManualSubject>,

@@ -58,10 +58,22 @@ pub fn validate(config: &Config) -> Result<()> {
             bail!("Category origins must be distinct starter category identities");
         }
     }
-    for (id, name) in &config.rule_categories {
+    let mut total = 0;
+    for (id, membership) in &config.rule_categories {
         super::constraints::id(id)?;
-        if !categories.contains_key(name) {
-            bail!("Rule {id} references unknown category: {name}");
+        let names = membership.names();
+        total += names.len();
+        if names.is_empty() || names.len() > 256 || total > 4096 {
+            bail!("Category memberships require 1..256 names per rule and at most 4096 total");
+        }
+        let mut unique = BTreeSet::new();
+        for name in names {
+            if !unique.insert(name) {
+                bail!("Rule {id} has duplicate category membership: {name}");
+            }
+            if !categories.contains_key(name) {
+                bail!("Rule {id} references unknown category: {name}");
+            }
         }
     }
     Ok(())
@@ -86,15 +98,28 @@ pub fn assigned<'a>(
     id: &str,
     entry: &Entry,
 ) -> Option<&'a str> {
+    assignments(config, categories, id, entry)
+        .into_iter()
+        .next()
+}
+
+pub fn assignments<'a>(
+    config: &'a Config,
+    categories: &'a BTreeMap<String, Category>,
+    id: &str,
+    entry: &Entry,
+) -> Vec<&'a str> {
     config
         .rule_categories
         .get(id)
-        .map(String::as_str)
-        .or_else(|| {
+        .map(|membership| membership.names().iter().map(String::as_str).collect())
+        .unwrap_or_else(|| {
             categories
                 .iter()
                 .find(|(_, category)| category.origin.as_deref() == Some(origin(entry)))
                 .map(|(name, _)| name.as_str())
+                .into_iter()
+                .collect()
         })
 }
 

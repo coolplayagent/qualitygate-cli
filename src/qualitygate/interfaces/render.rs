@@ -28,7 +28,16 @@ pub(super) fn metadata(
                 details["requires_capabilities"].to_string(),
                 rule["source"].as_str().unwrap_or_default().into(),
                 rule["language"].to_string(),
-                rule["category"].as_str().unwrap_or("-").into(),
+                rule["categories"]
+                    .as_array()
+                    .map(|names| {
+                        names
+                            .iter()
+                            .filter_map(|name| name.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
+                    .unwrap_or_else(|| rule["category"].as_str().unwrap_or("-").into()),
             ];
             let fields: Vec<_> = fields
                 .into_iter()
@@ -39,6 +48,12 @@ pub(super) fn metadata(
             } else {
                 out.push_str(&format!("{}\n", fields.join("\t")));
             }
+        }
+        if let Some(mandatory) = value["mandatory"].as_array() {
+            out.push_str("\nMandatory policy rules (all categories, languages and sources):\n");
+            out.push_str(&metadata(&serde_json::json!({"rules":mandatory}), format)?);
+            out.push_str("\nMandatory command checks:\n");
+            out.push_str(&serde_norway::to_string(&value["mandatory_checks"])?);
         }
         return Ok(out);
     }

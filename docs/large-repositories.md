@@ -93,3 +93,35 @@ were active, so these are observations with cache and host-load variation,
 not a universal speedup guarantee. Raw output is retained locally in
 `target/issue2-performance.log`; rerun the same fixture with
 `cargo test --release --test large_repository -- --nocapture`.
+
+## Paired policy evaluation
+
+`cargo test --all-features --test policy_performance -- --nocapture` adds
+18,000 unique files exceeding 35 MiB to an isolated repository, then evaluates
+three independent snapshot/task pairs serially and with four global check
+jobs. Each pair shares captured bytes while executing in separate directories.
+The test compares snapshot/task digests, completeness, oracle mismatches,
+selected/applicable rules, completed checks and findings. Each evaluation has a
+360-second regression bound and reserves at most 512 MiB for live source
+contents; this is not an RSS limit. Reader concurrency and other budgets are
+documented in [policy validation](policy-validation.md).
+
+On the shared Linux development host on 2026-09-14, the final debug-build
+observation after other verification jobs finished was **8.978 seconds serial**
+and **4.518 seconds with four jobs** (about **1.99x** in that run), with identical
+decisions and inputs. Raw output is `target/issue4-paired-performance-final.log`.
+The test also includes policy identity,
+isolated materialization, input verification and evidence publication; it is
+not a snapshot-only microbenchmark. Storage/cache/CPU contention affect the
+ratio. A run concurrent with coverage testing observed 12.030 seconds serial
+and 12.537 seconds parallel (`target/issue4-final-native-tests.log`). An earlier
+build before the SHA-256 optimization observed 35.764/20.278 seconds
+(`target/issue4-paired-performance.log`). These different build/load conditions
+are separate observations, not a controlled attribution of all differences.
+Native barrier tests in `policy_validation` independently prove actual
+child-process overlap while enforcing the configured global job limit.
+
+Development/test profiles optimize the SHA-256 dependency's compression loop.
+This keeps concurrent identity hashing of debug executables within the same
+30-second deadline; digest algorithms, input limits and gate requirements are
+unchanged. Repository code retains its normal debug and instrumentation profile.

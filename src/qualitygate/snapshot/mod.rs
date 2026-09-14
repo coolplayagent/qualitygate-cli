@@ -206,25 +206,35 @@ impl Materialized {
 /// Materializes checked bytes without exposing the user's working tree to tools.
 pub async fn materialize(snapshot: &Snapshot) -> Result<Materialized> {
     let files = snapshot.files.clone();
-    tokio::task::spawn_blocking(move || {
-        let directory = Materialized::new(
-            tempfile::Builder::new()
-                .prefix("qualitygate-snapshot-")
-                .tempdir()?,
-        )?;
-        for (name, file) in files {
-            let path = crate::paths::confined(directory.path(), Path::new(&name))?;
-            std::fs::create_dir_all(path.parent().context("File has no parent")?)?;
-            std::fs::write(&path, file.bytes)?;
-            #[cfg(unix)]
-            if file.executable {
-                use std::os::unix::fs::PermissionsExt;
-                std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
-            }
+    tokio::task::spawn_blocking(move || materialize_files(&files)).await?
+}
+
+/// Concurrent evaluators share immutable bytes instead of cloning the entire source tree.
+pub async fn materialize_shared(snapshot: std::sync::Arc<Snapshot>) -> Result<Materialized> {
+    tokio::task::spawn_blocking(move || materialize_files(&snapshot.files)).await?
+}
+
+fn materialize_files(files: &BTreeMap<String, File>) -> Result<Materialized> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    let directory = Materialized::new(
+        tempfile::Builder::new()
+            .prefix("qualitygate-snapshot-")
+            .tempdir()?,
+    )?;
+    for (name, file) in files {
+        if std::time::Instant::now() >= deadline {
+            anyhow::bail!("Snapshot materialization exceeded its 30-second budget");
         }
-        Ok(directory)
-    })
-    .await?
+        let path = crate::paths::confined(directory.path(), Path::new(name))?;
+        std::fs::create_dir_all(path.parent().context("File has no parent")?)?;
+        std::fs::write(&path, &file.bytes)?;
+        #[cfg(unix)]
+        if file.executable {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
+        }
+    }
+    Ok(directory)
 }
 
 impl Snapshot {

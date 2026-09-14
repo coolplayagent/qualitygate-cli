@@ -10,14 +10,22 @@ mod generated_reports;
 mod git_trailers;
 mod manual;
 mod policy;
+pub mod policy_active;
+pub mod policy_candidates;
+pub mod policy_promotion;
+pub mod policy_rollback;
+pub mod policy_validation;
 mod project_reports;
 mod provenance;
 mod python_install;
 mod report_gate;
+pub mod rule_context;
 mod rule_execution;
 pub mod selfcheck;
 mod selfcheck_evidence;
 mod selfcheck_io;
+mod selfcheck_policy;
+mod selfcheck_policy_io;
 mod test_counts;
 mod tool_evidence;
 
@@ -54,11 +62,55 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .await?,
     );
     let mut invalid = Vec::new();
+    let active = policy_active::load(options.root.clone()).await?;
+    let (loaded, active) = if let Some(active) = active {
+        if active.active.evaluator_digest() != evaluator_digest().await? {
+            anyhow::bail!("Active policy requires revalidation with this evaluator executable");
+        }
+        let (snapshot, options) = (Arc::clone(&snapshot), options.clone());
+        let (loaded, errors, active) = tokio::task::spawn_blocking(move || {
+            let mut errors = Vec::new();
+            Ok::<_, anyhow::Error>((
+                policy_active::prepare(&active.active, &snapshot, &options, &mut errors)?,
+                errors,
+                active,
+            ))
+        })
+        .await??;
+        invalid.extend(errors);
+        (loaded, Some(active))
+    } else {
+        (policy::load(&snapshot, &options, &mut invalid).await?, None)
+    };
+    check_prepared(options, snapshot, loaded, invalid, true, active, None).await
+}
+
+async fn evaluator_digest() -> Result<String> {
+    static IDENTITY: tokio::sync::OnceCell<String> = tokio::sync::OnceCell::const_new();
+    Ok(IDENTITY
+        .get_or_try_init(|| async {
+            Ok::<_, anyhow::Error>(crate::runner::identity::evaluator().await?.digest)
+        })
+        .await?
+        .clone())
+}
+
+async fn check_prepared(
+    options: CheckOptions,
+    snapshot: Arc<snapshot::Snapshot>,
+    loaded: policy::Loaded,
+    mut invalid: Vec<String>,
+    revalidate_source: bool,
+    active: Option<policy_active::Authenticated>,
+    recheck_argv: Option<Vec<String>>,
+) -> Result<Report> {
+    let evaluator_digest = evaluator_digest().await?;
+    let environment_digest = crate::env::environment_digest()?;
     let policy::Loaded {
         catalog,
         evidence: policy,
         plan,
-    } = policy::load(&snapshot, &options, &mut invalid).await?;
+    } = loaded;
     let git_facts = git_trailers::load(&plan, &catalog, &snapshot).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
         (Some(store), Some(directory)) => {
@@ -100,12 +152,12 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         .any(|check| check.kind == config::CheckKind::Command && check.compatibility.is_none())
         && invalid.is_empty()
     {
-        Some(snapshot::materialize(&snapshot).await?)
+        Some(snapshot::materialize_shared(Arc::clone(&snapshot)).await?)
     } else {
         None
     };
     let input_guard = if let Some(workspace) = &workspace {
-        Some(snapshot::InputGuard::new(workspace.path(), snapshot.files.clone()).await?)
+        Some(snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(&snapshot)).await?)
     } else {
         None
     };
@@ -252,36 +304,53 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
             }
         }
     }
-    match snapshot::capture_with_options(
-        &options.root,
-        &options.selection,
-        &options.snapshot_options,
-    )
-    .await
-    {
-        Ok(current)
-            if current.identity.content_digest != snapshot.identity.content_digest
-                || current.identity.base != snapshot.identity.base
-                || current.identity.head != snapshot.identity.head
-                || match (
-                    &current.identity.merge_request,
-                    &snapshot.identity.merge_request,
-                ) {
-                    (Some(current), Some(previous)) => !current.same_comparison(previous),
-                    (None, None) => false,
-                    _ => true,
-                } =>
+    if revalidate_source {
+        match snapshot::capture_with_options(
+            &options.root,
+            &options.selection,
+            &options.snapshot_options,
+        )
+        .await
         {
-            invalid.push("Source snapshot changed during checks; recheck the final state".into())
+            Ok(current)
+                if current.identity.content_digest != snapshot.identity.content_digest
+                    || current.identity.base != snapshot.identity.base
+                    || current.identity.head != snapshot.identity.head
+                    || match (
+                        &current.identity.merge_request,
+                        &snapshot.identity.merge_request,
+                    ) {
+                        (Some(current), Some(previous)) => !current.same_comparison(previous),
+                        (None, None) => false,
+                        _ => true,
+                    } =>
+            {
+                invalid
+                    .push("Source snapshot changed during checks; recheck the final state".into())
+            }
+            Ok(_) => {}
+            Err(error) => invalid.push(format!("Cannot revalidate the source snapshot: {error:#}")),
         }
-        Ok(_) => {}
-        Err(error) => invalid.push(format!("Cannot revalidate the source snapshot: {error:#}")),
     }
-    let recheck = recheck(
-        &options,
-        &snapshot.identity.base,
-        policy.resolved_commit.as_deref(),
-    );
+    if crate::env::environment_digest()? != environment_digest {
+        invalid.push("Process environment changed during evaluation".into());
+    }
+    if let Some(active) = active
+        && let Err(error) = policy_active::revalidate(options.root.clone(), active).await
+    {
+        invalid.push(format!("Active policy authorization is invalid: {error:#}"));
+    }
+    let recheck = recheck_argv.unwrap_or_else(|| {
+        recheck(
+            &options,
+            &snapshot.identity.base,
+            if policy.trust == "signed_active_policy" {
+                Some(&policy.source)
+            } else {
+                policy.resolved_commit.as_deref()
+            },
+        )
+    });
     for result in &mut results {
         for diagnostic in &mut result.diagnostics {
             diagnostic.recheck.argv = recheck.clone();
@@ -307,6 +376,8 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         }
         .into(),
         profile: options.profile,
+        evaluator_digest,
+        environment_digest,
         snapshot: snapshot.identity.clone(),
         policy,
         plan: PlanSummary {

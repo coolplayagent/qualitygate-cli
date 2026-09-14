@@ -46,9 +46,22 @@ impl Stamp {
 
 struct Inputs {
     root: PathBuf,
-    files: BTreeMap<String, File>,
+    files: ExpectedFiles,
     stamps: BTreeMap<String, Stamp>,
     invalid: Mutex<Option<String>>,
+}
+
+enum ExpectedFiles {
+    Owned(BTreeMap<String, File>),
+    Snapshot(Arc<super::Snapshot>),
+}
+impl ExpectedFiles {
+    fn files(&self) -> &BTreeMap<String, File> {
+        match self {
+            Self::Owned(files) => files,
+            Self::Snapshot(snapshot) => &snapshot.files,
+        }
+    }
 }
 
 pub struct InputGuard {
@@ -58,10 +71,18 @@ pub struct InputGuard {
 
 impl InputGuard {
     pub async fn new(root: &Path, files: BTreeMap<String, File>) -> Result<Self> {
+        Self::create(root, ExpectedFiles::Owned(files)).await
+    }
+
+    pub async fn for_snapshot(root: &Path, snapshot: Arc<super::Snapshot>) -> Result<Self> {
+        Self::create(root, ExpectedFiles::Snapshot(snapshot)).await
+    }
+
+    async fn create(root: &Path, files: ExpectedFiles) -> Result<Self> {
         let root = root.to_owned();
         tokio::task::spawn_blocking(move || {
-            let digest = content_digest(&files);
-            let stamps = inspect(&root, &files)?;
+            let digest = content_digest(files.files());
+            let stamps = inspect(&root, files.files())?;
             Ok(Self {
                 inputs: Arc::new(Inputs {
                     root,
@@ -85,7 +106,7 @@ impl InputGuard {
                 bail!("{reason}");
             }
             let check = (|| {
-                let stamps = inspect(&inputs.root, &inputs.files)?;
+                let stamps = inspect(&inputs.root, inputs.files.files())?;
                 for (name, original) in &inputs.stamps {
                     if stamps.get(name) != Some(original) {
                         bail!("Checked input changed during execution, even if its bytes were restored: {name}");

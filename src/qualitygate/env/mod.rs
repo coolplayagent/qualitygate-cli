@@ -24,6 +24,30 @@ pub fn current_executable() -> anyhow::Result<PathBuf> {
     Ok(std::env::current_exe()?)
 }
 
+/// Bind inherited process inputs without disclosing environment values.
+pub fn environment_digest() -> anyhow::Result<String> {
+    use sha2::{Digest, Sha256};
+    let mut variables: Vec<_> = std::env::vars_os().collect();
+    variables.sort();
+    let total: usize = variables
+        .iter()
+        .map(|(key, value)| key.as_encoded_bytes().len() + value.as_encoded_bytes().len())
+        .sum();
+    if variables.len() > 4096 || total > 1024 * 1024 {
+        anyhow::bail!("Environment identity exceeds 4096 variables or 1 MiB");
+    }
+    let mut hash = Sha256::new();
+    hash.update(std::env::consts::OS);
+    hash.update(std::env::consts::ARCH);
+    for (key, value) in variables {
+        for bytes in [key.as_encoded_bytes(), value.as_encoded_bytes()] {
+            hash.update((bytes.len() as u64).to_le_bytes());
+            hash.update(bytes);
+        }
+    }
+    Ok(format!("sha256:{:x}", hash.finalize()))
+}
+
 /// Native selfcheck must not let inherited Git overrides redirect temporary
 /// repository writes into another repository or object/index store.
 pub fn require_isolated_git_environment() -> anyhow::Result<()> {
