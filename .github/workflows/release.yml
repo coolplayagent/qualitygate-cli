@@ -208,6 +208,9 @@ jobs:
           test -s "dist/$package/assets/windows-aarch64/qualitygate.exe"
           test -f "dist/$package/references/builtin-rules.md"
           test -f "dist/$package/references/rule-authoring.md"
+          for reference in file-contracts diagnostic-ratchets rule-management selfcheck; do
+            test -s "dist/$package/references/$reference.md"
+          done
           test -s "dist/$package/references/schemas/project-rule.schema.json"
           "dist/$package/assets/linux-x86_64/qualitygate" rules schema > "dist/project-rule.schema.json"
           grep -F 'urn:qualitygate:project-rule:1' "dist/project-rule.schema.json"
@@ -227,6 +230,9 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/operations.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/builtin-rules.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rule-authoring.md" >/dev/null
+          for reference in file-contracts diagnostic-ratchets rule-management selfcheck; do
+            tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/$reference.md" >/dev/null
+          done
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/schemas/project-rule.schema.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/security-sensitive-api.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/todo-marker.yaml" >/dev/null

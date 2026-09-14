@@ -137,6 +137,74 @@ fn changed_lines_filters_old_issues_and_rejects_unlocated_diagnostics() {
 }
 
 #[test]
+fn ratchet_counts_each_rule_and_tool_and_validates_even_filtered_locations() {
+    let mut old = issue("src/a.rs", 1);
+    let mut other = issue("src/b.rs", 2);
+    other.rule = "other".into();
+    let mut changed_message = old.clone();
+    changed_message.message = "different debt with the same rule count".into();
+    let mut result = pending();
+    apply_data(
+        &mut result,
+        &spec("ratchet"),
+        data(vec![changed_message, other.clone()]),
+        Some(data(vec![old.clone(), old.clone()])),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].evidence["rule"], "other");
+    let counts = &result.metadata["report:ratchet"];
+    assert_eq!(counts[0]["baseline"], 0);
+    assert_eq!(counts[0]["current"], 1);
+    assert_eq!(counts[1]["baseline"], 2);
+    assert_eq!(counts[1]["current"], 1);
+    other.tool = Some("second-tool".into());
+    let mut result = pending();
+    apply_data(
+        &mut result,
+        &spec("ratchet"),
+        data(vec![other]),
+        Some(data(vec![old.clone()])),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(
+        result.metadata["report:ratchet"][1]["key"]["tool"],
+        "second-tool"
+    );
+    assert!(apply_data(&mut pending(), &spec("ratchet"), Data::default(), None).is_err());
+    old.line = Some(100);
+    assert!(
+        apply_data(
+            &mut pending(),
+            &spec("ratchet"),
+            data(vec![old.clone()]),
+            Some(data(vec![old.clone(), old]))
+        )
+        .is_err()
+    );
+    let invalid = Data {
+        tests: Some(Tests::default()),
+        ..Data::default()
+    };
+    for (current, base) in [
+        (invalid.clone(), Data::default()),
+        (Data::default(), invalid),
+    ] {
+        assert!(apply_data(&mut pending(), &spec("ratchet"), current, Some(base)).is_err());
+    }
+    let mut result = pending();
+    apply_data(
+        &mut result,
+        &spec("ratchet"),
+        Data::default(),
+        Some(Data::default()),
+    )
+    .unwrap();
+    assert_eq!(result.metadata["report:ratchet"], serde_json::json!([]));
+}
+
+#[test]
 fn new_diagnostics_match_multiplicity_and_survive_line_and_file_moves() {
     let mut result = pending();
     apply_data(

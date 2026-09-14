@@ -2,7 +2,7 @@
 
 use crate::{
     adapters::reports::{self, Data},
-    config::{CommandCheck, IncrementMode},
+    config::CommandCheck,
     domain::CheckResult,
     paths, runner,
     snapshot::{self, Snapshot},
@@ -61,7 +61,7 @@ pub(super) async fn collect(
     let mut baseline = if check
         .reports
         .iter()
-        .any(|report| report.mode == IncrementMode::NewDiagnostics)
+        .any(|report| report.mode.needs_baseline())
     {
         baseline(check, artifacts, snapshot, result).await?
     } else {
@@ -178,7 +178,7 @@ async fn baseline(
         .reports
         .iter()
         .enumerate()
-        .filter(|(_, report)| report.mode == IncrementMode::NewDiagnostics)
+        .filter(|(_, report)| report.mode.needs_baseline())
     {
         let bytes = read_report(
             workspace.path(),

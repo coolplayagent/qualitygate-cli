@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "sources",
-    srcs = glob(["*.rs"]) + [
+    srcs = glob(["*.rs", "custom_rules/*.rs"]) + [
         "//src/qualitygate/adapters/reports:sources",
         "//src/qualitygate/adapters/syntax:sources",
     ],

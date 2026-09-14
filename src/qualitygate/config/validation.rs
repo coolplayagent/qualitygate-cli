@@ -184,8 +184,13 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             {
                 bail!("Coverage threshold must be finite and within 0..100");
             }
-            if report.mode == IncrementMode::NewDiagnostics && report.baseline.is_none() {
-                bail!("new_diagnostics requires a baseline report");
+            if report.mode.needs_baseline() && report.baseline.is_none() {
+                bail!("new_diagnostics and ratchet require a baseline report");
+            }
+            if report.mode == IncrementMode::Ratchet
+                && (report.format == ReportFormat::Junit || report.minimum_tests.is_some())
+            {
+                bail!("ratchet requires diagnostic counts, not test statistics");
             }
         }
     }

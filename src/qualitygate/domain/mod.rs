@@ -12,6 +12,7 @@ pub mod policy_evaluation;
 pub mod policy_rollback;
 mod project;
 mod provenance;
+pub mod ratchet;
 mod report;
 pub mod rule_lifecycle;
 mod rule_validation;

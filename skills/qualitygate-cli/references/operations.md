@@ -3,6 +3,11 @@
 Read this reference when the request requires more than listing rules or
 showing the effective configuration.
 
+For the check's configuration and repair evidence, read
+[file contracts](file-contracts.md) when bounding instruction files or checking
+required paths, and [diagnostic ratchets](diagnostic-ratchets.md) when preventing
+analyzer debt growth. Both use the snapshot and policy boundaries below.
+
 ## Snapshot and policy selection
 
 Choose exactly the selector the user requested:

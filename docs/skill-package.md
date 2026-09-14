@@ -77,6 +77,20 @@ contract. It runs with the repository documentation/architecture quality gate;
 the release workflow validates the produced archive again before it is
 published.
 
+The Skill entrypoint and UI prompt expose file contracts and diagnostic
+ratchets, with self-contained references for configuration, execution, repair
+and limits. The release archive checks retain those references alongside rule
+management and selfcheck. Development builds can share a version string, so
+agents compare the exported project schema with the shipped schema and validate
+report configuration using the selected runtime before execution.
+
+| Skill requirement | Verification |
+|---|---|
+| Instruction/file contract example is accepted only with its full-inventory mode | `tests/quality/skill_package.rs::skill_capability_examples_match_runtime_validation` parses the shipped YAML, supplies a fixture digest, and rejects changing `all` to `any` |
+| Ratchet example requires fresh baseline configuration | The same test validates the shipped command configuration and rejects removing `baseline` |
+| Package references and schema reach the agent | Package structure/version test, documentation link gate and release archive file checks |
+| Actual gate outcomes and incomplete evidence | Separate `file_contracts` and `ratchet` integration suites; full selfcheck remains evidence for its bundled corpus only |
+
 The package validator accepts both LF and CRLF YAML frontmatter delimiters,
 including a closing delimiter at end of file. It preserves the original YAML
 bytes and still rejects missing, indented or malformed delimiters; Windows

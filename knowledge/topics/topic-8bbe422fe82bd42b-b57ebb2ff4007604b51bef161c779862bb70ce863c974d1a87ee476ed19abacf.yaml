@@ -1,0 +1,32 @@
+schema_version: 4
+topic:
+  id: rule-maintenance
+  title: rule-maintenance
+  description: Added by CLI source registration.
+sources:
+- id: diagnostic-count-ratchets
+  topic: rule-maintenance
+  kind: doc
+  uri: docs/diagnostic-ratchets.md
+  source_scope: repo
+  read_policy: direct
+  write_policy: manual-review
+  status: active
+  version: 1
+  description: Snapshot-bound diagnostic debt counts and execution evidence
+- id: rule-file-contracts
+  topic: rule-maintenance
+  kind: doc
+  uri: docs/file-contracts.md
+  source_scope: repo
+  read_policy: direct
+  write_policy: manual-review
+  status: active
+  version: 1
+  description: Reviewed file inventory assertions and requirement evidence
+route:
+  topic: rule-maintenance
+  source_order:
+  - rule-file-contracts
+  - diagnostic-count-ratchets
+  fallback: bounded-search

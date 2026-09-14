@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --test bazel --test cli --test custom_rules --test rule_authoring --test rule_management --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
+            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test rule_authoring --test rule_management --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
           - gate: selfcheck-minimal
             command: cargo run --locked -- selfcheck --fixture minimal --format json
           - gate: documentation

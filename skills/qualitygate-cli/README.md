@@ -20,6 +20,13 @@ The tracked skill directory is intentionally lightweight:
 - [rule authoring](references/rule-authoring.md) and the executable
   [project rule schema](references/schemas/project-rule.schema.json) guide
   schema-validated extraction into `qualitygate/rules`.
+- [file contracts](references/file-contracts.md) cover instruction budgets,
+  unchanged file inventories, required files and evidence-driven repair.
+- [diagnostic ratchets](references/diagnostic-ratchets.md) cover comparable
+  analyzer runs, count growth, report evidence and rechecks.
+- [rule management](references/rule-management.md) covers policy context,
+  candidate changes, lifecycle and signed adoption; [selfcheck](references/selfcheck.md)
+  covers bundled runtime regression.
 
 A tag release creates `qualitygate-cli-skill-<tag>.tar.gz`. Its root is this
 skill directory plus these platform-specific runtime assets:
@@ -32,6 +39,10 @@ qualitygate-cli-skill-<tag>/
 ├── references/operations.md
 ├── references/builtin-rules.md
 ├── references/rule-authoring.md
+├── references/file-contracts.md
+├── references/diagnostic-ratchets.md
+├── references/rule-management.md
+├── references/selfcheck.md
 ├── references/schemas/project-rule.schema.json
 ├── references/rules/{core,shared,lang-java,lang-python}/*.yaml
 ├── assets/linux-x86_64/qualitygate

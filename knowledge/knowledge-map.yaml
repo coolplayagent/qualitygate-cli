@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: knowledge
-map_version: 5
-updated_at: unix:1789386009
+map_version: 7
+updated_at: unix:1789387911
 directories:
 - directory: best-practices
   purpose: Reviewed engineering and knowledge-management practices.
@@ -79,6 +79,14 @@ topics:
   - policy-evolution-contract
   ref: topics/topic-16b01242f1a3e8ea-06eba34978413dfa7899ea6c8a0bfd514ccda62d1b880b7c5115e6590f3feaac.yaml
   digest: 06eba34978413dfa7899ea6c8a0bfd514ccda62d1b880b7c5115e6590f3feaac
+- id: rule-maintenance
+  title: rule-maintenance
+  description: Added by CLI source registration.
+  source_ids:
+  - diagnostic-count-ratchets
+  - rule-file-contracts
+  ref: topics/topic-8bbe422fe82bd42b-b57ebb2ff4007604b51bef161c779862bb70ce863c974d1a87ee476ed19abacf.yaml
+  digest: b57ebb2ff4007604b51bef161c779862bb70ce863c974d1a87ee476ed19abacf
 - id: software-model
   title: Whole-software model
   description: Code-map-backed architecture, build, deployment, dependency, configuration, and design knowledge.
@@ -109,3 +117,11 @@ history:
     action: source.add
     actor: cli
     summary: Added source 'policy-evolution-contract' to topic 'policy-evolution'.
+  - version: 6
+    action: source.add
+    actor: cli
+    summary: Added source 'rule-file-contracts' to topic 'rule-maintenance'.
+  - version: 7
+    action: source.add
+    actor: cli
+    summary: Added source 'diagnostic-count-ratchets' to topic 'rule-maintenance'.

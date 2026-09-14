@@ -138,10 +138,14 @@ The definition supplies default `required` and `severity`. Explicit settings und
 | `test_method` | `test_methods` | `added`, `modified`, `renamed`, `any` | Framework name / exact AST byte span, including attached decorators or attributes |
 | `comment` | `comments` | `added`, `any` | Parsed comment text |
 | `import` | `imports` | `added`, `any` | Parsed import text; this does not resolve package ownership |
-| `file` | `files` | `added`, `modified`, `renamed`, `any` | Repository-relative path / UTF-8 file contents |
+| `file` | `files` | `added`, `modified`, `renamed`, `any`, `all` | Repository-relative path / UTF-8 file contents |
 | `commit` | `commits` | `added` | Commit subject / complete commit message |
 
 Omitted `change` means `added`. `any` selects current entities in changed files within the requested scope, including surviving tests in those files. `modified` tests have changed bodies or annotations. Deleted entities are not current validation targets. Unsupported entity/change combinations are rejected.
+
+Files also support `change: all` and `min_count`, `max_lines`, `max_total_words`
+and `required_paths` assertions. See [file contracts](file-contracts.md) for
+measurements, empty-scope behavior and resource bounds.
 
 `then.name_pattern` requires a regex match on the name. `then.forbid_pattern` rejects a regex match in the entity's text. `then.max_count` limits the total number of selected entities, including zero as a valid limit. Multiple assertions are combined, with separate stable diagnostic fingerprints per entity and violation type. A definition must contain at least one assertion.
 

@@ -6,3 +6,7 @@ This directory is governed by `codespec/codespec-map.yaml`. Update its map entry
 and draft compatibility. [Policy evolution](../../docs/policy-evolution.md)
 and [protected validation](../../docs/policy-validation.md) document the strict
 archive, suite, trust, DSSE approval, rollback and effectiveness contracts.
+
+The project-rule schema supports [file inventory assertions](../../docs/file-contracts.md).
+Report configuration supports [diagnostic count ratchets](../../docs/diagnostic-ratchets.md)
+through the same check command and serialized execution evidence.

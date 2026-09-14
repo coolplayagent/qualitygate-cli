@@ -1,6 +1,6 @@
 ---
 name: qualitygate-cli
-description: "Operate Qualitygate CLI for snapshot-bound gates, language-filtered built-in/project rules, schema-validated extraction from AGENTS.md and project policies, and bundled selfcheck regression; not generic review advice or evidence bypasses."
+description: "Operate Qualitygate CLI for snapshot-bound checks, schema-validated project rules, instruction/file budgets, required-file contracts, diagnostic debt ratchets, and evidence-backed policy evolution. Use for configuring or running these rule-based gates and bundled selfcheck; not generic review advice or evidence bypasses."
 metadata:
   version: "0.4.0"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
@@ -79,6 +79,24 @@ asset nor a published `PATH` executable works, report that installation is
 needed rather than changing the repository or global tool configuration.
 
 ## Select a safe workflow
+
+Route the requested capability before editing policy:
+
+| Request | Reference and control surface |
+|---|---|
+| Bound instruction size or retain owner/test files, including unchanged files | [File contracts](references/file-contracts.md); project DSL `file` + `change: all`, validated through `rules validate` |
+| Prevent existing analyzer debt from increasing | [Diagnostic ratchets](references/diagnostic-ratchets.md); command-check `reports[].mode: ratchet`, with a fresh base run |
+| Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
+| Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
+| Verify the installed runtime or repair the CLI | [Selfcheck](references/selfcheck.md); bounded fixture/golden agreement |
+
+File contracts are project rules; diagnostic ratchets configure reports from
+existing analyzers. Neither is a new built-in rule ID for `rules enable`.
+Use the matching Skill/runtime pair: the version alone cannot distinguish
+development builds. Compare exported `rules schema` with the shipped schema
+for project authoring, and validate ratchet configuration with the selected
+runtime as described in its reference. An unsupported field is a compatibility
+gap, not a reason to omit the requested enforcement.
 
 For tool regression, installation verification, or an authorized Qualitygate
 implementation repair, use the bundled fixture workflow in

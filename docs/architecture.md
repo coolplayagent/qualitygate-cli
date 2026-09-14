@@ -22,6 +22,18 @@ The table lists permitted direct dependencies between top-level production owner
 
 `lib.rs` declares physical owners and does not hide dependencies behind root re-exports. The CLI delegates candidate rule changes to `config::rule_management`; configuration validation, confined atomic replacement and permission preservation remain owned by configuration code. `config::enable_rule` delegates to the same transaction implementation for reusable callers.
 
+File inventory assertions extend the project-rule schema and adapter; bounded
+scans consume captured files on the blocking rule worker. Diagnostic ratchets
+use a pure domain comparison and the existing paired report execution flow.
+Both extensions preserve the owner table and dependency directions above.
+
+Policy approval/promotion/rollback storage entry points are public across the
+separate Bazel owner crates. They perform transactional consistency checks;
+application callers authenticate signatures and live trust before publication.
+Active-policy reads authenticate again. Public storage records and transactions
+are not an authorization boundary. `policy_promotion` integration tests retain
+tampering/revocation rejection; the affected Bazel owner tests verify linkage.
+
 Dynamic category schemas, parameter contracts and mutation validation belong to
 `config`. Its project-rule inventory uses bounded blocking threads for file
 reads and schema parsing, then combines results in deterministic path order.

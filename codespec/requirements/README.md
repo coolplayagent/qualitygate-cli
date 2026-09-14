@@ -7,3 +7,8 @@ tracks dynamic categories, evidence-linked candidates, protected validation,
 independent approval, versioned inheritance and longitudinal effectiveness.
 The [large repository contract](../../docs/large-repositories.md) defines
 bounded parallel execution and reproducible performance evidence.
+
+[File contracts](../../docs/file-contracts.md) and
+[diagnostic ratchets](../../docs/diagnostic-ratchets.md) define instruction
+inventory and historical diagnostic growth requirements with executable
+requirement-to-test mappings.

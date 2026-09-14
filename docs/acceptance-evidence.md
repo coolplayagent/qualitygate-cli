@@ -1,5 +1,30 @@
 # Requirements acceptance evidence
 
+[File contracts](file-contracts.md) and
+[diagnostic ratchets](diagnostic-ratchets.md) map each new requirement to
+separate unit and temporary-repository integration evidence. They extend the
+existing rule/report pipeline; full selfcheck remains independent falsification
+evidence and policy experience retains its review boundary.
+
+The 2026-09-14 Linux worktree verification for these extensions passed format,
+all-target/all-feature compilation, Clippy with warnings denied and all
+**342 native tests**, with **9 existing external-producer tests ignored** for
+their separate CI jobs. LLVM line coverage passed at **95.35%** (18,133 lines,
+843 missed). The full selfcheck passed **249 minimal/typical/stress fixtures**:
+“在已验证形态下未发现问题”. Fixture agreement does not establish live producer,
+unrepresented framework, runtime configuration or production behavior.
+
+The architecture report retains **135 source digests** and **1,233 file/line
+dependency references**, with no violations and every digest matched to the
+current source. The domain, configuration, adapter and application Bazel test
+targets passed. Separate nightly gates passed **20 pure-domain Miri tests** and
+**188 native ASan tests** with leak detection. CodeSpec and Knowledge maps validated.
+Local evidence is retained under `target/rule-maintenance/`, including the
+original failure during concurrent builds and the unchanged provenance test's successful
+isolated recheck. Final stable/coverage suites used bounded build concurrency
+and sequential test scheduling; internal concurrency assertions stayed enabled.
+These are local development observations, not native Windows/macOS evidence.
+
 This audit distinguishes fixture falsification evidence from team-owned
 real-repository observations. Under issue #1's revised §9 contract, agreement
 with independent goldens establishes only that no counterexample was found

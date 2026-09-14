@@ -30,6 +30,19 @@
   },
   "allOf": [
     {
+      "if": {"properties": {"when": {"required": ["change"], "properties": {"change": {"const": "all"}}}}},
+      "then": {"properties": {"when": {"properties": {"entity": {"const": "file"}}}}}
+    },
+    {
+      "if": {"properties": {"then": {"anyOf": [
+        {"required": ["min_count"], "properties": {"min_count": {"type": "integer"}}},
+        {"required": ["max_lines"], "properties": {"max_lines": {"type": "integer"}}},
+        {"required": ["max_total_words"], "properties": {"max_total_words": {"type": "integer"}}},
+        {"required": ["required_paths"], "properties": {"required_paths": {"minItems": 1}}}
+      ]}}},
+      "then": {"properties": {"when": {"required": ["change"], "properties": {"entity": {"const": "file"}, "change": {"const": "all"}}}}}
+    },
+    {
       "if": {"properties": {"when": {"properties": {"entity": {"const": "test_method"}}}}},
       "then": {"properties": {"requires_capabilities": {"contains": {"const": "test_methods"}}}}
     },
@@ -106,7 +119,7 @@
       "type": "object", "additionalProperties": false, "required": ["entity"],
       "properties": {
         "entity": {"enum": ["test_method", "comment", "import", "file", "commit"]},
-        "change": {"enum": ["added", "modified", "renamed", "any", null], "default": "added"}
+        "change": {"enum": ["added", "modified", "renamed", "any", "all", null], "default": "added"}
       }
     },
     "assertions": {
@@ -116,14 +129,22 @@
         "require_dependency": {"anyOf": [{"$ref": "#/$defs/dependency"}, {"type": "null"}]},
         "name_pattern": {"type": ["string", "null"], "description": "Rust regex required to match the entity name; CLI checks regex syntax."},
         "forbid_pattern": {"type": ["string", "null"], "description": "Rust regex forbidden in entity text; CLI checks regex syntax."},
-        "max_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615}
+        "max_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "min_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "max_lines": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "max_total_words": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "required_paths": {"type": "array", "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/nonblank"}, "default": []}
       },
       "anyOf": [
         {"required": ["require_marker"], "properties": {"require_marker": {"const": true}}},
         {"required": ["require_dependency"], "properties": {"require_dependency": {"type": "object"}}},
         {"required": ["name_pattern"], "properties": {"name_pattern": {"type": "string"}}},
         {"required": ["forbid_pattern"], "properties": {"forbid_pattern": {"type": "string"}}},
-        {"required": ["max_count"], "properties": {"max_count": {"type": "integer"}}}
+        {"required": ["max_count"], "properties": {"max_count": {"type": "integer"}}},
+        {"required": ["min_count"], "properties": {"min_count": {"type": "integer"}}},
+        {"required": ["max_lines"], "properties": {"max_lines": {"type": "integer"}}},
+        {"required": ["max_total_words"], "properties": {"max_total_words": {"type": "integer"}}},
+        {"required": ["required_paths"], "properties": {"required_paths": {"minItems": 1}}}
       ]
     },
     "binding": {

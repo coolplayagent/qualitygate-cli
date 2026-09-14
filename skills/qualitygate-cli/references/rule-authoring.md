@@ -1,5 +1,10 @@
 # Schema-guided project rule extraction
 
+For instruction budgets and required owner/test files, read
+[file contracts](file-contracts.md) for the full-inventory DSL and repair loop.
+Analyzer count ratchets belong to command-check report configuration; use
+[diagnostic ratchets](diagnostic-ratchets.md), not a project-rule candidate.
+
 Use this workflow only after the user requests project-rule creation or edits.
 Read-only language discovery and schema/source inspection need no policy write.
 New project rule files belong in `qualitygate/rules`, never in the installed

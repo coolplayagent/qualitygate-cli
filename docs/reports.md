@@ -59,6 +59,10 @@ Materialized workspaces expose a physical canonical root using [dunce](https://d
 
 ## Exit-code and baseline semantics
 
+The opt-in [diagnostic count ratchet](diagnostic-ratchets.md) uses the same fresh
+baseline execution and integrity checks to reject growth independently by
+tool/rule. It records reductions without changing `new_diagnostics`.
+
 `expected_exit_code` defaults to zero. Tools that use a nonzero code for ordinary findings can declare `findings_exit_codes`, for example `[1]`; this requires reports. Those codes are accepted as completed analyzer execution only when all required reports are generated, validated and contain corresponding findings before incremental filtering. A findings exit code with wholly clean reports is inconsistent evidence and makes the check incomplete. Report diagnostics and the chosen increment mode determine the verdict. Other nonzero exits fail plain command checks; unrecognized analyzer exits and signal termination make report-producing checks incomplete. Task command contracts support the same expected/findings exit codes and tool declarations.
 
 For `new_diagnostics`, the base run must have a declared successful/findings exit code, intact inputs and comparable tool evidence. Baseline/current version responses, executable digests and declared tool-input digests must match. A valid-looking report cannot compensate for a crashed analyzer, an unrecognized baseline exit code, modified baseline sources or changed analyzer assets. Version probes should produce stable version information; workspace-dependent banners that differ between runs are not comparable evidence.

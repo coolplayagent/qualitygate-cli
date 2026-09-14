@@ -6,11 +6,14 @@ use crate::{
         rules::diagnostic,
     },
     config::{IncrementMode, ReportSpec},
-    domain::{CheckResult, Range},
+    domain::{CheckResult, Range, ratchet},
     snapshot::{self, Snapshot},
 };
 use anyhow::{Context, Result, bail};
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 pub(super) fn apply(
     result: &mut CheckResult,
@@ -67,11 +70,40 @@ pub(super) fn apply(
     }
     let mut previous = BTreeMap::new();
     let mut line_counts = BTreeMap::new();
-    if spec.mode == IncrementMode::NewDiagnostics {
-        for mut issue in baseline.context("Missing baseline analysis")?.issues {
-            normalize_issue(&mut issue, snapshot, workspace, true, &mut line_counts)?;
-            *previous.entry(fingerprint(&issue)).or_insert(0usize) += 1;
+    let mut baseline_counts = BTreeMap::new();
+    let mut current_counts = BTreeMap::new();
+    let mut increased = BTreeSet::new();
+    let is_ratchet = spec.mode == IncrementMode::Ratchet;
+    if spec.mode.needs_baseline() {
+        let baseline = baseline.context("Missing baseline analysis")?;
+        if is_ratchet {
+            require_diagnostics(&baseline)?;
+            require_diagnostics(&data)?;
         }
+        for mut issue in baseline.issues {
+            normalize_issue(&mut issue, snapshot, workspace, true, &mut line_counts)?;
+            if is_ratchet {
+                *baseline_counts.entry(count_key(&issue)).or_insert(0) += 1;
+            } else {
+                *previous.entry(fingerprint(&issue)).or_insert(0usize) += 1;
+            }
+        }
+    }
+    if is_ratchet {
+        for issue in &data.issues {
+            *current_counts.entry(count_key(issue)).or_insert(0) += 1;
+        }
+        let measurements = ratchet::compare(&baseline_counts, &current_counts);
+        increased.extend(
+            measurements
+                .iter()
+                .filter(|value| value.increased())
+                .map(|value| value.key.clone()),
+        );
+        result.metadata.insert(
+            format!("{}:ratchet", spec.path),
+            serde_json::to_value(measurements)?,
+        );
     }
     let affected = if spec.mode == IncrementMode::AffectedScope {
         Some(
@@ -130,6 +162,7 @@ pub(super) fn apply(
                 }
                 _ => true,
             },
+            IncrementMode::Ratchet => increased.contains(&count_key(&issue)),
         };
         if !include {
             filtered += 1;
@@ -164,6 +197,26 @@ pub(super) fn apply(
     result
         .metadata
         .insert(format!("{}:filtered", spec.path), filtered.into());
+    Ok(())
+}
+
+fn count_key(issue: &Issue) -> ratchet::Key {
+    ratchet::Key {
+        tool: issue.tool.clone(),
+        rule: issue.rule.clone(),
+    }
+}
+
+fn require_diagnostics(data: &Data) -> Result<()> {
+    if data.tests.is_some()
+        || !data.coverage.is_empty()
+        || !data.coverage_files.is_empty()
+        || !data.coverage_roots.is_empty()
+        || data.coverage_producer.is_some()
+        || data.branch_coverage
+    {
+        bail!("ratchet requires diagnostic counts, not tests or coverage");
+    }
     Ok(())
 }
 

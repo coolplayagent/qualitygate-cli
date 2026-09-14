@@ -244,7 +244,9 @@ pub fn authorize_trust(
     Ok(())
 }
 
-pub(crate) fn approve(root: &Path, approved: &ApprovedPolicy, envelope: &[u8]) -> Result<Value> {
+/// Records an application-authenticated approval, with transactional subject checks.
+/// This storage API does not authenticate signatures or establish trust.
+pub fn approve(root: &Path, approved: &ApprovedPolicy, envelope: &[u8]) -> Result<Value> {
     Store::transaction(root, |store| {
         let expected = subject(
             store,
@@ -288,7 +290,9 @@ pub(crate) fn approve(root: &Path, approved: &ApprovedPolicy, envelope: &[u8]) -
     })
 }
 
-pub(crate) fn promote(root: &Path, approved: &ApprovedPolicy) -> Result<Value> {
+/// Publishes a previously authenticated transition. Callers must revalidate live
+/// trust before calling; ordinary checks independently authenticate active policy.
+pub fn promote(root: &Path, approved: &ApprovedPolicy) -> Result<Value> {
     Store::transaction(root, |store| {
         let expected = subject(
             store,

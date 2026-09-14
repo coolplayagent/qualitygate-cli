@@ -1,6 +1,6 @@
 interface:
   display_name: "Qualitygate CLI"
-  short_description: "Run evidence-bound repository quality gates"
-  default_prompt: "Use $qualitygate-cli to inspect rules by language, extract project rules with the shipped schema when requested, and run the requested snapshot-bound quality gate."
+  short_description: "Run rule gates, file contracts and diagnostic ratchets"
+  default_prompt: "Use $qualitygate-cli to inspect the applicable policy, configure requested file contracts or diagnostic ratchets, and run the selected snapshot check with its repair and verification evidence."
 policy:
   allow_implicit_invocation: true

@@ -66,7 +66,9 @@ pub fn supersede(store: &mut Store, status: RevisionStatus) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn publish(root: &Path, approved: &ApprovedRollback, envelope: &[u8]) -> Result<Value> {
+/// Stores an application-authenticated rollback after checking the current head.
+/// Signature authorization belongs to the application, including active reads.
+pub fn publish(root: &Path, approved: &ApprovedRollback, envelope: &[u8]) -> Result<Value> {
     Store::transaction(root, |store| {
         let request = &approved.approval.subject;
         let expected = subject(

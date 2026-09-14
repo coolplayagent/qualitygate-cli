@@ -321,7 +321,14 @@ pub enum IncrementMode {
     Full,
     ChangedLines,
     NewDiagnostics,
+    Ratchet,
     AffectedScope,
+}
+
+impl IncrementMode {
+    pub fn needs_baseline(self) -> bool {
+        matches!(self, Self::NewDiagnostics | Self::Ratchet)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -431,6 +438,14 @@ pub struct Assertions {
     pub forbid_pattern: Option<String>,
     #[serde(default)]
     pub max_count: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_count: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_lines: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_total_words: Option<usize>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

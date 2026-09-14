@@ -11,3 +11,7 @@ The [bundled corpus](../../docs/selfcheck.md) contains 85 policy-evolution
 fixtures with independently authored golden assertions. Its native Git,
 signature, lifecycle and failure cases run in the shipped CLI; a mutation test
 must detect a weakened evaluator without editing either acceptance or goldens.
+
+`file_contracts` and `ratchet` are distinct integration targets for the new
+file/report assertions. Pure count decisions remain in the native domain unit
+target and Miri selection; adapter bounds remain in native unit tests.

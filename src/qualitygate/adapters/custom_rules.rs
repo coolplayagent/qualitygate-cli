@@ -10,6 +10,8 @@ use anyhow::{Result, bail};
 use regex::Regex;
 use std::collections::BTreeMap;
 
+mod file_inventory;
+
 struct Subject {
     file: Option<String>,
     range: Option<Range>,
@@ -139,14 +141,22 @@ fn run(
     }
     let subjects = subjects(rule, snapshot, facts)?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
+    if rule.when.entity == "file" && rule.when.change.as_deref() == Some("all") {
+        file_inventory::assert(rule, snapshot, &subjects, result)?;
+    }
     result.matched_entities = subjects.len();
     result.metadata.insert(
         "retained_marker_entities".into(),
         serde_json::json!(subjects.len() - triggered),
     );
-    result
-        .metadata
-        .insert("increment_mode".into(), serde_json::json!("entity_changes"));
+    result.metadata.insert(
+        "increment_mode".into(),
+        serde_json::json!(if rule.when.change.as_deref() == Some("all") {
+            "full_files"
+        } else {
+            "entity_changes"
+        }),
+    );
     result.metadata.insert(
         "change".into(),
         serde_json::json!(rule.when.change.as_deref().unwrap_or("added")),
@@ -415,36 +425,7 @@ fn subjects(
             .collect());
     }
     if rule.when.entity == "file" {
-        let mut filters = globset::GlobSetBuilder::new();
-        for path in &rule.applies_to.paths {
-            filters.add(globset::Glob::new(path)?);
-        }
-        let filters = filters.build()?;
-        return snapshot
-            .changes
-            .iter()
-            .filter(|(path, delta)| {
-                snapshot.files.contains_key(*path)
-                    && snapshot.includes(path)
-                    && (change == "any" || delta.kind == change)
-                    && (filters.is_empty() || filters.is_match(path))
-                    && (rule.language.is_empty()
-                        || syntax::language(path).is_some_and(|language| {
-                            rule.language.iter().any(|value| value == language)
-                        }))
-            })
-            .map(|(path, _)| {
-                Ok(Subject {
-                    file: Some(path.clone()),
-                    range: None,
-                    identity: path.clone(),
-                    name: path.clone(),
-                    text: std::str::from_utf8(&snapshot.files[path].bytes)?.into(),
-                    declaration: None,
-                    triggered: true,
-                })
-            })
-            .collect();
+        return file_inventory::subjects(rule, snapshot);
     }
     let files = entity_changes::collect(snapshot, &rule.applies_to.paths, &rule.language)?;
     let mut subjects = Vec::new();

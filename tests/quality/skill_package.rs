@@ -1,3 +1,4 @@
+use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 use serde::Deserialize;
 use std::path::Path;
 
@@ -101,6 +102,19 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     let rule_guide = read(root, "skills/qualitygate-cli/references/builtin-rules.md");
     let authoring = read(root, "skills/qualitygate-cli/references/rule-authoring.md");
     let release = read(root, ".github/workflows/release.yml");
+    for reference in [
+        "file-contracts",
+        "diagnostic-ratchets",
+        "rule-management",
+        "selfcheck",
+    ] {
+        let path = format!("references/{reference}.md");
+        assert!(!read(&root.join("skills/qualitygate-cli"), &path).is_empty());
+        assert!(
+            skill_text.contains(&path),
+            "unreachable Skill reference: {path}"
+        );
+    }
 
     assert_eq!(skill.name, "qualitygate-cli");
     assert_eq!(skill.metadata.version, cargo.package.version);
@@ -194,6 +208,55 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
             "release workflow missing {expected}"
         );
     }
+}
+
+#[test]
+fn skill_capability_examples_match_runtime_validation() {
+    fn example(name: &str) -> serde_json::Value {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let text = read(
+            root,
+            &format!("skills/qualitygate-cli/references/{name}.md"),
+        );
+        let mut examples = Vec::new();
+        let mut yaml = None;
+        for event in Parser::new(&text) {
+            match event {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(kind)))
+                    if kind.as_ref() == "yaml" =>
+                {
+                    yaml = Some(String::new());
+                }
+                Event::Text(text) if yaml.is_some() => yaml.as_mut().unwrap().push_str(&text),
+                Event::End(TagEnd::CodeBlock) => {
+                    if let Some(text) = yaml.take() {
+                        examples.push(text);
+                    }
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(
+            examples.len(),
+            1,
+            "expected one complete YAML example in {name}"
+        );
+        serde_norway::from_str(&examples[0]).unwrap()
+    }
+
+    let mut rule = example("file-contracts");
+    rule["source"]["content_hash"] = qualitygate::snapshot::digest(b"fixture policy").into();
+    assert!(qualitygate::config::rule_schema::parse(&serde_json::to_vec(&rule).unwrap()).is_ok());
+    rule["when"]["change"] = "any".into();
+    assert!(qualitygate::config::rule_schema::parse(&serde_json::to_vec(&rule).unwrap()).is_err());
+
+    let mut config = example("diagnostic-ratchets");
+    assert!(qualitygate::config::parse(&serde_json::to_vec(&config).unwrap()).is_ok());
+    config["checks"][0]["reports"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("baseline");
+    assert!(qualitygate::config::parse(&serde_json::to_vec(&config).unwrap()).is_err());
 }
 
 #[test]

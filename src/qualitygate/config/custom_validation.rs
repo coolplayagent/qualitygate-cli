@@ -51,7 +51,8 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
         bail!("Custom rule must declare capability {required}");
     }
     let change = rule.when.change.as_deref().unwrap_or("added");
-    if !["added", "modified", "renamed", "any"].contains(&change)
+    if !["added", "modified", "renamed", "any", "all"].contains(&change)
+        || change == "all" && rule.when.entity != "file"
         || rule.when.entity == "commit" && change != "added"
         || ["comment", "import"].contains(&rule.when.entity.as_str())
             && !["added", "any"].contains(&change)
@@ -76,8 +77,40 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
         && rule.then.name_pattern.is_none()
         && rule.then.forbid_pattern.is_none()
         && rule.then.max_count.is_none()
+        && rule.then.min_count.is_none()
+        && rule.then.max_lines.is_none()
+        && rule.then.max_total_words.is_none()
+        && rule.then.required_paths.is_empty()
     {
         bail!("Custom rule must contain at least one assertion");
+    }
+    if (rule.then.min_count.is_some()
+        || rule.then.max_lines.is_some()
+        || rule.then.max_total_words.is_some()
+        || !rule.then.required_paths.is_empty())
+        && (rule.when.entity != "file" || change != "all")
+    {
+        bail!("File inventory assertions require file entities with change: all");
+    }
+    if let (Some(minimum), Some(maximum)) = (rule.then.min_count, rule.then.max_count)
+        && minimum > maximum
+    {
+        bail!("min_count exceeds max_count");
+    }
+    if rule.then.required_paths.len() > 256 {
+        bail!("required_paths exceeds 256 files");
+    }
+    let mut paths = BTreeSet::new();
+    for path in &rule.then.required_paths {
+        let normalized = crate::paths::relative(std::path::Path::new(path))?;
+        if path.is_empty()
+            || normalized.is_empty()
+            || normalized != *path
+            || path.contains(['*', '?', '[', ']', '{', '}'])
+            || !paths.insert(path)
+        {
+            bail!("required_paths must contain unique normalized literal file paths");
+        }
     }
     for pattern in [&rule.then.name_pattern, &rule.then.forbid_pattern]
         .into_iter()
