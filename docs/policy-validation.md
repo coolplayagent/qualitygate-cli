@@ -106,6 +106,15 @@ over 18,000 files with identical resource budgets on every CI platform.
 The manual [Windows Snapshot Regression](../.github/workflows/windows-snapshot.yml)
 workflow runs that same integration target in isolation for native performance
 diagnosis. The full cross-platform PR Checks gate still runs every target.
+Both Windows test steps place temporary repositories and snapshots in the
+runner-owned temporary directory using step-local `TEMP` and `TMP`. A
+[native storage comparison](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34916912496/job/104216430084)
+kept the runtime source, 18,000-file corpus and budgets identical: runner
+temporary storage passed with serial/parallel validation of 98.029/73.854
+seconds, while preceding user-temporary-directory runs exceeded the 30-second
+materialization budget. These are measured CI storage conditions, not a
+universal throughput guarantee. The full fixture workflow also covers the
+default platform temporary directory.
 
 External protected files and retained logs accept native absolute Windows
 paths as well as POSIX paths. Native separators are normalized before walking

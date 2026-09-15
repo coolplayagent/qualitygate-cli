@@ -75,7 +75,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: rustup show
-      - run: cargo test --locked --all-targets --all-features
+      - name: Run Windows gates in runner temporary storage
+        if: runner.os == 'Windows'
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+        run: cargo test --locked --all-targets --all-features
+      - name: Run macOS gates
+        if: runner.os != 'Windows'
+        run: cargo test --locked --all-targets --all-features
 
   coverage:
     runs-on: ubuntu-latest
