@@ -87,7 +87,13 @@ than duplicating the entire repository in memory. Only scheduled checks get
 execution directories. Results are sorted deterministically.
 
 Snapshot materialization creates each parent directory once and writes files
-with at most four blocking I/O workers per executing check. Input guards use
+with at most four blocking I/O workers per executing check. It confines every
+name and parent before writing into a fresh private directory, then exclusively
+creates each file; native path aliases and file/directory collisions fail before
+execution. The directory is exposed to commands only after all writers join,
+so materialization does not repeat ancestor metadata reads for every file.
+The `snapshot::tests` materialization collision tests cover this boundary.
+Input guards use
 the same worker bound while preserving per-file bytes, identity, mode and
 before/after stamps. Both retain their shared 30-second deadlines and join all
 workers before returning an error; partial inventories never become evidence.
@@ -97,6 +103,9 @@ timeouts, errors and worker panics; the parallel materialization/input-guard
 test covers every file and restored-input rejection. The unchanged
 `policy_performance` integration test compares serial and parallel validation
 over 18,000 files with identical resource budgets on every CI platform.
+The manual [Windows Snapshot Regression](../.github/workflows/windows-snapshot.yml)
+workflow runs that same integration target in isolation for native performance
+diagnosis. The full cross-platform PR Checks gate still runs every target.
 
 External protected files and retained logs accept native absolute Windows
 paths as well as POSIX paths. Native separators are normalized before walking

@@ -1,5 +1,38 @@
 use super::*;
 
+#[cfg(windows)]
+#[test]
+fn materialization_rejects_native_case_aliases_before_execution() {
+    let files = ["source.txt", "SOURCE.txt"]
+        .map(|name| {
+            (
+                name.into(),
+                File {
+                    bytes: vec![],
+                    executable: false,
+                },
+            )
+        })
+        .into();
+    assert!(materialize_files(&files).is_err());
+}
+
+#[test]
+fn materialization_rejects_file_directory_collisions() {
+    let files = ["parent", "parent/source.txt"]
+        .map(|name| {
+            (
+                name.into(),
+                File {
+                    bytes: vec![],
+                    executable: false,
+                },
+            )
+        })
+        .into();
+    assert!(materialize_files(&files).is_err());
+}
+
 #[tokio::test]
 async fn parallel_materialization_and_input_guards_cover_every_file() {
     let files: BTreeMap<_, _> = (0..128)

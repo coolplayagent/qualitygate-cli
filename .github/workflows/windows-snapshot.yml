@@ -1,0 +1,19 @@
+name: Windows Snapshot Regression
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot-performance:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - run: rustup show
+      - name: Verify paired snapshot performance and isolation
+        run: cargo test --locked --test policy_performance --all-features -- --nocapture
+      - name: Verify inputs are unchanged
+        run: git diff --exit-code

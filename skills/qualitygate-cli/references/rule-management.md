@@ -72,6 +72,9 @@ Repository-relative rule paths still require forward slashes.
 Snapshot materialization and input verification each use at most four I/O
 workers per executing check within their 30-second budget. A timeout or changed
 input remains incomplete; reducing the checked inventory is not a repair.
+Materialization confines names and parent directories before exclusive file
+creation in a fresh private workspace. Path aliases and file/directory
+collisions must be repaired; they cannot be treated as successful execution.
 `policy candidate validate` compares pinned replay,
 held-out and anchor tasks with bounded parallelism. `policy candidate
 approval-subject` produces the exact signing subject, `approve` verifies the

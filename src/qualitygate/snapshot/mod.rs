@@ -241,8 +241,16 @@ fn materialize_files(files: &BTreeMap<String, File>) -> Result<Materialized> {
         std::fs::create_dir_all(crate::paths::confined(directory.path(), parent)?)?;
     }
     io_workers::map(files, deadline, timeout, |name, file| {
-        let path = crate::paths::confined(directory.path(), Path::new(name))?;
-        std::fs::write(&path, &file.bytes)?;
+        use std::io::Write;
+        // Names and parents were confined above. This fresh workspace remains
+        // private until all writers join; no command can create symlink parents.
+        // Exclusive creation also rejects leaf symlinks and native path aliases.
+        let path = directory.path().join(name);
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)?
+            .write_all(&file.bytes)?;
         #[cfg(unix)]
         if file.executable {
             use std::os::unix::fs::PermissionsExt;
