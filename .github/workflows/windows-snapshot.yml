@@ -10,10 +10,22 @@ jobs:
   snapshot-performance:
     runs-on: windows-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        storage: [system_temp, runner_temp]
     steps:
       - uses: actions/checkout@v6
       - run: rustup show
       - name: Verify paired snapshot performance and isolation
-        run: cargo test --locked --test policy_performance --all-features -- --nocapture
+        shell: pwsh
+        run: |
+          if ('${{ matrix.storage }}' -eq 'runner_temp') {
+            $env:TEMP = $env:RUNNER_TEMP
+            $env:TMP = $env:RUNNER_TEMP
+          }
+          Write-Host "Fixture temporary directory: $([System.IO.Path]::GetTempPath())"
+          cargo test --locked --test policy_performance --all-features -- --nocapture
+          exit $LASTEXITCODE
       - name: Verify inputs are unchanged
         run: git diff --exit-code
