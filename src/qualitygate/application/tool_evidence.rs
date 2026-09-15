@@ -37,6 +37,21 @@ pub(super) async fn collect(
     result: &mut CheckResult,
     baseline: bool,
 ) -> Result<Vec<ToolEvidence>> {
+    collect_until(
+        check, workspace, directory, snapshot, result, baseline, None,
+    )
+    .await
+}
+
+pub(super) async fn collect_until(
+    check: &CommandCheck,
+    workspace: &Path,
+    directory: &Path,
+    snapshot: &Snapshot,
+    result: &mut CheckResult,
+    baseline: bool,
+    deadline: Option<std::time::Instant>,
+) -> Result<Vec<ToolEvidence>> {
     let cwd = paths::confined(workspace, Path::new(&check.cwd))?;
     let mut evidence = Vec::new();
     for (index, tool) in check.tools.iter().enumerate() {
@@ -51,11 +66,17 @@ pub(super) async fn collect(
         let executable = runner::identity::executable(&tool.argv[0], &cwd).await?;
         let mut resolved_argv = tool.argv.clone();
         resolved_argv[0] = executable.path.clone();
+        let remaining = deadline
+            .map(|end| end.saturating_duration_since(std::time::Instant::now()))
+            .unwrap_or(Duration::from_secs(tool.timeout_seconds));
+        if remaining.is_zero() {
+            bail!("Paired test execution exhausted its shared deadline during tool probes");
+        }
         let output = runner::capture(
             &resolved_argv,
             &cwd,
             None,
-            Duration::from_secs(tool.timeout_seconds),
+            remaining.min(Duration::from_secs(tool.timeout_seconds)),
         )
         .await?;
         let prefix = format!("{}tool-{}", if baseline { "baseline-" } else { "" }, index);

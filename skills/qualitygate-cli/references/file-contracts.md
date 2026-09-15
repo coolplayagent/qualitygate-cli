@@ -40,7 +40,7 @@ fix: Keep instructions within the reviewed budget and restore required owner or 
 | `max_total_words` | Combined Unicode whitespace-separated segments in matching UTF-8 files, including code and comments |
 | `required_paths` | Up to 256 unique normalized literal repository-relative files that must exist in the captured snapshot |
 
-`min_count`, `max_lines`, `max_total_words` and `required_paths` require
+`max_lines`, `max_total_words` and `required_paths` require
 `when: {entity: file, change: all}`. Zero is a valid numeric limit;
 `min_count` cannot exceed `max_count`. Omitted `change` means `added`, while
 `any` remains limited to changed files and cannot enforce these assertions.
@@ -77,3 +77,13 @@ Retain failures and incomplete evidence separately. Whitespace segments are
 neither model tokens nor linguistic words. File presence does not prove
 ownership, agent compliance or test effectiveness. Behavioral obligations need
 the project's actual tests, rule evidence and review.
+
+## Required text and nonempty scans
+
+`then.require_pattern` requires a Rust regex match in every triggered entity's
+text. Pair it with `then.min_count` when an empty scan must fail. The minimum
+supports all valid entity/change combinations and counts triggered entities;
+retained marker obligations do not satisfy it. Source bindings, review records
+and explicit adoption still apply. Missing capabilities and failed parsing are
+incomplete, not zero matches. For a reviewed contract-field rule, prove the
+missing-text and empty-inventory failures separately before adoption.

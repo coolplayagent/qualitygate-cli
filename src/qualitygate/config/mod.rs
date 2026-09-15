@@ -33,6 +33,7 @@ pub mod rule_schema;
 pub mod selfcheck;
 pub mod selfcheck_policy;
 pub mod source_reviews;
+pub mod test_effectiveness;
 mod validation;
 pub use initialization::{Initialization, initialize_at};
 pub use model::*;

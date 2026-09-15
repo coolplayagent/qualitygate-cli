@@ -15,3 +15,9 @@ must detect a weakened evaluator without editing either acceptance or goldens.
 `file_contracts` and `ratchet` are distinct integration targets for the new
 file/report assertions. Pure count decisions remain in the native domain unit
 target and Miri selection; adapter bounds remain in native unit tests.
+
+`test_effectiveness` is a separate Rust integration target with actual assertion
+execution in temporary repositories; [its evidence matrix](../../docs/test-effectiveness.md#requirement-to-test-evidence)
+links the pure decision, JUnit profile, immutable composition and failure cases.
+The four `custom-contract-*` selfcheck fixtures cover required text and nonempty
+entity matching, including malformed syntax as incomplete evidence.

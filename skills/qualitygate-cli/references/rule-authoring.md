@@ -105,3 +105,13 @@ approval, semantic equivalence to prose, or successful execution evidence.
    select profiles and obtain the repository's normal bound source review.
    A fresh hash or clean schema report does not constitute that review. Then
    run the caller's requested snapshot check; never invent approval evidence.
+
+## Text contracts
+
+Use `then.require_pattern` for an explicit required regex in entity text;
+`then.min_count` is available for every supported entity/change combination.
+Pair the assertions when the selected inventory must be nonempty. Count only
+triggered entities, not retained marker obligations. Keep text-match claims
+separate from semantic ownership or actual test effectiveness. Validate the
+schema and source binding and exercise compliant, violating and incomplete
+fixtures; a changed source hash alone is not a renewed review.

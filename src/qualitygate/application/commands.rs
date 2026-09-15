@@ -10,6 +10,17 @@ pub(super) async fn execute(
     snapshot: &Arc<snapshot::Snapshot>,
     inputs: &snapshot::InputGuard,
 ) -> CheckResult {
+    execute_until(check, workspace, artifacts, snapshot, inputs, None).await
+}
+
+pub(super) async fn execute_until(
+    check: &CommandCheck,
+    workspace: &Path,
+    artifacts: &Path,
+    snapshot: &Arc<snapshot::Snapshot>,
+    inputs: &snapshot::InputGuard,
+    deadline: Option<std::time::Instant>,
+) -> CheckResult {
     if let Err(error) = inputs.verify().await {
         let mut result = CheckResult::pending(&check.id, check.required, check.severity);
         result.block(
@@ -19,7 +30,7 @@ pub(super) async fn execute(
         result.metadata.insert("input_integrity".into(), serde_json::json!({"snapshot_digest":inputs.digest,"before":"invalid","reason":format!("{error:#}")}));
         return result;
     }
-    let mut result = execute_checked(check, workspace, artifacts, snapshot, inputs).await;
+    let mut result = execute_checked(check, workspace, artifacts, snapshot, inputs, deadline).await;
     match inputs.verify().await {
         Ok(()) => {
             result.metadata.insert("input_integrity".into(), serde_json::json!({"snapshot_digest":inputs.digest,"before":"verified","after":"verified"}));
@@ -47,6 +58,7 @@ async fn execute_checked(
     artifacts: &Path,
     snapshot: &Arc<snapshot::Snapshot>,
     inputs: &snapshot::InputGuard,
+    deadline: Option<std::time::Instant>,
 ) -> CheckResult {
     let mut result = CheckResult::pending(&check.id, check.required, check.severity);
     result.applicability = Applicability::Applicable;
@@ -135,13 +147,14 @@ async fn execute_checked(
         .map(|(name, file)| (name, snapshot::digest(&file.bytes)))
         .collect();
     result.metadata.insert("environment".into(), serde_json::json!({"os":os,"architecture":arch,"qualitygate_version":env!("CARGO_PKG_VERSION"),"dependency_inputs":dependency_inputs}));
-    let tools = match super::tool_evidence::collect(
+    let tools = match super::tool_evidence::collect_until(
         check,
         workspace,
         artifacts,
         snapshot,
         &mut result,
         false,
+        deadline,
     )
     .await
     {
@@ -174,11 +187,21 @@ async fn execute_checked(
         result.block(ExecutionStatus::ToolError, format!("{error:#}"));
         return result;
     }
+    let remaining = deadline
+        .map(|end| end.saturating_duration_since(std::time::Instant::now()))
+        .unwrap_or(Duration::from_secs(check.timeout_seconds));
+    if remaining.is_zero() {
+        result.block(
+            ExecutionStatus::TimedOut,
+            "Paired test execution exhausted its shared deadline",
+        );
+        return result;
+    }
     match runner::capture(
         &resolved_argv,
         &cwd,
         None,
-        Duration::from_secs(check.timeout_seconds),
+        remaining.min(Duration::from_secs(check.timeout_seconds)),
     )
     .await
     {

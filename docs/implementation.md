@@ -347,3 +347,40 @@ pending until the pilot protocol yields measured, human-reviewed records.
 - Extend the architecture/documentation gates if new source-generation forms or document formats are introduced; the current top-level owner graph and local Markdown/YAML contracts now have executable checks.
 - Maintain the unchanged ≥90% coverage threshold as implementation expands; run self-hosted quality checks, packaging, Miri, ASan and native-platform verification where available.
 - Run and record a reproducible real-repository pilot and its measurement protocol. Do not substitute synthetic successes for unmeasured human-review savings.
+
+## Rule text contracts and test counterexamples (§11)
+
+The finite DSL now supports `require_pattern` and minimum triggered entity
+counts beyond complete file inventories. Retained marker obligations do not
+satisfy a minimum added-test count. Four independent minimal goldens cover
+required text, empty targets and syntax incompleteness. The corpus now has
+338 fixtures; existing golden assertions remain unchanged.
+
+Command and task configurations can opt into [test effectiveness](test-effectiveness.md).
+Each added or content-modified independent test file needs a comparable case
+that passes currently and asserts against old code. Strict JUnit case records,
+explicit failure types, immutable test/support overlays and the existing bounded
+runner preserve violations separately from execution gaps. Pure decisions stay
+in the domain; no owner or allowed dependency direction changed. Nested suite
+counters aggregate bottom-up, and case comparisons use ordered inventories;
+normalization, comparison and evidence serialization run on blocking workers.
+
+The 2026-09-15 Linux development verification passed formatting, all-target /
+all-feature compilation, Clippy with warnings denied, and **361 tests**.
+**Nine existing external-producer tests remain ignored** for their separate
+live-tool jobs. The independent full selfcheck passed all **338 fixtures**;
+its conclusion remains “在已验证形态下未发现问题”. LLVM coverage passed at
+**95.74% Rust lines** (20,003 lines, 853 missed), above the unchanged 90% gate.
+
+Separate nightly checks passed **21 pure-domain Miri tests** and **198 native
+ASan unit tests** with leak detection. All six affected Bazel owner test targets
+passed. The architecture gate retained **144 matching source digests** and
+**1,413 file/line dependency references**, with zero violations. Documentation
+and authored-file budgets passed. Local logs and selfcheck JSON are retained
+under `target/verification-contract-*`; architecture evidence remains under
+`target/architecture/`.
+
+These results cover controlled Rust assertion producers, normalization and
+snapshot workflows. They do not certify an external JUnit producer, inline Rust
+test extraction, native Windows/macOS behavior or the team-owned real-repository
+pilot. Existing installation, source-review and policy adoption boundaries remain.

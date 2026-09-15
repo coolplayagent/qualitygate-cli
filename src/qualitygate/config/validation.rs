@@ -58,6 +58,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
     for check in &config.checks {
         validate_id(&check.id)?;
         super::compatibility::validate(check)?;
+        super::test_effectiveness::validate(check)?;
         if !ids.insert(&check.id) {
             bail!("Duplicate check id: {}", check.id);
         }

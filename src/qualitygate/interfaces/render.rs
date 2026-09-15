@@ -132,6 +132,20 @@ pub(super) fn report(
                 diagnostic.fix
             ));
         }
+        if let Some(files) = check
+            .metadata
+            .get("test_effectiveness_files")
+            .and_then(serde_json::Value::as_array)
+        {
+            for file in files {
+                details.push_str(&format!(
+                    " {}: {} counterexamples / {} executed tests;",
+                    file["file"].as_str().unwrap_or(""),
+                    file["counterexamples"],
+                    file["executed"]
+                ));
+            }
+        }
         let details = details.replace('|', "\\|").replace(['\n', '\r'], " ");
         if format == super::cli::Format::Markdown {
             out.push_str(&format!(

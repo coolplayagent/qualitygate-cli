@@ -180,3 +180,5 @@ mod tests;
 
 #[cfg(test)]
 mod coverage_tests;
+
+pub mod test_cases;

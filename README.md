@@ -26,6 +26,7 @@ See [manual acceptance](docs/manual-acceptance.md) for signed review records and
 See [task plans](docs/tasks.md) for acceptance contracts, selected policy versions and reproducible rechecks.
 See [agent-run provenance](docs/provenance.md) for authenticated transformation histories and AI-only test scope.
 See [Git trailer bindings](docs/git-trailers.md) for declarations associated with actual test-changing commits.
+See [test effectiveness](docs/test-effectiveness.md) for explicit old-code counterexamples from independent test files.
 See [tool reports](docs/reports.md) for test counts, coverage, analyzer output and incremental comparison.
 See [coverage reports](docs/coverage.md) for JaCoCo, Cobertura and coverage.py completeness and repair evidence.
 See [SARIF analysis](docs/sarif.md) for indexed locations, baseline identities and real Clippy acceptance.

@@ -64,7 +64,7 @@ exercise common framework/source forms. Stress cases cover malformed inputs,
 Unicode, physical long paths, symlink modes, missing objects, file/output
 limits, timeouts and changed/foreign evidence.
 
-The corpus contains **334 fixtures**, including **85 policy-evolution fixtures**.
+The corpus contains **338 fixtures**, including **85 policy-evolution fixtures**.
 `--rule policy-evolution` selects this regression group; it is not an installable
 rule ID.
 

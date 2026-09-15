@@ -35,7 +35,6 @@
     },
     {
       "if": {"properties": {"then": {"anyOf": [
-        {"required": ["min_count"], "properties": {"min_count": {"type": "integer"}}},
         {"required": ["max_lines"], "properties": {"max_lines": {"type": "integer"}}},
         {"required": ["max_total_words"], "properties": {"max_total_words": {"type": "integer"}}},
         {"required": ["required_paths"], "properties": {"required_paths": {"minItems": 1}}}
@@ -128,6 +127,7 @@
         "require_marker": {"type": "boolean", "default": false},
         "require_dependency": {"anyOf": [{"$ref": "#/$defs/dependency"}, {"type": "null"}]},
         "name_pattern": {"type": ["string", "null"], "description": "Rust regex required to match the entity name; CLI checks regex syntax."},
+        "require_pattern": {"type": ["string", "null"], "description": "Rust regex required in each triggered entity text."},
         "forbid_pattern": {"type": ["string", "null"], "description": "Rust regex forbidden in entity text; CLI checks regex syntax."},
         "max_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
         "min_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
@@ -139,6 +139,7 @@
         {"required": ["require_marker"], "properties": {"require_marker": {"const": true}}},
         {"required": ["require_dependency"], "properties": {"require_dependency": {"type": "object"}}},
         {"required": ["name_pattern"], "properties": {"name_pattern": {"type": "string"}}},
+        {"required": ["require_pattern"], "properties": {"require_pattern": {"type": "string"}}},
         {"required": ["forbid_pattern"], "properties": {"forbid_pattern": {"type": "string"}}},
         {"required": ["max_count"], "properties": {"max_count": {"type": "integer"}}},
         {"required": ["min_count"], "properties": {"min_count": {"type": "integer"}}},

@@ -85,6 +85,7 @@ Route the requested capability before editing policy:
 | Request | Reference and control surface |
 |---|---|
 | Bound instruction size or retain owner/test files, including unchanged files | [File contracts](references/file-contracts.md); project DSL `file` + `change: all`, validated through `rules validate` |
+| Require changed independent tests to expose assertion counterexamples on old code | [Test effectiveness](references/test-effectiveness.md); explicit command/task `test_effectiveness` |
 | Prevent existing analyzer debt from increasing | [Diagnostic ratchets](references/diagnostic-ratchets.md); command-check `reports[].mode: ratchet`, with a fresh base run |
 | Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |

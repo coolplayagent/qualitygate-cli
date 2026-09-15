@@ -7,6 +7,7 @@ mod input_guard;
 mod io_workers;
 mod limits;
 mod merge_request;
+pub mod test_overlay;
 mod worktree;
 pub use changes::{Change, compare as compare_files};
 pub use git::{read_commit, read_commit_with_options, resolve_commit, run_git};

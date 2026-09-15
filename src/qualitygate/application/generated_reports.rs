@@ -72,11 +72,38 @@ pub(super) async fn collect(
         let bytes = read_report(workspace, &spec.path).await?;
         persist(artifacts, &format!("report-{index}"), &bytes, result).await?;
         let previous = baseline.remove(&index);
+        let effectiveness = check.test_effectiveness.is_some();
         let spec = spec.clone();
         let mut next = result.clone();
         let snapshot = Arc::clone(snapshot);
         let workspace = workspace.to_owned();
         let (next, found) = tokio::task::spawn_blocking(move || {
+            if effectiveness {
+                let cases = reports::test_cases::parse(&bytes, &snapshot, &workspace)?;
+                let executed = cases
+                    .iter()
+                    .filter(|case| {
+                        !matches!(
+                            case.outcome,
+                            crate::domain::test_effectiveness::TestOutcome::Skipped
+                        )
+                    })
+                    .count();
+                if executed < spec.minimum_tests.unwrap_or(1) {
+                    anyhow::bail!("Test effectiveness report has insufficient executed tests");
+                }
+                let found = cases.iter().any(|case| {
+                    matches!(
+                        case.outcome,
+                        crate::domain::test_effectiveness::TestOutcome::Failure { .. }
+                            | crate::domain::test_effectiveness::TestOutcome::Error
+                    )
+                });
+                next.matched_entities = executed;
+                next.metadata
+                    .insert("test_cases".into(), serde_json::to_value(&cases)?);
+                return Ok((next, found));
+            }
             let data = reports::parse(spec.format, &bytes)?;
             let found = data.has_findings();
             let before = next.diagnostics.len();

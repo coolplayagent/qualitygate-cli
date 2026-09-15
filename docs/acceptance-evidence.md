@@ -182,3 +182,28 @@ completed all ten checks, and package compilation succeeded. Remote
 passed all 20 jobs; [Bazel run 34746651386](https://github.com/coolplayagent/qualitygate-cli/actions/runs/34746651386)
 also passed. These runs validate this repository revision only; they do not
 replace the pilot evidence above.
+
+## Rule contracts and paired test effectiveness (§11)
+
+[Required text and minimum entity assertions](custom-rules.md) have separate
+empty-scope, text-violation, staged-repair and retained-marker regressions in
+`tests/custom_rules.rs`. The four `custom-contract-*` minimal goldens use actual
+production evaluation and retain malformed syntax as incomplete.
+
+The [test effectiveness evidence matrix](test-effectiveness.md#requirement-to-test-evidence)
+links pure per-file decisions, strict JUnit normalization, immutable overlays,
+reusable task/configuration validation and the separate Rust integration target.
+Actual fixture assertions establish new-code success and old-code failure;
+missing symbols, unknown types, shared-budget timeouts, source mutation and
+incomparable identities never supply a counterexample.
+
+The 2026-09-15 Linux verification passed 361 tests, the full 338-fixture
+selfcheck, 95.74% line coverage, 21 Miri domain tests, 198 ASan native unit tests
+and six affected Bazel owner targets. Nine existing live-producer tests remain
+separate. Formatting, compilation, Clippy, documentation and architecture passed;
+architecture retained 144 source digests and 1,413 dependency references without
+violations. Local evidence is under `target/verification-contract-*`, with
+architecture JSON/DOT in `target/architecture/`. See the
+[implementation record](implementation.md#rule-text-contracts-and-test-counterexamples-11)
+for measured limits; these fixtures do not establish real-pilot or production
+producer acceptance.

@@ -38,7 +38,8 @@ Creating a definition does not enable it.
 | `max_total_words` | Maximum total Unicode whitespace-separated segments, including code and comments, across matching files |
 | `required_paths` | Up to 256 unique normalized literal repository-relative files that must exist in the captured snapshot |
 
-The four new assertions require `file` with `change: all`. Zero is a valid
+`max_lines`, `max_total_words` and `required_paths` require `file` with
+`change: all`; `min_count` also supports other entity/change combinations. Zero is a valid
 numeric limit; `min_count` cannot exceed `max_count`. Required paths are exact
 files, not directories, symbols or globs. They are checked even with no text
 matches and may be outside the text filters. The snapshot boundary rejects

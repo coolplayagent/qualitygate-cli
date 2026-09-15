@@ -143,9 +143,26 @@ The definition supplies default `required` and `severity`. Explicit settings und
 
 Omitted `change` means `added`. `any` selects current entities in changed files within the requested scope, including surviving tests in those files. `modified` tests have changed bodies or annotations. Deleted entities are not current validation targets. Unsupported entity/change combinations are rejected.
 
-Files also support `change: all` and `min_count`, `max_lines`, `max_total_words`
+Files also support `change: all` and `max_lines`, `max_total_words`
 and `required_paths` assertions. See [file contracts](file-contracts.md) for
 measurements, empty-scope behavior and resource bounds.
+
+`then.min_count` sets a lower bound on actually triggered entities for every
+supported entity/change combination. Retained marker obligations do not fill
+that count. Zero is legal, and the minimum cannot exceed `max_count`. Complete
+empty scans fail when the minimum requires a match; missing capabilities or
+failed parsing remain incomplete. Without a minimum, empty matching preserves
+its existing behavior.
+
+`then.require_pattern` requires a Rust regex match within each triggered
+entity's text. For example, a file rule can require a nonempty ownership line
+with `require_pattern: '(?m)^Owns: +\S.*$'`. Use separate reviewed rules for
+independent fields, and `min_count` to require a nonempty target inventory.
+This is text validation, not Markdown contract parsing or proof of ownership.
+Deleting the field and emptying the selected inventory must exercise separate
+negative fixtures. The four `custom-contract-*` minimal selfcheck cases cover
+required text, zero entities and incomplete syntax; `tests/custom_rules.rs`
+covers staged repairs and retained marker obligations.
 
 `then.name_pattern` requires a regex match on the name. `then.forbid_pattern` rejects a regex match in the entity's text. `then.max_count` limits the total number of selected entities, including zero as a valid limit. Multiple assertions are combined, with separate stable diagnostic fingerprints per entity and violation type. A definition must contain at least one assertion.
 

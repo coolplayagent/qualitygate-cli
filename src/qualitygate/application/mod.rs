@@ -27,6 +27,7 @@ mod selfcheck_io;
 mod selfcheck_policy;
 mod selfcheck_policy_io;
 mod test_counts;
+mod test_effectiveness;
 mod tool_evidence;
 
 use crate::{
@@ -110,6 +111,7 @@ async fn check_prepared(
         catalog,
         evidence: policy,
         plan,
+        protected_paths,
     } = loaded;
     let git_facts = git_trailers::load(&plan, &catalog, &snapshot).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
@@ -146,11 +148,11 @@ async fn check_prepared(
         .to_string();
     let mut results: Vec<CheckResult> = Vec::new();
     let mut provenance_proofs = std::collections::BTreeMap::new();
-    let workspace = if plan
-        .commands
-        .iter()
-        .any(|check| check.kind == config::CheckKind::Command && check.compatibility.is_none())
-        && invalid.is_empty()
+    let workspace = if plan.commands.iter().any(|check| {
+        check.kind == config::CheckKind::Command
+            && check.compatibility.is_none()
+            && check.test_effectiveness.is_none()
+    }) && invalid.is_empty()
     {
         Some(snapshot::materialize_shared(Arc::clone(&snapshot)).await?)
     } else {
@@ -236,6 +238,18 @@ async fn check_prepared(
             && invalid.is_empty()
         {
             compatibility::execute(command, &directory, &snapshot).await
+        } else if let Some(command) = command
+            && command.test_effectiveness.is_some()
+            && invalid.is_empty()
+        {
+            test_effectiveness::execute(
+                command,
+                &directory,
+                &snapshot,
+                &protected_paths,
+                options.snapshot_options.max_bytes,
+            )
+            .await
         } else if let (Some(command), Some(workspace), Some(inputs)) =
             (command, &workspace, &input_guard)
         {

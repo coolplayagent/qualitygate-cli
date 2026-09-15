@@ -75,5 +75,9 @@
   "evolution-candidate-edit":{"/active_policy":null,"/parent_unchanged":true,"/original_unchanged":true,"/evidence_trust":"unverified_evidence","/operation/status":"completed","/state":"candidate","/revision_changed":true,"/rule/enabled":true,"/patch/0/actor/id":"editor","/operation/value/revision/created_by/id":"generator","/operation/value/revision/evaluation_ref":null,"/operation/value/revision/approval_ref":null},
   "evolution-candidate-rejected":{"/active_policy":null,"/parent_unchanged":true,"/original_unchanged":true,"/evidence_trust":"unverified_evidence","/operation/status":"incomplete","/operation/reason":{"$contains":"frozen in Rejected"},"/state":"rejected","/history_actions/0":"candidate_rejected"},
   "evolution-context-empty":{"/status":"completed","/value/mandatory/0/id":"line-ending","/value/mandatory_checks/0/id":"required-test","/value/selected":[]},
-  "evolution-suite-valid":{"/status":"completed"}
+  "evolution-suite-valid":{"/status":"completed"},
+  "custom-contract-pass": {"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "custom-contract-missing-text": {"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"require_pattern"},
+  "custom-contract-empty": {"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"min_count"},
+  "custom-contract-syntax-error": {"/execution/status":"blocked","/verdict":null,"/diagnostic_count":0}
 }

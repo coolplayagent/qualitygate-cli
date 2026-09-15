@@ -100,6 +100,14 @@ comparison, result contracts and verification boundaries belong to `domain`;
 `interfaces` selects filters and renders those results. Selfcheck adds no owner
 or dependency direction and executes no candidate project commands.
 
+Test effectiveness configuration and validation remain in `config`; shared
+case/proof contracts and pure comparison belong to `domain`. `snapshot`
+composes immutable files without depending on configuration types. The JUnit
+adapter normalizes per-case facts, `application` orchestrates two bounded
+executions through `runner`, and `interfaces` renders their evidence. Required
+text and lower entity counts extend the existing rule adapter. No owner or
+allowed dependency direction changes; see [test effectiveness](test-effectiveness.md).
+
 ## Checked evidence
 
 The harness follows Rust module declarations from both crate roots. It parses grouped imports, re-exports, aliases, qualified/relative paths, inline modules and qualified references/imports inside macro arguments. File names containing `test` do not exclude production code. Only configurations proven inactive when `test=false` are omitted; platform and feature branches remain in the graph, including `cfg(not(test))`.

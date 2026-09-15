@@ -29,3 +29,5 @@ pub use report::*;
 pub use rule_validation::*;
 pub use source_review::*;
 pub use verification::*;
+
+pub mod test_effectiveness;

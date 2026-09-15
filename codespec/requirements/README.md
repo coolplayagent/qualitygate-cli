@@ -12,3 +12,7 @@ bounded parallel execution and reproducible performance evidence.
 [diagnostic ratchets](../../docs/diagnostic-ratchets.md) define instruction
 inventory and historical diagnostic growth requirements with executable
 requirement-to-test mappings.
+
+[Test effectiveness](../../docs/test-effectiveness.md) specifies explicit per-file
+assertion counterexamples and paired snapshot evidence. [Custom rules](../../docs/custom-rules.md)
+cover required text and minimum triggered entity counts under REQUIREMENTS §11.

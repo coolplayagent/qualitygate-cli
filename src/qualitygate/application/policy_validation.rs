@@ -433,6 +433,12 @@ fn prepare_check(
         source_reviews: config::source_reviews::evidence(&policy.config, &policy.catalog)?,
     };
     Ok(super::policy::Loaded {
+        protected_paths: super::policy::protected_paths(
+            &policy.config,
+            &policy.catalog,
+            &policy.version.config_path,
+            None,
+        ),
         catalog: policy.catalog.clone(),
         evidence,
         plan,

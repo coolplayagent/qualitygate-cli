@@ -19,6 +19,8 @@ acceptance:
 
 The command must exercise the stated behavior. Recognized Cargo, pytest, Maven and other supported test runners require actual nonzero execution counts; report-producing wrappers need explicit [test report requirements](reports.md). Command exits, required arguments, prerequisites, tool probes, report mappings, project producers and compatibility checks use the same validation as repository commands. See [signed manual acceptance](manual-acceptance.md) for external decisions. Merely naming a command as a test does not prove its behavior or test coverage.
 
+Task command verification also accepts [test effectiveness](test-effectiveness.md) with the same strict configuration and paired evidence as repository commands.
+
 ## Selecting the task authority
 
 Without `--policy-ref`, configuration, custom rules and the task contract come from the selected code snapshot. `--staged` uses index bytes even when working files differ; worktree mode uses current captured bytes. These policies retain the `local_candidate` trust label.

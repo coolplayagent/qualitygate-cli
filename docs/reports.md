@@ -41,6 +41,8 @@ For ordinary `cargo test` commands, the CLI can also aggregate Rust test-harness
 
 A command missing its configured `required_args` is blocked without execution, including when its diagnostic severity is warning. Static argument inspection cannot establish that the command ran.
 
+An opt-in command [test effectiveness contract](test-effectiveness.md) uses paired snapshots and a stricter per-case JUnit profile to require counterexamples. Ordinary report checks keep their existing semantics.
+
 ## Execution and tool evidence
 
 Every executed command records its resolved executable path and SHA-256 content identity, original and resolved argv, snapshot, start/end times, exit code and duration. Executable identity reads are limited to 256 MiB. The environment record contains OS, architecture, CLI version and hashes of recognized dependency manifests and lockfiles from the snapshot. Arbitrary environment variables and credentials are not collected. Executable resolution follows the command's working directory and platform path lookup through [which_in](https://docs.rs/which/8.0.6/which/fn.which_in.html).

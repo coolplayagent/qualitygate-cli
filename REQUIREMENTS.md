@@ -535,3 +535,14 @@ M1 优先交付 fixture 全谱系证伪门禁和实际验证命令；真实仓�
 
 - [Anthropic：Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：任务清单、进度记录与实际测试支持持续工作；本项目聚焦其中的验证反馈与交付门禁。
 - [Tree-sitter 官方说明](https://tree-sitter.github.io/tree-sitter/)：提供语法树生成与增量解析能力；项目语义分析需由本项目的生态适配层另行提供。
+
+
+## 11. 规则契约与测试有效性增量
+
+- 有限 DSL 支持必需文本 `require_pattern`；`min_count` 适用于所有合法实体/变更组合，只计触发实体。空扫描违规与能力/解析不完整必须分离。
+- 命令及任务可显式配置 `test_effectiveness`，对每个新增或内容修改的独立测试文件要求同一用例新代码通过、旧代码出现结构化断言失败。
+- 基线采用本次比较的已解析 base；组合快照只移植声明的测试/辅助文件，保留删除和模式，拒绝生产路径重叠及受保护策略/构建输入替换。
+- 两次执行共用截止时间并保留各自输入、工具、日志和逐用例证据。缺失报告、未知失败类型、编译错误、跳过、超时及快照不一致不能成为有效反例。
+- 不自动推断规则、测试命令或豁免；首版不抽取内嵌测试。沿用原有架构、规则驱动、策略审查与 0/1/2 结果语义。
+
+配置和需求到测试映射见 [测试有效性](docs/test-effectiveness.md) 与 [规则 DSL](docs/custom-rules.md)。

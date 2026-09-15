@@ -10,6 +10,7 @@ pub(super) struct Loaded {
     pub catalog: Catalog,
     pub evidence: PolicyEvidence,
     pub plan: Plan,
+    pub protected_paths: Vec<String>,
 }
 
 pub(super) async fn load(
@@ -126,7 +127,7 @@ pub(super) async fn load(
             .into(),
             changes: changes.into_iter().collect(),
         };
-        Ok((Loaded { catalog, evidence: policy, plan }, invalid))
+        Ok((Loaded { protected_paths: protected_paths(&config, &catalog, &options.config, options.task.as_deref()), catalog, evidence: policy, plan }, invalid))
     })
     .await??;
     invalid.extend(errors);
@@ -149,3 +150,31 @@ pub(super) fn validate_source(source: &Source, files: &BTreeMap<String, File>) -
 #[cfg(test)]
 #[path = "policy_tests.rs"]
 mod tests;
+
+pub(super) fn protected_paths(
+    config: &config::Config,
+    catalog: &Catalog,
+    configuration: &str,
+    task: Option<&str>,
+) -> Vec<String> {
+    let mut paths = config.verification_assets.clone();
+    paths.push(globset::escape(configuration));
+    paths.extend(task.map(globset::escape));
+    if let Some(directory) = config::catalog::project_rules_directory(config) {
+        paths.push(format!("{}/**", globset::escape(directory)));
+    }
+    for source in config
+        .rules
+        .values()
+        .filter_map(|rule| rule.source.as_ref())
+        .chain(
+            catalog
+                .entries
+                .values()
+                .filter_map(|entry| entry.custom.as_ref().map(|rule| &rule.source)),
+        )
+    {
+        paths.push(globset::escape(&source.document));
+    }
+    paths
+}

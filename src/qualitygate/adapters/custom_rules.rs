@@ -177,6 +177,12 @@ fn run(
         .as_deref()
         .map(Regex::new)
         .transpose()?;
+    let require = rule
+        .then
+        .require_pattern
+        .as_deref()
+        .map(Regex::new)
+        .transpose()?;
     for subject in &subjects {
         let mut violations = Vec::new();
         if subject.triggered
@@ -200,6 +206,16 @@ fn run(
             violations.push((
                 "forbid_pattern",
                 "Entity contains text forbidden by this rule".into(),
+            ));
+        }
+        if subject.triggered
+            && require
+                .as_ref()
+                .is_some_and(|pattern| !pattern.is_match(&subject.text))
+        {
+            violations.push((
+                "require_pattern",
+                "Entity lacks text required by this rule".into(),
             ));
         }
         if rule.then.require_marker {
@@ -248,6 +264,15 @@ fn run(
             result,
             facts.git_trailers,
         )?;
+    }
+    if !(rule.when.entity == "file" && rule.when.change.as_deref() == Some("all"))
+        && let Some(minimum) = rule.then.min_count
+        && triggered < minimum
+    {
+        result.diagnostics.push(diagnostic(&rule.id, None, None,
+            format!("{triggered} matching entities is below min_count {minimum}"),
+            serde_json::json!({"assertion":"min_count", "count":triggered,"limit":minimum,"entity":rule.when.entity}),
+            &rule.fix, "min_count"));
     }
     if let Some(maximum) = rule.then.max_count
         && triggered > maximum

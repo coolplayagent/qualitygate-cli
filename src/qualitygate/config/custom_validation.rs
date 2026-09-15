@@ -76,6 +76,7 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
         && rule.then.require_dependency.is_none()
         && rule.then.name_pattern.is_none()
         && rule.then.forbid_pattern.is_none()
+        && rule.then.require_pattern.is_none()
         && rule.then.max_count.is_none()
         && rule.then.min_count.is_none()
         && rule.then.max_lines.is_none()
@@ -84,8 +85,7 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
     {
         bail!("Custom rule must contain at least one assertion");
     }
-    if (rule.then.min_count.is_some()
-        || rule.then.max_lines.is_some()
+    if (rule.then.max_lines.is_some()
         || rule.then.max_total_words.is_some()
         || !rule.then.required_paths.is_empty())
         && (rule.when.entity != "file" || change != "all")
@@ -112,9 +112,13 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
             bail!("required_paths must contain unique normalized literal file paths");
         }
     }
-    for pattern in [&rule.then.name_pattern, &rule.then.forbid_pattern]
-        .into_iter()
-        .flatten()
+    for pattern in [
+        &rule.then.name_pattern,
+        &rule.then.forbid_pattern,
+        &rule.then.require_pattern,
+    ]
+    .into_iter()
+    .flatten()
     {
         regex::Regex::new(pattern)?;
     }

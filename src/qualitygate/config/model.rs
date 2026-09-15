@@ -206,6 +206,8 @@ pub struct CommandCheck {
     pub evidence_file: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compatibility: Option<super::compatibility::CompatibilitySpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub test_effectiveness: Option<super::test_effectiveness::TestEffectivenessSpec>,
 }
 
 /// Fresh Maven outputs from the same command, paths relative to the repository.
@@ -381,6 +383,8 @@ pub struct Verification {
     pub evidence_file: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compatibility: Option<super::compatibility::CompatibilitySpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub test_effectiveness: Option<super::test_effectiveness::TestEffectivenessSpec>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -436,6 +440,8 @@ pub struct Assertions {
     pub name_pattern: Option<String>,
     #[serde(default)]
     pub forbid_pattern: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub require_pattern: Option<String>,
     #[serde(default)]
     pub max_count: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

@@ -12,7 +12,7 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
     assert_eq!(result["decision"], "pass");
     assert!(result["errors"].as_array().unwrap().is_empty());
     let cases = result["fixtures"].as_array().unwrap();
-    assert_eq!(cases.len(), 334, "Shipped fixture inventory changed");
+    assert_eq!(cases.len(), 338, "Shipped fixture inventory changed");
     let evolution: Vec<_> = cases
         .iter()
         .filter(|case| case["rule"] == "policy-evolution")

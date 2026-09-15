@@ -587,3 +587,86 @@ fn moves_copies_and_overloads_are_compared_as_entities() {
     definition(root, &NAMING.replace("change: added", "change: any"));
     assert_eq!(check(root, 1)["checks"][0]["matched_entities"], 4);
 }
+
+#[test]
+fn required_text_and_minimum_entities_detect_empty_scans_and_staged_repairs() {
+    let root = fixture();
+    let root = root.path();
+    policy(root, "");
+    definition(
+        root,
+        "language: [python]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method, change: added}\nthen: {require_pattern: 'assert .+ == .+', min_count: 1, max_count: 2}",
+    );
+    let empty = check(root, 1);
+    assert_eq!(
+        empty["checks"][0]["diagnostics"][0]["evidence"]["assertion"],
+        "min_count"
+    );
+    std::fs::write(
+        root.join("test_contract.py"),
+        "def test_behavior():\n    pass\n",
+    )
+    .unwrap();
+    let failed = check(root, 1);
+    assert_eq!(
+        failed["checks"][0]["diagnostics"][0]["evidence"]["assertion"],
+        "require_pattern"
+    );
+    git(root, &["add", "."]);
+    std::fs::write(
+        root.join("test_contract.py"),
+        "def test_behavior():\n    assert value() == 2\n",
+    )
+    .unwrap();
+    check(root, 0);
+    let staged = report(&cli(root, &["check", "--staged", "--format", "json"]), 1);
+    assert_eq!(
+        failed["checks"][0]["diagnostics"][0]["fingerprint"],
+        staged["checks"][0]["diagnostics"][0]["fingerprint"]
+    );
+    std::fs::write(root.join("test_contract.py"), "def test_behavior(:\n").unwrap();
+    assert!(check(root, 2)["checks"][0]["verdict"].is_null());
+    // Different entity selectors use the same lower-bound semantics.
+    for (entity, capability, change, text) in [
+        ("comment", "comments", "added", "# Owns: inputs\n"),
+        ("import", "imports", "any", "import pathlib\n"),
+        ("file", "files", "added", "contract\n"),
+    ] {
+        std::fs::write(root.join("test_contract.py"), text).unwrap();
+        definition(
+            root,
+            &format!(
+                "language: [python]\nrequires_capabilities: [{capability}]\nwhen: {{entity: {entity}, change: {change}}}\nthen: {{min_count: 1, require_pattern: '.'}}"
+            ),
+        );
+        check(root, 0);
+    }
+}
+
+#[test]
+fn retained_marker_obligations_do_not_satisfy_minimum_added_test_count() {
+    let root = fixture();
+    let root = root.path();
+    policy(root, "");
+    definition(
+        root,
+        "language: [python]\nrequires_capabilities: [test_methods, comments]\napplies_to: {provenance_scope: all_added_tests}\nbinding: {marker: {type: comment, name: '@generated', fields: [author]}}\nwhen: {entity: test_method, change: added}\nthen: {require_marker: true, min_count: 1}",
+    );
+    std::fs::write(
+        root.join("test_old.py"),
+        "# @generated author='fixture'\ndef test_old():\n    assert 1 == 1\n",
+    )
+    .unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "old declaration"]);
+    std::fs::rename(root.join("test_old.py"), root.join("test_moved.py")).unwrap();
+    let report = check(root, 1);
+    assert_eq!(
+        report["checks"][0]["metadata"]["retained_marker_entities"],
+        1
+    );
+    assert_eq!(
+        report["checks"][0]["diagnostics"][0]["evidence"]["assertion"],
+        "min_count"
+    );
+}

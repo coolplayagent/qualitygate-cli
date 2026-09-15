@@ -159,6 +159,12 @@ pub(super) fn prepare(
         source_reviews: config::source_reviews::evidence(&config, &catalog)?,
     };
     Ok(super::policy::Loaded {
+        protected_paths: super::policy::protected_paths(
+            &config,
+            &catalog,
+            &active.version.config_path,
+            options.task.as_deref(),
+        ),
         evidence,
         catalog,
         plan: config::Plan::build(&config, task.as_ref(), &options.profile)?,
