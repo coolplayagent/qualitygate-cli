@@ -59,6 +59,7 @@ impl Fixture {
         let evidence = policy_candidates::retain_evidence(
             root.path(),
             EvidenceRecord {
+                case: None,
                 schema_version: 1,
                 kind: EvidenceKind::ConversationCorrection,
                 source_digest: digest(b"Require LF in new files"),
@@ -114,6 +115,7 @@ impl Fixture {
             git(root.path(), &["commit", "-qm", name]);
             let task = serde_json::from_value(json!({"schema_version":1,"task_id":format!("task-{name}"),"acceptance":[{"id":"probe","description":"Independent producer execution","verification":{"check_id":"probe","argv":["git","--version"],"timeout_seconds":5}}]})).unwrap();
             cases.push(ValidationCase {
+                evidence_ref: None,
                 id: name.into(),
                 kind,
                 base,

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "qualitygate-eight-task-seven-day-pilot",
+  "protocol": {
+    "project": "qualitygate-cli",
+    "sampling": "Before execution select four bug fixes and four refactors; assign each to both model groups and both workflows",
+    "owner": null,
+    "reviewer": null,
+    "archive": null,
+    "sealed_at": null,
+    "start_at": null,
+    "end_at": null,
+    "task_count": 8,
+    "days": 7,
+    "max_attempts": 3,
+    "max_seconds": 1800,
+    "review_fraction_min": 1.0,
+    "monetary_cap": null,
+    "thresholds": {
+      "detection_min": 0.9,
+      "false_positive_max": 0.05,
+      "repair_min": 0.8,
+      "completion_min": 0.95,
+      "review_reduction_min": 0.1,
+      "full_p95_ratio_max": 1.2,
+      "cost_ratio_max": 1.0
+    }
+  },
+  "assignments": [],
+  "observations": []
+}

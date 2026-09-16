@@ -1,5 +1,12 @@
 # Requirements acceptance evidence
 
+The [phase-A baseline record](pilot-phase-a.md) tracks REQUIREMENTS §12 and
+EVO-01/03/05 preparation: versioned Rust task templates, real assertion
+regressions, pinned repository tool evidence, and the user-selected Codex
+medium/lower model probes. Probe failures and corrected offline interpretations
+are retained. These records do not establish cross-product compatibility,
+autonomous repair benefit, or acceptance of the real-repository pilot below.
+
 [File contracts](file-contracts.md) and
 [diagnostic ratchets](diagnostic-ratchets.md) map each new requirement to
 separate unit and temporary-repository integration evidence. They extend the
@@ -150,9 +157,10 @@ reviewer classifications, repair budget, denominators, and the required
 measurements. The following evidence is not available in this repository and
 cannot be manufactured from fixtures:
 
-1. A team-selected real repository, trusted policy reference, task types,
-   historical samples, observation period, sample size, and predeclared
-   thresholds.
+1. A sealed concrete task inventory with trusted task/policy references,
+   assigned reviewers, monetary cap and durable evidence location. The user
+   confirmed qualitygate-cli, eight tasks over seven days, task types, per-run
+   budgets and thresholds on 2026-09-16; see the [phase-A record](pilot-phase-a.md).
 2. Reviewer-approved classification of unique diagnostics, including existing
    tool attribution and reviewed/unreviewed false-positive counts.
 3. Actual agent repair attempts and full rechecks against the selected
@@ -207,3 +215,20 @@ architecture JSON/DOT in `target/architecture/`. See the
 [implementation record](implementation.md#rule-text-contracts-and-test-counterexamples-11)
 for measured limits; these fixtures do not establish real-pilot or production
 producer acceptance.
+
+## Task feedback and external repairs (§12 / phase B)
+
+[Phase-B evidence](pilot-phase-b.md) records the bounded feedback projection,
+original/full replay contexts, external Rust harness, real merged-branch
+regression, and controlled Codex module repairs with all failed attempts.
+These observations establish an engineering loop; the production task inventory,
+human benefit, monetary costs and seven-day trial above remain pending.
+
+## Case provenance and pilot aggregation (§12 / phase C)
+
+[Phase-C evidence](pilot-phase-c.md) records suite v2 provenance constraints,
+assignment-based metrics, digest-bound full reports, remaining task templates
+and an offline replay of every retained phase-B success and failure. The CLI
+marks summaries descriptive and cannot authenticate caller declarations or
+approve rollout. The production task inventory, reviewer, monetary cap,
+durable archive and seven-day observations remain pending.

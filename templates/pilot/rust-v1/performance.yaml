@@ -1,0 +1,26 @@
+schema_version: 1
+task_id: rust-performance-v1
+acceptance:
+  - id: performance-behavior
+    description: The functional performance contract passes before external paired measurement review.
+    required: true
+    severity: error
+    verification:
+      kind: command
+      check_id: rust-performance
+      argv: [cargo, test, --locked, --offline, --all-features, --test, performance_contract]
+      timeout_seconds: 300
+      tools:
+        - id: cargo
+          argv: [cargo, --version]
+          inputs: [Cargo.toml, Cargo.lock]
+        - id: rustc
+          argv: [rustc, --version]
+  - id: paired-performance-review
+    description: Independent reviewer confirms paired baseline and candidate measurements use the same workload, environment, cache and budget and meet the task-specific threshold.
+    required: true
+    severity: error
+    verification:
+      kind: manual
+      check_id: performance-review
+      evidence_file: reviews/performance.json

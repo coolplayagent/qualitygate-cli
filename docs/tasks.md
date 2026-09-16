@@ -21,6 +21,13 @@ The command must exercise the stated behavior. Recognized Cargo, pytest, Maven a
 
 Task command verification also accepts [test effectiveness](test-effectiveness.md) with the same strict configuration and paired evidence as repository commands.
 
+The versioned [Rust pilot templates](../templates/pilot/rust-v1/README.md)
+cover bug fixes, behavior-preserving refactors, features, dependencies,
+documentation/rules and functional-plus-reviewed performance evidence using
+these contracts. Their actual-assertion, zero-test and policy-protection
+regressions are in `tests/pilot_baseline.rs` and `tests/pilot_templates.rs`;
+adopting a template still requires task-specific review.
+
 ## Selecting the task authority
 
 Without `--policy-ref`, configuration, custom rules and the task contract come from the selected code snapshot. `--staged` uses index bytes even when working files differ; worktree mode uses current captured bytes. These policies retain the `local_candidate` trust label.
@@ -57,3 +64,7 @@ These optional report fields are additive to JSON schema version 1. Earlier succ
 | §9.1 text/JSON consistency and retained acceptance conditions | Policy fixtures exercise JSON, table and Markdown after deleting candidate acceptance items; the manual acceptance suite verifies signed task composition |
 
 These fixtures use isolated temporary Git repositories. They do not establish the team-selected real-repository pilot or its human review measurements.
+
+Reports also retain original and final full replay context, including when there
+are no diagnostics. See [Agent feedback](agent-feedback.md) for the additive
+context contract, byte budgets and pending-delivery semantics.

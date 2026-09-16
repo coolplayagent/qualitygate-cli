@@ -2,7 +2,15 @@
 
 This protocol covers REQUIREMENTS §9.2 and the real-repository evidence required by §9.1.3 and the rollout milestones. Automated fixtures, self-hosted checks and CI results establish implementation behavior. Human-confirmed violations, false-positive rates and review savings require observations from an agreed pilot and are not inferred from those tests.
 
-No pilot has yet been accepted for this revision. Repository selection, sample size, observation period and acceptance thresholds remain team decisions. Until those inputs and the resulting review records exist, the implementation ledger keeps pilot acceptance pending.
+No pilot has yet been accepted for this revision. On 2026-09-16 the user confirmed qualitygate-cli, eight tasks (four bug fixes and four refactors), seven days, and the existing per-run budgets and acceptance thresholds. The concrete task inventory, reviewer assignment, monetary cap and durable evidence location remain to be recorded. Pilot acceptance remains pending until the resulting observations and review records exist.
+
+The [phase-A record](pilot-phase-a.md) contains the current Codex two-model
+preparation, confirmed observation parameters and actual engineering evidence.
+Connectivity probes and controlled template fixtures remain separate from the
+real-task observations governed here.
+[Phase C](pilot-phase-c.md) provides the strict observation manifest,
+digest-bound `pilot summarize` command and case-provenance contract. Its
+retrospective module replay remains engineering evidence rather than this trial.
 
 ## Before collecting outcomes
 
@@ -44,3 +52,7 @@ Each case record needs a stable case ID, task type, real/history/injected origin
 ## Available implementation evidence
 
 The Rust suites already provide controlled check/fix/recheck fixtures for Java, Python and generated Rust projects, and explicit failure/incompleteness cases. They do not supply human review observations or real-repository benefit measurements. See [Maven](projects.md), [Python](python-projects.md), [interface compatibility](compatibility.md), [initialization](init.md) and [the implementation ledger](implementation.md) for their boundaries and actual verification results. Rollout remains pending until this pilot's measured acceptance record exists.
+
+[Phase B](pilot-phase-b.md) provides actual Codex source proposals and external
+full rechecks on extracted project modules. These controlled cases remain
+separate from the agreed production task inventory and seven-day observation.

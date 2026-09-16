@@ -58,6 +58,13 @@ publication.
 
 The Rust integration job and local integration check include `tests/init.rs`. Its temporary Cargo project executes a generated candidate, reports a real failed assertion, passes after repair, and rejects a zero-test result. The repository-owned fixture and initialization implementation are Rust.
 
+`tests/pilot_baseline.rs` additionally validates the versioned Rust bug-fix and
+refactor templates, actual assertions, zero-test rejection, compilation gaps and
+selected-task protection. It preserves reports and tool logs under
+`target/pilot-phase-a`. `tests/pilot_codex_live.rs` is an explicitly ignored,
+billable connectivity probe, separate from stable tests. See the
+[phase-A record](pilot-phase-a.md) for actual runs and their limits.
+
 `tests/manual.rs` signs external review records in Rust, verifies approval/rejection and task bindings, repairs stale approvals after code changes, and executes a temporary Rust command that changes external trust inputs during a check. The gate must reject that changed evidence while retaining the original artifacts.
 
 `tests/provenance.rs` signs complete run histories and verifies mixed human/agent edits, declaration retention, Python/Java entities, file moves, staged snapshots, omitted steps, unauthorized signers, revocation and tampering. A temporary Rust command proves that record mutation and expiry after initial verification prevent gate completion. Adapter tests exercise ambiguous lineage and malformed intermediate syntax.
@@ -77,3 +84,15 @@ The same job separately runs `tests/coverage_llvm_live.rs` with the pinned Rust/
 `tests/policy.rs` preserves selected task plans and acceptance conditions after candidate deletion, corruption and executable-mode changes. It verifies staged task isolation and policy commit evidence, then moves an actual temporary branch and executes a diagnostic's pinned recheck. JSON, table and Markdown retain the selected task's identity and descriptions. See [task plans and policy selection](tasks.md).
 
 The separate unit gate checks directly constructed task contracts at the reusable `Plan::build` API, so YAML loading is not a prerequisite for semantic validation. These configuration tests run with native unit tests; Miri remains restricted to the pure domain.
+
+The `feedback` and `agent_loop` integration targets cover phase-B presentation
+and external retry contracts. `pilot_baseline` also executes a real Git merge
+whose individually passing branches regress when combined. The explicitly
+ignored `pilot_repair_live` target makes billable model calls; see
+[phase B](pilot-phase-b.md) for actual records and remaining pilot limits.
+
+The `case_provenance`, `pilot_summary` and `pilot_templates` targets cover phase-C
+lineage, immutable promotion inputs, assignment denominators, full-report
+bindings, malformed/missing evidence and the remaining task templates. Pure
+metric and zero-denominator decisions remain in the native unit target. See
+[phase C](pilot-phase-c.md); actual trial observations remain separate.

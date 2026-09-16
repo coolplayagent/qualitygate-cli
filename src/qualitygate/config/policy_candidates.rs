@@ -121,6 +121,7 @@ pub fn retain_evidence(root: &Path, record: EvidenceRecord, source: &[u8]) -> Re
         bail!("Evidence source digest does not match the retained bytes");
     }
     Store::transaction(root, |store| {
+        super::case_provenance::validate_record(store, &record)?;
         store.put_blob(source)?;
         let reference = store.put_record("evidence", &record)?;
         if !store.index.evidence.contains(&reference) {

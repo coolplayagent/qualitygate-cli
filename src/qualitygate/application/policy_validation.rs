@@ -74,6 +74,7 @@ fn prepare(options: &ValidateOptions, evaluator: &str) -> Result<Prepared> {
         }
         policy_candidates::evidence(&store, evidence)?;
     }
+    config::case_provenance::validate_suite(&store, &inputs.suite, &revision)?;
     let load = |reference: &str| -> Result<_> {
         let (version, config, frozen) = policy_candidates::load_version(&store, reference)?;
         let (config, catalog) = frozen.resolve(&config)?;

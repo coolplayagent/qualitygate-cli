@@ -87,6 +87,15 @@ pub struct Report {
     pub summary: Summary,
     #[serde(default)]
     pub verification: super::VerificationBoundary,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ReportContext>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReportContext {
+    pub report_path: String,
+    pub recheck: Recheck,
+    pub delivery_recheck: Recheck,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]

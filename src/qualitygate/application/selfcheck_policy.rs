@@ -56,6 +56,7 @@ pub(super) fn actor(id: &str) -> Actor {
 
 fn report(input: &ReportInput) -> Report {
     Report {
+        context: None,
         schema_version: 1,
         run_id: "fixture".into(),
         scope: "task".into(),

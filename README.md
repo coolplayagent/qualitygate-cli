@@ -24,6 +24,10 @@ See [external engineering standards](knowledge/best-practices/engineering-standa
 See [initialization](docs/init.md) for nested project discovery, capability gaps and command suggestions.
 See [manual acceptance](docs/manual-acceptance.md) for signed review records and caller-controlled trust.
 See [task plans](docs/tasks.md) for acceptance contracts, selected policy versions and reproducible rechecks.
+For Agent integration, see [bounded repair feedback](docs/agent-feedback.md),
+the [external Rust loop](docs/agent-loop.md), and [phase-B evidence](docs/pilot-phase-b.md).
+Use [pilot evidence summaries](docs/pilot-phase-c.md) for protected case
+provenance, assignment-based aggregation and the read-only `pilot summarize` command.
 See [agent-run provenance](docs/provenance.md) for authenticated transformation histories and AI-only test scope.
 See [Git trailer bindings](docs/git-trailers.md) for declarations associated with actual test-changing commits.
 See [test effectiveness](docs/test-effectiveness.md) for explicit old-code counterexamples from independent test files.
@@ -59,6 +63,7 @@ cargo run -- rules enable commit-message
 cargo run -- config --show
 cargo run -- selfcheck
 cargo run -- selfcheck --fixture minimal --rule commit-message
+cargo run -- pilot summarize --input observations.json --format json
 ```
 
 `check` returns 0 for a complete passing gate, 1 for blocking violations, and 2 for incomplete validation. `quick` and `--path` cover only their selected scope and cannot establish delivery readiness. Generated logs and reports live under `QUALITYGATE_HOME` (default: a qualitygate directory in the OS temporary directory); `--output-dir` overrides the evidence location. Commands run against a disposable materialization of the selected snapshot.

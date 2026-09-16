@@ -2,6 +2,7 @@
 
 pub mod attestation;
 mod builtin_validation;
+pub mod case_provenance;
 pub mod catalog;
 mod catalog_assets;
 pub mod categories;
@@ -13,6 +14,7 @@ mod initialization;
 mod model;
 mod parallel;
 pub mod parameters;
+pub mod pilot;
 mod plan;
 pub mod policy_acceptance;
 pub mod policy_active;

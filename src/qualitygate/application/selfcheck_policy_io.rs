@@ -30,6 +30,7 @@ fn evidence(root: &Path, mismatch: bool) -> Result<Value> {
     policy_candidates::retain_evidence(
         root,
         EvidenceRecord {
+            case: None,
             schema_version: 1,
             kind: EvidenceKind::ConversationCorrection,
             source_digest: digest(SOURCE),
@@ -291,6 +292,7 @@ pub(super) async fn workflow(scenario: WorkflowScenario, jobs: u16) -> Result<Va
             expectations.insert("diff-size".into(), Expected::Pass);
         }
         cases.push(config::policy_acceptance::ValidationCase {
+            evidence_ref: None,
             id: name.into(),
             kind,
             base,

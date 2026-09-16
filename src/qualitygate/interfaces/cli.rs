@@ -35,6 +35,11 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Read-only evidence summaries; these do not authorize rollout or pilot acceptance.
+    Pilot {
+        #[command(subcommand)]
+        command: super::pilot::Pilot,
+    },
     /// Evidence retention, candidate revisions and immutable policy history.
     Policy {
         #[command(subcommand)]
@@ -180,6 +185,12 @@ enum Categories {
 #[derive(Debug, Args)]
 #[group(skip)]
 struct CheckArgs {
+    /// Emit bounded JSON feedback linked to the unfiltered persisted report.
+    #[arg(long)]
+    feedback: bool,
+    /// Feedback byte limit including the trailing newline (4..=256 KiB).
+    #[arg(long, requires = "feedback", value_parser = clap::value_parser!(u32).range(4096..=262144))]
+    feedback_max_bytes: Option<u32>,
     #[arg(long, group = "selection")]
     diff: Option<String>,
     #[arg(long, group = "selection")]
@@ -195,6 +206,9 @@ struct CheckArgs {
     mr_api_base: Option<String>,
     #[arg(long, conflicts_with_all = ["diff", "staged", "mr"])]
     base: Option<String>,
+    /// Reject a replay if its captured base differs from this full commit ID.
+    #[arg(long)]
+    expect_base: Option<String>,
     #[arg(long, default_value = "full", value_parser = ["quick", "full"])]
     profile: String,
     #[arg(long)]
@@ -270,6 +284,17 @@ impl Cli {
                 Ok((super::render::metadata(&value, self.format)?, 0))
             }
             Command::Rules { command } => run_rules(root, self.config, command, self.format).await,
+            Command::Pilot {
+                command: super::pilot::Pilot::Summarize { input },
+            } => {
+                let input = if input.is_absolute() {
+                    input
+                } else {
+                    root.join(input)
+                };
+                let (value, code) = application::pilot::summarize(input).await?;
+                Ok((super::render::metadata(&value, self.format)?, code))
+            }
             Command::Policy { command } => {
                 let (value, code) = super::policy::run(root, self.config, command).await?;
                 Ok((super::render::metadata(&value, self.format)?, code))
@@ -329,8 +354,21 @@ impl Cli {
                     trust_store: args.trust_store,
                     evidence_dir: args.evidence_dir,
                 };
-                let report = application::check(options).await?;
+                let report =
+                    application::check_with_expected_base(options, args.expect_base.as_deref())
+                        .await?;
                 let code = report.gate.decision.exit_code();
+                if args.feedback {
+                    return Ok((
+                        application::feedback::render(
+                            report,
+                            args.feedback_max_bytes.unwrap_or(32768) as usize,
+                            args.severity,
+                        )
+                        .await?,
+                        code,
+                    ));
+                }
                 Ok((
                     super::render::report(&report, self.format, args.severity)?,
                     code,

@@ -3,6 +3,7 @@ use serde_json::json;
 
 fn record() -> EvidenceRecord {
     EvidenceRecord {
+        case: None,
         schema_version: 1,
         kind: EvidenceKind::Review,
         source_digest: format!("sha256:{}", "a".repeat(64)),

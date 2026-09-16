@@ -43,6 +43,8 @@ pub enum Sensitivity {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EvidenceRecord {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub case: Option<super::case_provenance::CaseProvenance>,
     pub schema_version: u32,
     pub kind: EvidenceKind,
     pub source_digest: String,
@@ -160,6 +162,9 @@ impl EvidenceRecord {
             );
         }
         self.actor.validate()?;
+        if let Some(case) = &self.case {
+            case.validate()?;
+        }
         validate_text(&self.scope, 1024)?;
         if self.claims.is_empty()
             || self.claims.len() > 128

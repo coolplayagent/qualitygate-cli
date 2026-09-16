@@ -1,0 +1,18 @@
+schema_version: 1
+task_id: rust-refactor-v1
+acceptance:
+  - id: preserved-behavior
+    description: The same independently reviewed behavior regression cases pass before and after refactoring.
+    required: true
+    severity: error
+    verification:
+      kind: command
+      check_id: rust-regression
+      argv: [cargo, test, --locked, --offline, --test, regression]
+      timeout_seconds: 300
+      tools:
+        - id: cargo
+          argv: [cargo, --version]
+          inputs: [Cargo.toml, Cargo.lock]
+        - id: rustc
+          argv: [rustc, --version]

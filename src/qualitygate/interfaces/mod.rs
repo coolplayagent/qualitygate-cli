@@ -1,6 +1,7 @@
 //! Command-line parsing and deterministic report presentation.
 
 pub mod cli;
+mod pilot;
 mod policy;
 mod render;
 mod rule_lifecycle;

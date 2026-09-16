@@ -21,3 +21,18 @@ execution in temporary repositories; [its evidence matrix](../../docs/test-effec
 links the pure decision, JUnit profile, immutable composition and failure cases.
 The four `custom-contract-*` selfcheck fixtures cover required text and nonempty
 entity matching, including malformed syntax as incomplete evidence.
+
+The [phase-A evidence matrix](../../docs/pilot-phase-a.md#5-需求到测试及阶段验收)
+maps versioned bug-fix/refactor templates to `pilot_baseline` integration tests.
+`pilot_codex_live` separates ordinary protocol-parser tests, explicitly invoked
+model probes and offline reassessment of retained artifacts. These engineering
+records remain separate from real-task repair and benefit acceptance.
+
+The [phase-B matrix](../../docs/pilot-phase-b.md#3-需求到测试) maps pure feedback
+projection tests, `feedback` and `agent_loop` integration targets, the merged-branch
+regression, and the separately invoked `pilot_repair_live` model experiment.
+
+The [phase-C matrix](../../docs/pilot-phase-c.md#4-任务模板与需求到测试) maps
+`case_provenance`, pure pilot metric tests, `pilot_summary` report bindings and
+`pilot_templates` producer checks. The offline replay example consumes retained
+artifacts without invoking an Agent or claiming business-trial acceptance.

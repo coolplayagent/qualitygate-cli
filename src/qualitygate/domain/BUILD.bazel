@@ -5,7 +5,10 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "sources",
-    srcs = glob(["*.rs"]),
+    srcs = glob([
+        "*.rs",
+        "pilot/*.rs",
+    ]),
 )
 
 rust_library(

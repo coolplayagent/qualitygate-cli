@@ -82,6 +82,7 @@ pub fn complete_evaluation(
     super::policy_validation::binding(&attempt, &run)?;
     let suite: ValidationSuite = super::parse_yaml(&store.blob(&run.suite_digest)?)?;
     super::policy_acceptance::validate_suite(&suite)?;
+    super::case_provenance::validate_suite(store, &suite, &frozen)?;
     if suite.baseline_policy != run.baseline_policy
         || suite.budget != run.budget
         || suite.evaluator_epoch != run.evaluator_epoch

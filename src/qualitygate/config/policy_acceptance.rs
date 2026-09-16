@@ -19,6 +19,8 @@ use std::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ValidationCase {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence_ref: Option<String>,
     pub id: String,
     pub kind: CaseKind,
     pub base: String,
@@ -251,7 +253,7 @@ pub fn validate_suite(suite: &ValidationSuite) -> Result<()> {
     super::constraints::id(&suite.id)?;
     super::constraints::id(&suite.evaluator_epoch)?;
     let b = &suite.budget;
-    if suite.schema_version != 1
+    if ![1, 2].contains(&suite.schema_version)
         || !valid_digest(&suite.baseline_policy)
         || !(3..=64).contains(&suite.cases.len())
         || suite.min_improvements > suite.cases.len()
@@ -285,6 +287,14 @@ pub fn validate_suite(suite: &ValidationSuite) -> Result<()> {
     let mut tasks = BTreeSet::new();
     for case in &suite.cases {
         super::constraints::id(&case.id)?;
+        if (suite.schema_version == 2 && case.evidence_ref.is_none())
+            || case
+                .evidence_ref
+                .as_ref()
+                .is_some_and(|id| !valid_digest(id))
+        {
+            bail!("Suite v2 cases require retained evidence digests");
+        }
         if !ids.insert(&case.id)
             || !snapshots.insert((&case.base, &case.head))
             || !tasks.insert(&case.task.task_id)

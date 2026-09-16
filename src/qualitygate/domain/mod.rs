@@ -1,11 +1,14 @@
 //! Pure, I/O-free gate contracts, shared by CLI, rules and execution adapters.
 
 mod attestation;
+pub mod case_provenance;
 mod category;
 pub mod evolution;
+pub mod feedback;
 mod gate;
 pub mod language;
 pub mod normative;
+pub mod pilot;
 pub mod policy_approval;
 pub mod policy_effectiveness;
 pub mod policy_evaluation;

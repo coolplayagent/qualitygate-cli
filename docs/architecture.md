@@ -128,3 +128,23 @@ Production implementation sources are Rust. BUILD.bazel files below src are
 declared Bazel package metadata and are excluded from the Rust parser check.
 
 Reference semantics: [CommonMark parsing](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/) and [GitHub section links](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links).
+
+## Agent feedback ownership
+
+`domain::feedback` is a pure bounded projection of a full report.
+`application::feedback` computes its reference to the already persisted JSON
+on a blocking worker; `interfaces::cli` selects the view. Report context records
+original and full delivery replay commands. No owner gains model/network work.
+The optional `examples/agent_loop.rs` is an external application using the public
+CLI and bounded runner; it does not implement gate decisions. See
+[Agent feedback](agent-feedback.md) and [external loop](agent-loop.md).
+
+## Pilot evidence ownership
+
+`domain::case_provenance` and `domain::pilot` contain serializable contracts and
+pure lineage/metric decisions. `config` owns bounded archive, manifest and report
+reads; `application::pilot` moves those blocking reads off async orchestration;
+`interfaces` only parses `pilot summarize` and renders the result. The existing
+adapter boundary retains signature authentication. No domain or interface I/O
+and no owner dependency direction changes were introduced. See
+[phase C](pilot-phase-c.md).

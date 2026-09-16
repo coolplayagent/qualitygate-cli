@@ -1,0 +1,18 @@
+schema_version: 1
+task_id: rust-dependency-v1
+acceptance:
+  - id: dependency-behavior
+    description: The reviewed compatibility cases pass with the selected lockfile and features.
+    required: true
+    severity: error
+    verification:
+      kind: command
+      check_id: rust-dependency
+      argv: [cargo, test, --locked, --offline, --all-features, --test, dependency_contract]
+      timeout_seconds: 300
+      tools:
+        - id: cargo
+          argv: [cargo, --version]
+          inputs: [Cargo.toml, Cargo.lock]
+        - id: rustc
+          argv: [rustc, --version]

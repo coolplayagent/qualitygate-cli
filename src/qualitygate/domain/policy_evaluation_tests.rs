@@ -12,6 +12,7 @@ fn report() -> Report {
     check.metadata.insert("rule_definition".into(), json!({}));
     let checks = vec![check];
     Report {
+        context: None,
         schema_version: 1,
         run_id: "test".into(),
         scope: "task".into(),

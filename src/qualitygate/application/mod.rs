@@ -6,9 +6,11 @@ mod compatibility_inputs;
 mod coverage_gate;
 mod evidence;
 mod external;
+pub mod feedback;
 mod generated_reports;
 mod git_trailers;
 mod manual;
+pub mod pilot;
 mod policy;
 pub mod policy_active;
 pub mod policy_candidates;
@@ -54,6 +56,14 @@ pub struct CheckOptions {
 }
 
 pub async fn check(options: CheckOptions) -> Result<Report> {
+    check_with_expected_base(options, None).await
+}
+
+/// Replays may require selectors with an implicit base to retain its identity.
+pub async fn check_with_expected_base(
+    options: CheckOptions,
+    expected_base: Option<&str>,
+) -> Result<Report> {
     let snapshot = Arc::new(
         snapshot::capture_with_options(
             &options.root,
@@ -62,6 +72,11 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
         )
         .await?,
     );
+    if expected_base.is_some_and(|expected| expected != snapshot.identity.base) {
+        anyhow::bail!(
+            "Snapshot base differs from the expected base; select a new comparison explicitly"
+        );
+    }
     let mut invalid = Vec::new();
     let active = policy_active::load(options.root.clone()).await?;
     let (loaded, active) = if let Some(active) = active {
@@ -372,7 +387,29 @@ async fn check_prepared(
     }
     let summary = Summary::from_checks(&results);
     let gate = evaluate(&results, &plan.required, &invalid);
+    let mut delivery_options = options.clone();
+    delivery_options.profile = "full".into();
+    delivery_options.snapshot_options.path_filter = None;
+    if let Selection::Path { base, .. } = &options.selection {
+        delivery_options.selection = Selection::Worktree { base: base.clone() };
+    }
+    let delivery_recheck = self::recheck(
+        &delivery_options,
+        &snapshot.identity.base,
+        if policy.trust == "signed_active_policy" {
+            Some(&policy.source)
+        } else {
+            policy.resolved_commit.as_deref()
+        },
+    );
     let report = Report {
+        context: Some(ReportContext {
+            report_path: directory.join("report.json").display().to_string(),
+            recheck: Recheck { argv: recheck },
+            delivery_recheck: Recheck {
+                argv: delivery_recheck,
+            },
+        }),
         verification: VerificationBoundary::for_check(
             &gate,
             &results,
@@ -438,6 +475,8 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
         }
     }
     argv.extend([
+        "--expect-base".into(),
+        base.into(),
         "--snapshot-max-mib".into(),
         (options.snapshot_options.max_bytes / (1024 * 1024)).to_string(),
         "--snapshot-jobs".into(),

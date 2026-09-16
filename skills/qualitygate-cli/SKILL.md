@@ -89,6 +89,8 @@ Route the requested capability before editing policy:
 | Prevent existing analyzer debt from increasing | [Diagnostic ratchets](references/diagnostic-ratchets.md); command-check `reports[].mode: ratchet`, with a fresh base run |
 | Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
+| Supply bounded repair context to an external Agent | [Agent feedback](references/agent-feedback.md); `check --feedback`, complete report references and full rechecks |
+| Summarize a predeclared pilot inventory without approving rollout | [Pilot evidence](references/pilot-evidence.md); `pilot summarize`, full-report bindings and unknown metrics |
 | Verify the installed runtime or repair the CLI | [Selfcheck](references/selfcheck.md); bounded fixture/golden agreement |
 
 File contracts are project rules; diagnostic ratchets configure reports from
