@@ -2,6 +2,8 @@
 
 A Rust CLI for repository policy and task acceptance checks. Results distinguish violations from incomplete execution and bind evidence to the code and policy that were checked.
 
+The [project site](https://coolplayagent.github.io/qualitygate-cli/) provides the current Skill download, installation steps, and documentation entry points.
+
 The implementation follows [REQUIREMENTS.md](REQUIREMENTS.md). Implementation and verification progress is tracked in [docs/implementation.md](docs/implementation.md); a requirement is complete only when its behavior and tests exist.
 The [acceptance evidence audit](docs/acceptance-evidence.md) distinguishes the repeatable repository tests from the team-owned real-repository pilot evidence.
 

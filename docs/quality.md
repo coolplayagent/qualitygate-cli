@@ -56,6 +56,10 @@ version, preserves the policy/evidence safety boundary, and names the release
 assets; the tag workflow then validates the generated archive before any public
 publication.
 
+`tests/quality/site.rs` checks the static Pages entrypoint, current release
+version, local assets, repository documentation links and deployment workflow.
+The online release archive and Pages URL still require post-deployment checks.
+
 The Rust integration job and local integration check include `tests/init.rs`. Its temporary Cargo project executes a generated candidate, reports a real failed assertion, passes after repair, and rejects a zero-test result. The repository-owned fixture and initialization implementation are Rust.
 
 `tests/pilot_baseline.rs` additionally validates the versioned Rust bug-fix and

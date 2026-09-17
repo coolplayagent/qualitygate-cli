@@ -54,6 +54,14 @@ The workflow does not use its dry-run dispatch to publish a release. It also
 does not create a package version or tag: versioning and release authority
 remain with maintainers.
 
+Version v0.5.0 is the first release after the v10 unpriced pilot contract.
+The [project site](https://coolplayagent.github.io/qualitygate-cli/) is deployed
+from [`site/`](../site/index.html) on `main` by the separate
+[Pages workflow](../.github/workflows/pages.yml). It links to the matching
+release archive, install instructions, and repository documentation. Publishing
+the site does not publish a Skill release; only the validated version-tag
+workflow does that.
+
 ## Agent safety contract
 
 The [skill](../skills/qualitygate-cli/SKILL.md) keeps policy changes and actual
@@ -94,6 +102,8 @@ report configuration using the selected runtime before execution.
 | Package references and schema reach the agent | Package structure/version test, documentation link gate and release archive file checks |
 | Published Skill resolves its own documents and pilot templates | `published_skill_has_only_bundled_document_references_and_template` checks every Markdown link stays inside the package, rejects repository-only pilot paths, and compares bundled v7/v8/v9/v10 templates byte-for-byte with repository templates; release packaging checks all files |
 | Actual gate outcomes and incomplete evidence | Separate `file_contracts` and `ratchet` integration suites; full selfcheck remains evidence for its bundled corpus only |
+| DIST-01: versioned GitHub Action release | `skill_package_contract_is_complete_and_matches_the_cli_version`, Bazel version test, tag workflow, and published release archive/checksum inspection |
+| DIST-02: Pages installation and documentation entry | `tests/quality/site.rs` checks version, local assets, repository links, anchors, and workflow source/permissions; Pages run and live URL are checked after deployment |
 
 The package validator accepts both LF and CRLF YAML frontmatter delimiters,
 including a closing delimiter at end of file. It preserves the original YAML

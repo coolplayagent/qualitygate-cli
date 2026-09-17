@@ -645,3 +645,13 @@ v1/v2 已封存计划保持原摘要和验收语义，v3 沿用 v2 十项阈值�
 设计与证据见[阶段 O 记录](docs/pilot-phase-o.md)。A–O 工程契约已实现，
 后续是[真实试点准备度与独立验收](docs/pilot-readiness.md)，不能由本地
 fixture、同一 Codex 的两模型或摘要复查替代。
+
+## 13. Skill 发布与文档站点
+
+| 编号 | 发布要求 | 验收证据 |
+|---|---|---|
+| DIST-01 | Skill 与 CLI、Bazel 的版本一致；版本标签触发 GitHub Actions 先验证 Rust 质量门禁、再构建并核查各平台资产、发布可下载归档及 SHA-256；无标签的手动试运行不发布 | `tests/quality/skill_package.rs`、`tests/bazel.rs`、[发布工作流](.github/workflows/release.yml)的实际运行记录和 Release 资产 |
+| DIST-02 | `main` 的静态 Pages 站点提供当前版本的下载、安装和文档入口；站点内链接及版本在仓库质量门禁中校验，部署结果由 GitHub Pages 实际地址复核 | `tests/quality/site.rs`、[Pages 工作流](.github/workflows/pages.yml)的实际运行记录和在线页面 |
+
+发布工作流成功与正式试点收益验收相互独立；站点只陈述已实现能力，
+不能把受控 fixture 或未启动的 8 任务/7 天试点称为真实收益。

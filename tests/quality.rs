@@ -6,6 +6,8 @@ mod architecture;
 mod documentation;
 #[path = "quality/rust_references.rs"]
 mod rust_references;
+#[path = "quality/site.rs"]
+mod site;
 #[path = "quality/skill_package.rs"]
 mod skill_package;
 

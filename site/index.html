@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Qualitygate CLI checks repository policy and task acceptance against snapshot-bound evidence.">
+    <title>Qualitygate CLI</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="./">Qualitygate CLI</a>
+        <nav aria-label="Main navigation">
+          <a href="#install">Install</a>
+          <a href="#checks">Checks</a>
+          <a href="#documentation">Documentation</a>
+          <a href="https://github.com/coolplayagent/qualitygate-cli">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Qualitygate CLI</h1>
+        <p>Repository policy and task acceptance checks for software development. Each result is bound to the code and policy snapshot it checked, with violations and incomplete execution reported separately.</p>
+        <div class="intro-links">
+          <a class="primary-link" href="https://github.com/coolplayagent/qualitygate-cli/releases/tag/v0.5.0">Download v0.5.0</a>
+          <a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/README.md">Read the README</a>
+        </div>
+      </section>
+
+      <section id="install" aria-labelledby="install-title">
+        <h2 id="install-title">Install the Agent Skill</h2>
+        <p>The release archive contains the Skill instructions, rule references, and matching Linux and Windows CLI binaries. For Codex on Linux or macOS, download and extract it into your skills directory:</p>
+        <pre><code>gh release download v0.5.0 --repo coolplayagent/qualitygate-cli --pattern 'qualitygate-cli-skill-v0.5.0.tar.gz'
+mkdir -p ~/.codex/skills/qualitygate-cli
+tar -xzf qualitygate-cli-skill-v0.5.0.tar.gz --strip-components=1 -C ~/.codex/skills/qualitygate-cli</code></pre>
+        <p>Windows users can extract the same archive and use its matching <code>assets/windows-*/qualitygate.exe</code> binary. Review the <a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/skills/qualitygate-cli/README.md">package layout and runtime rules</a> before using it.</p>
+      </section>
+
+      <section id="checks" aria-labelledby="checks-title">
+        <h2 id="checks-title">What the CLI checks</h2>
+        <div class="feature-list">
+          <article>
+            <h3>Snapshot-bound results</h3>
+            <p>Run quick, staged, worktree, diff, or merge-request checks against a selected Git snapshot. Reports retain the policy and input identities needed to reproduce a result.</p>
+          </article>
+          <article>
+            <h3>Repository rules</h3>
+            <p>Use built-in rules, schema-validated project rules, required-file contracts, diagnostic debt ratchets, and bounded external command evidence.</p>
+          </article>
+          <article>
+            <h3>Agent feedback</h3>
+            <p>Give a coding agent bounded repair feedback while keeping policy changes, missing tools, and human acceptance visible as separate decisions.</p>
+          </article>
+          <article>
+            <h3>Pilot evidence</h3>
+            <p>Seal a model comparison plan, audit each attempt's model and execution records, and evaluate engineering thresholds without requiring financial estimates.</p>
+          </article>
+        </div>
+        <pre><code>qualitygate selfcheck
+qualitygate --root /path/to/repository check --worktree --profile quick --format json</code></pre>
+        <p>Exit code <code>0</code> means a complete pass; <code>1</code> means blocking violations; <code>2</code> means the validation is incomplete.</p>
+      </section>
+
+      <section id="documentation" aria-labelledby="documentation-title">
+        <h2 id="documentation-title">Documentation</h2>
+        <ul class="doc-list">
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/init.md">Start with a repository</a><span>Discovery, profiles, and project setup</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/rules.md">Built-in rules</a><span>Catalog, language adapters, and configuration</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/agent-feedback.md">Agent feedback</a><span>Bounded repair and evidence handling</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/skill-package.md">Skill package</a><span>Assets, versioning, and release checks</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/pilot.md">Pilot protocol</a><span>Model comparison and acceptance boundaries</span></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <span>Qualitygate CLI</span>
+        <a href="https://github.com/coolplayagent/qualitygate-cli/issues">Issues</a>
+      </div>
+    </footer>
+  </body>
+</html>

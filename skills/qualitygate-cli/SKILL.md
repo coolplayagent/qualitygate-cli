@@ -2,7 +2,7 @@
 name: qualitygate-cli
 description: "Operate Qualitygate CLI for snapshot-bound checks, schema-validated project rules, instruction/file budgets, required-file contracts, diagnostic debt ratchets, and evidence-backed policy evolution. Use for configuring or running these rule-based gates and bundled selfcheck; not generic review advice or evidence bypasses."
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
