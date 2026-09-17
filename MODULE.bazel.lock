@@ -476,7 +476,7 @@
     "@@rules_rust+//crate_universe:extensions.bzl%crate": {
       "general": {
         "bzlTransitiveDigest": "ycdtxIZITYOziV+VvaC5nRkxcnOHhYaYT0HOG677nYg=",
-        "usagesDigest": "cCZMXs39837tjqguaLD4lAUwIgwVYjPLKcRDom9PYzQ=",
+        "usagesDigest": "gnCOAKY3KJkd15/0qqFQ/X8BPucGpPHoEzC33u2LeuY=",
         "recordedInputs": [
           "ENV:CARGO_BAZEL_DEBUG \\0",
           "ENV:CARGO_BAZEL_GENERATOR_SHA256 \\0",
@@ -498,8 +498,8 @@
           "REPO_MAPPING:rules_rust+,bazel_skylib bazel_skylib+",
           "REPO_MAPPING:rules_rust+,bazel_tools bazel_tools",
           "REPO_MAPPING:rules_rust+,rules_cc rules_cc+",
-          "FILE:@@//Cargo.lock d311e00ffeea2e8aa00a03ef2a37b01354fb60bf2e48b4d0a5c165401fac12c7",
-          "FILE:@@//Cargo.toml 4dc72cb5956e80d42c24bae4717555d4ecea28e5a2c9eed2b73cd6328b953c13"
+          "FILE:@@//Cargo.lock bec90634bac30f0204053647f2e9f87d2daccdf16914c7b5df8ea04e48d2da27",
+          "FILE:@@//Cargo.toml 0d616fdb71b64336caf8716df381b397c55b55d89db38f127d061af3594a2205"
         ],
         "generatedRepoSpecs": {
           "crates": {

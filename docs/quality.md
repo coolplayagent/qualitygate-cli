@@ -59,6 +59,9 @@ publication.
 `tests/quality/site.rs` checks the static Pages entrypoint, current release
 version, local assets, repository documentation links and deployment workflow.
 The online release archive and Pages URL still require post-deployment checks.
+The Agent-loop no-progress fixture uses a stdin-consuming Git command so a
+fast process exit cannot turn prompt delivery into a platform-dependent broken
+pipe; its stop-reason and attempt-count assertions remain unchanged.
 
 The Rust integration job and local integration check include `tests/init.rs`. Its temporary Cargo project executes a generated candidate, reports a real failed assertion, passes after repair, and rejects a zero-test result. The repository-owned fixture and initialization implementation are Rust.
 

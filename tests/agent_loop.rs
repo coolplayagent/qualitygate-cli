@@ -91,8 +91,18 @@ async fn harness_accepts_only_changed_full_snapshot_and_preserves_untracked_edit
 #[tokio::test]
 async fn harness_retains_failed_attempts_and_stops_at_progress_or_attempt_limits() {
     for (attempts, agent, stop, count) in [
-        (3, json!(["git", "--version"]), "no_progress", 2),
-        (1, json!(["git", "--version"]), "attempt_budget", 1),
+        (
+            3,
+            json!(["git", "hash-object", "--stdin"]),
+            "no_progress",
+            2,
+        ),
+        (
+            1,
+            json!(["git", "hash-object", "--stdin"]),
+            "attempt_budget",
+            1,
+        ),
         (3, json!(["git", "not-a-real-command"]), "agent_failed", 1),
     ] {
         let root = setup();
@@ -102,6 +112,10 @@ async fn harness_retains_failed_attempts_and_stops_at_progress_or_attempt_limits
         assert_eq!(result["attempts"].as_array().unwrap().len(), count);
         assert_eq!(result["complete"], false);
         assert!(!result["attempts"][0]["agent"]["stdout"]["digest"].is_null());
+        if stop != "agent_failed" {
+            assert!(result["attempts"][0]["agent"]["capture_error"].is_null());
+            assert_eq!(result["attempts"][0]["agent"]["exit_code"], 0);
+        }
     }
 }
 
@@ -110,7 +124,13 @@ async fn harness_does_not_retry_incomplete_or_changed_policy_inputs() {
     let root = setup();
     let evidence = tempfile::tempdir().unwrap();
     std::fs::write(root.path().join("task.yaml"), "invalid\n").unwrap();
-    let result = run(root.path(), evidence.path(), json!(["git", "--version"]), 3).await;
+    let result = run(
+        root.path(),
+        evidence.path(),
+        json!(["git", "hash-object", "--stdin"]),
+        3,
+    )
+    .await;
     assert_eq!(result["termination"], "incomplete_check", "{result}");
     assert_eq!(result["attempts"].as_array().unwrap().len(), 0);
     assert_eq!(result["complete"], false);

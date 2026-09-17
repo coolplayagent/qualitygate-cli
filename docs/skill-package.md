@@ -54,7 +54,10 @@ The workflow does not use its dry-run dispatch to publish a release. It also
 does not create a package version or tag: versioning and release authority
 remain with maintainers.
 
-Version v0.5.0 is the first release after the v10 unpriced pilot contract.
+Version v0.5.1 is the first release after the v10 unpriced pilot contract.
+The v0.5.0 tag stopped at the remote test gate before producing release assets;
+the corrected test fixture consumes the Agent prompt before exiting, while the
+original no-progress and attempt-budget assertions remain in force.
 The [project site](https://coolplayagent.github.io/qualitygate-cli/) is deployed
 from [`site/`](../site/index.html) on `main` by the separate
 [Pages workflow](../.github/workflows/pages.yml). It links to the matching
