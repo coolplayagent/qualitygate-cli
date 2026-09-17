@@ -284,14 +284,38 @@ pub fn summarize_with_authorization(
     }
     let attempt_audit =
         (manifest.schema_version >= 6).then(|| super::attempt_audit::audit(manifest, reports));
-    let model_missing = manifest.schema_version >= 7
-        && manifest
+    let execution_audit =
+        (manifest.schema_version >= 9).then(|| super::execution_audit::audit(manifest));
+    let model_missing = match manifest.schema_version {
+        7 => manifest
             .observations
             .iter()
-            .any(|observation| observation.model_evidence.is_none());
+            .any(|observation| observation.model_evidence.is_none()),
+        8..=10 => manifest.observations.iter().any(|observation| {
+            observation
+                .attempts
+                .iter()
+                .any(|attempt| attempt.model_evidence.is_none())
+        }),
+        _ => false,
+    };
+    let model_drift = manifest.schema_version >= 8
+        && manifest.observations.iter().any(|observation| {
+            observation
+                .attempts
+                .iter()
+                .filter_map(|attempt| attempt.model_evidence.as_ref())
+                .filter_map(|evidence| evidence.capture.actual_model.as_deref())
+                .collect::<BTreeSet<_>>()
+                .len()
+                > 1
+        });
     let complete = !manifest.assignments.is_empty()
         && buckets.values().flatten().all(|r| r.gaps.is_empty())
         && !model_missing
+        && execution_audit
+            .as_ref()
+            .is_none_or(|audit| audit.evidence_complete)
         && attempt_audit
             .as_ref()
             .is_none_or(|audit| audit.evidence_complete);
@@ -313,9 +337,11 @@ pub fn summarize_with_authorization(
         .iter()
         .any(|v| v.is_none())
         || (manifest.schema_version == 1 && p.monetary_cap.is_none())
-        || (manifest.schema_version >= 2 && p.budget.is_none())
+        || ((2..=9).contains(&manifest.schema_version) && p.budget.is_none())
     {
-        limits.push("Owner, reviewer, durable archive or monetary budget is undeclared");
+        limits.push(
+            "Owner, reviewer, durable archive or version-required monetary budget is undeclared",
+        );
     }
     if p.sealed_at
         .zip(p.start_at)
@@ -364,7 +390,22 @@ pub fn summarize_with_authorization(
         limits.push("Execution/report evidence is incomplete; assigned failures and missing runs remain in denominators");
     }
     if model_missing {
-        limits.push("Observed runs lack archived model capture evidence");
+        limits.push(if manifest.schema_version >= 8 {
+            "Observed attempts lack archived model capture evidence"
+        } else {
+            "Observed runs lack archived model capture evidence"
+        });
+    }
+    if model_drift {
+        limits.push("Reported actual model changed across attempts in one assigned run");
+    }
+    if let Some(audit) = &execution_audit {
+        if !audit.evidence_complete {
+            limits.push("Observed attempts lack archived execution timing evidence");
+        }
+        if !audit.compliant {
+            limits.push("Archived execution start times differ from the declared run order");
+        }
     }
     let schedule_audit = (manifest.schema_version >= 5).then(|| super::schedule::audit(manifest));
     if let Some((_, status)) = &schedule_audit {
@@ -427,7 +468,10 @@ pub fn summarize_with_authorization(
     if let Some(audit) = attempt_audit {
         summary["attempt_audit"] = audit.value;
     }
-    if manifest.schema_version >= 7 {
+    if let Some(audit) = execution_audit {
+        summary["execution_audit"] = audit.value;
+    }
+    if manifest.schema_version == 7 {
         let records: Vec<_> = manifest
             .observations
             .iter()
@@ -453,6 +497,68 @@ pub fn summarize_with_authorization(
             "unobserved":manifest.assignments.len()-manifest.observations.len(),
             "records":records,
             "note":"Archived records bind declared model metadata, but do not authenticate provider routing or capture time"
+        });
+    } else if manifest.schema_version >= 8 {
+        let records: Vec<_> = manifest
+            .observations
+            .iter()
+            .flat_map(|observation| {
+                let requested_model = &manifest
+                    .assignments
+                    .iter()
+                    .find(|assignment| assignment.id == observation.assignment_id)
+                    .expect("validated assignment")
+                    .cohort
+                    .requested_model;
+                observation.attempts.iter().map(move |attempt| {
+                    attempt.model_evidence.as_ref().map_or_else(
+                        || {
+                            json!({"assignment_id":observation.assignment_id,
+                            "attempt_number":attempt.number,"attempt_status":attempt.status,
+                            "status":"missing","requested_model":requested_model,
+                            "actual_model":null,"unknown_reason":null,
+                            "captured_at":null,"artifact_digest":null})
+                        },
+                        |evidence| {
+                            json!({"assignment_id":observation.assignment_id,
+                            "attempt_number":attempt.number,"attempt_status":attempt.status,
+                            "status":evidence.capture.status,
+                            "requested_model":evidence.capture.requested_model,
+                            "actual_model":evidence.capture.actual_model,
+                            "unknown_reason":evidence.capture.unknown_reason,
+                            "captured_at":evidence.capture.captured_at,
+                            "artifact_digest":evidence.artifact.digest})
+                        },
+                    )
+                })
+            })
+            .collect();
+        let drifted_assignments: Vec<_> = manifest
+            .observations
+            .iter()
+            .filter(|observation| {
+                observation
+                    .attempts
+                    .iter()
+                    .filter_map(|attempt| attempt.model_evidence.as_ref())
+                    .filter_map(|evidence| evidence.capture.actual_model.as_deref())
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    > 1
+            })
+            .map(|observation| &observation.assignment_id)
+            .collect();
+        summary["model_audit"] = json!({
+            "comparison_scope":"requested_model_configuration",
+            "actual_identity_unknown":manifest.observations.iter().flat_map(|o|&o.attempts)
+                .filter(|a|a.model_evidence.as_ref().is_some_and(|e|
+                    e.capture.status == ModelIdentityStatus::Unknown)).count(),
+            "missing_attempts":manifest.observations.iter().flat_map(|o|&o.attempts)
+                .filter(|a|a.model_evidence.is_none()).count(),
+            "unobserved":manifest.assignments.len()-manifest.observations.len(),
+            "drifted_assignments":drifted_assignments,
+            "records":records,
+            "note":"Archived attempt records bind declared model metadata, but do not authenticate provider routing or capture time"
         });
     }
     Ok(summary)

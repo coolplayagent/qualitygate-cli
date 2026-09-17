@@ -2,7 +2,10 @@
 
 This protocol covers REQUIREMENTS §9.2 and the real-repository evidence required by §9.1.3 and the rollout milestones. Automated fixtures, self-hosted checks and CI results establish implementation behavior. Human-confirmed violations, false-positive rates and review savings require observations from an agreed pilot and are not inferred from those tests.
 
-No pilot has yet been accepted for this revision. On 2026-09-16 the user confirmed qualitygate-cli, eight tasks (four bug fixes and four refactors), seven days, and the existing per-run budgets and acceptance thresholds. The concrete task inventory, reviewer assignment, monetary cap and durable evidence location remain to be recorded. Pilot acceptance remains pending until the resulting observations and review records exist.
+No pilot has yet been accepted for this revision. On 2026-09-16 the user confirmed qualitygate-cli, eight tasks (four bug fixes and four refactors), seven days, and the existing per-run resource budgets and nonfinancial acceptance thresholds. On 2026-09-17 the user removed human hourly rates and pricing as prerequisites. The concrete task inventory, reviewer assignment and durable evidence location remain to be recorded. Pilot acceptance remains pending until the resulting observations and review records exist.
+
+The [readiness audit](pilot-readiness.md) identifies the remaining human inputs,
+the current task-source gap and the sequence for starting this finite trial.
 
 The [phase-A record](pilot-phase-a.md) contains the current Codex two-model
 preparation, confirmed observation parameters and actual engineering evidence.
@@ -31,6 +34,13 @@ independent input and rechecks its size, digest and confined path on each call.
 declared actual start positions against that plan.
 [Phase K](pilot-phase-k.md) binds an initial full report per run and audits
 attempt count, elapsed time and the declared no-progress stopping rule.
+[Phase L](pilot-phase-l.md) adds one model capture per observed run.
+[Phase M](pilot-phase-m.md) adds a separate capture per attempt and audits reported
+model changes within a run.
+[Phase N](pilot-phase-n.md) binds an archived execution receipt to each
+attempt and audits duration and first-start order.
+[Phase O](pilot-phase-o.md) lets a new v10 plan seal and assess eight
+nonfinancial thresholds without prices or a monetary budget.
 
 ## Before collecting outcomes
 
@@ -42,18 +52,25 @@ input. Only actual routed model identities and observations may be added later;
 any other plan change invalidates the embedded digest. See
 [phase D](pilot-phase-d.md) for the exact boundary.
 
-For a new pilot, start from `templates/pilot/observation-v7.json` and declare
-the eight independent tasks, 4/4 task mix, source artifacts, total monetary cap,
-human hourly rate, alternating `run_order`, each assignment's initial full report,
+For a new pilot, start from `templates/pilot/observation-v10.json` and declare
+the eight independent tasks, 4/4 task mix, source artifacts,
+alternating `run_order`, each assignment's initial full report,
 and `no_progress_limit=2` before sealing. Record each actual start position as
-`start_sequence` in the observation. For each observed run, archive a v7 model
-capture with assignment, Agent/harness, requested model, capture time and either
-the reported actual model or an explicit unknown reason. The CLI compares the
-bounded archived JSON with the manifest. The v1–v6 templates
+`start_sequence` in the observation. For every attempt, including failures and
+timeouts, archive a v8 model capture with assignment, attempt number,
+Agent/harness, requested model, capture time and either the reported actual
+model or an explicit unknown reason. The CLI compares each bounded archived
+JSON file with the manifest and flags reported model changes within a run.
+For v9 and v10, archive each attempt's harness execution receipt with start/end Unix
+milliseconds, status, snapshot and report binding. The CLI compares duration
+and declared start sequence with these archived claims. Original process and
+clock logs remain necessary for independent review. The v1–v8 templates
 remain for reading already prepared records; see [phase G](pilot-phase-g.md),
 [phase H](pilot-phase-h.md), [phase I](pilot-phase-i.md),
 [phase J](pilot-phase-j.md), [phase K](pilot-phase-k.md) and
-[phase L](pilot-phase-l.md).
+[phase L](pilot-phase-l.md). See [phase M](pilot-phase-m.md) for v8 model fields
+and [phase N](pilot-phase-n.md) for execution fields. See
+[phase O](pilot-phase-o.md) for the v10 financial boundary.
 
 Before observations, run `qualitygate pilot authorization-subject --input
 observations.json --format json`, have the configured owner sign the exact
@@ -63,7 +80,7 @@ external archive. During aggregation, pass both `--trust-store` and
 false. See [phase E](pilot-phase-e.md) for key scope, validity and revocation rules.
 
 After the observation window and all reports are complete, run `pilot
-acceptance-subject` with the authenticated start inputs. Retain the nine-check
+acceptance-subject` with the authenticated start inputs. Retain the v10 eight-check
 assessment and have the configured independent reviewer sign the exact subject.
 Pass that envelope as `pilot summarize --acceptance`; see
 [phase F](pilot-phase-f.md) for decision and exit-code semantics.
@@ -72,7 +89,7 @@ Record the repository URL or local source, immutable baseline commit, permitted 
 
 For each enabled rule, retain its normative source and hash, requiredness, severity, scope and planned mode. Record the trusted policy commit, task-contract digest, verification-asset inventory and expected required checks. Teams choose blocking rules before observing outcomes. Source declarations, comment language and similarity suggestions need explicit team scope and remain subject to their documented reliability limits.
 
-Specify numeric acceptance thresholds for confirmed violation detection, reviewed false positives, eligible repair success, review burden and execution cost. Also specify a minimum review fraction, required-check completion rate and treatment of unavailable tools. Record thresholds before evaluating results; an unreviewed diagnostic cannot count as accurate or as a false positive.
+Specify numeric acceptance thresholds for confirmed violation detection, reviewed false positives, eligible repair success, review burden and full-check duration. Also specify a minimum review fraction, required-check completion rate and treatment of unavailable tools. Record thresholds before evaluating results; an unreviewed diagnostic cannot count as accurate or as a false positive. v10 does not require prices or a monetary limit; any optional monetary observation remains descriptive.
 
 Retain the existing compiler/test/static-analysis baseline: actual commands, versions, exit statuses, reports, elapsed times and the snapshots they ran against. Identify which checks the repository already enforced. Keep task types, input snapshots and available tools comparable between groups. If the groups are not comparable, document the difference and do not attribute outcome changes to qualitygate.
 

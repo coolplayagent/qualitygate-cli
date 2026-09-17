@@ -154,9 +154,12 @@ and no owner dependency direction changes were introduced. See
 [phase E](pilot-phase-e.md), [phase F](pilot-phase-f.md) and
 [phase G](pilot-phase-g.md), [phase H](pilot-phase-h.md) and
 [phase I](pilot-phase-i.md), [phase J](pilot-phase-j.md) and
-[phase K](pilot-phase-k.md) and [phase L](pilot-phase-l.md). The v2+ budget,
+[phase K](pilot-phase-k.md), [phase L](pilot-phase-l.md) and
+[phase M](pilot-phase-m.md), [phase N](pilot-phase-n.md) and
+[phase O](pilot-phase-o.md). The v2–v9 budget,
 tenth threshold, v3+ task strata, v4+ source roster, v5 run-order audit,
-v6 attempt audit and v7 model-capture audit
+v6 attempt audit, v7 run-level model audit, v8 attempt-level model audit and
+v9+ execution-time audit and v10 eight-check nonfinancial assessment
 remain pure `domain::pilot` calculations. `config::pilot`
-owns bounded source, initial report and model-record reads; `application::pilot` rechecks them on a
+owns bounded source, initial report, model-record and execution-record reads; `application::pilot` rechecks them on a
 blocking worker before output. No owner direction changes.

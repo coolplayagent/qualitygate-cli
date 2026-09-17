@@ -89,7 +89,8 @@ pub struct Thresholds {
     pub completion_min: f64,
     pub review_reduction_min: f64,
     pub full_p95_ratio_max: f64,
-    pub cost_ratio_max: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cost_ratio_max: Option<f64>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -188,6 +189,10 @@ pub struct Attempt {
     pub report: Option<Artifact>,
     pub cost: Option<Cost>,
     pub usage: Option<Usage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model_evidence: Option<ModelEvidence>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub execution_evidence: Option<ExecutionEvidence>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -231,6 +236,8 @@ pub enum ModelIdentityStatus {
 #[serde(deny_unknown_fields)]
 pub struct ModelCapture {
     pub assignment_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attempt_number: Option<u16>,
     pub captured_at: u64,
     pub agent_version: String,
     pub harness_digest: String,
@@ -245,6 +252,24 @@ pub struct ModelCapture {
 pub struct ModelEvidence {
     pub artifact: Artifact,
     pub capture: ModelCapture,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExecutionCapture {
+    pub assignment_id: String,
+    pub attempt_number: u16,
+    pub started_at_ms: u64,
+    pub ended_at_ms: u64,
+    pub harness_digest: String,
+    pub status: AttemptStatus,
+    pub snapshot_digest: String,
+    pub report_digest: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExecutionEvidence {
+    pub artifact: Artifact,
+    pub capture: ExecutionCapture,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -384,6 +409,7 @@ mod acceptance;
 pub use acceptance::{acceptance_decision, acceptance_subject, threshold_assessment};
 mod attempt_audit;
 mod budget;
+mod execution_audit;
 pub use attempt_audit::verify_initial_baselines;
 mod comparison;
 mod rows;

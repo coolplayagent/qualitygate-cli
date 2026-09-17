@@ -28,8 +28,11 @@ The tracked skill directory is intentionally lightweight:
   candidate changes, lifecycle and signed adoption; [selfcheck](references/selfcheck.md)
   covers bundled runtime regression.
 - [pilot evidence](references/pilot-evidence.md) and the bundled
-  [v7 manifest template](assets/pilot/observation-v7.json) cover trial sealing,
-  model records and independently signed acceptance.
+  [v10 manifest template](assets/pilot/observation-v10.json) cover trial sealing,
+  attempt model and execution records, and independently signed acceptance.
+  The [v7 template](assets/pilot/observation-v7.json) and
+  [v8 template](assets/pilot/observation-v8.json) and
+  [v9 template](assets/pilot/observation-v9.json) remain for older priced plans.
 
 A tag release creates `qualitygate-cli-skill-<tag>.tar.gz`. Its root is this
 skill directory plus these platform-specific runtime assets:
@@ -50,6 +53,9 @@ qualitygate-cli-skill-<tag>/
 ├── references/schemas/project-rule.schema.json
 ├── references/rules/{core,shared,lang-java,lang-python}/*.yaml
 ├── assets/pilot/observation-v7.json
+├── assets/pilot/observation-v8.json
+├── assets/pilot/observation-v9.json
+├── assets/pilot/observation-v10.json
 ├── assets/linux-x86_64/qualitygate
 ├── assets/linux-aarch64/qualitygate
 ├── assets/windows-x86_64/qualitygate.exe

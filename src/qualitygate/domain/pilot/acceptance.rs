@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 
 const EVALUATOR_V1: &str = "qualitygate-pilot-thresholds-v1";
 const EVALUATOR_V2: &str = "qualitygate-pilot-thresholds-v2";
+const EVALUATOR_V3: &str = "qualitygate-pilot-thresholds-v3";
 
 fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -134,6 +135,11 @@ pub fn threshold_assessment(
     summary: &Value,
     protocol: &Protocol,
 ) -> Result<PilotThresholdAssessment> {
+    if protocol.thresholds.cost_ratio_max.is_none()
+        && (protocol.budget.is_some() || protocol.monetary_cap.is_some())
+    {
+        bail!("Unpriced pilot assessment cannot contain monetary controls");
+    }
     let groups = summary["groups"]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Pilot summary has no groups"))?;
@@ -178,8 +184,10 @@ pub fn threshold_assessment(
             Some(t.review_reduction_min),
         ),
         all_true(comparisons, "full_p95_ratio", Some(t.full_p95_ratio_max)),
-        all_true(comparisons, "cost_ratio", Some(t.cost_ratio_max)),
     ];
+    if let Some(limit) = t.cost_ratio_max {
+        checks.push(all_true(comparisons, "cost_ratio", Some(limit)));
+    }
     if let Some(budget) = &protocol.budget {
         let assessed: PilotBudgetAssessment = serde_json::from_value(summary["budget"].clone())?;
         if assessed.currency != budget.currency
@@ -228,8 +236,16 @@ pub fn threshold_assessment(
         ThresholdStatus::Met
     };
     Ok(PilotThresholdAssessment {
-        schema_version: if protocol.budget.is_some() { 2 } else { 1 },
-        evaluator: if protocol.budget.is_some() {
+        schema_version: if t.cost_ratio_max.is_none() {
+            3
+        } else if protocol.budget.is_some() {
+            2
+        } else {
+            1
+        },
+        evaluator: if t.cost_ratio_max.is_none() {
+            EVALUATOR_V3.into()
+        } else if protocol.budget.is_some() {
             EVALUATOR_V2.into()
         } else {
             EVALUATOR_V1.into()
@@ -406,6 +422,42 @@ mod tests {
             ThresholdStatus::Unknown
         );
         value["budget"]["currency"] = json!("EUR");
+        assert!(threshold_assessment(&value, &protocol).is_err());
+    }
+
+    #[test]
+    fn unpriced_pilot_requires_all_eight_nonfinancial_checks() {
+        let mut protocol = protocol();
+        protocol.monetary_cap = None;
+        protocol.thresholds.cost_ratio_max = None;
+        let mut value = summary();
+        value["comparisons"][0]["threshold_observations"]["cost_ratio"] = Value::Null;
+        let result = threshold_assessment(&value, &protocol).unwrap();
+        assert_eq!(result.schema_version, 3);
+        assert_eq!(result.evaluator, EVALUATOR_V3);
+        assert_eq!(result.checks.len(), 8);
+        assert_eq!(result.outcome, ThresholdStatus::Met);
+        assert!(
+            !result
+                .checks
+                .iter()
+                .any(|check| check.metric == "cost_ratio")
+        );
+        value["comparisons"][0]["threshold_observations"]["full_p95_ratio"] = json!(false);
+        let result = threshold_assessment(&value, &protocol).unwrap();
+        assert_eq!(result.outcome, ThresholdStatus::NotMet);
+        value["comparisons"][0]["threshold_observations"]["full_p95_ratio"] = Value::Null;
+        assert_eq!(
+            threshold_assessment(&value, &protocol).unwrap().outcome,
+            ThresholdStatus::Unknown
+        );
+        protocol.budget = Some(PilotBudget {
+            currency: "USD".into(),
+            priced_at: 1,
+            source: "invalid mixed fixture".into(),
+            max_total_micros: 1,
+            human_hourly_micros: 1,
+        });
         assert!(threshold_assessment(&value, &protocol).is_err());
     }
 }

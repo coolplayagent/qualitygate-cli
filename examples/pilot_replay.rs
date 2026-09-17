@@ -255,6 +255,8 @@ fn main() -> Result<()> {
                     snapshot_digest: snapshot,
                     report,
                     cost: None,
+                    model_evidence: None,
+                    execution_evidence: None,
                     usage: if agent["usage"].is_object() {
                         Some(serde_json::from_value(agent["usage"].clone())?)
                     } else {

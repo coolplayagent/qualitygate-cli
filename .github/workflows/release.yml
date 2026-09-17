@@ -210,6 +210,9 @@ jobs:
           test -f "dist/$package/references/rule-authoring.md"
           test -s "dist/$package/references/pilot-evidence.md"
           test -s "dist/$package/assets/pilot/observation-v7.json"
+          test -s "dist/$package/assets/pilot/observation-v8.json"
+          test -s "dist/$package/assets/pilot/observation-v9.json"
+          test -s "dist/$package/assets/pilot/observation-v10.json"
           for reference in file-contracts diagnostic-ratchets rule-management selfcheck; do
             test -s "dist/$package/references/$reference.md"
           done
@@ -234,6 +237,9 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rule-authoring.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/pilot-evidence.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v7.json" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v8.json" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v9.json" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v10.json" >/dev/null
           for reference in file-contracts diagnostic-ratchets rule-management selfcheck; do
             tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/$reference.md" >/dev/null
           done

@@ -62,7 +62,7 @@ pub(super) fn compare(
             "matched_inventory":matched,"review_reduction":review,"full_p95_ratio":time,"cost_ratio":cost,
             "threshold_observations":{"review_reduction":review.map(|r|r>=protocol.thresholds.review_reduction_min),
                 "full_p95_ratio":time.map(|r|r<=protocol.thresholds.full_p95_ratio_max),
-                "cost_ratio":cost.map(|r|r<=protocol.thresholds.cost_ratio_max)},
+                "cost_ratio":cost.zip(protocol.thresholds.cost_ratio_max).map(|(ratio,limit)|ratio<=limit)},
             "authority":"descriptive_only","limitation":"Matched declared conditions and task inventory permit descriptive comparison; causal attribution and trial acceptance require independent review"}));
     }
     comparisons

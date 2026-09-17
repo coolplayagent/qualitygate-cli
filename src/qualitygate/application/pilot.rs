@@ -13,6 +13,7 @@ pub async fn seal(input: PathBuf) -> Result<(Value, u8)> {
         crate::config::pilot::verify_sources(&input, &sealed)?;
         crate::config::pilot::verify_initial_reports(&input, &sealed)?;
         crate::config::pilot::verify_model_evidence(&input, &sealed)?;
+        crate::config::pilot::verify_execution_evidence(&input, &sealed)?;
         Ok((serde_json::to_value(sealed)?, 0))
     })
     .await?
@@ -29,6 +30,7 @@ pub async fn authorization_subject(input: PathBuf) -> Result<(Value, u8)> {
         crate::config::pilot::verify_sources(&input, &manifest)?;
         crate::config::pilot::verify_initial_reports(&input, &manifest)?;
         crate::config::pilot::verify_model_evidence(&input, &manifest)?;
+        crate::config::pilot::verify_execution_evidence(&input, &manifest)?;
         Ok((
             serde_json::json!({
                 "schema_version": 1,
@@ -144,6 +146,7 @@ pub async fn acceptance_subject(
         crate::config::pilot::verify_sources(&input, &manifest)?;
         crate::config::pilot::verify_initial_reports(&input, &manifest)?;
         crate::config::pilot::verify_model_evidence(&input, &manifest)?;
+        crate::config::pilot::verify_execution_evidence(&input, &manifest)?;
         Ok((
             serde_json::json!({
                 "schema_version":1,
@@ -226,6 +229,7 @@ pub async fn summarize(
         crate::config::pilot::verify_sources(&input, &manifest)?;
         crate::config::pilot::verify_initial_reports(&input, &manifest)?;
         crate::config::pilot::verify_model_evidence(&input, &manifest)?;
+        crate::config::pilot::verify_execution_evidence(&input, &manifest)?;
         let code = if summary["complete"] != true {
             2
         } else if summary["trial_acceptance"] == "rejected" {

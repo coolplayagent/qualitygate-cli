@@ -82,6 +82,8 @@ fn observe(manifest: &mut Manifest, reports: &mut Reports, issues: &[&[&str]], e
             report: Some(artifact),
             cost: None,
             usage: None,
+            model_evidence: None,
+            execution_evidence: None,
         });
     }
     manifest.observations.push(Observation {

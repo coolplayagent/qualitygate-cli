@@ -101,6 +101,8 @@ fn append(m: &mut Manifest, reports: &mut Reports, index: usize, workflow: Workf
             snapshot_digest: d(100 + index),
             report: Some(artifact),
             usage: None,
+            model_evidence: None,
+            execution_evidence: None,
             cost: Some(Cost {
                 currency: "USD".into(),
                 priced_at: 1,
@@ -215,12 +217,18 @@ fn sourced_plan() -> Manifest {
     manifest
 }
 
+#[path = "v10_tests.rs"]
+mod v10;
 #[path = "v5_tests.rs"]
 mod v5;
 #[path = "v6_tests.rs"]
 mod v6;
 #[path = "v7_tests.rs"]
 mod v7;
+#[path = "v8_tests.rs"]
+mod v8;
+#[path = "v9_tests.rs"]
+mod v9;
 
 #[test]
 fn v4_seal_binds_one_unique_preselected_source_per_independent_task() {

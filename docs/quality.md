@@ -143,3 +143,15 @@ Phase L extends native pilot validation and the `pilot_seal` CLI target with
 v7 bounded model-capture files, sealed request identity, explicit unknown
 actual models and summary audit. See [phase L](pilot-phase-l.md); v1–v6
 records retain their serialized plans and acceptance semantics.
+
+Phase M extends native pilot validation and the `pilot_seal` CLI target with
+v8 per-attempt model captures, bounded rereads and reported route-drift audit.
+See [phase M](pilot-phase-m.md); v1–v7 plans and acceptance semantics remain
+versioned.
+
+Phase N extends the native pilot validation and `pilot_seal` CLI target with
+v9 bounded execution receipts, duration binding and archived start-time order
+audit. See [phase N](pilot-phase-n.md); v1–v8 plans remain versioned.
+
+Phase O adds v10 unpriced pilot sealing and eight nonfinancial acceptance
+checks. See [phase O](pilot-phase-o.md); v1–v9 financial semantics remain versioned.

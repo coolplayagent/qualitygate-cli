@@ -1,5 +1,5 @@
 //! Bounded, read-only loading of a pilot inventory and its full report artifacts.
-use crate::domain::pilot::{Manifest, ModelCapture, Reports};
+use crate::domain::pilot::{ExecutionCapture, Manifest, ModelCapture, Reports};
 use anyhow::{Context, Result, bail};
 use std::{io::Read, path::Path};
 
@@ -43,6 +43,7 @@ pub fn load_manifest(input: &Path) -> Result<Manifest> {
     verify_sources(&input, &manifest)?;
     verify_initial_reports(&input, &manifest)?;
     verify_model_evidence(&input, &manifest)?;
+    verify_execution_evidence(&input, &manifest)?;
     Ok(manifest)
 }
 
@@ -56,33 +57,86 @@ pub fn verify_model_evidence(input: &Path, manifest: &Manifest) -> Result<()> {
         .context("Manifest needs a parent directory")?;
     let mut total = 0_u64;
     for observation in &manifest.observations {
-        let Some(evidence) = &observation.model_evidence else {
-            continue;
+        let evidence: Vec<_> = if manifest.schema_version == 7 {
+            observation.model_evidence.iter().collect()
+        } else {
+            observation
+                .attempts
+                .iter()
+                .filter_map(|attempt| attempt.model_evidence.as_ref())
+                .collect()
         };
-        let artifact = &evidence.artifact;
-        total = total.saturating_add(artifact.bytes + 1);
-        if total > 8 * 1024 * 1024 {
-            bail!("Pilot model evidence inventory exceeds 8 MiB");
+        for evidence in evidence {
+            let artifact = &evidence.artifact;
+            total = total.saturating_add(artifact.bytes + 1);
+            if total > 8 * 1024 * 1024 {
+                bail!("Pilot model evidence inventory exceeds 8 MiB");
+            }
+            let path = crate::paths::confined(parent, Path::new(&artifact.path))?;
+            let bytes = read(&path, artifact.bytes).with_context(|| {
+                format!(
+                    "Model evidence artifact is unavailable: {}",
+                    observation.assignment_id
+                )
+            })?;
+            if bytes.len() as u64 != artifact.bytes
+                || super::policy_store::digest(&bytes) != artifact.digest
+            {
+                bail!(
+                    "Model evidence length or digest differs: {}",
+                    observation.assignment_id
+                );
+            }
+            let capture: ModelCapture =
+                serde_json::from_slice(&bytes).context("Invalid model evidence JSON")?;
+            if capture != evidence.capture {
+                bail!("Model evidence JSON differs from the manifest claim");
+            }
         }
-        let path = crate::paths::confined(parent, Path::new(&artifact.path))?;
-        let bytes = read(&path, artifact.bytes).with_context(|| {
-            format!(
-                "Model evidence artifact is unavailable: {}",
-                observation.assignment_id
-            )
-        })?;
-        if bytes.len() as u64 != artifact.bytes
-            || super::policy_store::digest(&bytes) != artifact.digest
+    }
+    Ok(())
+}
+
+pub fn verify_execution_evidence(input: &Path, manifest: &Manifest) -> Result<()> {
+    if manifest.schema_version < 9 {
+        return Ok(());
+    }
+    let input = manifest_path(input)?;
+    let parent = input
+        .parent()
+        .context("Manifest needs a parent directory")?;
+    let mut total = 0_u64;
+    for observation in &manifest.observations {
+        for evidence in observation
+            .attempts
+            .iter()
+            .filter_map(|attempt| attempt.execution_evidence.as_ref())
         {
-            bail!(
-                "Model evidence length or digest differs: {}",
-                observation.assignment_id
-            );
-        }
-        let capture: ModelCapture =
-            serde_json::from_slice(&bytes).context("Invalid model evidence JSON")?;
-        if capture != evidence.capture {
-            bail!("Model evidence JSON differs from the manifest claim");
+            let artifact = &evidence.artifact;
+            total = total.saturating_add(artifact.bytes + 1);
+            if total > 8 * 1024 * 1024 {
+                bail!("Pilot execution evidence inventory exceeds 8 MiB");
+            }
+            let path = crate::paths::confined(parent, Path::new(&artifact.path))?;
+            let bytes = read(&path, artifact.bytes).with_context(|| {
+                format!(
+                    "Execution evidence artifact is unavailable: {}",
+                    observation.assignment_id
+                )
+            })?;
+            if bytes.len() as u64 != artifact.bytes
+                || super::policy_store::digest(&bytes) != artifact.digest
+            {
+                bail!(
+                    "Execution evidence length or digest differs: {}",
+                    observation.assignment_id
+                );
+            }
+            let capture: ExecutionCapture =
+                serde_json::from_slice(&bytes).context("Invalid execution evidence JSON")?;
+            if capture != evidence.capture {
+                bail!("Execution evidence JSON differs from the manifest claim");
+            }
         }
     }
     Ok(())

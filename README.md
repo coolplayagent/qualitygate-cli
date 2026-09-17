@@ -46,6 +46,14 @@ Use [pilot repair-attempt auditing](docs/pilot-phase-k.md) to bind initial full
 reports and enforce retry, elapsed-time and no-progress stop rules.
 Use [pilot model evidence](docs/pilot-phase-l.md) to archive each observed run's
 requested configuration, capture time and reported or explicitly unknown actual model.
+Use [attempt model evidence](docs/pilot-phase-m.md) for new plans so every retry,
+including failed and timed-out attempts, has a separately checked model record.
+Use [attempt execution evidence](docs/pilot-phase-n.md) for new plans to bind
+archived start/end times to retry budgets and declared run order.
+Use [unpriced pilot acceptance](docs/pilot-phase-o.md) for new v10 plans to
+seal without hourly rates or prices while retaining eight required checks.
+See [pilot readiness](docs/pilot-readiness.md) for the remaining real-task,
+governance and independent-review inputs needed to finish the trial.
 See [agent-run provenance](docs/provenance.md) for authenticated transformation histories and AI-only test scope.
 See [Git trailer bindings](docs/git-trailers.md) for declarations associated with actual test-changing commits.
 See [test effectiveness](docs/test-effectiveness.md) for explicit old-code counterexamples from independent test files.

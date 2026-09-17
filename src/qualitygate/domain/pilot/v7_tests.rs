@@ -20,6 +20,7 @@ fn observation(manifest: &Manifest) -> Observation {
             },
             capture: ModelCapture {
                 assignment_id: assignment.id.clone(),
+                attempt_number: None,
                 captured_at: 10,
                 agent_version: assignment.cohort.agent_version.clone(),
                 harness_digest: assignment.cohort.harness_digest.clone(),
@@ -89,6 +90,14 @@ fn v7_rejects_mismatched_model_capture_and_legacy_field() {
         .unwrap()
         .capture
         .captured_at = 21;
+    assert!(validate(&invalid).is_err());
+    let mut invalid = manifest.clone();
+    invalid.observations[0]
+        .model_evidence
+        .as_mut()
+        .unwrap()
+        .capture
+        .attempt_number = Some(1);
     assert!(validate(&invalid).is_err());
     let mut invalid = manifest.clone();
     invalid.observations[0]

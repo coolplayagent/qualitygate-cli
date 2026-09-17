@@ -77,10 +77,10 @@ fn seal_blockers(manifest: &Manifest, now: u64) -> Result<Vec<&'static str>> {
         .iter()
         .any(|value| value.is_none())
         || (manifest.schema_version == 1 && p.monetary_cap.is_none())
-        || (manifest.schema_version >= 2 && p.budget.is_none())
+        || ((2..=9).contains(&manifest.schema_version) && p.budget.is_none())
     {
         blockers.push(
-            "owner, reviewer, durable archive and versioned monetary budget must be declared",
+            "owner, reviewer, durable archive and any version-required monetary budget must be declared",
         );
     }
     if p.owner.is_some() && p.owner == p.reviewer {
@@ -233,7 +233,7 @@ pub fn authorization_subject(manifest: &Manifest) -> Result<PlanAuthorizationSub
 pub fn validate(manifest: &Manifest) -> Result<()> {
     let p = &manifest.protocol;
     let t = &p.thresholds;
-    if ![1, 2, 3, 4, 5, 6, 7].contains(&manifest.schema_version)
+    if !(1..=10).contains(&manifest.schema_version)
         || manifest.assignments.len() > 512
         || manifest.observations.len() > 512
         || p.task_count == 0
@@ -256,7 +256,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
     }
     match (manifest.schema_version, &p.budget, &p.monetary_cap) {
         (1, None, _) => {}
-        (2..=7, Some(budget), None) => {
+        (2..=9, Some(budget), None) => {
             if budget.currency.len() != 3
                 || !budget.currency.bytes().all(|c| c.is_ascii_uppercase())
                 || budget.priced_at == 0
@@ -267,11 +267,14 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
             }
             text(&budget.source)?;
         }
-        _ => bail!("Pilot v1 uses monetary_cap text; v2+ require only a structured budget"),
+        (10, None, None) => {}
+        _ => bail!(
+            "Pilot v1 uses monetary_cap text; v2-v9 require a structured budget; v10 has no monetary budget"
+        ),
     }
     match (manifest.schema_version, &p.task_mix) {
         (1 | 2, None) => {}
-        (3..=7, Some(mix))
+        (3..=10, Some(mix))
             if !mix.is_empty()
                 && mix
                     .values()
@@ -284,7 +287,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
     }
     match (manifest.schema_version, p.no_progress_limit) {
         (1..=5, None) => {}
-        (6..=7, Some(limit)) if limit > 0 && limit <= p.max_attempts => {}
+        (6..=10, Some(limit)) if limit > 0 && limit <= p.max_attempts => {}
         _ => bail!(
             "Pilot v6 requires a bounded no-progress limit; older versions cannot declare one"
         ),
@@ -299,10 +302,13 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
     ] {
         fraction(value)?;
     }
-    for value in [t.full_p95_ratio_max, t.cost_ratio_max] {
+    for value in [t.full_p95_ratio_max].into_iter().chain(t.cost_ratio_max) {
         if !value.is_finite() || value <= 0.0 || value > 1000.0 {
             bail!("Invalid cost/time ratio threshold");
         }
+    }
+    if (manifest.schema_version == 10) != t.cost_ratio_max.is_none() {
+        bail!("Pilot v1-v9 require cost_ratio_max; v10 omits it");
     }
     if [p.sealed_at, p.start_at, p.end_at]
         .into_iter()
@@ -343,7 +349,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
         }
         match (manifest.schema_version, &a.initial_report) {
             (1..=5, None) => {}
-            (6..=7, Some(artifact)) => {
+            (6..=10, Some(artifact)) => {
                 text(&artifact.path)?;
                 digest(&artifact.digest)?;
                 if artifact.bytes == 0
@@ -481,7 +487,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
         }
         match (manifest.schema_version, o.start_sequence) {
             (1..=4, Some(_)) => bail!("Observed start sequence requires schema v5"),
-            (5..=7, Some(sequence))
+            (5..=10, Some(sequence))
                 if sequence == 0
                     || usize::from(sequence) > manifest.run_order.len()
                     || !start_sequences.insert(sequence) =>
@@ -500,6 +506,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
                 if artifact.bytes == 0
                     || artifact.bytes > 64 * 1024
                     || !reports.insert(&artifact.digest)
+                    || capture.attempt_number.is_some()
                     || capture.captured_at == 0
                     || capture.captured_at > o.observed_at
                     || p.start_at.is_some_and(|start| capture.captured_at < start)
@@ -537,7 +544,8 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
                 }
             }
             (7, None) => {}
-            _ => bail!("Pilot model evidence requires schema v7"),
+            (8..=10, None) => {}
+            _ => bail!("Pilot run-level model evidence requires schema v7"),
         }
         if [o.review_active_ms, o.review_comments, o.rework_rounds]
             .into_iter()
@@ -546,6 +554,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
         {
             bail!("Human observations exceed bounds");
         }
+        let mut previous_end = None;
         for (i, a) in o.attempts.iter().enumerate() {
             if a.number as usize != i + 1
                 || !["quick", "full"].contains(&a.profile.as_str())
@@ -555,6 +564,101 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
                 bail!("Invalid attempt sequence, profile or duration");
             }
             digest(&a.snapshot_digest)?;
+            match (manifest.schema_version, &a.model_evidence) {
+                (1..=7, None) | (8..=10, None) => {}
+                (8..=10, Some(evidence)) => {
+                    let artifact = &evidence.artifact;
+                    let capture = &evidence.capture;
+                    text(&artifact.path)?;
+                    digest(&artifact.digest)?;
+                    if artifact.bytes == 0
+                        || artifact.bytes > 64 * 1024
+                        || !reports.insert(&artifact.digest)
+                        || capture.attempt_number != Some(a.number)
+                        || capture.captured_at == 0
+                        || capture.captured_at > o.observed_at
+                        || p.start_at.is_some_and(|start| capture.captured_at < start)
+                        || p.end_at.is_some_and(|end| capture.captured_at > end)
+                    {
+                        bail!("Invalid pilot attempt model capture artifact, number or time");
+                    }
+                    let assignment = assigned[o.assignment_id.as_str()];
+                    if capture.assignment_id != o.assignment_id
+                        || capture.agent_version != assignment.cohort.agent_version
+                        || capture.harness_digest != assignment.cohort.harness_digest
+                        || capture.requested_model != assignment.cohort.requested_model
+                        || capture.reasoning_effort != assignment.cohort.reasoning_effort
+                    {
+                        bail!("Pilot attempt model capture differs from its sealed assignment");
+                    }
+                    for value in [
+                        &capture.assignment_id,
+                        &capture.agent_version,
+                        &capture.requested_model,
+                        &capture.reasoning_effort,
+                    ] {
+                        text(value)?;
+                    }
+                    digest(&capture.harness_digest)?;
+                    match (
+                        &capture.status,
+                        &capture.actual_model,
+                        &capture.unknown_reason,
+                    ) {
+                        (ModelIdentityStatus::Reported, Some(model), None) => text(model)?,
+                        (ModelIdentityStatus::Unknown, None, Some(reason)) => text(reason)?,
+                        _ => bail!("Pilot model identity must be reported or explicitly unknown"),
+                    }
+                }
+                _ => bail!("Pilot attempt model evidence requires schema v8"),
+            }
+            match (manifest.schema_version, &a.execution_evidence) {
+                (1..=8, None) | (9 | 10, None) => {}
+                (9 | 10, Some(evidence)) => {
+                    let artifact = &evidence.artifact;
+                    let capture = &evidence.capture;
+                    text(&artifact.path)?;
+                    digest(&artifact.digest)?;
+                    digest(&capture.harness_digest)?;
+                    digest(&capture.snapshot_digest)?;
+                    if let Some(report) = &capture.report_digest {
+                        digest(report)?;
+                    }
+                    let assignment = assigned[o.assignment_id.as_str()];
+                    let window_start = p.start_at.and_then(|time| time.checked_mul(1000));
+                    let window_end = p
+                        .end_at
+                        .and_then(|time| time.checked_mul(1000))
+                        .and_then(|time| time.checked_add(999));
+                    let observed_end = o
+                        .observed_at
+                        .checked_mul(1000)
+                        .and_then(|time| time.checked_add(999));
+                    if artifact.bytes == 0
+                        || artifact.bytes > 64 * 1024
+                        || !reports.insert(&artifact.digest)
+                        || capture.assignment_id != o.assignment_id
+                        || capture.attempt_number != a.number
+                        || capture.harness_digest != assignment.cohort.harness_digest
+                        || capture.status != a.status
+                        || capture.snapshot_digest != a.snapshot_digest
+                        || capture.report_digest.as_deref()
+                            != a.report.as_ref().map(|report| report.digest.as_str())
+                        || capture.started_at_ms == 0
+                        || capture.ended_at_ms.checked_sub(capture.started_at_ms)
+                            != Some(a.elapsed_ms)
+                        || window_start.is_none_or(|start| capture.started_at_ms < start)
+                        || window_end.is_none_or(|end| capture.ended_at_ms > end)
+                        || observed_end.is_none_or(|end| capture.ended_at_ms > end)
+                        || previous_end.is_some_and(|end| capture.started_at_ms < end)
+                    {
+                        bail!("Invalid pilot execution capture, duration or chronology");
+                    }
+                    text(&capture.assignment_id)?;
+                    previous_end = Some(capture.ended_at_ms);
+                }
+                _ => bail!("Pilot attempt execution evidence requires schema v9"),
+            }
             if let Some(r) = &a.report {
                 text(&r.path)?;
                 digest(&r.digest)?;
@@ -588,6 +692,30 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
                 }
             }
         }
+        if manifest.schema_version >= 8 {
+            let actual: BTreeSet<_> = o
+                .attempts
+                .iter()
+                .filter_map(|attempt| attempt.model_evidence.as_ref())
+                .filter_map(|evidence| evidence.capture.actual_model.as_deref())
+                .collect();
+            let complete_reported = !o.attempts.is_empty()
+                && o.attempts.iter().all(|attempt| {
+                    attempt.model_evidence.as_ref().is_some_and(|evidence| {
+                        evidence.capture.status == ModelIdentityStatus::Reported
+                    })
+                });
+            let expected = (complete_reported && actual.len() == 1)
+                .then(|| *actual.iter().next().expect("one reported actual model"));
+            if assigned[o.assignment_id.as_str()]
+                .cohort
+                .actual_model
+                .as_deref()
+                != expected
+            {
+                bail!("Pilot actual model must match complete attempt captures");
+            }
+        }
         for f in &o.findings {
             text(&f.diagnostic_id)?;
             text(&f.check_id)?;
@@ -605,6 +733,13 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
                 }
             }
         }
+    }
+    if manifest.schema_version >= 8
+        && manifest.assignments.iter().any(|assignment| {
+            !observed.contains(&assignment.id) && assignment.cohort.actual_model.is_some()
+        })
+    {
+        bail!("Unobserved pilot assignments cannot claim an actual model");
     }
     if let Some(seal) = &manifest.plan_seal {
         if seal.algorithm != "sha256" || !valid_digest(&seal.digest) {

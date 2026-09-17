@@ -304,3 +304,28 @@ logs and independently review their authenticity before a production decision.
 identity and collection-time checks, and explicit unknown routed models. Domain
 and CLI tests use synthetic records; the team must compare them with the
 provider's original logs and review capture times before a production decision.
+
+## Pilot attempt model identity (§12 / phase M)
+
+[Phase-M evidence](pilot-phase-m.md) records v8 per-attempt captures, including
+failed and timed-out runs, and audits declared route drift. These files and
+timestamps remain caller claims until an independent reviewer checks original
+provider and harness logs.
+
+## Pilot attempt execution timing (§12 / phase N)
+
+[Phase-N evidence](pilot-phase-n.md) records v9 archived harness start/end
+times for every attempt and audits declared duration and start sequence.
+Domain and CLI tests use synthetic records; the team must compare original
+process and clock logs before a production decision.
+
+## Pilot without pricing (§12 / phase O)
+
+[Phase-O evidence](pilot-phase-o.md) records v10 sealing without hourly rates
+or prices and an eight-check nonfinancial final assessment. Old priced plans
+retain their versioned requirements. These engineering tests do not establish
+real-task benefit or supply external human authorization.
+
+[The pilot readiness audit](pilot-readiness.md) tracks the remaining real-task,
+governance, observation and independent-review evidence. Engineering regressions
+do not close those acceptance items.

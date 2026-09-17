@@ -1,4 +1,10 @@
 mod common;
+#[path = "pilot_seal/v10.rs"]
+mod v10;
+#[path = "pilot_seal/v8.rs"]
+mod v8;
+#[path = "pilot_seal/v9.rs"]
+mod v9;
 use common::*;
 use qualitygate::domain::{
     CheckResult, Report, Severity, Summary, evaluate, pilot::tool_inventory_digest,

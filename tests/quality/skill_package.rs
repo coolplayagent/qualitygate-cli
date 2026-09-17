@@ -165,6 +165,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
+        "assets/pilot/observation-v8.json",
+        "assets/pilot/observation-v9.json",
+        "assets/pilot/observation-v10.json",
         "ClawHub",
         "workflow_dispatch",
     ] {
@@ -205,6 +208,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
+        "assets/pilot/observation-v8.json",
+        "assets/pilot/observation-v9.json",
+        "assets/pilot/observation-v10.json",
         "qualitygate\" rules schema",
     ] {
         assert!(
@@ -222,6 +228,33 @@ fn published_skill_has_only_bundled_document_references_and_template() {
     assert_eq!(bundled, read(root, "templates/pilot/observation-v7.json"));
     let template: serde_json::Value = serde_json::from_str(&bundled).unwrap();
     assert_eq!(template["schema_version"], 7);
+    let bundled_v8 = read(&skill, "assets/pilot/observation-v8.json");
+    assert_eq!(
+        bundled_v8,
+        read(root, "templates/pilot/observation-v8.json")
+    );
+    let template_v8: serde_json::Value = serde_json::from_str(&bundled_v8).unwrap();
+    assert_eq!(template_v8["schema_version"], 8);
+    let bundled_v9 = read(&skill, "assets/pilot/observation-v9.json");
+    assert_eq!(
+        bundled_v9,
+        read(root, "templates/pilot/observation-v9.json")
+    );
+    let template_v9: serde_json::Value = serde_json::from_str(&bundled_v9).unwrap();
+    assert_eq!(template_v9["schema_version"], 9);
+    let bundled_v10 = read(&skill, "assets/pilot/observation-v10.json");
+    assert_eq!(
+        bundled_v10,
+        read(root, "templates/pilot/observation-v10.json")
+    );
+    let template_v10: serde_json::Value = serde_json::from_str(&bundled_v10).unwrap();
+    assert_eq!(template_v10["schema_version"], 10);
+    assert!(template_v10["protocol"]["budget"].is_null());
+    assert!(
+        template_v10["protocol"]["thresholds"]
+            .get("cost_ratio_max")
+            .is_none()
+    );
 
     for file in super::files(&skill) {
         if file.extension().is_none_or(|extension| extension != "md") {
