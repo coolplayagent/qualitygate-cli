@@ -28,6 +28,24 @@ For Agent integration, see [bounded repair feedback](docs/agent-feedback.md),
 the [external Rust loop](docs/agent-loop.md), and [phase-B evidence](docs/pilot-phase-b.md).
 Use [pilot evidence summaries](docs/pilot-phase-c.md) for protected case
 provenance, assignment-based aggregation and the read-only `pilot summarize` command.
+Use [pilot plan sealing](docs/pilot-phase-d.md) to freeze the complete model/workflow
+assignment matrix before recording observations.
+Use [pilot start authorization](docs/pilot-phase-e.md) to bind that sealed plan to
+an external human-owner DSSE/Ed25519 signature before the observation window.
+Use [pilot final acceptance](docs/pilot-phase-f.md) to bind completed observations
+and threshold results to an independent reviewer decision.
+Use [structured pilot budgets](docs/pilot-phase-g.md) to seal a v2 total cap and
+include all attempts and human review time in the final acceptance subject.
+Use [stratified pilot sampling](docs/pilot-phase-h.md) to seal eight independent
+tasks with a declared 4 bug-fix / 4 refactor mix before observation.
+Use [task-source artifacts](docs/pilot-phase-i.md) to bind each new pilot input
+to a bounded, digest-verified issue or commit record in the external archive.
+Use [pilot run-order auditing](docs/pilot-phase-j.md) to seal alternating
+workflow order and record actual start positions before final acceptance.
+Use [pilot repair-attempt auditing](docs/pilot-phase-k.md) to bind initial full
+reports and enforce retry, elapsed-time and no-progress stop rules.
+Use [pilot model evidence](docs/pilot-phase-l.md) to archive each observed run's
+requested configuration, capture time and reported or explicitly unknown actual model.
 See [agent-run provenance](docs/provenance.md) for authenticated transformation histories and AI-only test scope.
 See [Git trailer bindings](docs/git-trailers.md) for declarations associated with actual test-changing commits.
 See [test effectiveness](docs/test-effectiveness.md) for explicit old-code counterexamples from independent test files.
@@ -63,6 +81,9 @@ cargo run -- rules enable commit-message
 cargo run -- config --show
 cargo run -- selfcheck
 cargo run -- selfcheck --fixture minimal --rule commit-message
+cargo run -- pilot seal --input pilot-plan.json --format json
+cargo run -- pilot authorization-subject --input observations.json --format json
+cargo run -- pilot acceptance-subject --input observations.json --trust-store /external/trust.json --authorization /external/start.dsse.json --format json
 cargo run -- pilot summarize --input observations.json --format json
 ```
 

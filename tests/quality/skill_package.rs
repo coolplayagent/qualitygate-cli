@@ -163,6 +163,8 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "assets/windows-aarch64/qualitygate.exe",
         "references/rules/{core,shared,lang-java,lang-python}/*.yaml",
         "references/schemas/project-rule.schema.json",
+        "references/pilot-evidence.md",
+        "assets/pilot/observation-v7.json",
         "ClawHub",
         "workflow_dispatch",
     ] {
@@ -201,12 +203,62 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/rules/shared/security-sensitive-api.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
+        "references/pilot-evidence.md",
+        "assets/pilot/observation-v7.json",
         "qualitygate\" rules schema",
     ] {
         assert!(
             release.contains(expected),
             "release workflow missing {expected}"
         );
+    }
+}
+
+#[test]
+fn published_skill_has_only_bundled_document_references_and_template() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let skill = root.join("skills/qualitygate-cli").canonicalize().unwrap();
+    let bundled = read(&skill, "assets/pilot/observation-v7.json");
+    assert_eq!(bundled, read(root, "templates/pilot/observation-v7.json"));
+    let template: serde_json::Value = serde_json::from_str(&bundled).unwrap();
+    assert_eq!(template["schema_version"], 7);
+
+    for file in super::files(&skill) {
+        if file.extension().is_none_or(|extension| extension != "md") {
+            continue;
+        }
+        let markdown = std::fs::read_to_string(&file).unwrap();
+        for unavailable in ["docs/pilot-phase-", "templates/pilot/", "../../.github/"] {
+            assert!(
+                !markdown.contains(unavailable),
+                "{} references an unpackaged repository path: {unavailable}",
+                file.display()
+            );
+        }
+        for event in Parser::new(&markdown) {
+            if let Event::Start(Tag::Link { dest_url, .. } | Tag::Image { dest_url, .. }) = event {
+                let destination = dest_url.split('#').next().unwrap();
+                if destination.is_empty() {
+                    continue;
+                }
+                assert!(
+                    !destination.contains("://"),
+                    "{} links outside the Skill package: {destination}",
+                    file.display()
+                );
+                let resolved = file
+                    .parent()
+                    .unwrap()
+                    .join(destination)
+                    .canonicalize()
+                    .unwrap();
+                assert!(
+                    resolved.starts_with(&skill) && resolved.is_file(),
+                    "{} links outside the Skill package: {destination}",
+                    file.display()
+                );
+            }
+        }
     }
 }
 

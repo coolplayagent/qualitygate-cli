@@ -248,7 +248,23 @@ fn group(rows: &[Row<'_>], protocol: &Protocol) -> Result<Value> {
 
 /// All calculations are pure. `now` is provided by the application, never read here.
 pub fn summarize(manifest: &Manifest, reports: &Reports, now: u64) -> Result<Value> {
+    summarize_with_authorization(manifest, reports, now, None)
+}
+
+/// A verified authorization is supplied only after an adapter authenticates
+/// its DSSE envelope against a caller-controlled external trust store.
+pub fn summarize_with_authorization(
+    manifest: &Manifest,
+    reports: &Reports,
+    now: u64,
+    authorization: Option<&VerifiedPlanAuthorization>,
+) -> Result<Value> {
     validate(manifest)?;
+    if let Some(value) = authorization
+        && value.record.subject != authorization_subject(manifest)?
+    {
+        anyhow::bail!("Verified pilot authorization does not match the summarized plan");
+    }
     let observed: BTreeMap<_, _> = manifest
         .observations
         .iter()
@@ -266,8 +282,19 @@ pub fn summarize(manifest: &Manifest, reports: &Reports, now: u64) -> Result<Val
                 &manifest.protocol,
             )?);
     }
-    let complete =
-        !manifest.assignments.is_empty() && buckets.values().flatten().all(|r| r.gaps.is_empty());
+    let attempt_audit =
+        (manifest.schema_version >= 6).then(|| super::attempt_audit::audit(manifest, reports));
+    let model_missing = manifest.schema_version >= 7
+        && manifest
+            .observations
+            .iter()
+            .any(|observation| observation.model_evidence.is_none());
+    let complete = !manifest.assignments.is_empty()
+        && buckets.values().flatten().all(|r| r.gaps.is_empty())
+        && !model_missing
+        && attempt_audit
+            .as_ref()
+            .is_none_or(|audit| audit.evidence_complete);
     let groups: Vec<_> = buckets
         .values()
         .map(|rows| group(rows, &manifest.protocol))
@@ -276,11 +303,19 @@ pub fn summarize(manifest: &Manifest, reports: &Reports, now: u64) -> Result<Val
         super::comparison::compare(&groups, &manifest.assignments, &manifest.protocol);
     let p = &manifest.protocol;
     let mut limits = Vec::new();
-    if [&p.owner, &p.reviewer, &p.archive, &p.monetary_cap]
+    if manifest.plan_seal.is_none() {
+        limits.push("The pre-observation pilot plan has no digest-verified integrity seal");
+    }
+    if authorization.is_none() {
+        limits.push("Pilot start has no authenticated owner authorization");
+    }
+    if [&p.owner, &p.reviewer, &p.archive]
         .iter()
         .any(|v| v.is_none())
+        || (manifest.schema_version == 1 && p.monetary_cap.is_none())
+        || (manifest.schema_version >= 2 && p.budget.is_none())
     {
-        limits.push("Owner, reviewer, durable archive or monetary cap is undeclared");
+        limits.push("Owner, reviewer, durable archive or monetary budget is undeclared");
     }
     if p.sealed_at
         .zip(p.start_at)
@@ -308,10 +343,11 @@ pub fn summarize(manifest: &Manifest, reports: &Reports, now: u64) -> Result<Val
     }) {
         limits.push("Observations lack a valid sealed time window");
     }
-    if manifest
-        .assignments
-        .iter()
-        .any(|a| a.cohort.actual_model.is_none())
+    if manifest.schema_version < 7
+        && manifest
+            .assignments
+            .iter()
+            .any(|a| a.cohort.actual_model.is_none())
     {
         limits.push("Actual model identity is unknown for at least one assigned run");
     }
@@ -327,11 +363,126 @@ pub fn summarize(manifest: &Manifest, reports: &Reports, now: u64) -> Result<Val
     if !complete {
         limits.push("Execution/report evidence is incomplete; assigned failures and missing runs remain in denominators");
     }
-    Ok(
-        json!({"schema_version":1,"id":manifest.id,"evaluated_at":now,"complete":complete,
+    if model_missing {
+        limits.push("Observed runs lack archived model capture evidence");
+    }
+    let schedule_audit = (manifest.schema_version >= 5).then(|| super::schedule::audit(manifest));
+    if let Some((_, status)) = &schedule_audit {
+        match *status {
+            "deviated" => limits.push("Observed run order differs from the sealed execution order"),
+            "incomplete" => limits.push("Observed run order is missing start-sequence evidence"),
+            _ => {}
+        }
+    }
+    if let Some(audit) = &attempt_audit {
+        if !audit.compliant {
+            limits.push("Attempt budget or no-progress stop rule was violated");
+        }
+        if !audit.evidence_complete {
+            limits.push("Initial or attempt reports do not establish complete progress evidence");
+        }
+    }
+    let mut summary = json!({"schema_version":1,"id":manifest.id,"evaluated_at":now,"complete":complete,
         "authority":"descriptive_only","trial_acceptance":"requires_external_review",
-        "declarations":"Inventory, canonical issue labels, reviewers, costs, tools, permissions and sealing are caller declarations; report bindings are verified, caller authority is not authenticated",
-        "protocol":p,"protocol_ready":limits.is_empty(),"limitations":limits,
-        "groups":groups,"comparisons":comparisons}),
-    )
+        "declarations":"A verified plan authorization authenticates the configured owner and exact sealed subject, but does not provide an independent trusted timestamp. Canonical issue labels, reviewers, costs, tools, permissions and external archive authority remain caller declarations; report bindings are verified.",
+        "protocol":p,"plan_seal":manifest.plan_seal,
+        "plan_authorization":authorization.map_or_else(
+            || json!({"status":"absent","required":true}),
+            |value| json!({"status":"authenticated","method":"ed25519_dsse","evidence":value})
+        ),
+        "trial_acceptance_evidence":{"status":"pending","required":true},
+        "protocol_ready":limits.is_empty(),"limitations":limits,
+        "groups":groups,"comparisons":comparisons});
+    if let Some(budget) = super::budget::assess(manifest)? {
+        summary["budget"] = serde_json::to_value(budget)?;
+    }
+    if let Some(declared) = &p.task_mix {
+        let mut roster = BTreeMap::<&str, &Assignment>::new();
+        for assignment in &manifest.assignments {
+            roster.entry(&assignment.input_id).or_insert(assignment);
+        }
+        let mut observed = BTreeMap::<TaskKind, usize>::new();
+        for assignment in roster.values() {
+            *observed.entry(assignment.task_kind.clone()).or_default() += 1;
+        }
+        summary["sampling_audit"] = json!({
+            "declared":declared,"observed":observed,"distinct_inputs":roster.len(),
+            "tasks":roster.values().map(|a|json!({"input_id":a.input_id,"task_id":a.task_id,
+                "task_kind":a.task_kind,"task_digest":a.task_digest})).collect::<Vec<_>>()
+        });
+    }
+    if manifest.schema_version >= 4 {
+        summary["source_audit"] = json!({
+            "distinct_inputs":manifest.sources.len(),
+            "sources":manifest.sources.iter().map(|source|json!({
+                "input_id":source.input_id,"kind":source.kind,
+                "source_id":source.source_id,"digest":source.digest,
+                "selected_at":source.selected_at
+            })).collect::<Vec<_>>()
+        });
+    }
+    if let Some((audit, _)) = schedule_audit {
+        summary["schedule_audit"] = audit;
+    }
+    if let Some(audit) = attempt_audit {
+        summary["attempt_audit"] = audit.value;
+    }
+    if manifest.schema_version >= 7 {
+        let records: Vec<_> = manifest
+            .observations
+            .iter()
+            .map(|observation| {
+                observation.model_evidence.as_ref().map_or_else(
+                    || json!({"assignment_id":observation.assignment_id,"status":"missing"}),
+                    |evidence| {
+                        json!({"assignment_id":observation.assignment_id,
+                    "status":evidence.capture.status,
+                    "requested_model":evidence.capture.requested_model,
+                    "actual_model":evidence.capture.actual_model,
+                    "unknown_reason":evidence.capture.unknown_reason,
+                    "captured_at":evidence.capture.captured_at,
+                    "artifact_digest":evidence.artifact.digest})
+                    },
+                )
+            })
+            .collect();
+        summary["model_audit"] = json!({
+            "comparison_scope":"requested_model_configuration",
+            "actual_identity_unknown":manifest.observations.iter().filter(|o|
+                o.model_evidence.as_ref().is_some_and(|e|e.capture.status == ModelIdentityStatus::Unknown)).count(),
+            "unobserved":manifest.assignments.len()-manifest.observations.len(),
+            "records":records,
+            "note":"Archived records bind declared model metadata, but do not authenticate provider routing or capture time"
+        });
+    }
+    Ok(summary)
+}
+
+pub fn summarize_with_acceptance(
+    manifest: &Manifest,
+    reports: &Reports,
+    now: u64,
+    authorization: Option<&VerifiedPlanAuthorization>,
+    acceptance: Option<&VerifiedPilotAcceptance>,
+) -> Result<Value> {
+    let mut summary = summarize_with_authorization(manifest, reports, now, authorization)?;
+    if let Some(value) = acceptance {
+        let authorization = authorization
+            .ok_or_else(|| anyhow::anyhow!("Pilot acceptance requires start authorization"))?;
+        let expected = super::acceptance::subject_from_summary(manifest, &summary, authorization)?;
+        if value.record.subject != expected {
+            anyhow::bail!("Verified pilot acceptance does not match the summarized evidence");
+        }
+        acceptance_decision(&expected, value.record.decision)?;
+        let status = match value.record.decision {
+            PilotAcceptanceDecision::Accepted => "accepted",
+            PilotAcceptanceDecision::Rejected => "rejected",
+        };
+        summary["authority"] = json!("authenticated_external_review");
+        summary["trial_acceptance"] = json!(status);
+        summary["trial_acceptance_evidence"] = json!({
+            "status":status,"method":"ed25519_dsse","evidence":value
+        });
+    }
+    Ok(summary)
 }

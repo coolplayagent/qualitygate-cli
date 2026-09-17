@@ -19,7 +19,7 @@ suite v1 保持兼容，但不获得 v2 的独立来源保证。
 
 ## 2. 试点观察清单与命令
 
-复制 [观察清单模板](../templates/pilot/observation-v1.json)，在结果产生前填写协议和全部
+新试点复制 [v4 观察清单模板](../templates/pilot/observation-v4.json)，在结果产生前填写协议和全部
 assignments。每个 assignment 固定输入 ID、任务契约、base、初始快照、策略、必需检查、
 模型请求/实际标识、harness、环境、工具、缓存、权限和预算。报告路径相对清单目录：
 
@@ -31,6 +31,10 @@ CLI 只读加载至多 1 MiB 的严格 JSON 清单和 64 MiB 报告集合，拒�
 长度/摘要变化与重复报告。完整报告必须绑定声明的 base、快照、配置、任务、环境、工具、
 profile 和必需检查清单。输出为 `descriptive_only`；它计算指标和阈值观察，不签发试点验收。
 清单中的复核者、金额、计价来源和封存时间仍是调用方声明，需由团队证据库及授权记录认证。
+阶段 D 起，缺少 `plan_seal` 的旧清单仍可描述性回放，但 `protocol_ready` 保持 false；
+新试点应先按[阶段 D](pilot-phase-d.md)完成观察前封存。
+阶段 E 起，缺少外部 owner 授权的汇总还会显示 `plan_authorization.status=absent`；
+新试点应继续按[阶段 E](pilot-phase-e.md)认证启动主体。
 
 分母来自预先声明的 assignments。未执行、失败、超时、放弃、排除和缺报告都保留；任何
 证据缺口不会因后续一次成功而消失。末次 full 且实际改变修复快照、在次数/时间预算内、

@@ -25,18 +25,23 @@ pub(super) struct Row<'a> {
     pub value: Value,
 }
 
-fn bound(a: &Assignment, attempt: &Attempt, report: &Report) -> Result<()> {
+pub(super) fn bound_report(
+    a: &Assignment,
+    snapshot_digest: &str,
+    profile: &str,
+    report: &Report,
+) -> Result<()> {
     let required: BTreeSet<_> = a.required_checks.iter().collect();
     let actual: BTreeSet<_> = report.plan.required_checks.iter().collect();
     if report.schema_version != 1
         || report.run_id.is_empty()
         || report.scope != "task"
         || report.snapshot.base != a.base
-        || report.snapshot.content_digest != attempt.snapshot_digest
+        || report.snapshot.content_digest != snapshot_digest
         || report.policy.config_digest != a.config_digest
         || report.policy.task_contract_digest.as_deref() != Some(a.task_digest.as_str())
         || report.plan.task_id.as_deref() != Some(a.task_id.as_str())
-        || report.profile != attempt.profile
+        || report.profile != profile
         || report.environment_digest != a.cohort.environment_digest
         || tool_inventory_digest(report) != a.cohort.tools_digest
         || required != actual
@@ -55,6 +60,10 @@ fn bound(a: &Assignment, attempt: &Attempt, report: &Report) -> Result<()> {
         bail!("Report gate conflicts with retained check states");
     }
     Ok(())
+}
+
+fn bound(a: &Assignment, attempt: &Attempt, report: &Report) -> Result<()> {
+    bound_report(a, &attempt.snapshot_digest, &attempt.profile, report)
 }
 
 pub(super) fn row<'a>(

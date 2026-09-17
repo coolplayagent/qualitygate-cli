@@ -144,7 +144,19 @@ CLI and bounded runner; it does not implement gate decisions. See
 `domain::case_provenance` and `domain::pilot` contain serializable contracts and
 pure lineage/metric decisions. `config` owns bounded archive, manifest and report
 reads; `application::pilot` moves those blocking reads off async orchestration;
-`interfaces` only parses `pilot summarize` and renders the result. The existing
-adapter boundary retains signature authentication. No domain or interface I/O
+`interfaces` only parses pilot commands and renders the result. The
+`adapters::pilot_authorization` and `adapters::pilot_acceptance` authenticate
+DSSE/Ed25519 owner and independent-reviewer records,
+while `application::external` owns bounded repository-external reads and rechecks.
+No domain or interface I/O
 and no owner dependency direction changes were introduced. See
-[phase C](pilot-phase-c.md).
+[phase C](pilot-phase-c.md), [phase D](pilot-phase-d.md),
+[phase E](pilot-phase-e.md), [phase F](pilot-phase-f.md) and
+[phase G](pilot-phase-g.md), [phase H](pilot-phase-h.md) and
+[phase I](pilot-phase-i.md), [phase J](pilot-phase-j.md) and
+[phase K](pilot-phase-k.md) and [phase L](pilot-phase-l.md). The v2+ budget,
+tenth threshold, v3+ task strata, v4+ source roster, v5 run-order audit,
+v6 attempt audit and v7 model-capture audit
+remain pure `domain::pilot` calculations. `config::pilot`
+owns bounded source, initial report and model-record reads; `application::pilot` rechecks them on a
+blocking worker before output. No owner direction changes.

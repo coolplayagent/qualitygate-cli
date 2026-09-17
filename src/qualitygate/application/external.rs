@@ -20,6 +20,15 @@ pub(super) struct Inputs {
     records: BTreeMap<String, Result<RecordInput, String>>,
 }
 
+pub(super) struct SingleInput {
+    pub store: TrustStore,
+    pub store_path: PathBuf,
+    pub store_bytes: Vec<u8>,
+    pub record_path: PathBuf,
+    pub record_bytes: Vec<u8>,
+    record_limit: usize,
+}
+
 struct RecordInput {
     path: PathBuf,
     limit: usize,
@@ -118,6 +127,32 @@ pub(super) fn load(
     })
 }
 
+pub(super) fn load_single(
+    root: &Path,
+    store_path: &Path,
+    record_path: &Path,
+    record_limit: usize,
+) -> Result<SingleInput> {
+    let root = dunce::canonicalize(root)?;
+    let canonical_store = dunce::canonicalize(store_path)?;
+    let canonical_record = dunce::canonicalize(record_path)?;
+    if canonical_store.starts_with(&root) || canonical_record.starts_with(&root) {
+        bail!("Trust store and signed record must be outside the checked repository");
+    }
+    let store_bytes = read(store_path, 256 * 1024)?;
+    let record_bytes = read(record_path, record_limit)?;
+    let store = config::attestation::parse(&store_bytes)?;
+    attestation::validate_keys(&store)?;
+    Ok(SingleInput {
+        store,
+        store_path: store_path.to_owned(),
+        store_bytes,
+        record_path: record_path.to_owned(),
+        record_bytes,
+        record_limit,
+    })
+}
+
 pub(super) fn record<'a>(inputs: &'a Inputs, name: &str) -> Result<&'a [u8]> {
     match inputs.records.get(name) {
         Some(Ok(record)) => Ok(&record.bytes),
@@ -147,4 +182,70 @@ pub(super) fn unchanged(inputs: &Inputs) -> Result<()> {
         }
     }
     Ok(())
+}
+
+pub(super) fn single_unchanged(inputs: &SingleInput) -> Result<()> {
+    if read(&inputs.store_path, 256 * 1024)? != inputs.store_bytes
+        || read(&inputs.record_path, inputs.record_limit)? != inputs.record_bytes
+    {
+        bail!("External pilot authorization inputs changed during verification");
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::{Engine, engine::general_purpose::STANDARD};
+    use ed25519_dalek::SigningKey;
+
+    fn inputs() -> (tempfile::TempDir, tempfile::TempDir, PathBuf, PathBuf) {
+        let root = tempfile::tempdir().unwrap();
+        let external = tempfile::tempdir().unwrap();
+        let key = SigningKey::from_bytes(&[61; 32]);
+        let store = external.path().join("trust.json");
+        let record = external.path().join("record.json");
+        std::fs::write(
+            &store,
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version":1,"repository":"owner/repository","max_age_seconds":700_000,
+                "keys":[{"id":"owner","public_key":STANDARD.encode(key.verifying_key().as_bytes()),
+                    "checks":["pilot-plan-authorization"],"allow_repository_checks":true}],
+                "revoked_records":[]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        std::fs::write(&record, b"record").unwrap();
+        (root, external, store, record)
+    }
+
+    #[test]
+    fn single_external_record_is_rechecked_before_publication() {
+        let (root, _external, store, record) = inputs();
+        let loaded = load_single(root.path(), &store, &record, 1024).unwrap();
+        assert!(single_unchanged(&loaded).is_ok());
+        std::fs::write(&record, b"changed").unwrap();
+        assert!(
+            single_unchanged(&loaded)
+                .unwrap_err()
+                .to_string()
+                .contains("changed during verification")
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn single_external_record_rejects_a_symlink() {
+        let (root, external, store, record) = inputs();
+        let link = external.path().join("record-link.json");
+        std::os::unix::fs::symlink(record, &link).unwrap();
+        assert!(
+            load_single(root.path(), &store, &link, 1024)
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("non-symlink")
+        );
+    }
 }

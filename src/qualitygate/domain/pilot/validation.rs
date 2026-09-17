@@ -1,6 +1,8 @@
 use super::*;
 use crate::domain::evolution::{ActorKind, valid_digest, validate_text};
 use anyhow::{Result, bail};
+use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 fn text(value: &str) -> Result<()> {
@@ -28,10 +30,210 @@ fn names(values: &[String]) -> Result<()> {
     Ok(())
 }
 
+#[derive(Serialize)]
+struct Plan<'a> {
+    schema_version: u32,
+    id: &'a str,
+    protocol: &'a Protocol,
+    assignments: Vec<Assignment>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sources: Option<&'a [TaskSource]>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    run_order: Option<&'a [String]>,
+}
+
+fn plan_digest(manifest: &Manifest) -> Result<String> {
+    let mut assignments = manifest.assignments.clone();
+    for assignment in &mut assignments {
+        // Providers may disclose the actual routed model only after execution.
+        // The pre-observation plan binds the requested model and every other
+        // cohort input while allowing that observation to be added later.
+        assignment.cohort.actual_model = None;
+    }
+    let plan = Plan {
+        schema_version: manifest.schema_version,
+        id: &manifest.id,
+        protocol: &manifest.protocol,
+        assignments,
+        sources: (manifest.schema_version >= 4).then_some(&manifest.sources),
+        run_order: (manifest.schema_version >= 5).then_some(&manifest.run_order),
+    };
+    Ok(format!(
+        "sha256:{:x}",
+        Sha256::digest(serde_json::to_vec(&plan)?)
+    ))
+}
+
+fn planned_cohort(assignment: &Assignment) -> Result<String> {
+    let mut cohort = assignment.cohort.clone();
+    cohort.actual_model = None;
+    Ok(serde_json::to_string(&cohort)?)
+}
+
+fn seal_blockers(manifest: &Manifest, now: u64) -> Result<Vec<&'static str>> {
+    let p = &manifest.protocol;
+    let mut blockers = Vec::new();
+    if [&p.owner, &p.reviewer, &p.archive]
+        .iter()
+        .any(|value| value.is_none())
+        || (manifest.schema_version == 1 && p.monetary_cap.is_none())
+        || (manifest.schema_version >= 2 && p.budget.is_none())
+    {
+        blockers.push(
+            "owner, reviewer, durable archive and versioned monetary budget must be declared",
+        );
+    }
+    if p.owner.is_some() && p.owner == p.reviewer {
+        blockers.push("pilot owner and reviewer must be distinct");
+    }
+    if p.sealed_at
+        .zip(p.start_at)
+        .zip(p.end_at)
+        .is_none_or(|((sealed, start), end)| {
+            sealed > now
+                || now > start
+                || sealed > start
+                || end.saturating_sub(start) < u64::from(p.days) * 86_400
+        })
+    {
+        blockers.push("the declared seal and observation window are not ready");
+    }
+    if !manifest.observations.is_empty() {
+        blockers.push("a pilot plan must be sealed before observations are recorded");
+    }
+    let inputs: BTreeSet<_> = manifest
+        .assignments
+        .iter()
+        .map(|assignment| assignment.input_id.as_str())
+        .collect();
+    if inputs.len() != p.task_count {
+        blockers.push("assigned distinct tasks differ from the declared sample size");
+    }
+    if manifest.assignments.iter().any(|assignment| {
+        assignment.origin != Origin::Real
+            || assignment.exclusion.is_some()
+            || assignment.expected_issues.is_none()
+    }) {
+        blockers.push(
+            "sealed assignments require real inputs, declared ground truth and no post-hoc exclusion",
+        );
+    }
+    let models: BTreeSet<_> = manifest
+        .assignments
+        .iter()
+        .map(|assignment| assignment.cohort.requested_model.as_str())
+        .collect();
+    let workflows: BTreeSet<_> = manifest
+        .assignments
+        .iter()
+        .map(|assignment| &assignment.cohort.workflow)
+        .collect();
+    if models.len() < 2
+        || !workflows.contains(&Workflow::ExistingTools)
+        || !workflows.contains(&Workflow::Qualitygate)
+    {
+        blockers.push("the pilot requires at least two model groups and both comparison workflows");
+    }
+    let expected_pairs: BTreeSet<_> = models
+        .iter()
+        .flat_map(|model| {
+            [&Workflow::ExistingTools, &Workflow::Qualitygate]
+                .into_iter()
+                .map(move |workflow| (*model, workflow))
+        })
+        .collect();
+    let actual_pairs: BTreeSet<_> = manifest
+        .assignments
+        .iter()
+        .map(|assignment| {
+            (
+                assignment.cohort.requested_model.as_str(),
+                &assignment.cohort.workflow,
+            )
+        })
+        .collect();
+    if actual_pairs != expected_pairs {
+        blockers.push("the model-by-workflow comparison matrix is incomplete");
+    }
+    let mut matrix = BTreeMap::<&str, BTreeSet<String>>::new();
+    for assignment in &manifest.assignments {
+        if !matrix
+            .entry(&assignment.input_id)
+            .or_default()
+            .insert(planned_cohort(assignment)?)
+        {
+            blockers.push("an input has a duplicate planned cohort");
+            break;
+        }
+    }
+    if matrix
+        .values()
+        .next()
+        .is_some_and(|first| matrix.values().any(|cohorts| cohorts != first))
+    {
+        blockers.push("each input must use the same planned cohort matrix");
+    }
+    Ok(blockers)
+}
+
+/// Produces an integrity seal over the pre-observation plan. The digest is not
+/// an identity signature; external archive and reviewer authority remain caller-owned.
+pub fn seal(mut manifest: Manifest, now: u64) -> Result<Manifest> {
+    validate(&manifest)?;
+    let blockers = seal_blockers(&manifest, now)?;
+    if !blockers.is_empty() {
+        bail!("Pilot plan is not sealable: {}", blockers.join("; "));
+    }
+    manifest.plan_seal = Some(PlanSeal {
+        algorithm: "sha256".into(),
+        digest: plan_digest(&manifest)?,
+    });
+    validate(&manifest)?;
+    Ok(manifest)
+}
+
+/// The exact pre-observation plan and governance identity that an external
+/// owner signs. Signature and trust-store verification belong to adapters.
+pub fn authorization_subject(manifest: &Manifest) -> Result<PlanAuthorizationSubject> {
+    validate(manifest)?;
+    let p = &manifest.protocol;
+    let subject = PlanAuthorizationSubject {
+        repository: p.project.clone(),
+        pilot_id: manifest.id.clone(),
+        plan_seal: manifest
+            .plan_seal
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("Pilot start authorization requires a plan seal"))?,
+        owner: p
+            .owner
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("Pilot start authorization requires an owner"))?,
+        reviewer: p
+            .reviewer
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("Pilot start authorization requires a reviewer"))?,
+        sealed_at: p
+            .sealed_at
+            .ok_or_else(|| anyhow::anyhow!("Pilot start authorization requires sealed_at"))?,
+        start_at: p
+            .start_at
+            .ok_or_else(|| anyhow::anyhow!("Pilot start authorization requires start_at"))?,
+        end_at: p
+            .end_at
+            .ok_or_else(|| anyhow::anyhow!("Pilot start authorization requires end_at"))?,
+        task_count: p.task_count,
+        assignment_count: manifest.assignments.len(),
+    };
+    if subject.owner == subject.reviewer {
+        bail!("Pilot owner and reviewer must be distinct");
+    }
+    Ok(subject)
+}
+
 pub fn validate(manifest: &Manifest) -> Result<()> {
     let p = &manifest.protocol;
     let t = &p.thresholds;
-    if manifest.schema_version != 1
+    if ![1, 2, 3, 4, 5, 6, 7].contains(&manifest.schema_version)
         || manifest.assignments.len() > 512
         || manifest.observations.len() > 512
         || p.task_count == 0
@@ -51,6 +253,41 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
         .flatten()
     {
         text(value)?;
+    }
+    match (manifest.schema_version, &p.budget, &p.monetary_cap) {
+        (1, None, _) => {}
+        (2..=7, Some(budget), None) => {
+            if budget.currency.len() != 3
+                || !budget.currency.bytes().all(|c| c.is_ascii_uppercase())
+                || budget.priced_at == 0
+                || !(1..=1_000_000_000_000_000).contains(&budget.max_total_micros)
+                || !(1..=1_000_000_000_000).contains(&budget.human_hourly_micros)
+            {
+                bail!("Invalid structured pilot budget");
+            }
+            text(&budget.source)?;
+        }
+        _ => bail!("Pilot v1 uses monetary_cap text; v2+ require only a structured budget"),
+    }
+    match (manifest.schema_version, &p.task_mix) {
+        (1 | 2, None) => {}
+        (3..=7, Some(mix))
+            if !mix.is_empty()
+                && mix
+                    .values()
+                    .all(|count| *count > 0 && *count <= p.task_count)
+                && mix
+                    .values()
+                    .try_fold(0_usize, |total, count| total.checked_add(*count))
+                    == Some(p.task_count) => {}
+        _ => bail!("Pilot v3+ requires a bounded task mix; v1/v2 cannot declare one"),
+    }
+    match (manifest.schema_version, p.no_progress_limit) {
+        (1..=5, None) => {}
+        (6..=7, Some(limit)) if limit > 0 && limit <= p.max_attempts => {}
+        _ => bail!(
+            "Pilot v6 requires a bounded no-progress limit; older versions cannot declare one"
+        ),
     }
     for value in [
         t.detection_min,
@@ -77,6 +314,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
         bail!("Invalid protocol chronology");
     }
     let mut assigned = BTreeMap::new();
+    let mut reports = BTreeSet::new();
     let mut task_inputs = BTreeMap::new();
     for a in &manifest.assignments {
         text(&a.id)?;
@@ -102,6 +340,22 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
             &a.cohort.tools_digest,
         ] {
             digest(d)?;
+        }
+        match (manifest.schema_version, &a.initial_report) {
+            (1..=5, None) => {}
+            (6..=7, Some(artifact)) => {
+                text(&artifact.path)?;
+                digest(&artifact.digest)?;
+                if artifact.bytes == 0
+                    || artifact.bytes > 16 * 1024 * 1024
+                    || !reports.insert(&artifact.digest)
+                {
+                    bail!("Invalid or repeated initial report artifact");
+                }
+            }
+            _ => bail!(
+                "Pilot v6 requires one initial report per assignment; older versions cannot declare one"
+            ),
         }
         for s in [
             &a.cohort.agent_version,
@@ -142,14 +396,148 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
             bail!("Task identity differs across assigned groups");
         }
     }
+    if let Some(expected_mix) = &p.task_mix {
+        let mut by_input = BTreeMap::<&str, &Assignment>::new();
+        for assignment in &manifest.assignments {
+            by_input.entry(&assignment.input_id).or_insert(assignment);
+        }
+        let mut observed_mix = BTreeMap::<TaskKind, usize>::new();
+        let mut task_ids = BTreeSet::new();
+        let mut task_digests = BTreeSet::new();
+        for assignment in by_input.values() {
+            *observed_mix
+                .entry(assignment.task_kind.clone())
+                .or_default() += 1;
+            if !task_ids.insert(assignment.task_id.as_str()) {
+                bail!("Distinct pilot inputs cannot reuse a task ID");
+            }
+            if !task_digests.insert(assignment.task_digest.as_str()) {
+                bail!("Distinct pilot inputs cannot reuse a task contract digest");
+            }
+        }
+        if &observed_mix != expected_mix {
+            bail!("Pilot task mix differs from the predeclared independent-task strata");
+        }
+    }
+    if manifest.schema_version < 4 {
+        if !manifest.sources.is_empty() {
+            bail!("Pilot task source records require schema v4");
+        }
+    } else {
+        if manifest.sources.len() != p.task_count {
+            bail!("Pilot v4 needs one source record per independent task");
+        }
+        let mut source_inputs = BTreeSet::new();
+        let mut source_ids = BTreeSet::new();
+        let mut source_paths = BTreeSet::new();
+        let mut source_digests = BTreeSet::new();
+        let mut total_bytes = 0_u64;
+        for source in &manifest.sources {
+            text(&source.input_id)?;
+            validate_text(&source.source_id, 256).map_err(anyhow::Error::msg)?;
+            text(&source.path)?;
+            digest(&source.digest)?;
+            if source.source_id.chars().any(char::is_whitespace)
+                || source.bytes == 0
+                || source.bytes > 64 * 1024
+                || source.selected_at == 0
+                || p.sealed_at.is_none_or(|sealed| source.selected_at > sealed)
+            {
+                bail!("Invalid pilot task source identity, size or selection time");
+            }
+            total_bytes = total_bytes
+                .checked_add(source.bytes)
+                .ok_or_else(|| anyhow::anyhow!("Pilot task source inventory overflows"))?;
+            if total_bytes > 8 * 1024 * 1024 {
+                bail!("Pilot task source inventory exceeds 8 MiB");
+            }
+            if !source_inputs.insert(source.input_id.as_str())
+                || !source_ids.insert(source.source_id.as_str())
+                || !source_paths.insert(source.path.as_str())
+                || !source_digests.insert(source.digest.as_str())
+            {
+                bail!("Pilot independent tasks cannot reuse source identity or artifact");
+            }
+        }
+        if source_inputs != task_inputs.keys().copied().collect() {
+            bail!("Pilot task sources differ from assigned independent inputs");
+        }
+    }
+    if manifest.schema_version < 5 {
+        if !manifest.run_order.is_empty() {
+            bail!("Pilot run order requires schema v5");
+        }
+    } else {
+        validate_run_order(manifest, &assigned)?;
+    }
     let mut observed = BTreeSet::new();
-    let mut reports = BTreeSet::new();
+    let mut start_sequences = BTreeSet::new();
     for o in &manifest.observations {
         if !assigned.contains_key(o.assignment_id.as_str()) || !observed.insert(&o.assignment_id) {
             bail!("Unknown or repeated observed assignment");
         }
         if o.observed_at == 0 || o.attempts.len() > 10 || o.findings.len() > 4096 {
             bail!("Invalid observation time or inventory");
+        }
+        match (manifest.schema_version, o.start_sequence) {
+            (1..=4, Some(_)) => bail!("Observed start sequence requires schema v5"),
+            (5..=7, Some(sequence))
+                if sequence == 0
+                    || usize::from(sequence) > manifest.run_order.len()
+                    || !start_sequences.insert(sequence) =>
+            {
+                bail!("Invalid or repeated observed start sequence");
+            }
+            _ => {}
+        }
+        match (manifest.schema_version, &o.model_evidence) {
+            (1..=6, None) => {}
+            (7, Some(evidence)) => {
+                let artifact = &evidence.artifact;
+                let capture = &evidence.capture;
+                text(&artifact.path)?;
+                digest(&artifact.digest)?;
+                if artifact.bytes == 0
+                    || artifact.bytes > 64 * 1024
+                    || !reports.insert(&artifact.digest)
+                    || capture.captured_at == 0
+                    || capture.captured_at > o.observed_at
+                    || p.start_at.is_some_and(|start| capture.captured_at < start)
+                    || p.end_at.is_some_and(|end| capture.captured_at > end)
+                {
+                    bail!("Invalid pilot model capture artifact or time");
+                }
+                let assignment = assigned[o.assignment_id.as_str()];
+                if capture.assignment_id != o.assignment_id
+                    || capture.agent_version != assignment.cohort.agent_version
+                    || capture.harness_digest != assignment.cohort.harness_digest
+                    || capture.requested_model != assignment.cohort.requested_model
+                    || capture.reasoning_effort != assignment.cohort.reasoning_effort
+                    || capture.actual_model != assignment.cohort.actual_model
+                {
+                    bail!("Pilot model capture differs from its sealed assignment");
+                }
+                for value in [
+                    &capture.assignment_id,
+                    &capture.agent_version,
+                    &capture.requested_model,
+                    &capture.reasoning_effort,
+                ] {
+                    text(value)?;
+                }
+                digest(&capture.harness_digest)?;
+                match (
+                    &capture.status,
+                    &capture.actual_model,
+                    &capture.unknown_reason,
+                ) {
+                    (ModelIdentityStatus::Reported, Some(_), None) => {}
+                    (ModelIdentityStatus::Unknown, None, Some(reason)) => text(reason)?,
+                    _ => bail!("Pilot model identity must be reported or explicitly unknown"),
+                }
+            }
+            (7, None) => {}
+            _ => bail!("Pilot model evidence requires schema v7"),
         }
         if [o.review_active_ms, o.review_comments, o.rework_rounds]
             .into_iter()
@@ -217,6 +605,64 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
                 }
             }
         }
+    }
+    if let Some(seal) = &manifest.plan_seal {
+        if seal.algorithm != "sha256" || !valid_digest(&seal.digest) {
+            bail!("Invalid pilot plan seal");
+        }
+        if plan_digest(manifest)? != seal.digest {
+            bail!("Pilot plan differs from its pre-observation seal");
+        }
+    }
+    Ok(())
+}
+
+fn validate_run_order(manifest: &Manifest, assigned: &BTreeMap<&str, &Assignment>) -> Result<()> {
+    if manifest.run_order.len() != assigned.len() || manifest.run_order.len() > 512 {
+        bail!("Pilot v5 needs one ordered position per assignment");
+    }
+    let mut seen = BTreeSet::new();
+    let mut previous = None;
+    let mut pairs = BTreeMap::<(TaskKind, &str, &str), [Option<usize>; 2]>::new();
+    for (position, id) in manifest.run_order.iter().enumerate() {
+        let assignment = assigned
+            .get(id.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Pilot run order contains an unknown assignment"))?;
+        if !seen.insert(id.as_str()) {
+            bail!("Pilot run order repeats an assignment");
+        }
+        let workflow = match assignment.cohort.workflow {
+            Workflow::ExistingTools => 0,
+            Workflow::Qualitygate => 1,
+        };
+        if previous == Some(workflow) {
+            bail!("Pilot run order must alternate workflows");
+        }
+        previous = Some(workflow);
+        let slots = pairs
+            .entry((
+                assignment.task_kind.clone(),
+                assignment.cohort.requested_model.as_str(),
+                assignment.input_id.as_str(),
+            ))
+            .or_default();
+        if slots[workflow].replace(position).is_some() {
+            bail!("Pilot run order repeats a workflow for one input and model");
+        }
+    }
+    let mut strata = BTreeMap::<(TaskKind, &str), [usize; 2]>::new();
+    for ((kind, model, _), [existing, qualitygate]) in pairs {
+        let (Some(existing), Some(qualitygate)) = (existing, qualitygate) else {
+            bail!("Pilot run order lacks a workflow pair for one input and model");
+        };
+        let first = usize::from(qualitygate < existing);
+        strata.entry((kind, model)).or_default()[first] += 1;
+    }
+    if strata
+        .values()
+        .any(|counts| counts[0].abs_diff(counts[1]) > 1)
+    {
+        bail!("Pilot run order is not counterbalanced within task kind and model strata");
     }
     Ok(())
 }

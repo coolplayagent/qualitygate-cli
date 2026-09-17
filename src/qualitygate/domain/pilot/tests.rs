@@ -34,6 +34,7 @@ fn append(m: &mut Manifest, reports: &mut Reports, index: usize, workflow: Workf
         },
         base: "a".repeat(40),
         initial_snapshot: d(4),
+        initial_report: None,
         config_digest: d(5),
         task_digest: d(6),
         required_checks: vec!["check".into()],
@@ -89,6 +90,8 @@ fn append(m: &mut Manifest, reports: &mut Reports, index: usize, workflow: Workf
     let observation = Observation {
         assignment_id: a.id.clone(),
         observed_at: 20,
+        start_sequence: None,
+        model_evidence: None,
         attempts: vec![Attempt {
             number: 1,
             status: AttemptStatus::Completed,
@@ -121,6 +124,450 @@ fn group(m: &Manifest, r: &Reports) -> Value {
     summary(m, r)["groups"][0].clone()
 }
 
+fn sealable_manifest() -> Manifest {
+    let (mut manifest, mut reports) = (manifest(), Reports::new());
+    for (index, workflow) in [
+        Workflow::ExistingTools,
+        Workflow::Qualitygate,
+        Workflow::ExistingTools,
+        Workflow::Qualitygate,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        append(&mut manifest, &mut reports, index, workflow, false);
+        manifest.assignments[index].cohort.requested_model = if index < 2 {
+            "medium-model".into()
+        } else {
+            "lower-model".into()
+        };
+        manifest.assignments[index].cohort.actual_model = None;
+        manifest.assignments[index].expected_issues = Some(Vec::new());
+    }
+    manifest.observations.clear();
+    manifest
+}
+
+fn structured_budget_plan() -> Manifest {
+    let mut manifest = sealable_manifest();
+    manifest.schema_version = 2;
+    manifest.protocol.monetary_cap = None;
+    manifest.protocol.budget = Some(PilotBudget {
+        currency: "USD".into(),
+        priced_at: 1,
+        source: "predeclared fixture tariff".into(),
+        max_total_micros: 10_000,
+        human_hourly_micros: 3_600_000,
+    });
+    manifest
+}
+
+fn stratified_plan() -> Manifest {
+    let mut manifest = structured_budget_plan();
+    manifest.schema_version = 3;
+    manifest.protocol.task_count = 2;
+    manifest.protocol.task_mix = Some(
+        [(TaskKind::BugFix, 1), (TaskKind::Refactor, 1)]
+            .into_iter()
+            .collect(),
+    );
+    let refactors: Vec<_> = manifest
+        .assignments
+        .iter()
+        .cloned()
+        .map(|mut assignment| {
+            assignment.id.push_str("-refactor");
+            assignment.input_id = "input-refactor".into();
+            assignment.task_id = "refactor-task".into();
+            assignment.task_kind = TaskKind::Refactor;
+            assignment.task_digest = d(700);
+            assignment.initial_snapshot = d(701);
+            assignment
+        })
+        .collect();
+    manifest.assignments.extend(refactors);
+    manifest
+}
+
+fn sourced_plan() -> Manifest {
+    let mut manifest = stratified_plan();
+    manifest.schema_version = 4;
+    manifest.sources = vec![
+        TaskSource {
+            input_id: "input".into(),
+            kind: SourceKind::Issue,
+            source_id: "fixture/issues/1".into(),
+            path: "bug-source.json".into(),
+            digest: d(800),
+            bytes: 32,
+            selected_at: 1,
+        },
+        TaskSource {
+            input_id: "input-refactor".into(),
+            kind: SourceKind::Commit,
+            source_id: "fixture/commits/2".into(),
+            path: "refactor-source.json".into(),
+            digest: d(801),
+            bytes: 32,
+            selected_at: 1,
+        },
+    ];
+    manifest
+}
+
+#[path = "v5_tests.rs"]
+mod v5;
+#[path = "v6_tests.rs"]
+mod v6;
+#[path = "v7_tests.rs"]
+mod v7;
+
+#[test]
+fn v4_seal_binds_one_unique_preselected_source_per_independent_task() {
+    let plan = sourced_plan();
+    let sealed = seal(plan.clone(), 1).unwrap();
+    let summary = summarize(&sealed, &Reports::new(), 1).unwrap();
+    assert_eq!(summary["source_audit"]["distinct_inputs"], 2);
+    assert_eq!(summary["source_audit"]["sources"][0]["kind"], "issue");
+
+    let mut missing = plan.clone();
+    missing.sources.pop();
+    assert!(validate(&missing).is_err());
+    let mut duplicate = plan.clone();
+    duplicate.sources[1].source_id = duplicate.sources[0].source_id.clone();
+    assert!(validate(&duplicate).is_err());
+    let mut repeated_artifact = plan.clone();
+    repeated_artifact.sources[1].digest = repeated_artifact.sources[0].digest.clone();
+    assert!(validate(&repeated_artifact).is_err());
+    let mut repeated_path = plan.clone();
+    repeated_path.sources[1].path = repeated_path.sources[0].path.clone();
+    assert!(validate(&repeated_path).is_err());
+    let mut wrong_input = plan.clone();
+    wrong_input.sources[1].input_id = "unassigned".into();
+    assert!(validate(&wrong_input).is_err());
+    let mut late = plan.clone();
+    late.sources[1].selected_at = 2;
+    assert!(validate(&late).is_err());
+    let mut oversized = plan.clone();
+    oversized.sources[1].bytes = 64 * 1024 + 1;
+    assert!(validate(&oversized).is_err());
+    let mut legacy = plan;
+    legacy.schema_version = 3;
+    assert!(validate(&legacy).is_err());
+
+    let mut drifted = sealed;
+    drifted.sources[1].source_id = "fixture/commits/changed".into();
+    assert!(validate(&drifted).unwrap_err().to_string().contains("seal"));
+}
+
+#[test]
+fn v3_seal_enforces_declared_strata_and_independent_task_identities() {
+    let plan = stratified_plan();
+    let sealed = seal(plan.clone(), 1).unwrap();
+    let summary = summarize(&sealed, &Reports::new(), 1).unwrap();
+    assert_eq!(summary["sampling_audit"]["distinct_inputs"], 2);
+    assert_eq!(summary["sampling_audit"]["declared"]["bug_fix"], 1);
+    assert_eq!(summary["sampling_audit"]["observed"]["refactor"], 1);
+    assert_eq!(
+        summary["sampling_audit"]["tasks"].as_array().unwrap().len(),
+        2
+    );
+
+    let mut missing_mix = plan.clone();
+    missing_mix.protocol.task_mix = None;
+    assert!(validate(&missing_mix).is_err());
+    let mut zero_mix = plan.clone();
+    zero_mix
+        .protocol
+        .task_mix
+        .as_mut()
+        .unwrap()
+        .insert(TaskKind::Refactor, 0);
+    assert!(validate(&zero_mix).is_err());
+    let mut wrong_sum = plan.clone();
+    wrong_sum
+        .protocol
+        .task_mix
+        .as_mut()
+        .unwrap()
+        .insert(TaskKind::Refactor, 2);
+    assert!(validate(&wrong_sum).is_err());
+    let mut legacy_mix = structured_budget_plan();
+    legacy_mix.protocol.task_mix = plan.protocol.task_mix.clone();
+    assert!(validate(&legacy_mix).is_err());
+    let mut wrong_mix = plan.clone();
+    for assignment in &mut wrong_mix.assignments[4..] {
+        assignment.task_kind = TaskKind::BugFix;
+    }
+    assert!(
+        validate(&wrong_mix)
+            .unwrap_err()
+            .to_string()
+            .contains("task mix differs")
+    );
+
+    let mut duplicate_id = plan.clone();
+    for assignment in &mut duplicate_id.assignments[4..] {
+        assignment.task_id = "task".into();
+    }
+    assert!(
+        validate(&duplicate_id)
+            .unwrap_err()
+            .to_string()
+            .contains("reuse a task ID")
+    );
+
+    let mut duplicate_contract = plan;
+    for assignment in &mut duplicate_contract.assignments[4..] {
+        assignment.task_digest = d(6);
+    }
+    assert!(
+        validate(&duplicate_contract)
+            .unwrap_err()
+            .to_string()
+            .contains("reuse a task contract digest")
+    );
+
+    let mut drifted = sealed.clone();
+    for assignment in &mut drifted.assignments[4..] {
+        assignment.task_id = "changed-refactor-task".into();
+    }
+    assert!(validate(&drifted).unwrap_err().to_string().contains("seal"));
+
+    let mut drifted_mix = sealed;
+    drifted_mix
+        .protocol
+        .task_mix
+        .as_mut()
+        .unwrap()
+        .insert(TaskKind::BugFix, 2);
+    assert!(validate(&drifted_mix).is_err());
+}
+
+#[test]
+fn v2_seal_requires_a_bounded_structured_budget_and_binds_it() {
+    let mut plan = structured_budget_plan();
+    assert!(seal(plan.clone(), 1).is_ok());
+    plan.protocol.budget = None;
+    assert!(validate(&plan).is_err());
+    plan = structured_budget_plan();
+    plan.protocol.budget.as_mut().unwrap().currency = "US$".into();
+    assert!(validate(&plan).is_err());
+    plan = structured_budget_plan();
+    plan.protocol.budget.as_mut().unwrap().max_total_micros = 0;
+    assert!(validate(&plan).is_err());
+    plan = seal(structured_budget_plan(), 1).unwrap();
+    plan.protocol.budget.as_mut().unwrap().max_total_micros += 1;
+    assert!(
+        validate(&plan)
+            .unwrap_err()
+            .to_string()
+            .contains("differs from its pre-observation seal")
+    );
+}
+
+#[test]
+fn structured_budget_counts_failed_attempts_and_rejects_unknown_or_overspend() {
+    let mut manifest = manifest();
+    manifest.schema_version = 2;
+    manifest.protocol.monetary_cap = None;
+    manifest.protocol.budget = structured_budget_plan().protocol.budget;
+    manifest.protocol.budget.as_mut().unwrap().max_total_micros = 250;
+    let mut reports = Reports::new();
+    append(&mut manifest, &mut reports, 0, Workflow::Qualitygate, false);
+    manifest.observations[0].attempts[0].status = AttemptStatus::Failed;
+    let assessed = budget::assess(&manifest).unwrap().unwrap();
+    assert_eq!(assessed.known_total_micros, 215);
+    assert_eq!(assessed.known_human_micros, 200);
+    assert_eq!(assessed.status, ThresholdStatus::Met);
+
+    manifest
+        .protocol
+        .budget
+        .as_mut()
+        .unwrap()
+        .human_hourly_micros = 1;
+    manifest.observations[0].review_active_ms = Some(1);
+    assert_eq!(
+        budget::assess(&manifest)
+            .unwrap()
+            .unwrap()
+            .known_human_micros,
+        1
+    );
+    manifest
+        .protocol
+        .budget
+        .as_mut()
+        .unwrap()
+        .human_hourly_micros = 3_600_000;
+    manifest.observations[0].review_active_ms = Some(200);
+
+    manifest.protocol.budget.as_mut().unwrap().max_total_micros = 200;
+    assert_eq!(
+        budget::assess(&manifest).unwrap().unwrap().status,
+        ThresholdStatus::NotMet
+    );
+    manifest.protocol.budget.as_mut().unwrap().max_total_micros = 250;
+    manifest.observations[0].attempts[0]
+        .cost
+        .as_mut()
+        .unwrap()
+        .model_micros = None;
+    let assessed = budget::assess(&manifest).unwrap().unwrap();
+    assert_eq!(assessed.known_total_micros, 205);
+    assert_eq!(assessed.unknown_inputs, 1);
+    assert_eq!(assessed.status, ThresholdStatus::Unknown);
+
+    manifest.observations[0].attempts[0]
+        .cost
+        .as_mut()
+        .unwrap()
+        .infrastructure_micros = Some(300);
+    assert_eq!(
+        budget::assess(&manifest).unwrap().unwrap().status,
+        ThresholdStatus::NotMet
+    );
+    manifest.observations[0].attempts[0]
+        .cost
+        .as_mut()
+        .unwrap()
+        .currency = "EUR".into();
+    assert_eq!(
+        budget::assess(&manifest).unwrap().unwrap().status,
+        ThresholdStatus::Unknown
+    );
+}
+
+#[test]
+fn pre_observation_seal_binds_the_plan_but_allows_observed_model_and_results() {
+    let mut sealed = seal(sealable_manifest(), 1).unwrap();
+    assert!(
+        serde_json::to_value(&sealed).unwrap()["protocol"]
+            .get("budget")
+            .is_none()
+    );
+    let digest = sealed.plan_seal.as_ref().unwrap().digest.clone();
+    assert_eq!(sealed.plan_seal.as_ref().unwrap().algorithm, "sha256");
+    assert_eq!(seal(sealed.clone(), 1).unwrap().plan_seal, sealed.plan_seal);
+
+    sealed.assignments[0].cohort.actual_model = Some("provider-version".into());
+    assert!(validate(&sealed).is_ok());
+    sealed.assignments[0].cohort.permissions = "changed".into();
+    assert!(
+        validate(&sealed)
+            .unwrap_err()
+            .to_string()
+            .contains("differs from its pre-observation seal")
+    );
+    assert_eq!(sealed.plan_seal.unwrap().digest, digest);
+}
+
+#[test]
+fn summary_accepts_only_verified_authorization_for_its_exact_plan() {
+    let sealed = seal(sealable_manifest(), 1).unwrap();
+    let subject = authorization_subject(&sealed).unwrap();
+    let mut authorization = VerifiedPlanAuthorization {
+        record: PlanAuthorizationRecord {
+            schema_version: 1,
+            record_id: "start-1".into(),
+            subject,
+            authorizer: super::super::evolution::Actor {
+                id: "owner".into(),
+                kind: super::super::evolution::ActorKind::Human,
+            },
+            reason: "fixture".into(),
+            issued_at: 1,
+            expires_at: 700_000,
+        },
+        signer_key_id: "owner".into(),
+        public_key_digest: d(999),
+    };
+    let summary =
+        summarize_with_authorization(&sealed, &Reports::new(), 1, Some(&authorization)).unwrap();
+    assert_eq!(summary["plan_authorization"]["status"], "authenticated");
+    authorization.record.subject.pilot_id = "other".into();
+    assert!(
+        summarize_with_authorization(&sealed, &Reports::new(), 1, Some(&authorization))
+            .unwrap_err()
+            .to_string()
+            .contains("does not match")
+    );
+}
+
+#[test]
+fn seal_rejects_unready_governance_ground_truth_matrix_and_late_observations() {
+    let mut plan = sealable_manifest();
+    plan.protocol.reviewer = None;
+    assert!(seal(plan, 1).unwrap_err().to_string().contains("reviewer"));
+
+    let mut plan = sealable_manifest();
+    plan.protocol.reviewer = plan.protocol.owner.clone();
+    assert!(
+        seal(plan, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("must be distinct")
+    );
+
+    let mut plan = sealable_manifest();
+    for assignment in &mut plan.assignments {
+        assignment.origin = Origin::Historical;
+    }
+    assert!(
+        seal(plan, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("real inputs")
+    );
+
+    let mut plan = sealable_manifest();
+    plan.assignments.pop();
+    assert!(
+        seal(plan, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("matrix is incomplete")
+    );
+
+    let mut plan = sealable_manifest();
+    for assignment in &mut plan.assignments {
+        assignment.expected_issues = None;
+    }
+    assert!(
+        seal(plan, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("ground truth")
+    );
+
+    let mut plan = sealable_manifest();
+    plan.observations.push(Observation {
+        assignment_id: "run-0".into(),
+        observed_at: 2,
+        start_sequence: None,
+        model_evidence: None,
+        attempts: Vec::new(),
+        findings: Vec::new(),
+        review_active_ms: None,
+        review_comments: None,
+        rework_rounds: None,
+    });
+    assert!(
+        seal(plan, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("before observations")
+    );
+
+    assert!(
+        seal(sealable_manifest(), 3)
+            .unwrap_err()
+            .to_string()
+            .contains("observation window")
+    );
+}
+
 #[test]
 fn matched_conditions_compare_full_cost_and_human_review_without_authorizing_acceptance() {
     let (mut m, mut r) = (manifest(), Reports::new());
@@ -129,7 +576,8 @@ fn matched_conditions_compare_full_cost_and_human_review_without_authorizing_acc
     m.observations[1].review_active_ms = Some(150);
     let s = summary(&m, &r);
     assert_eq!(s["complete"], true);
-    assert_eq!(s["protocol_ready"], true);
+    assert_eq!(s["protocol_ready"], false);
+    assert!(s["plan_seal"].is_null());
     assert_eq!(s["comparisons"][0]["review_reduction"], 0.25);
     assert_eq!(s["comparisons"][0]["full_p95_ratio"], 1.0);
     assert_eq!(s["comparisons"][0]["cost_ratio"], 1.0);

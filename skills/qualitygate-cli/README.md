@@ -27,6 +27,9 @@ The tracked skill directory is intentionally lightweight:
 - [rule management](references/rule-management.md) covers policy context,
   candidate changes, lifecycle and signed adoption; [selfcheck](references/selfcheck.md)
   covers bundled runtime regression.
+- [pilot evidence](references/pilot-evidence.md) and the bundled
+  [v7 manifest template](assets/pilot/observation-v7.json) cover trial sealing,
+  model records and independently signed acceptance.
 
 A tag release creates `qualitygate-cli-skill-<tag>.tar.gz`. Its root is this
 skill directory plus these platform-specific runtime assets:
@@ -43,8 +46,10 @@ qualitygate-cli-skill-<tag>/
 ├── references/diagnostic-ratchets.md
 ├── references/rule-management.md
 ├── references/selfcheck.md
+├── references/pilot-evidence.md
 ├── references/schemas/project-rule.schema.json
 ├── references/rules/{core,shared,lang-java,lang-python}/*.yaml
+├── assets/pilot/observation-v7.json
 ├── assets/linux-x86_64/qualitygate
 ├── assets/linux-aarch64/qualitygate
 ├── assets/windows-x86_64/qualitygate.exe
@@ -62,8 +67,8 @@ catalog with `rules list` before recommending a policy change.
 
 ## Release contract
 
-The tag-triggered [release workflow](../../.github/workflows/release.yml)
-requires a semantic-version tag that matches `Cargo.toml`. It runs Rust quality
+The repository's tag-triggered release workflow requires a semantic-version
+tag that matches the CLI package version. It runs Rust quality
 gates and package verification, builds Linux x64/ARM64 and Windows x64/ARM64
 binaries, smoke-tests the natively runnable Linux variants and Windows x64, and
 verifies the Windows ARM64 PE architecture before injecting all four assets into

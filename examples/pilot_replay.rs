@@ -183,6 +183,7 @@ fn main() -> Result<()> {
                 },
                 base: initial.snapshot.base.clone(),
                 initial_snapshot: initial.snapshot.content_digest.clone(),
+                initial_report: None,
                 config_digest: initial.policy.config_digest.clone(),
                 task_digest: initial
                     .policy
@@ -262,6 +263,8 @@ fn main() -> Result<()> {
                 });
             }
             manifest.observations.push(Observation {
+                start_sequence: None,
+                model_evidence: None,
                 assignment_id: id,
                 observed_at,
                 attempts: observations,

@@ -35,7 +35,7 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Read-only evidence summaries; these do not authorize rollout or pilot acceptance.
+    /// Read-only pilot evidence and verification of externally signed start authorization.
     Pilot {
         #[command(subcommand)]
         command: super::pilot::Pilot,
@@ -284,15 +284,50 @@ impl Cli {
                 Ok((super::render::metadata(&value, self.format)?, 0))
             }
             Command::Rules { command } => run_rules(root, self.config, command, self.format).await,
-            Command::Pilot {
-                command: super::pilot::Pilot::Summarize { input },
-            } => {
-                let input = if input.is_absolute() {
-                    input
-                } else {
-                    root.join(input)
+            Command::Pilot { command } => {
+                let resolve = |input: PathBuf| {
+                    if input.is_absolute() {
+                        input
+                    } else {
+                        root.join(input)
+                    }
                 };
-                let (value, code) = application::pilot::summarize(input).await?;
+                let (value, code) = match command {
+                    super::pilot::Pilot::Seal { input } => {
+                        application::pilot::seal(resolve(input)).await?
+                    }
+                    super::pilot::Pilot::AuthorizationSubject { input } => {
+                        application::pilot::authorization_subject(resolve(input)).await?
+                    }
+                    super::pilot::Pilot::AcceptanceSubject {
+                        input,
+                        trust_store,
+                        authorization,
+                    } => {
+                        application::pilot::acceptance_subject(
+                            root.clone(),
+                            resolve(input),
+                            trust_store,
+                            authorization,
+                        )
+                        .await?
+                    }
+                    super::pilot::Pilot::Summarize {
+                        input,
+                        trust_store,
+                        authorization,
+                        acceptance,
+                    } => {
+                        application::pilot::summarize(
+                            root.clone(),
+                            resolve(input),
+                            trust_store,
+                            authorization,
+                            acceptance,
+                        )
+                        .await?
+                    }
+                };
                 Ok((super::render::metadata(&value, self.format)?, code))
             }
             Command::Policy { command } => {

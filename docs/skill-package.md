@@ -9,7 +9,9 @@ than reimplementing gate semantics in prompts. The tracked package is
 
 The source package contains `SKILL.md`, OpenAI-compatible UI metadata, focused
 operations and built-in-rule references, plus every built-in rule YAML under
-`references/rules/**`. The CLI reads those assets at runtime through the
+`references/rules/**`. It also bundles the pilot evidence reference and v7
+manifest template, so a published Skill does not depend on repository-only
+implementation documents or templates. The CLI reads rule assets at runtime through the
 Skill-owned `QUALITYGATE_BUILTIN_RULES_DIR` path (or the adjacent release
 layout); it contains no compiled rule manifest fallback. The assets make the
 general-language, quality, security, and architecture definitions reviewable
@@ -72,7 +74,7 @@ replace the local Skill runtime after full verification, with the previous
 runtime preserved; this does not publish a release.
 
 `tests/quality/skill_package.rs` validates the package structure, version
-alignment, UI metadata, safety instructions, and release-workflow asset
+alignment, UI metadata, safety instructions, bundled Markdown links and release-workflow asset
 contract. It runs with the repository documentation/architecture quality gate;
 the release workflow validates the produced archive again before it is
 published.
@@ -89,6 +91,7 @@ report configuration using the selected runtime before execution.
 | Instruction/file contract example is accepted only with its full-inventory mode | `tests/quality/skill_package.rs::skill_capability_examples_match_runtime_validation` parses the shipped YAML, supplies a fixture digest, and rejects changing `all` to `any` |
 | Ratchet example requires fresh baseline configuration | The same test validates the shipped command configuration and rejects removing `baseline` |
 | Package references and schema reach the agent | Package structure/version test, documentation link gate and release archive file checks |
+| Published Skill resolves its own documents and pilot template | `published_skill_has_only_bundled_document_references_and_template` checks every Markdown link stays inside the package, rejects repository-only pilot paths, and compares the bundled v7 template byte-for-byte with the repository template; release packaging checks both files |
 | Actual gate outcomes and incomplete evidence | Separate `file_contracts` and `ratchet` integration suites; full selfcheck remains evidence for its bundled corpus only |
 
 The package validator accepts both LF and CRLF YAML frontmatter delimiters,

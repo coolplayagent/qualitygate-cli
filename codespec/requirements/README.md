@@ -35,3 +35,41 @@ external repair loops to contract tests and controlled live model observations.
 The [phase-C record](../../docs/pilot-phase-c.md) maps protected case lineage,
 pilot aggregation and the remaining task templates to negative tests and a
 digest-verified replay of retained phase-B evidence.
+
+The [phase-D record](../../docs/pilot-phase-d.md) maps pre-observation plan
+sealing, balanced enrollment and post-seal mutation rejection to pure and CLI
+tests. The integrity seal does not authenticate the caller or complete the
+seven-day production observation.
+
+The [phase-E record](../../docs/pilot-phase-e.md) maps the sealed subject to an
+external DSSE/Ed25519 owner authorization, trust-store scope, time-window and
+revocation checks. This authenticates trial start but does not complete the
+production observation or reviewer acceptance.
+
+The [phase-F record](../../docs/pilot-phase-f.md) maps complete observation and
+report evidence to nine required threshold checks and an independent signed
+reviewer decision. Engineering fixtures do not constitute a production result.
+
+The [phase-G record](../../docs/pilot-phase-g.md) maps versioned total-budget
+requirements to pure accounting and signed v2 acceptance evidence. Production
+prices, time records and eight tasks remain caller-owned evidence.
+
+The [phase-H record](../../docs/pilot-phase-h.md) maps v3 task strata and
+independent input identities to seal and CLI tests. Actual task independence
+and seven-day observations remain external pilot evidence.
+
+The [phase-I record](../../docs/pilot-phase-i.md) maps v4 issue/commit source
+artifacts to bounded archive reads, plan sealing and repeated CLI verification.
+Human source validation and production observations remain external evidence.
+
+The [phase-J record](../../docs/pilot-phase-j.md) maps the sealed v5 run order,
+alternating workflows and observed start-sequence deviations to domain and CLI
+tests. Actual start events remain externally reviewed evidence.
+
+The [phase-K record](../../docs/pilot-phase-k.md) maps v6 initial reports and
+attempt-budget/no-progress rules to verified archive reads and summary tests.
+Actual Agent work and elapsed time remain externally reviewed evidence.
+
+The [phase-L record](../../docs/pilot-phase-l.md) maps v7 model capture files,
+requested-model binding and explicit unknown identities to domain and CLI tests.
+Provider routing and capture clocks remain externally reviewed evidence.

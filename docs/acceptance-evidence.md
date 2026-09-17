@@ -232,3 +232,75 @@ and an offline replay of every retained phase-B success and failure. The CLI
 marks summaries descriptive and cannot authenticate caller declarations or
 approve rollout. The production task inventory, reviewer, monetary cap,
 durable archive and seven-day observations remain pending.
+
+## Pilot plan integrity (§12 / phase D)
+
+[Phase-D evidence](pilot-phase-d.md) records the `pilot seal` contract and maps
+its plan/governance/matrix invariants to native and `pilot_seal` integration
+tests. The embedded digest permits later actual-model disclosure and observations
+while rejecting changes to the frozen comparison inputs. It is not a signature
+or trusted timestamp. The concrete 8-task inventory and external archive record
+remain pending, so the production trial has not started.
+
+## Pilot start authorization (§12 / phase E)
+
+[Phase-E evidence](pilot-phase-e.md) records the exact authorization subject,
+external trust-store boundary and DSSE/Ed25519 owner verification. Native adapter
+tests and the `pilot_authorization` integration target cover plan/repository
+binding, human-owner scope, expiry, revocation, absent authorization and
+repository-owned trust rejection. No formal owner record or real observation
+exists in the repository, so the production trial remains unstarted.
+
+## Independent pilot decision (§12 / phase F)
+
+[Phase-F evidence](pilot-phase-f.md) records the deterministic nine-check
+assessment, complete manifest/start-authorization binding and independent
+reviewer DSSE decision. Domain, adapter and `pilot_acceptance` integration tests
+cover accepted, rejected, failed, unknown, revoked and stale evidence. The tests
+use synthetic reports and keys, so no production trial has been accepted.
+
+## Structured pilot budget (§12 / phase G)
+
+[Phase-G evidence](pilot-phase-g.md) records schema-v2 monetary cap sealing,
+all-attempt model/infrastructure accounting, priced human review time and the
+tenth signed acceptance check. Domain and `pilot_acceptance` CLI tests include
+overspend with an otherwise passing relative cost ratio. Actual prices, human
+rates, task inventory and seven-day observations remain unavailable, so the
+production trial still has no accepted result.
+
+## Stratified pilot inventory (§12 / phase H)
+
+[Phase-H evidence](pilot-phase-h.md) records v3 predeclared task counts, a
+distinct-input roster, duplicate task ID/contract rejection and seal-drift
+tests. A same-input v2 old/new binary comparison protects existing plan digests.
+The task IDs and contract digests do not establish real-world independence;
+the production issue/commit roster and seven-day observations remain pending.
+
+## Pilot task source artifacts (§12 / phase I)
+
+[Phase-I evidence](pilot-phase-i.md) records v4 one-to-one source declarations,
+bounded archive reads, source-file drift refusal and old v3 seal compatibility.
+Domain and `pilot_seal` CLI tests use synthetic files. The team still needs to
+confirm actual issue/commit sources and keep the first external archive record
+before any seven-day pilot can start.
+
+## Pilot execution order (§12 / phase J)
+
+[Phase-J evidence](pilot-phase-j.md) records v5 predeclared alternating order,
+stratum-level counterbalancing and audit of observed start-sequence deviations.
+Domain and CLI tests use synthetic positions. The team must retain actual start
+events and independently review their order before accepting a production trial.
+
+## Pilot repair stopping (§12 / phase K)
+
+[Phase-K evidence](pilot-phase-k.md) records v6 initial full reports, strict
+diagnostic-debt progress and audited retry/time/no-progress stop limits. Domain
+and CLI tests use synthetic reports. The team must retain actual Agent and clock
+logs and independently review their authenticity before a production decision.
+
+## Pilot model identity (§12 / phase L)
+
+[Phase-L evidence](pilot-phase-l.md) records v7 archived model captures, request
+identity and collection-time checks, and explicit unknown routed models. Domain
+and CLI tests use synthetic records; the team must compare them with the
+provider's original logs and review capture times before a production decision.

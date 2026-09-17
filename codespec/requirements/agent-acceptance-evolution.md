@@ -1,7 +1,7 @@
 # 跨 Agent 验收能力演进需求 SPEC
 
-> 文档版本：v0.5
-> 状态：阶段 C 工程实现与离线证据汇总；业务试点待验收
+> 文档版本：v1.1
+> 状态：阶段 L 模型采集与未知实际版本工程实现；具体生产任务与七天业务试点待启动
 > 研究日期：2026-09-15
 > 关联需求：[REQUIREMENTS §12](../../REQUIREMENTS.md#12-跨-agent-验收能力演进)
 
@@ -15,7 +15,7 @@ Agent 负责理解需求、提出规则和测试、修改代码；CLI 根据明�
 根据结构化诊断完成修复，并对最终快照执行完整验收；团队能够复查输入、策略、任务与证据，
 测量相对既有流程的增量收益和成本。规则数量、支持模型数量和 fixture 通过数不单独构成产品收益。
 
-本文同时记录已交付的阶段 A–C 工程能力及未完成的真实试点。[验收审计](../../docs/acceptance-evidence.md)
+本文同时记录已交付的阶段 A–L 工程能力及未完成的真实试点。[验收审计](../../docs/acceptance-evidence.md)
 记录实现证据；[试点协议](../../docs/pilot.md)规定真实项目收益的独立验收。
 本文不改变既有 M1–M4 的完成状态，不把文档检查成功或厂商评测结果计为试点通过。
 
@@ -187,6 +187,15 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 | A：建立可比较基线 | EVO-05 试点输入与记录；使用已有能力准备缺陷修复、重构任务；本地采用 Codex 中、低能力模型组的接入基线 | 输入与阈值已预先确认，既有工具报告可复查，已知能力缺口已记录；尚不宣称收益成立 |
 | B：验证任务与反馈闭环 | EVO-01 首批模板、EVO-02 精简反馈、EVO-03 接入范例与实际修复观察；优先补试点暴露的报告适配问题 | 契约回归通过，实际 Agent 修复与最终完整验收记录齐全；收益是否通过另按预定阈值判断 |
 | C：依证据演进 | EVO-04 案例到策略流程、EVO-05 汇总、其余任务模板；按证据选择生态与外部结果交换需求 | 独立案例和策略成对验证完整，推广有授权，后续效果可追踪；未验证扩展仍保持待办 |
+| D：封存并启动真实试点 | EVO-05 观察前计划完整性；封存协议、任务真值、模型×流程矩阵及全部比较条件，观察期间拒绝计划漂移 | 首次封存记录进入声明的持久归档，32 个运行单元完整且尚无观察；摘要不替代身份、时间或最终验收 |
+| E：认证试点启动授权 | EVO-05 观察前 owner 授权；外部信任库、DSSE/Ed25519 签名、仓库/计划/窗口绑定及撤销复验 | 受信 human owner 已签署精确封存主题，授权覆盖七天窗口且可重验；仍不替代可信时间戳、真实观察或 reviewer 最终接受 |
+| F：认证独立试点验收 | EVO-05 完整观察后的结构化阈值判定与 reviewer 决策；绑定 manifest、报告引用、启动授权和全部比较结果 | 所有必需阈值已知且通过时才可签署接受；独立 reviewer 的接受/拒绝可重验，真实数据不存在时仍保持待验收 |
+| G：结构化总预算验收 | EVO-05 新试点在封存前固定币种、价格时间、来源、人工时薪和全试点上限；将全部尝试与人工费用纳入最终签名主题 | v2 十项阈值全部已知且通过才可接受；缺金额或已知超限不能被相对成本比掩盖；旧 v1 封存记录维持原语义 |
+| H：封存独立任务分层 | EVO-05 新试点在封存前固定 4 个缺陷修复/4 个重构的机器可读配额；按独立输入核对实际类型并拦截重复任务 ID/契约 | v3 计划可复核八项任务清单与 32 个运行单元；变更配额或任务身份使封存失配；真实任务来源和七天观察仍由团队独立证明 |
+| I：绑定任务来源工件 | EVO-05 新试点对每个独立任务封存 issue/commit 来源身份、文件摘要、长度、路径和选入时间；每次输出复核来源文件 | v4 来源清单与八项任务一一对应、不能重复或越界；文件缺失/变更为未完成，真实来源和时间仍需 human reviewer 与外部归档确认 |
+| J：封存交替执行顺序 | EVO-05 新试点封存完整运行次序、流程交替和按任务类型×模型平衡的先后分配；汇总实际启动次序声明 | v5 计划与实际顺序可核对；缺失序号或偏离阻止最终接受，外部启动日志与序号真实性仍由 reviewer 复核 |
+| K：审计修复预算与停止 | EVO-03、EVO-05 新试点封存每个运行单元的初始 full 报告与无进展上限；汇总按绑定报告重算进展、尝试数和累计耗时 | v6 连续无进展后再试或超 3 次/30 分钟为协议偏离；缺报告为未完成，真实 Agent/耗时仍需外部日志确认 |
+| L：绑定模型采集记录 | EVO-05 新试点为每个已观察运行单元归档有界模型采集 JSON，核对封存的请求配置、采集时间、实际模型报告或明确未知 | v7 缺记录、漂移或身份失配保持未完成；未知实际版本如实披露，不据此否定请求配置层面的协议；提供者路由真实性仍需外部日志复核 |
 
 以下是试点启动前必须由团队确定的输入，本 SPEC 不预填未经确认的选择：
 
@@ -208,6 +217,66 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 同范围验证耗时 ≤基线 1.2 倍。两模型 × 两流程共 32 个运行单元，累计上限 96 次尝试/16 小时。
 其余口径、成本条件及尚需封存的具体任务、复核人和归档信息见上述试点记录；不重复请求已确认的参数。
 
+阶段 D 的工程命令 `pilot seal --input` 在 observation 为空时计算计划摘要。封存要求 real 来源、
+预先声明的 expected issues、无事后 exclusion、至少两个请求模型组、existing-tools/qualitygate
+两种流程及每个 input 相同的完整 cohort 矩阵。摘要绑定协议和 assignment，但有意允许执行后补充
+服务商实际模型标识和 observation。摘要只能检测内容变化，不能认证封存人或可信时间；首次输出
+仍须进入团队持久归档。细化要求与证据见[阶段 D 设计](../design/pilot-phase-d.md)和
+[阶段 D 记录](../../docs/pilot-phase-d.md)。
+
+阶段 E 的 `pilot authorization-subject --input` 从封存清单导出唯一启动主题；外部 human owner
+使用具备 `pilot-plan-authorization` scope 的 Ed25519 key 签署 DSSE record。`pilot summarize`
+在每次调用时重验外部 trust store、仓库、owner key、精确主题、签发/到期窗口和撤销状态，输出
+authenticated 或 absent。签名输入必须位于被测仓库外，不能由仓库提交自授权。普通数字签名仍不
+提供独立可信时间，启动授权也不是最终 reviewer 接受。细化要求与证据见
+[阶段 E 设计](../design/pilot-phase-e.md)和[阶段 E 记录](../../docs/pilot-phase-e.md)。
+
+阶段 F 的 `pilot acceptance-subject` 只为完整、protocol-ready 的观察生成最终主题。评估聚合
+Qualitygate 组的检测、误报、修复、完成与复核比例，并要求每个匹配对照的 inventory、审查时间、
+full P95 和成本比通过；失败与 unknown 均不能签成 accepted。外部独立 reviewer 使用
+`pilot-trial-acceptance` scope 签署接受或拒绝，`pilot summarize --acceptance` 每次重验主题、
+身份、有效期和撤销。细化要求与证据见[阶段 F 设计](../design/pilot-phase-f.md)和
+[阶段 F 记录](../../docs/pilot-phase-f.md)。
+
+阶段 G 的 schema v2 在封存前要求结构化总预算。纯计算包含两流程、两模型的全部尝试及按
+固定时薪计算的人工活跃时间；缺值保持 unknown，已知部分超限为 not_met。v2 验收主题新增
+第十项总预算检查，旧 v1 已封存记录维持九项语义。细化要求与证据见
+[阶段 G 设计](../design/pilot-phase-g.md)和[阶段 G 记录](../../docs/pilot-phase-g.md)。
+
+阶段 H 的 schema v3 在封存前要求 `task_mix` 配额总和等于任务总数，并按不同输入 ID
+核对任务类型；不同输入不得复用任务 ID 或契约摘要。摘要绑定配额与任务身份，汇总列出
+去重任务清单。v3 沿用 v2 预算和十项最终阈值，旧 v1/v2 已封存记录维持原语义。
+形式上的唯一性不证明任务在真实项目中独立；来源、抽样和人工复核仍待正式归档。
+细化要求与证据见[阶段 H 设计](../design/pilot-phase-h.md)和
+[阶段 H 记录](../../docs/pilot-phase-h.md)。
+
+阶段 I 的 schema v4 在封存前要求每项独立任务有一份有界来源工件，声明 issue/commit
+身份、相对路径、字节数、SHA-256 和选入时间。CLI 每次封存、导出签名主题或汇总时
+重新核对文件；来源字段进入 plan seal 与汇总审计。旧 v1/v2/v3 已封存记录保持原语义。
+摘要匹配不证明来源内容与时间真实，正式样本仍须外部复核。
+细化要求与证据见[阶段 I 设计](../design/pilot-phase-i.md)和
+[阶段 I 记录](../../docs/pilot-phase-i.md)。
+
+阶段 J 的 schema v5 在封存前要求 `run_order` 恰好排列全部 assignment，按相邻流程
+交替，并在每个任务类型×请求模型层内平衡两流程谁先执行。观察的 `start_sequence`
+声明实际启动次序；缺失或偏离进入汇总的 `schedule_audit` 和协议限制。旧 v1–v4
+封存摘要维持原语义。序号本身不是可信时钟，须对照外部日志人工核对。
+细化要求与证据见[阶段 J 设计](../design/pilot-phase-j.md)和
+[阶段 J 记录](../../docs/pilot-phase-j.md)。
+
+阶段 K 的 schema v6 要求每个 assignment 在观察前有一份可核对的初始完整报告，
+并封存 `no_progress_limit`。CLI 用与阶段 B harness 相同的错误诊断/阻塞项真子集规则
+重算进展；超预算或连续两次无进展后再试进入 `attempt_audit` 协议偏离。失败尝试
+仍保留在分母和成本，初始报告文件缺失/漂移为未完成。旧 v1–v5 封存摘要保持原语义。
+细化要求与证据见[阶段 K 设计](../design/pilot-phase-k.md)和
+[阶段 K 记录](../../docs/pilot-phase-k.md)。
+
+阶段 L 的 schema v7 在每个观察中绑定请求模型、Agent/harness 身份、采集时间和
+报告的实际模型或明确未知原因。CLI 有界复核外部归档 JSON，缺失或失配保持未完成；
+明确未知不再单独阻断协议，比较结论仅针对请求配置。旧 v1–v6 语义保持不变。
+细化要求与证据见[阶段 L 设计](../design/pilot-phase-l.md)和
+[阶段 L 记录](../../docs/pilot-phase-l.md)。
+
 ## 6. 需求到实现和证据映射
 
 以下入口与测试提供可复用基础，不代表 EVO 需求已完成。后续实现应保留需求编号，
@@ -219,7 +288,7 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 | EVO-02 | `domain::{Report, Diagnostic, Recheck, PlanSummary}` 与 `interfaces::render`，从相同门禁结果派生展示 | `tests/cli.rs`、`tests/policy.rs` 的输出、剩余检查与固定策略复验场景 | `domain::feedback`、`application::feedback` 与 `tests/feedback.rs` 已实现有界视图与完整报告一致性；实际字节数见阶段 B，因果 token 收益未知 |
 | EVO-03 | Skill 调用 `interfaces`，应用层组织配置、快照、规则与有界命令执行；来源记录由外部 harness 提供 | `tests/cli.rs`、`tests/execution.rs`、`tests/provenance.rs`；`tests/pilot_codex_live.rs` 提供 Codex 双模型连接探测和证据重审 | 阶段 B 新增外层 Rust harness、双模型受控修复、最终 full 与实际合并回归；跨产品、生产任务与收益仍待观察 |
 | EVO-04 | `domain::case_provenance` 定义来源，`config::case_provenance` 校验不可变谱系和 suite v2；复用成对执行、签名批准、推广和回退 | `tests/case_provenance.rs` 覆盖生成/调参重标、动机复用、自复核、独立正常例误拦截、已知缺陷漏检和事后污染；既有 policy suites 保留批准/生命周期 | 工程契约已实现；真实独立案例、授权推广和采用后效果仍待生产试点 |
-| EVO-05 | `domain::pilot` 以预分配清单汇总，`config::pilot` 核验完整报告，`application::pilot` 隔离阻塞读取，`pilot summarize` 只输出描述性结果 | `domain::pilot` 单元、`tests/pilot_summary.rs`、`tests/pilot_templates.rs`；`examples/pilot_replay.rs` 离线复查两批阶段 B 记录 | 8 个任务/7 天及阈值已固化；具体生产任务、复核人、金额上限、持久归档、人工收益和授权验收仍待封存/观察 |
+| EVO-05 | `domain::pilot` 汇总、封存并生成启动/验收主题；v2+ `budget` 纯计算全试点模型/基础设施/人工费用；v3+ `task_mix` 核对去重输入的分层与独立身份；v4+ `sources` 绑定任务来源声明，`config` 有界复核归档字节；v5 `run_order` 和 `schedule` 审计交替执行；v6 `attempt_audit` 核对初始报告、预算与无进展停止；v7 `model_evidence` 复核逐运行模型采集与未知原因；两类签名 adapter 重验 owner/reviewer 记录；`application` 编排完整证据链 | pilot domain 与两类签名 adapter 单元、`tests/pilot_seal.rs`、`tests/pilot_authorization.rs`、`tests/pilot_acceptance.rs`、`tests/pilot_summary.rs`、`tests/pilot_templates.rs`；`examples/pilot_replay.rs` 离线复查阶段 B 记录 | 8 个任务/7 天、阈值、v7 顺序/来源/任务配额、总预算、停止规则及模型采集、封存、启动授权和最终 reviewer 决策契约已固化；具体生产任务、模型路由真实性、正式身份/签名、持久归档和真实人工收益仍待生产观察 |
 
 ### 6.1 必须保留的反例
 
@@ -249,3 +318,30 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 
 阶段 C 的案例来源、试点汇总、离线历史重放和模板证据见
 [阶段 C 设计](../design/pilot-phase-c.md)与[证据记录](../../docs/pilot-phase-c.md)。
+
+阶段 D 的观察前封存、完整对照矩阵与计划漂移拒绝见
+[阶段 D 设计](../design/pilot-phase-d.md)与[证据记录](../../docs/pilot-phase-d.md)。
+
+阶段 E 的外部 owner 身份、精确封存主题、有效期/撤销复验与 absent 状态见
+[阶段 E 设计](../design/pilot-phase-e.md)与[证据记录](../../docs/pilot-phase-e.md)。
+
+阶段 F 的结构化阈值评估、完整 evidence subject 与独立 reviewer 接受/拒绝见
+[阶段 F 设计](../design/pilot-phase-f.md)与[证据记录](../../docs/pilot-phase-f.md)。
+
+阶段 G 的 v2 预算契约、全部尝试和人工费用计算及十项最终验收见
+[阶段 G 设计](../design/pilot-phase-g.md)与[证据记录](../../docs/pilot-phase-g.md)。
+
+阶段 H 的 v3 独立任务分层、重复样本拦截和旧计划兼容性见
+[阶段 H 设计](../design/pilot-phase-h.md)与[证据记录](../../docs/pilot-phase-h.md)。
+
+阶段 I 的 v4 来源工件、越界/变更拒绝和旧计划兼容性见
+[阶段 I 设计](../design/pilot-phase-i.md)与[证据记录](../../docs/pilot-phase-i.md)。
+
+阶段 J 的 v5 交替顺序、分层平衡、执行偏离阻断和旧计划兼容性见
+[阶段 J 设计](../design/pilot-phase-j.md)与[证据记录](../../docs/pilot-phase-j.md)。
+
+阶段 K 的 v6 初始报告、预算与无进展审计和旧计划兼容性见
+[阶段 K 设计](../design/pilot-phase-k.md)与[证据记录](../../docs/pilot-phase-k.md)。
+
+阶段 L 的 v7 模型采集记录、明确未知与旧计划兼容性见
+[阶段 L 设计](../design/pilot-phase-l.md)与[证据记录](../../docs/pilot-phase-l.md)。

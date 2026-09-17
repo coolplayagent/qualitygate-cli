@@ -25,3 +25,14 @@ Cargo 的退出码 101 也可能来自编译错误，只有实际执行报告中
 阶段范围及真实收益边界见[执行设计](../../../codespec/design/pilot-phase-a.md)和
 [试点准备记录](../../../docs/pilot-phase-a.md)。
 阶段 C 的生产者限制、汇总口径和反例见[证据记录](../../../docs/pilot-phase-c.md)。
+具体任务采用后，应先按[阶段 D](../../../docs/pilot-phase-d.md)组成完整模型×流程 assignment
+矩阵并执行 `pilot seal`，再开始写入 observation。
+新试点还应按[阶段 E](../../../docs/pilot-phase-e.md)导出精确主题，并由仓库外受信 human owner
+签署启动授权；模板和 Agent 不能自行创建信任 key。
+观察完成后按[阶段 F](../../../docs/pilot-phase-f.md)生成验收主题，由独立 reviewer 签署接受或拒绝。
+新试点使用[观察清单 v6](../observation-v6.json)，按[阶段 G](../../../docs/pilot-phase-g.md)
+在封存前填写结构化总预算，并按[阶段 H](../../../docs/pilot-phase-h.md)核对
+4 个缺陷修复/4 个重构的独立任务配额，再按[阶段 I](../../../docs/pilot-phase-i.md)
+提供每项任务的来源工件，再按[阶段 J](../../../docs/pilot-phase-j.md)封存交替执行顺序并
+记录实际启动位置，最后按[阶段 K](../../../docs/pilot-phase-k.md)提供每运行单元的
+初始完整报告和无进展停止参数；旧 v1–v5 清单维持原摘要和验收解释。

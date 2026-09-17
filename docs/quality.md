@@ -96,3 +96,50 @@ lineage, immutable promotion inputs, assignment denominators, full-report
 bindings, malformed/missing evidence and the remaining task templates. Pure
 metric and zero-denominator decisions remain in the native unit target. See
 [phase C](pilot-phase-c.md); actual trial observations remain separate.
+
+The `pilot_seal` target and native pilot tests cover phase-D pre-observation
+integrity: complete governance fields, real-task ground truth, balanced
+model/workflow matrices, late-seal rejection, permitted actual-model disclosure
+and protected-plan mutation. See [phase D](pilot-phase-d.md). Digest agreement
+does not authenticate the caller or start the real seven-day observation.
+
+The `pilot_authorization` target and adapter unit tests cover phase-E owner
+authentication: exact sealed subject and repository binding, external trust
+inputs, key scope, human identity, validity window, expiry and revocation.
+See [phase E](pilot-phase-e.md). Start authorization does not supply trusted time
+or final reviewer acceptance.
+
+The `pilot_acceptance` target separates phase-F threshold and external-review
+behavior. Native domain tests cover failed/unknown aggregation; adapter tests
+cover reviewer identity, decision eligibility, timing and revocation; CLI tests
+bind complete reports and reject changed observation evidence. See
+[phase F](pilot-phase-f.md).
+
+Phase G extends the native pilot budget and acceptance tests and the same
+`pilot_acceptance` CLI target. It covers v2 seal drift, all-attempt and human
+costs, unknown versus exceeded cap, and tenth-check signed refusal. See
+[phase G](pilot-phase-g.md); v1 nine-check records remain distinct.
+
+Phase H extends native pilot validation and the `pilot_seal` CLI target with
+v3 declared task strata, distinct-input counting, duplicate-task refusal and
+seal-drift checks. See [phase H](pilot-phase-h.md); v1/v2 records retain their
+serialized plan and threshold semantics.
+
+Phase I extends the same domain and CLI targets with v4 source records,
+bounded archive-byte checks and source revalidation on each pilot operation.
+The integration test covers changed, escaping and symlinked files; see
+[phase I](pilot-phase-i.md). v1/v2/v3 records remain compatible.
+
+Phase J extends native pilot validation and the `pilot_seal` CLI target with
+v5 sealed alternating order, stratum balance and observed start-sequence audit.
+See [phase J](pilot-phase-j.md); v1–v4 records retain their serialized plans.
+
+Phase K extends native pilot validation and the `pilot_seal` CLI target with
+v6 initial full-report binding, bounded report rereads and deterministic
+attempt-budget/no-progress audit. See [phase K](pilot-phase-k.md); v1–v5
+records retain their serialized plans.
+
+Phase L extends native pilot validation and the `pilot_seal` CLI target with
+v7 bounded model-capture files, sealed request identity, explicit unknown
+actual models and summary audit. See [phase L](pilot-phase-l.md); v1–v6
+records retain their serialized plans and acceptance semantics.
