@@ -41,6 +41,10 @@ extension classifier for `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hh`, `.hpp`, and
 analyzer SARIF remains within the existing report adapter and paired runner.
 The owner graph and dependency directions stay the same.
 
+The `lang-cpp` package reuses that text classifier and source-pattern adapter.
+Its Clang reference policy runs through the existing paired command and SARIF
+report path, so no new production dependency edge is introduced.
+
 Policy approval/promotion/rollback storage entry points are public across the
 separate Bazel owner crates. They perform transactional consistency checks;
 application callers authenticate signatures and live trust before publication.

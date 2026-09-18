@@ -49,11 +49,12 @@ qualitygate-cli-skill-<tag>/
 ├── references/diagnostic-ratchets.md
 ├── references/ruff-ratchet.yaml
 ├── references/gcc-analyzer-ratchet.yaml
+├── references/clang-static-analyzer-ratchet.yaml
 ├── references/rule-management.md
 ├── references/selfcheck.md
 ├── references/pilot-evidence.md
 ├── references/schemas/project-rule.schema.json
-├── references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c}/*.yaml
+├── references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c,lang-cpp}/*.yaml
 ├── assets/pilot/observation-v7.json
 ├── assets/pilot/observation-v8.json
 ├── assets/pilot/observation-v9.json

@@ -1,0 +1,17 @@
+id: cpp-no-unsafe-memfunc
+version: 1
+description: Review unbounded C string operation calls
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\b(?:strcpy|strcat|sprintf|gets)\s*\('
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [function-safety]}
+lifecycle_inputs: [cpp-no-unsafe-memfunc-review]

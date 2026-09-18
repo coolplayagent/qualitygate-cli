@@ -161,7 +161,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "assets/linux-aarch64/qualitygate",
         "assets/windows-x86_64/qualitygate.exe",
         "assets/windows-aarch64/qualitygate.exe",
-        "references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c}/*.yaml",
+        "references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c,lang-cpp}/*.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
@@ -267,6 +267,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/golangci-lint-ratchet.yaml",
         "references/ruff-ratchet.yaml",
         "references/gcc-analyzer-ratchet.yaml",
+        "references/clang-static-analyzer-ratchet.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
@@ -360,6 +361,15 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "lang-c/c-file-security",
         "lang-c/c-function-safety",
         "lang-c/c-numeric-literal",
+        "lang-cpp/cpp-no-realloc",
+        "lang-cpp/cpp-no-alloca",
+        "lang-cpp/cpp-no-unsafe-memfunc",
+        "lang-cpp/cpp-throw-by-value",
+        "lang-cpp/cpp-catch-by-reference",
+        "lang-cpp/cpp-no-direct-mutex",
+        "lang-cpp/cpp-no-std-move-local-return",
+        "lang-cpp/cpp-no-unsafe-rand",
+        "lang-cpp/cpp-no-throw-spec",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(
@@ -506,6 +516,7 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
         "lang-java/module-boundary.yaml",
         "lang-python/pytest-naming.yaml",
         "lang-c/c-array-safety.yaml",
+        "lang-cpp/cpp-no-realloc.yaml",
     ] {
         assert!(
             root.join("skills/qualitygate-cli/references/rules")

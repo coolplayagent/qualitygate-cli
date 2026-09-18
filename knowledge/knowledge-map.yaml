@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: knowledge
-map_version: 9
-updated_at: unix:1789728977
+map_version: 10
+updated_at: unix:1789730252
 directories:
 - directory: best-practices
   purpose: Reviewed engineering and knowledge-management practices.
@@ -23,6 +23,7 @@ directories:
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-c.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-cpp.yaml
   - knowledge/best-practices/engineering-standards/guides/lifecycle-rulebook.md
   - knowledge/best-practices/engineering-standards/guides/critical-adoption.md
   load_hint: task_match
@@ -132,6 +133,10 @@ history:
     actor: cli
     summary: Updated governed directory 'best-practices/engineering-standards'.
   - version: 9
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 10
     action: directory.update
     actor: cli
     summary: Updated governed directory 'best-practices/engineering-standards'.

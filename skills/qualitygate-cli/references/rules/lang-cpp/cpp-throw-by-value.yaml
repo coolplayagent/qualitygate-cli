@@ -1,0 +1,17 @@
+id: cpp-throw-by-value
+version: 1
+description: Review pointer allocation in throw expressions
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\bthrow\s+new\s+'
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [exception-safety]}
+lifecycle_inputs: [cpp-throw-by-value-review]

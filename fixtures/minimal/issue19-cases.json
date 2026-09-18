@@ -1,0 +1,200 @@
+[
+  {
+    "id": "issue19-no-realloc-pass-minimal",
+    "rule": "cpp-no-realloc",
+    "description": "minimal pass C++ review signal cpp-no-realloc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "value = std::vector<int>(n);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-realloc-fail-minimal",
+    "rule": "cpp-no-realloc",
+    "description": "minimal fail C++ review signal cpp-no-realloc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "value = realloc(ptr, n);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-alloca-pass-minimal",
+    "rule": "cpp-no-alloca",
+    "description": "minimal pass C++ review signal cpp-no-alloca",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "buf = std::vector<char>(size);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-alloca-fail-minimal",
+    "rule": "cpp-no-alloca",
+    "description": "minimal fail C++ review signal cpp-no-alloca",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "buf = alloca(size);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-memfunc-pass-minimal",
+    "rule": "cpp-no-unsafe-memfunc",
+    "description": "minimal pass C++ review signal cpp-no-unsafe-memfunc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "std::copy(src.begin(), src.end(), dst.begin());\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-memfunc-fail-minimal",
+    "rule": "cpp-no-unsafe-memfunc",
+    "description": "minimal fail C++ review signal cpp-no-unsafe-memfunc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "strcpy(dst, src);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-throw-by-value-pass-minimal",
+    "rule": "cpp-throw-by-value",
+    "description": "minimal pass C++ review signal cpp-throw-by-value",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "throw Error();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-throw-by-value-fail-minimal",
+    "rule": "cpp-throw-by-value",
+    "description": "minimal fail C++ review signal cpp-throw-by-value",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "throw new Error();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-catch-by-reference-pass-minimal",
+    "rule": "cpp-catch-by-reference",
+    "description": "minimal pass C++ review signal cpp-catch-by-reference",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "catch (const Error& e) { handle(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-catch-by-reference-fail-minimal",
+    "rule": "cpp-catch-by-reference",
+    "description": "minimal fail C++ review signal cpp-catch-by-reference",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "catch (Error e) { handle(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-direct-mutex-pass-minimal",
+    "rule": "cpp-no-direct-mutex",
+    "description": "minimal pass C++ review signal cpp-no-direct-mutex",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "std::lock_guard<std::mutex> guard(mutex);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-direct-mutex-fail-minimal",
+    "rule": "cpp-no-direct-mutex",
+    "description": "minimal fail C++ review signal cpp-no-direct-mutex",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "mutex.lock();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-std-move-local-return-pass-minimal",
+    "rule": "cpp-no-std-move-local-return",
+    "description": "minimal pass C++ review signal cpp-no-std-move-local-return",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "return value;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-std-move-local-return-fail-minimal",
+    "rule": "cpp-no-std-move-local-return",
+    "description": "minimal fail C++ review signal cpp-no-std-move-local-return",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "return std::move(value);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-rand-pass-minimal",
+    "rule": "cpp-no-unsafe-rand",
+    "description": "minimal pass C++ review signal cpp-no-unsafe-rand",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "int n = secure_random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-rand-fail-minimal",
+    "rule": "cpp-no-unsafe-rand",
+    "description": "minimal fail C++ review signal cpp-no-unsafe-rand",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "int n = rand();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-throw-spec-pass-minimal",
+    "rule": "cpp-no-throw-spec",
+    "description": "minimal pass C++ review signal cpp-no-throw-spec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "void process() noexcept {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-throw-spec-fail-minimal",
+    "rule": "cpp-no-throw-spec",
+    "description": "minimal fail C++ review signal cpp-no-throw-spec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "void process() throw() {}\n"
+      }
+    }
+  }
+]

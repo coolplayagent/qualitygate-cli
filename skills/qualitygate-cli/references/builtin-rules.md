@@ -172,6 +172,29 @@ evidence. The repository's `docs/c-family-ratchet.md` explains adoption.
 | `c-function-safety` | warning | `abort`, `exit`, `realloc`, `alloca`, `pthread_exit` or `ExitThread` call |
 | `c-numeric-literal` | error | lowercase `l` integer suffix |
 
+## C++ review signals
+
+Select `rulesets: [lang-cpp]` and individual rule IDs. These nine opt-in rules
+fix `languages: [cpp]` and inspect changed `.cc`, `.cpp`, `.cxx`, `.hh`, `.hpp`
+and `.hxx` lines. `paths` and `prohibited_patterns.cpp` may be configured.
+`.h` is classified as C text by the shared source classifier. Same-line regex
+matches are review signals; they do not establish receiver types, ownership,
+exception safety, buffer bounds, random-number purpose or NRVO behavior. Use
+the [Clang SARIF reference](clang-static-analyzer-ratchet.yaml) or the
+[GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `cpp-no-realloc` | warning | direct `realloc` call |
+| `cpp-no-alloca` | warning | direct `alloca` call |
+| `cpp-no-unsafe-memfunc` | error | unbounded C string call |
+| `cpp-throw-by-value` | warning | `throw new` expression |
+| `cpp-catch-by-reference` | warning | simple class-like value catch |
+| `cpp-no-direct-mutex` | warning | direct `.lock()` or `.unlock()` call |
+| `cpp-no-std-move-local-return` | warning | `return std::move(...)` expression |
+| `cpp-no-unsafe-rand` | warning | `rand()` call |
+| `cpp-no-throw-spec` | warning | simple empty `throw()` specification |
+
 ## Python review signals
 
 Select `rulesets: [lang-python]` and the desired rule IDs. All thirteen rules

@@ -190,6 +190,8 @@ pub(super) fn validate(
         Some("go")
     } else if builtin_id.starts_with("py-") {
         Some("python")
+    } else if builtin_id.starts_with("cpp-") {
+        Some("cpp")
     } else {
         None
     };

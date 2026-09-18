@@ -1,0 +1,17 @@
+id: cpp-no-throw-spec
+version: 1
+description: Review legacy empty throw exception specifications
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\b[A-Za-z_]\w*\s+[A-Za-z_]\w*\s*\([^)]*\)\s*throw\s*\(\s*\)'
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [exception-safety]}
+lifecycle_inputs: [cpp-no-throw-spec-review]
