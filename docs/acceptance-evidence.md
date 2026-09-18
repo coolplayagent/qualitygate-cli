@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 18 C family rules and analyzer ratchet
+
+| Requirement | Current evidence |
+|---|---|
+| Seven opt-in C/C++ source reviews, fixed scope, warnings/errors and changed-line repair | `tests/issue18_rules.rs`; `domain::language::tests::text_review_scope_keeps_c_family_out_of_syntax_capabilities`; `lang-c` packaged YAML and C lifecycle supplement |
+| Real C and C++ analyzer SARIF count growth, repair and compiler failure across immutable snapshots | `tests/c_family_ratchet.rs::real_gcc_c_and_cpp_sarif_ratchets_growth_repair_and_compile_failure`; existing `tests/sarif.rs` source and malformed-report cases |
+| Valid reference config and fail-closed format/baseline validation | `tests/c_family_ratchet.rs::gcc_reference_policy_is_valid_and_sarif_baseline_is_required`; `skills/qualitygate-cli/references/gcc-analyzer-ratchet.yaml` |
+| Limits of lexical review and multi-unit analyzer configuration | `docs/rules.md`, `docs/c-family-ratchet.md`, `skills/qualitygate-cli/references/builtin-rules.md` |
+| Independent pass/fail goldens across minimal, typical and stress | `fixtures/{minimal,typical,stress}/issue18-cases.json`, `fixtures/golden/issue18-*.json`; `tests/selfcheck.rs` |
+
 ## Issue 16 Ruff ratchet and Python rules
 
 | Requirement | Current evidence |

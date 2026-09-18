@@ -11,6 +11,7 @@ pub const RULESETS: &[&str] = &[
     "lang-python",
     "lang-typescript",
     "lang-go",
+    "lang-c",
 ];
 
 fn schema_one() -> u32 {

@@ -1,0 +1,156 @@
+[
+  {
+    "id": "issue18-array-safety-pass-minimal",
+    "rule": "c-array-safety",
+    "description": "minimal pass C family review signal c-array-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "int values[16];\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-array-safety-fail-minimal",
+    "rule": "c-array-safety",
+    "description": "minimal fail C family review signal c-array-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "int values[count];\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-assertion-discipline-pass-minimal",
+    "rule": "c-assertion-discipline",
+    "description": "minimal pass C family review signal c-assertion-discipline",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "assert(index < 10);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-assertion-discipline-fail-minimal",
+    "rule": "c-assertion-discipline",
+    "description": "minimal fail C family review signal c-assertion-discipline",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "assert(index++ < 10);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-control-flow-pass-minimal",
+    "rule": "c-control-flow",
+    "description": "minimal pass C family review signal c-control-flow",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "for (int i = 0; i < 10; ++i) { }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-control-flow-fail-minimal",
+    "rule": "c-control-flow",
+    "description": "minimal fail C family review signal c-control-flow",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "for (;;) { break; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-expression-safety-pass-minimal",
+    "rule": "c-expression-safety",
+    "description": "minimal pass C family review signal c-expression-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "size_t n = sizeof(index);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-expression-safety-fail-minimal",
+    "rule": "c-expression-safety",
+    "description": "minimal fail C family review signal c-expression-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "size_t n = sizeof(index++);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-file-security-pass-minimal",
+    "rule": "c-file-security",
+    "description": "minimal pass C family review signal c-file-security",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "char *name = safe_name();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-file-security-fail-minimal",
+    "rule": "c-file-security",
+    "description": "minimal fail C family review signal c-file-security",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "char *name = tmpnam(0);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-function-safety-pass-minimal",
+    "rule": "c-function-safety",
+    "description": "minimal pass C family review signal c-function-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "return error;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-function-safety-fail-minimal",
+    "rule": "c-function-safety",
+    "description": "minimal fail C family review signal c-function-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "abort();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-numeric-literal-pass-minimal",
+    "rule": "c-numeric-literal",
+    "description": "minimal pass C family review signal c-numeric-literal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "long n = 123L;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-numeric-literal-fail-minimal",
+    "rule": "c-numeric-literal",
+    "description": "minimal fail C family review signal c-numeric-literal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "long n = 123l;\n"
+      }
+    }
+  }
+]

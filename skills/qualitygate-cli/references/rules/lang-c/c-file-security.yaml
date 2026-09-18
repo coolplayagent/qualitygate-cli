@@ -1,0 +1,20 @@
+id: c-file-security
+version: 1
+description: Review race-prone temporary filename APIs
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\b(?:mktemp|tmpnam)\s*\('
+      cpp:
+        - '\b(?:mktemp|tmpnam)\s*\('
+standard_refs:
+  - {source_id: sei-cert-c, controls: [file-security]}
+  - {source_id: sei-cert-cpp, controls: [file-security]}
+lifecycle_inputs: [c-file-security-review]

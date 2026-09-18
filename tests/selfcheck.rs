@@ -12,7 +12,7 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
     assert_eq!(result["decision"], "pass");
     assert!(result["errors"].as_array().unwrap().is_empty());
     let cases = result["fixtures"].as_array().unwrap();
-    assert_eq!(cases.len(), 764, "Shipped fixture inventory changed");
+    assert_eq!(cases.len(), 806, "Shipped fixture inventory changed");
     for suite in ["minimal", "typical", "stress"] {
         let case = cases
             .iter()
@@ -111,6 +111,20 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
                 .as_str()
                 .unwrap()
                 .contains("issue16-cases.json")
+        );
+        let c_family = cases
+            .iter()
+            .find(|case| {
+                case["suite"] == suite
+                    && case["rule"] == "c-array-safety"
+                    && case["observed"]["verdict"] == "fail"
+            })
+            .unwrap();
+        assert!(
+            c_family["input"]
+                .as_str()
+                .unwrap()
+                .contains("issue18-cases.json")
         );
     }
     let evolution: Vec<_> = cases

@@ -1,5 +1,8 @@
 # Diagnostic count ratchets
 
+For C and C++ analyzer SARIF, see the [C family ratchet guide](c-family-ratchet.md)
+and packaged [GCC reference policy](../skills/qualitygate-cli/references/gcc-analyzer-ratchet.yaml).
+
 `reports[].mode: ratchet` allows historical diagnostic debt to decrease or hold,
 and fails when any tool/rule count grows. The same analyzer runs on both
 immutable snapshots. The baseline is freshly produced from the comparison's

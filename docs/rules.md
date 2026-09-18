@@ -10,7 +10,7 @@ individual changed ranges and avoids duplicate or historical group findings;
 the [selfcheck corpus](selfcheck.md) includes both forms.
 
 Built-in definitions are Skill resources, not compiled Rust string constants.
-The matching executable reads `references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go}`
+The matching executable reads `references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c}`
 from its installed Skill (or the explicit `QUALITYGATE_BUILTIN_RULES_DIR`). A
 missing or malformed asset package is an error; it cannot silently fall back to
 another rule set. Repository-local declarative rules are independently loaded
@@ -37,6 +37,8 @@ The current syntax adapters parse Java/JUnit, Python/pytest, TypeScript/Jest or 
 
 [Issue 16](https://github.com/coolplayagent/qualitygate-cli/issues/16) adds thirteen opt-in `lang-python` source patterns for evaluation, shell calls, predictable random calls, literal TLS bypass, YAML load, formatted SQL, credential literals, temporary names, bare exceptions, mutable defaults, assertions, sensitive log names and object deserialization. Select `rulesets: [lang-python]` and individual rules; each fixes `languages: [python]` and scans changed `.py` lines. `paths` and `prohibited_patterns.python` remain configurable. These are same-line lexical review signals: aliases, multiline calls, input taint and semantic safety require the [Ruff ratchet](diagnostic-ratchets.md#ruff-from-captured-stdout) or human review. `py-yaml-unsafe-load` intentionally flags every `yaml.load` call, including one with a safe Loader argument, for review. Python lifecycle mappings live in a validated [matrix supplement](../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml) to keep each authored file within the repository line budget.
 
+[Issue 18](https://github.com/coolplayagent/qualitygate-cli/issues/18) adds seven opt-in `lang-c` source patterns for variable-bound arrays, assertion side effects, open-ended or floating-counter loops, `sizeof` side effects, temporary-name APIs, termination or allocation APIs, and lowercase `l` integer suffixes. Each fixes `languages: [c, cpp]` and scans changed UTF-8 `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hh`, `.hpp` and `.hxx` lines; `paths` and the two `prohibited_patterns` entries remain configurable. The rules do not parse C/C++ or prove buffer bounds, pointer validity, expression evaluation, switch exhaustiveness, tainted paths, format-string safety or CERT conformance. Declarations, comments, strings and aliases can change a match. For semantic checks use the [C/C++ analyzer ratchet](c-family-ratchet.md), which compares fresh SARIF reports from both source snapshots. C/C++ text review does not advertise a C/C++ syntax adapter.
+
 The Java syntax collector parses changed files on up to four CPU workers and preserves ordered results before matching test identity. The added-file scanner uses the same bounded worker design; each invocation has a shared 30-second deadline across its workers. Annotation dependency analysis is capped at 10,000 selected tests and the scanner at 10,000 diagnostics. Worker failure, syntax failure, timeout or excess findings are incomplete execution. The [large-repository contract](large-repositories.md#issue-9-rule-analysis) records the regression fixture and its limits.
 
 `parameterized-tests` suggests sharing a parameterized test when at least three new tests within a file and class have the same syntax shape. Existing recognized parameterized tests are excluded. Configure `parameters.minimum_similar` (at least two). Its default severity is warning; increase severity only after the team's false-positive evaluation supports enforcement.
@@ -51,6 +53,8 @@ patterns identify process execution, dynamic evaluation, pickle loading, and
 Rust `unsafe` use as warning-level review signals. A match is not proof of a
 vulnerability; repositories can narrow `parameters.prohibited_patterns`,
 `paths`, and `languages` only through an explicit policy change.
+Language and pattern overrides remain within the rule's declared Java,
+Python, Rust, TypeScript, and Go scope, even when other text rules support C/C++.
 
 `todo-marker` is a warning-level changed-line review signal for `TODO`,
 `FIXME`, and `XXX` in supported source files. It requires a disposition rather

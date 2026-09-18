@@ -1,0 +1,20 @@
+id: c-function-safety
+version: 1
+description: Review abrupt termination and allocation API calls
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\b(?:abort|exit|realloc|alloca|pthread_exit|ExitThread)\s*\('
+      cpp:
+        - '\b(?:abort|exit|realloc|alloca|pthread_exit|ExitThread)\s*\('
+standard_refs:
+  - {source_id: sei-cert-c, controls: [function-safety]}
+  - {source_id: sei-cert-cpp, controls: [function-safety]}
+lifecycle_inputs: [c-function-safety-review]

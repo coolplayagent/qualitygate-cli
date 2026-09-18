@@ -1,0 +1,20 @@
+id: c-expression-safety
+version: 1
+description: Review sizeof operands with increment or decrement side effects
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\bsizeof\s*\([^)]*(?:\+\+|--)'
+      cpp:
+        - '\bsizeof\s*\([^)]*(?:\+\+|--)'
+standard_refs:
+  - {source_id: sei-cert-c, controls: [expression-safety]}
+  - {source_id: sei-cert-cpp, controls: [expression-safety]}
+lifecycle_inputs: [c-expression-safety-review]

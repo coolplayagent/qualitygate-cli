@@ -82,6 +82,8 @@ Issue 15 通过 golangci-lint v2 JSON 报告适配和两个不可变快照中的
 
 Issue 16 通过 Ruff JSON 报告适配和两个不可变快照中的真实 Ruff 执行支持 Python 规则数量棘轮。配置错误、解析失败、无效位置或不认可的退出码均报告未完成；Ruff JSON 没有已检查文件清单，空数组须结合明确目标路径审查。另增十三个默认不启用的 Python 新增行文本审查规则，需显式选择 `lang-python` 包；调用、参数与变量名模式不证明污点来源、凭据有效性、安全 Loader、生产环境用途或日志敏感性。需求到测试证据见 [Issue 16 验收映射](docs/acceptance-evidence.md#issue-16-ruff-ratchet-and-python-rules)。
 
+Issue 18 扩展七个默认不启用的 C/C++ 新增行审查规则，需显式选择 `lang-c` 包；文本匹配仅标记变长数组声明、断言副作用、无条件循环或浮点循环计数、`sizeof` 副作用、旧式临时文件名 API、终止或分配 API、易混淆的小写 `l` 后缀。不能据此判断越界、空指针、控制流完整性、权限、路径污染或符合 CERT 标准。外部 C/C++ 分析器可用已有 SARIF `ratchet` 模式在不可变基线和当前快照中分别执行；源位置、失败退出码、缺失及格式错误报告按现有契约报告未完成。需求到测试证据见 [Issue 18 验收映射](docs/acceptance-evidence.md#issue-18-c-family-rules-and-analyzer-ratchet)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

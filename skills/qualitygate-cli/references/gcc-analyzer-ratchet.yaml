@@ -1,0 +1,14 @@
+# Example for a provisioned GCC 13+ and a tracked sample.c translation unit.
+# Replace sample.c and sample.c.sarif together for the chosen C source file.
+schema_version: 1
+checks:
+  - id: gcc-analyzer-ratchet
+    argv: [gcc, -fanalyzer, -fdiagnostics-format=sarif-file, -c, sample.c, -o, sample.o]
+    timeout_seconds: 120
+    tools:
+      - {id: gcc, argv: [gcc, --version]}
+    reports:
+      - path: sample.c.sarif
+        baseline: sample.c.sarif
+        format: sarif
+        mode: ratchet

@@ -1,0 +1,156 @@
+[
+  {
+    "id": "issue18-array-safety-pass-stress",
+    "rule": "c-array-safety",
+    "description": "stress pass C family review signal c-array-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int values[16];\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-array-safety-fail-stress",
+    "rule": "c-array-safety",
+    "description": "stress fail C family review signal c-array-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int values[count];\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-assertion-discipline-pass-stress",
+    "rule": "c-assertion-discipline",
+    "description": "stress pass C family review signal c-assertion-discipline",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "assert(index < 10);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-assertion-discipline-fail-stress",
+    "rule": "c-assertion-discipline",
+    "description": "stress fail C family review signal c-assertion-discipline",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "assert(index++ < 10);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-control-flow-pass-stress",
+    "rule": "c-control-flow",
+    "description": "stress pass C family review signal c-control-flow",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "for (int i = 0; i < 10; ++i) { }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-control-flow-fail-stress",
+    "rule": "c-control-flow",
+    "description": "stress fail C family review signal c-control-flow",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "for (;;) { break; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-expression-safety-pass-stress",
+    "rule": "c-expression-safety",
+    "description": "stress pass C family review signal c-expression-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "size_t n = sizeof(index);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-expression-safety-fail-stress",
+    "rule": "c-expression-safety",
+    "description": "stress fail C family review signal c-expression-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "size_t n = sizeof(index++);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-file-security-pass-stress",
+    "rule": "c-file-security",
+    "description": "stress pass C family review signal c-file-security",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "char *name = safe_name();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-file-security-fail-stress",
+    "rule": "c-file-security",
+    "description": "stress fail C family review signal c-file-security",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "char *name = tmpnam(0);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-function-safety-pass-stress",
+    "rule": "c-function-safety",
+    "description": "stress pass C family review signal c-function-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "return error;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-function-safety-fail-stress",
+    "rule": "c-function-safety",
+    "description": "stress fail C family review signal c-function-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "abort();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-numeric-literal-pass-stress",
+    "rule": "c-numeric-literal",
+    "description": "stress pass C family review signal c-numeric-literal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "long n = 123L;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-numeric-literal-fail-stress",
+    "rule": "c-numeric-literal",
+    "description": "stress fail C family review signal c-numeric-literal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "long n = 123l;\n"
+      }
+    }
+  }
+]

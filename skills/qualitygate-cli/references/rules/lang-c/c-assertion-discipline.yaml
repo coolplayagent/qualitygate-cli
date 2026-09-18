@@ -1,0 +1,20 @@
+id: c-assertion-discipline
+version: 1
+description: Review assertion arguments with increment or decrement side effects
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\bassert\s*\([^)]*(?:\+\+|--)'
+      cpp:
+        - '\bassert\s*\([^)]*(?:\+\+|--)'
+standard_refs:
+  - {source_id: sei-cert-c, controls: [assertion-discipline]}
+  - {source_id: sei-cert-cpp, controls: [assertion-discipline]}
+lifecycle_inputs: [c-assertion-discipline-review]

@@ -286,9 +286,7 @@ fn source_patterns(
             }
             continue;
         };
-        let Some(language) =
-            crate::domain::language::for_source(path, &file.bytes).map(|found| found.name)
-        else {
+        let Some(language) = crate::domain::language::for_text_source(path, &file.bytes) else {
             continue;
         };
         if !languages.is_empty() && !languages.iter().any(|value| value == language) {
@@ -364,7 +362,17 @@ pub(super) fn compiled_patterns(
     let mut result = BTreeMap::new();
     for (language, entries) in values {
         if language != "all"
-            && !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str())
+            && ![
+                "java",
+                "python",
+                "typescript",
+                "go",
+                "rust",
+                "shell",
+                "c",
+                "cpp",
+            ]
+            .contains(&language.as_str())
         {
             bail!("{key} has unsupported language: {language}");
         }
