@@ -14,6 +14,42 @@ taxonomy:
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
 inputs:
+  - id: rust-extern-without-abi-review
+    status: enforced
+    rule_id: rust-extern-without-abi
+    lifecycle_stage: implementation
+    languages: [rust]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [rust-reference]
+    evidence: [changed-rust-line, regex-pattern]
+    applicability: Selected changed Rust source lines when this optional rule is enabled.
+    critical_adoption: This lexical pattern only recognizes extern block openings on one line and cannot validate ABI semantics.
+  - id: rust-untrusted-dynamic-library-loading-review
+    status: enforced
+    rule_id: rust-untrusted-dynamic-library-loading
+    lifecycle_stage: implementation
+    languages: [rust]
+    concerns: [security, reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [libloading-api]
+    evidence: [changed-rust-line, regex-pattern]
+    applicability: Selected changed Rust source lines when this optional rule is enabled.
+    critical_adoption: A nonliteral path is a review signal; this rule does not establish that input is attacker controlled.
+  - id: rust-unsafe-block-in-macro-definition-review
+    status: enforced
+    rule_id: rust-unsafe-block-in-macro-definition
+    lifecycle_stage: implementation
+    languages: [rust]
+    concerns: [security, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [rust-reference]
+    evidence: [changed-rust-line, regex-pattern]
+    applicability: Selected changed Rust source lines when this optional rule is enabled.
+    critical_adoption: The same-line regex misses multi-line definitions and does not prove macro expansion safety.
   - id: shell-hardcoded-secret-review
     status: enforced
     rule_id: shell-hardcoded-secret

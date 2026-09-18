@@ -1,5 +1,5 @@
 schema_version: 5
-reviewed_on: 2026-09-13
+reviewed_on: 2026-09-18
 purpose: Reviewed primary engineering guidance mapped to qualitygate lifecycle inputs.
 source_policy:
   authority_order: [repository-policy, task-contract, standards-body, industry-standard, industry-consortium, language-ecosystem, official-company, company-project, project-guide, advisory]
@@ -11,6 +11,28 @@ coverage:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: rust-reference
+    organization: Rust Project
+    title: The Rust Reference
+    authority: language-ecosystem
+    kind: documentation
+    url: https://doc.rust-lang.org/reference/
+    languages: [rust]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, security]
+    controls: [explicit-extern-abi, macro-expansion, unsafe-blocks]
+    summary: Defines extern block ABI defaults, macro expansion syntax, and unsafe block semantics.
+  - id: libloading-api
+    organization: libloading Project
+    title: libloading Library API
+    authority: project-guide
+    kind: documentation
+    url: https://docs.rs/libloading/latest/libloading/struct.Library.html
+    languages: [rust]
+    lifecycle_stages: [implementation, review]
+    concerns: [security, coding]
+    controls: [dynamic-library-loading]
+    summary: Loading a library executes initialization routines and requires caller safety review.
   - id: google-shell
     organization: Google
     title: Google Shell Style Guide

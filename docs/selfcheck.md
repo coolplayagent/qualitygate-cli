@@ -54,8 +54,9 @@ rebuilding the binary.
 
 ## Coverage and budgets
 
-All forty-five built-in rule IDs have compliant/violating goldens in each suite.
-The corpus also covers the ten normalized report formats, the custom file DSL,
+All forty-eight built-in rule IDs have compliant/violating goldens in each suite.
+The corpus also covers ten normalized report formats; Cargo Clippy JSON Lines
+has parser-unit and live paired-snapshot acceptance tests. It covers the custom file DSL,
 policy parsing, gate completeness, native snapshots and process capture.
 Signed synthetic review approval/rejection and japicmp compatibility inventory
 fixtures cover those checker boundaries without external evidence or producers.
@@ -64,7 +65,7 @@ exercise common framework/source forms. Stress cases cover malformed inputs,
 Unicode, physical long paths, symlink modes, missing objects, file/output
 limits, timeouts and changed/foreign evidence.
 
-The corpus contains **524 fixtures**, including **85 policy-evolution fixtures**.
+The corpus contains **542 fixtures**, including **85 policy-evolution fixtures**.
 The issue 9 cases live in separate `issue9-cases.json` and `issue9-*.json`
 goldens for each suite; reported input pointers identify their actual files.
 Issue 10 adds separate `issue10-cases.json` and `issue10-*.json` pairs for
@@ -73,6 +74,8 @@ Issue 11 adds separate `issue11-cases.json` and `issue11-*.json` pairs
 for six Python and language-neutral rules.
 Issue 12 adds separate `issue12-cases.json` and `issue12-*.json` pairs
 for eighteen Shell rules.
+Issue 13 adds separate `issue13-cases.json` and `issue13-*.json` pairs
+for three Rust review signals.
 `--rule policy-evolution` selects this regression group; it is not an installable
 rule ID.
 
@@ -129,8 +132,8 @@ entities in the selected snapshot; they do not claim that selfcheck ran.
 
 ## Regression verification
 
-`tests/selfcheck.rs` runs the full installed command surface, filters, native
-boundaries and all report formats. Its mutation test copies the rule assets
+`tests/selfcheck.rs` runs the installed command surface, filters, native
+boundaries and the original ten report formats. Its mutation test copies the rule assets
 into a temporary directory, changes the commit pattern to accept empty text,
 and requires selfcheck to fail on the unchanged `commit-empty` golden. This
 tests the falsification mechanism, not just a precomputed success report.

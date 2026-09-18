@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 13 Clippy ratchet and Rust rules
+
+| Requirement | Current evidence |
+|---|---|
+| Complete Cargo Clippy JSON Lines from captured stdout, paired snapshot ratchet and retained artifacts | `tests/clippy_ratchet.rs::real_clippy_stdout_ratchet_repair_and_incomplete_compilation`; `adapters::reports::cargo_clippy::tests` |
+| Missing build completion, compiler error, unexpected exit and path evidence remain incomplete | `adapters::reports::cargo_clippy::tests`; `tests/clippy_ratchet.rs`; existing report gate and tool evidence tests |
+| Working reference configuration, target and lint guidance, pinned version probe | `skills/qualitygate-cli/references/clippy-ratchet.yaml`, `docs/diagnostic-ratchets.md`, `skills/qualitygate-cli/references/diagnostic-ratchets.md` |
+| Three opt-in Rust rules with fixed language, severity, overridable patterns and lexical limits | `tests/issue13_rules.rs`; packaged YAML, source registry and lifecycle matrix |
+| Independent pass/fail goldens in each suite | `fixtures/{minimal,typical,stress}/issue13-cases.json`, `fixtures/golden/issue13-*.json`; `tests/selfcheck.rs` |
+
 ## Issue 12 Shell built-ins
 
 | Requirement | Current evidence |

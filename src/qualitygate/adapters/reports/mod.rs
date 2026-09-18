@@ -1,5 +1,6 @@
 //! Normalizes real tool reports without treating missing or malformed data as pass.
 
+mod cargo_clippy;
 mod coverage;
 mod coverage_py;
 mod jacoco;
@@ -120,6 +121,7 @@ pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
         bail!("Report is empty");
     }
     let data = match format {
+        ReportFormat::CargoClippy => cargo_clippy::parse(text)?,
         ReportFormat::Lcov => lcov::parse(text)?,
         ReportFormat::Sarif => json::sarif(text)?,
         ReportFormat::CoveragePy => coverage_py::parse(text)?,

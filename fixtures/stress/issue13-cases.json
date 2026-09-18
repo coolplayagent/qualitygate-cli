@@ -1,0 +1,8 @@
+[
+  {"id":"issue13-extern-pass-stress","rule":"rust-extern-without-abi","description":"other language is excluded","input":{"kind":"rule","files":{"src/ffi.py":"extern { fn call(); }\n","src/ffi.rs":"unsafe extern \"C\" { fn call(); }\n"}}},
+  {"id":"issue13-extern-fail-stress","rule":"rust-extern-without-abi","description":"indentation before implicit ABI","input":{"kind":"rule","files":{"src/ffi.rs":"    unsafe extern { fn call(); }\n"}}},
+  {"id":"issue13-library-pass-stress","rule":"rust-untrusted-dynamic-library-loading","description":"other language is excluded","input":{"kind":"rule","files":{"src/plugin.py":"dlopen(candidate)\n","src/plugin.rs":"unsafe { Library::new(\"fixed.so\") };\n"}}},
+  {"id":"issue13-library-fail-stress","rule":"rust-untrusted-dynamic-library-loading","description":"borrowed nonliteral path","input":{"kind":"rule","files":{"src/plugin.rs":"unsafe { Library::new(&candidate) };\n"}}},
+  {"id":"issue13-macro-pass-stress","rule":"rust-unsafe-block-in-macro-definition","description":"multi line macro is outside lexical pattern","input":{"kind":"rule","files":{"src/macros.rs":"macro_rules! hidden {\n    () => { unsafe { call() } }\n}\n"}}},
+  {"id":"issue13-macro-fail-stress","rule":"rust-unsafe-block-in-macro-definition","description":"same line macro unsafe block","input":{"kind":"rule","files":{"src/macros.rs":"macro_rules! hidden { () => { unsafe { call() } } }\n"}}}
+]

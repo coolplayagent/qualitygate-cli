@@ -1,0 +1,16 @@
+id: rust-unsafe-block-in-macro-definition
+version: 1
+description: Review same-line macro_rules definitions containing unsafe blocks
+implementation: source-pattern
+language: [rust]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [rust]
+    prohibited_patterns:
+      rust: ['\bmacro_rules!\s*[A-Za-z_][A-Za-z_0-9]*.*\bunsafe\s*\{']
+standard_refs:
+  - {source_id: rust-reference, controls: [macro-expansion, unsafe-blocks]}
+lifecycle_inputs: [rust-unsafe-block-in-macro-definition-review]

@@ -97,6 +97,21 @@ strings. `no-emoji` covers only the configured ranges in files, not commit
 messages or every emoji sequence. PEP 8 allows narrow bare exception
 handlers, and PEP 428 does not require every project to replace `os.path`.
 
+## Rust review signals
+
+All three Rust rules are opt-in source patterns with fixed `languages: [rust]`.
+They inspect changed UTF-8 lines and allow `paths` and
+`prohibited_patterns.rust` overrides. They do not establish FFI safety,
+attacker-controlled paths or macro expansion safety. The macro rule covers
+same-line definitions only; comments and strings may match. Use the
+[Clippy ratchet reference](clippy-ratchet.yaml) for semantic lint analysis.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `rust-extern-without-abi` | warning | extern block opening without an ABI string |
+| `rust-untrusted-dynamic-library-loading` | error | nonliteral dynamic library path argument |
+| `rust-unsafe-block-in-macro-definition` | warning | unsafe block in a same-line macro definition |
+
 ## Shell conventions
 
 All eighteen Shell rules are opt-in and use a fixed `shell` scope. Source

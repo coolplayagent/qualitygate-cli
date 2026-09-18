@@ -288,6 +288,8 @@ pub struct ReportSpec {
     pub path: String,
     pub format: ReportFormat,
     #[serde(default)]
+    pub from_stdout: bool,
+    #[serde(default)]
     pub mode: IncrementMode,
     #[serde(default)]
     pub baseline: Option<String>,
@@ -304,6 +306,7 @@ pub struct ReportSpec {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ReportFormat {
+    CargoClippy,
     Junit,
     Checkstyle,
     Spotbugs,

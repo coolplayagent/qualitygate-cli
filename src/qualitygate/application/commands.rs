@@ -307,6 +307,7 @@ async fn execute_checked(
                 artifacts,
                 snapshot,
                 &mut result,
+                &output.stdout,
             )
             .await
             {

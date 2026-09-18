@@ -1,0 +1,8 @@
+{
+  "issue13-extern-pass-stress":{"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "issue13-extern-fail-stress":{"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/language":"rust"},
+  "issue13-library-pass-stress":{"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "issue13-library-fail-stress":{"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/language":"rust"},
+  "issue13-macro-pass-stress":{"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "issue13-macro-fail-stress":{"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/language":"rust"}
+}

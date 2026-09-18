@@ -11,13 +11,17 @@ use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, sync::Arc, time::Duration};
 
 pub(super) async fn prepare(check: &CommandCheck, workspace: &Path, baseline: bool) -> Result<()> {
-    let reports = check.reports.iter().map(|report| {
-        if baseline {
-            report.baseline.as_deref().unwrap_or(&report.path)
-        } else {
-            &report.path
-        }
-    });
+    let reports = check
+        .reports
+        .iter()
+        .filter(|report| !report.from_stdout)
+        .map(|report| {
+            if baseline {
+                report.baseline.as_deref().unwrap_or(&report.path)
+            } else {
+                &report.path
+            }
+        });
     for project in &check.projects {
         if let crate::config::ProjectSpec::Python(project) = project {
             let target = paths::confined(workspace, Path::new(&project.install_target))?;
@@ -57,6 +61,7 @@ pub(super) async fn collect(
     artifacts: &Path,
     snapshot: &Arc<Snapshot>,
     result: &mut CheckResult,
+    stdout: &[u8],
 ) -> Result<bool> {
     let mut baseline = if check
         .reports
@@ -69,7 +74,11 @@ pub(super) async fn collect(
     };
     let mut findings = false;
     for (index, spec) in check.reports.iter().enumerate() {
-        let bytes = read_report(workspace, &spec.path).await?;
+        let bytes = if spec.from_stdout {
+            bounded_stdout(stdout)?
+        } else {
+            read_report(workspace, &spec.path).await?
+        };
         persist(artifacts, &format!("report-{index}"), &bytes, result).await?;
         let previous = baseline.remove(&index);
         let effectiveness = check.test_effectiveness.is_some();
@@ -207,11 +216,15 @@ async fn baseline(
         .enumerate()
         .filter(|(_, report)| report.mode.needs_baseline())
     {
-        let bytes = read_report(
-            workspace.path(),
-            spec.baseline.as_deref().unwrap_or(&spec.path),
-        )
-        .await?;
+        let bytes = if spec.from_stdout {
+            bounded_stdout(&output.stdout)?
+        } else {
+            read_report(
+                workspace.path(),
+                spec.baseline.as_deref().unwrap_or(&spec.path),
+            )
+            .await?
+        };
         persist(
             artifacts,
             &format!("baseline-report-{index}"),
@@ -268,6 +281,13 @@ pub(super) async fn read_report(workspace: &Path, name: &str) -> Result<Vec<u8>>
         bail!("Report grew beyond its size budget: {name}");
     }
     Ok(bytes)
+}
+
+fn bounded_stdout(bytes: &[u8]) -> Result<Vec<u8>> {
+    if bytes.len() > snapshot::MAX_FILE_BYTES {
+        bail!("Stdout report exceeds its size budget");
+    }
+    Ok(bytes.to_vec())
 }
 
 async fn persist(

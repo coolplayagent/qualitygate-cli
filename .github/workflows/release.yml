@@ -207,6 +207,7 @@ jobs:
           test -s "dist/$package/assets/windows-x86_64/qualitygate.exe"
           test -s "dist/$package/assets/windows-aarch64/qualitygate.exe"
           test -f "dist/$package/references/builtin-rules.md"
+          test -s "dist/$package/references/clippy-ratchet.yaml"
           test -f "dist/$package/references/rule-authoring.md"
           test -s "dist/$package/references/pilot-evidence.md"
           test -s "dist/$package/assets/pilot/observation-v7.json"
@@ -225,14 +226,14 @@ jobs:
           test -f "dist/$package/references/rules/shared/import-boundary.yaml"
           test -f "dist/$package/references/rules/lang-java/module-boundary.yaml"
           test -f "dist/$package/references/rules/lang-python/pytest-naming.yaml"
-          for rule in core/commit-message-convention core/commit-message-format shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep shared/no-bare-except shared/no-os-path shared/no-print shared/no-emoji shared/python-test-naming shared/shell-hardcoded-secret shared/shell-debug-mode shared/shell-env-dump shared/shell-weak-crypto shared/shell-password-echo shared/shell-sql-injection shared/shell-exec-terminates shared/shell-assignment-spaces shared/shell-comparison-spaces shared/shell-line-start-operator shared/shell-stream-merge-position shared/shell-trap-uncapturable shared/shell-trap-numeric-signal shared/shell-trap-double-quotes shared/shell-tilde-path shared/shell-temp-file-hardcoded shared/shell-missing-shebang shared/shell-commented-dead-code; do
+          for rule in core/commit-message-convention core/commit-message-format shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep shared/no-bare-except shared/no-os-path shared/no-print shared/no-emoji shared/python-test-naming shared/shell-hardcoded-secret shared/shell-debug-mode shared/shell-env-dump shared/shell-weak-crypto shared/shell-password-echo shared/shell-sql-injection shared/shell-exec-terminates shared/shell-assignment-spaces shared/shell-comparison-spaces shared/shell-line-start-operator shared/shell-stream-merge-position shared/shell-trap-uncapturable shared/shell-trap-numeric-signal shared/shell-trap-double-quotes shared/shell-tilde-path shared/shell-temp-file-hardcoded shared/shell-missing-shebang shared/shell-commented-dead-code shared/rust-extern-without-abi shared/rust-untrusted-dynamic-library-loading shared/rust-unsafe-block-in-macro-definition; do
             test -f "dist/$package/references/rules/$rule.yaml"
           done
           "dist/$package/assets/linux-x86_64/qualitygate" \
             --root "$GITHUB_WORKSPACE" --format json rules list > "dist/rules-list.json"
           grep -F '"origin": "skill:references/rules/shared/security-sensitive-api.yaml"' "dist/rules-list.json"
           grep -F '"id": "import-boundary"' "dist/rules-list.json"
-          for rule in commit-message-convention commit-message-format test-naming-strict test-annotation-dependency no-hardcoded-secrets no-printf-log no-unsafe-string no-test-sleep no-bare-except no-os-path no-print no-emoji python-test-naming shell-hardcoded-secret shell-debug-mode shell-env-dump shell-weak-crypto shell-password-echo shell-sql-injection shell-exec-terminates shell-assignment-spaces shell-comparison-spaces shell-line-start-operator shell-stream-merge-position shell-trap-uncapturable shell-trap-numeric-signal shell-trap-double-quotes shell-tilde-path shell-temp-file-hardcoded shell-missing-shebang shell-commented-dead-code; do
+          for rule in commit-message-convention commit-message-format test-naming-strict test-annotation-dependency no-hardcoded-secrets no-printf-log no-unsafe-string no-test-sleep no-bare-except no-os-path no-print no-emoji python-test-naming shell-hardcoded-secret shell-debug-mode shell-env-dump shell-weak-crypto shell-password-echo shell-sql-injection shell-exec-terminates shell-assignment-spaces shell-comparison-spaces shell-line-start-operator shell-stream-merge-position shell-trap-uncapturable shell-trap-numeric-signal shell-trap-double-quotes shell-tilde-path shell-temp-file-hardcoded shell-missing-shebang shell-commented-dead-code rust-extern-without-abi rust-untrusted-dynamic-library-loading rust-unsafe-block-in-macro-definition; do
             grep -F "\"id\": \"$rule\"" "dist/rules-list.json"
           done
           tar -C dist -czf "dist/$package.tar.gz" "$package"
@@ -240,6 +241,7 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/README.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/operations.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/builtin-rules.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/clippy-ratchet.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rule-authoring.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/pilot-evidence.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v7.json" >/dev/null
@@ -253,7 +255,7 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/security-sensitive-api.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/todo-marker.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/import-boundary.yaml" >/dev/null
-          for rule in core/commit-message-convention core/commit-message-format shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep shared/no-bare-except shared/no-os-path shared/no-print shared/no-emoji shared/python-test-naming shared/shell-hardcoded-secret shared/shell-debug-mode shared/shell-env-dump shared/shell-weak-crypto shared/shell-password-echo shared/shell-sql-injection shared/shell-exec-terminates shared/shell-assignment-spaces shared/shell-comparison-spaces shared/shell-line-start-operator shared/shell-stream-merge-position shared/shell-trap-uncapturable shared/shell-trap-numeric-signal shared/shell-trap-double-quotes shared/shell-tilde-path shared/shell-temp-file-hardcoded shared/shell-missing-shebang shared/shell-commented-dead-code; do
+          for rule in core/commit-message-convention core/commit-message-format shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep shared/no-bare-except shared/no-os-path shared/no-print shared/no-emoji shared/python-test-naming shared/shell-hardcoded-secret shared/shell-debug-mode shared/shell-env-dump shared/shell-weak-crypto shared/shell-password-echo shared/shell-sql-injection shared/shell-exec-terminates shared/shell-assignment-spaces shared/shell-comparison-spaces shared/shell-line-start-operator shared/shell-stream-merge-position shared/shell-trap-uncapturable shared/shell-trap-numeric-signal shared/shell-trap-double-quotes shared/shell-tilde-path shared/shell-temp-file-hardcoded shared/shell-missing-shebang shared/shell-commented-dead-code shared/rust-extern-without-abi shared/rust-untrusted-dynamic-library-loading shared/rust-unsafe-block-in-macro-definition; do
             tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/$rule.yaml" >/dev/null
           done
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/linux-x86_64/qualitygate" >/dev/null

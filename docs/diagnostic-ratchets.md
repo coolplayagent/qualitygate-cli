@@ -23,8 +23,36 @@ checks:
 Replace the example producer with the project's existing analyzer and adopt its
 actual command, tool inputs, timeout and findings exit codes through normal
 policy review. Diagnostic formats include generic `diagnostics`, Checkstyle,
-PMD, SpotBugs and SARIF. A baseline path is mandatory. Test statistics and
+PMD, SpotBugs, SARIF and Cargo Clippy JSON Lines. A baseline path is mandatory. Test statistics and
 coverage cannot use this mode, even when supplied inside generic JSON.
+
+## Clippy from captured stdout
+
+The packaged [Clippy reference policy](../skills/qualitygate-cli/references/clippy-ratchet.yaml)
+uses `cargo clippy --message-format=json` and `format: cargo_clippy` with
+`from_stdout: true`. [Cargo emits one JSON record per line to stdout](https://doc.rust-lang.org/cargo/reference/external-tools.html); it does
+not create `target/clippy.jsonl`. That confined path is the report identity
+used in evidence and ratchet metadata. Qualitygate retains the bounded raw
+stdout as a report artifact on both snapshots. A missing `build-finished`
+record, malformed JSON, compiler error, unrecognized analyzer exit or source
+path outside the checked snapshot makes the run incomplete.
+
+`--lib` checks a library's `src/` target without test and benchmark targets.
+For a binary crate, use `--bin NAME`; for all binaries use `--bins`. These Cargo
+target selectors do not filter diagnostics by pathname, so keep tests and
+benches out of the command if the debt policy covers only production targets.
+Use `-W` for lint levels managed by the ratchet; `-A` suppresses selected
+lints, and `-D` makes Clippy fail on findings. A policy using `-D` must declare
+its observed nonzero lint exit in `findings_exit_codes` (usually `101`), while
+compiler errors still remain incomplete. Qualitygate's check `severity`
+controls whether ratchet growth blocks; it does not set Clippy lint levels.
+Choose lint groups or IDs with [Clippy command flags, source attributes, or Cargo's
+`[lints.clippy]`](https://doc.rust-lang.org/clippy/configuration.html);
+`clippy.toml` configures lint behavior such as thresholds.
+Pin the Rust toolchain in `rust-toolchain.toml`, keep `Cargo.lock`, and retain
+the `cargo clippy --version` probe. The current and baseline runs must report
+comparable versions and executable identities. Lint IDs can change across
+toolchain versions, so review upgrades as policy changes.
 
 Counts preserve multiplicity and are grouped by `(tool, rule)` independently
 within each report. Formats without tool names use `null` for that key component.

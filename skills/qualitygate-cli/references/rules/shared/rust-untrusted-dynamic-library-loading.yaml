@@ -1,0 +1,16 @@
+id: rust-untrusted-dynamic-library-loading
+version: 1
+description: Review dynamic library calls with a nonliteral first argument
+implementation: source-pattern
+language: [rust]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [rust]
+    prohibited_patterns:
+      rust: ['\b(?:dlopen|(?:libloading::)?Library::(?:new|load))\s*\(\s*(?:&\s*)?[A-Za-z_][A-Za-z_0-9]*']
+standard_refs:
+  - {source_id: libloading-api, controls: [dynamic-library-loading]}
+lifecycle_inputs: [rust-untrusted-dynamic-library-loading-review]
