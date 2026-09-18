@@ -1,0 +1,200 @@
+{
+  "issue12-hardcoded-secret-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-hardcoded-secret-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-debug-mode-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-debug-mode-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-env-dump-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-env-dump-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-weak-crypto-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-weak-crypto-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-password-echo-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-password-echo-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-sql-injection-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-sql-injection-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-exec-terminates-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-exec-terminates-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-assignment-spaces-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-assignment-spaces-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-comparison-spaces-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-comparison-spaces-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-line-start-operator-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-line-start-operator-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-stream-merge-position-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-stream-merge-position-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-trap-uncapturable-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-uncapturable-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-trap-numeric-signal-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-numeric-signal-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-trap-double-quotes-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-double-quotes-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-tilde-path-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-tilde-path-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-temp-file-hardcoded-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-temp-file-hardcoded-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-missing-shebang-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-missing-shebang-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "require_shell_shebang"
+  },
+  "issue12-commented-dead-code-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-commented-dead-code-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_commented_code_block"
+  }
+}

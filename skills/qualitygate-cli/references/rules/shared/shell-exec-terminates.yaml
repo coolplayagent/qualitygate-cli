@@ -1,0 +1,16 @@
+id: shell-exec-terminates
+version: 1
+description: Review exec replacing the current shell
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['^\s*exec\s+\S']
+standard_refs:
+  - {source_id: gnu-bash, controls: [shell-semantics]}
+lifecycle_inputs: [shell-exec-terminates-review]

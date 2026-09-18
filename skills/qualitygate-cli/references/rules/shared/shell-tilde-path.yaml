@@ -1,0 +1,16 @@
+id: shell-tilde-path
+version: 1
+description: Review tilde path components
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?:^|[^A-Za-z0-9_])~(?:/|$)']
+standard_refs:
+  - {source_id: shellcheck-wiki, controls: [tilde-expansion]}
+lifecycle_inputs: [shell-tilde-path-review]

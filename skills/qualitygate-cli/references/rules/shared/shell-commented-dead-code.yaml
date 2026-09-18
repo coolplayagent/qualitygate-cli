@@ -1,0 +1,14 @@
+id: shell-commented-dead-code
+version: 1
+description: Review blocks of three or more code-like comments
+implementation: shell-commented-code
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+standard_refs:
+  - {source_id: google-shell, controls: [comments]}
+lifecycle_inputs: [shell-commented-dead-code-review]

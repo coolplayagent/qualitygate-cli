@@ -1,0 +1,16 @@
+id: shell-env-dump
+version: 1
+description: Review environment dump commands
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?:^|[;&|])\s*(?:set|env|declare|typeset|export)\s*(?:\||>{1,2})']
+standard_refs:
+  - {source_id: owasp-secrets, controls: [secret-exposure]}
+lifecycle_inputs: [shell-env-dump-review]

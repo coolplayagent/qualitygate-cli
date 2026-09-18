@@ -1,0 +1,16 @@
+id: shell-sql-injection
+version: 1
+description: Flag database client commands with interpolated variables
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?i)\b(?:mysql|psql|sqlite3|sqlplus)\b[^\n]*\$(?:\{)?(?:1|[A-Za-z_][A-Za-z0-9_]*)']
+standard_refs:
+  - {source_id: owasp-sql-injection, controls: [parameterized-queries]}
+lifecycle_inputs: [shell-sql-injection-review]

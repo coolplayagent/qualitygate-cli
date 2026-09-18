@@ -1,0 +1,16 @@
+id: shell-assignment-spaces
+version: 1
+description: Flag spaces adjacent to Shell assignment operators
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['^\s*[A-Za-z_][A-Za-z0-9_]*(?:\s+\+?=|\+?=\s+)']
+standard_refs:
+  - {source_id: gnu-bash, controls: [shell-semantics]}
+lifecycle_inputs: [shell-assignment-spaces-review]

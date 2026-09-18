@@ -1,0 +1,434 @@
+[
+  {
+    "id": "issue12-hardcoded-secret-pass-stress",
+    "rule": "shell-hardcoded-secret",
+    "description": "stress pass shell convention shell-hardcoded-secret",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "password='abc'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-hardcoded-secret-fail-stress",
+    "rule": "shell-hardcoded-secret",
+    "description": "stress fail shell convention shell-hardcoded-secret",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\npassword='abc'\n",
+        "src/other.py": "password='abc'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-debug-mode-pass-stress",
+    "rule": "shell-debug-mode",
+    "description": "stress pass shell convention shell-debug-mode",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "set -x\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-debug-mode-fail-stress",
+    "rule": "shell-debug-mode",
+    "description": "stress fail shell convention shell-debug-mode",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nset -x\n",
+        "src/other.py": "set -x\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-env-dump-pass-stress",
+    "rule": "shell-env-dump",
+    "description": "stress pass shell convention shell-env-dump",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "env > log\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-env-dump-fail-stress",
+    "rule": "shell-env-dump",
+    "description": "stress fail shell convention shell-env-dump",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nenv > log\n",
+        "src/other.py": "env > log\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-weak-crypto-pass-stress",
+    "rule": "shell-weak-crypto",
+    "description": "stress pass shell convention shell-weak-crypto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "hash=md5\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-weak-crypto-fail-stress",
+    "rule": "shell-weak-crypto",
+    "description": "stress fail shell convention shell-weak-crypto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nhash=md5\n",
+        "src/other.py": "hash=md5\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-password-echo-pass-stress",
+    "rule": "shell-password-echo",
+    "description": "stress pass shell convention shell-password-echo",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "read password\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-password-echo-fail-stress",
+    "rule": "shell-password-echo",
+    "description": "stress fail shell convention shell-password-echo",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nread password\n",
+        "src/other.py": "read password\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-sql-injection-pass-stress",
+    "rule": "shell-sql-injection",
+    "description": "stress pass shell convention shell-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "psql -c \"SELECT * FROM t WHERE id=$1\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-sql-injection-fail-stress",
+    "rule": "shell-sql-injection",
+    "description": "stress fail shell convention shell-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\npsql -c \"SELECT * FROM t WHERE id=$1\"\n",
+        "src/other.py": "psql -c \"SELECT * FROM t WHERE id=$1\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-exec-terminates-pass-stress",
+    "rule": "shell-exec-terminates",
+    "description": "stress pass shell convention shell-exec-terminates",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "exec worker\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-exec-terminates-fail-stress",
+    "rule": "shell-exec-terminates",
+    "description": "stress fail shell convention shell-exec-terminates",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nexec worker\n",
+        "src/other.py": "exec worker\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-assignment-spaces-pass-stress",
+    "rule": "shell-assignment-spaces",
+    "description": "stress pass shell convention shell-assignment-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "VALUE = word\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-assignment-spaces-fail-stress",
+    "rule": "shell-assignment-spaces",
+    "description": "stress fail shell convention shell-assignment-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nVALUE = word\n",
+        "src/other.py": "VALUE = word\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-spaces-pass-stress",
+    "rule": "shell-comparison-spaces",
+    "description": "stress pass shell convention shell-comparison-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "[[$a == $b]]\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-spaces-fail-stress",
+    "rule": "shell-comparison-spaces",
+    "description": "stress fail shell convention shell-comparison-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\n[[$a == $b]]\n",
+        "src/other.py": "[[$a == $b]]\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-line-start-operator-pass-stress",
+    "rule": "shell-line-start-operator",
+    "description": "stress pass shell convention shell-line-start-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "| grep needle\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-line-start-operator-fail-stress",
+    "rule": "shell-line-start-operator",
+    "description": "stress fail shell convention shell-line-start-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\n| grep needle\n",
+        "src/other.py": "| grep needle\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-stream-merge-position-pass-stress",
+    "rule": "shell-stream-merge-position",
+    "description": "stress pass shell convention shell-stream-merge-position",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "cmd 2>&1 > out\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-stream-merge-position-fail-stress",
+    "rule": "shell-stream-merge-position",
+    "description": "stress fail shell convention shell-stream-merge-position",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\ncmd 2>&1 > out\n",
+        "src/other.py": "cmd 2>&1 > out\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-uncapturable-pass-stress",
+    "rule": "shell-trap-uncapturable",
+    "description": "stress pass shell convention shell-trap-uncapturable",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "trap 'echo stop' SIGKILL\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-uncapturable-fail-stress",
+    "rule": "shell-trap-uncapturable",
+    "description": "stress fail shell convention shell-trap-uncapturable",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\ntrap 'echo stop' SIGKILL\n",
+        "src/other.py": "trap 'echo stop' SIGKILL\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-numeric-signal-pass-stress",
+    "rule": "shell-trap-numeric-signal",
+    "description": "stress pass shell convention shell-trap-numeric-signal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "trap 'cleanup' 15\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-numeric-signal-fail-stress",
+    "rule": "shell-trap-numeric-signal",
+    "description": "stress fail shell convention shell-trap-numeric-signal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\ntrap 'cleanup' 15\n",
+        "src/other.py": "trap 'cleanup' 15\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-double-quotes-pass-stress",
+    "rule": "shell-trap-double-quotes",
+    "description": "stress pass shell convention shell-trap-double-quotes",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "trap \"cleanup\" EXIT\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-double-quotes-fail-stress",
+    "rule": "shell-trap-double-quotes",
+    "description": "stress fail shell convention shell-trap-double-quotes",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\ntrap \"cleanup\" EXIT\n",
+        "src/other.py": "trap \"cleanup\" EXIT\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-tilde-path-pass-stress",
+    "rule": "shell-tilde-path",
+    "description": "stress pass shell convention shell-tilde-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "echo \"~/cache\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-tilde-path-fail-stress",
+    "rule": "shell-tilde-path",
+    "description": "stress fail shell convention shell-tilde-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\necho \"~/cache\"\n",
+        "src/other.py": "echo \"~/cache\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-temp-file-hardcoded-pass-stress",
+    "rule": "shell-temp-file-hardcoded",
+    "description": "stress pass shell convention shell-temp-file-hardcoded",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "file=/tmp/data\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-temp-file-hardcoded-fail-stress",
+    "rule": "shell-temp-file-hardcoded",
+    "description": "stress fail shell convention shell-temp-file-hardcoded",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\nfile=/tmp/data\n",
+        "src/other.py": "file=/tmp/data\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-missing-shebang-pass-stress",
+    "rule": "shell-missing-shebang",
+    "description": "stress pass shell convention shell-missing-shebang",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/stress.sh": "#!/bin/sh\nprintf '%s' ok\n",
+        "src/other.py": "echo no shebang\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-missing-shebang-fail-stress",
+    "rule": "shell-missing-shebang",
+    "description": "stress fail shell convention shell-missing-shebang",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/stress.sh": "echo no shebang\n",
+        "src/other.py": "echo no shebang\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-commented-dead-code-pass-stress",
+    "rule": "shell-commented-dead-code",
+    "description": "stress pass shell convention shell-commented-dead-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\n# if explanation\n# for context\n",
+        "src/other.py": "# if broken\n# for item\n# exit 1\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-commented-dead-code-fail-stress",
+    "rule": "shell-commented-dead-code",
+    "description": "stress fail shell convention shell-commented-dead-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "bin/extensionless": "#!/bin/sh\n# if broken\n# for item\n# exit 1\n",
+        "src/other.py": "# if broken\n# for item\n# exit 1\n"
+      }
+    }
+  }
+]

@@ -57,3 +57,61 @@ pub fn for_path(path: &str) -> Option<&'static Language> {
         .iter()
         .find(|language| language.extensions.contains(&extension))
 }
+
+/// Extensionless executable scripts can declare the supported Shell grammar
+/// in a bounded first-line interpreter directive.
+pub fn for_source(path: &str, bytes: &[u8]) -> Option<&'static Language> {
+    if let Some(language) = for_path(path) {
+        return Some(language);
+    }
+    let directive = bytes
+        .strip_prefix(b"#!")?
+        .split(|byte| *byte == b'\n')
+        .next()?;
+    if directive.len() > 256 {
+        return None;
+    }
+    let directive = std::str::from_utf8(directive).ok()?;
+    let mut words = directive.split_whitespace();
+    let interpreter = words.next()?.rsplit('/').next()?;
+    let shell = if interpreter == "env" {
+        words
+            .find(|word| !word.starts_with('-'))?
+            .rsplit('/')
+            .next()?
+    } else {
+        interpreter
+    };
+    matches!(shell, "sh" | "bash")
+        .then(|| named("shell"))
+        .flatten()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extensionless_shell_shebang_is_recognized_without_reclassifying_other_files() {
+        assert_eq!(
+            for_source("bin/deploy", b"#!/usr/bin/env -S bash -e\necho ok\n")
+                .unwrap()
+                .name,
+            "shell"
+        );
+        assert_eq!(
+            for_source("bin/start", b"#!/bin/sh\necho ok\n")
+                .unwrap()
+                .name,
+            "shell"
+        );
+        assert_eq!(
+            for_source("bin/tool.py", b"#!/bin/sh\nprint(1)\n")
+                .unwrap()
+                .name,
+            "python"
+        );
+        assert!(for_source("bin/tool", b"#!/usr/bin/env python\n").is_none());
+        assert!(for_source("bin/tool", b"echo ok\n").is_none());
+    }
+}

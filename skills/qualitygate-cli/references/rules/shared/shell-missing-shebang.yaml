@@ -1,0 +1,14 @@
+id: shell-missing-shebang
+version: 1
+description: Require a first-line interpreter directive on added Shell scripts
+implementation: shell-shebang
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [shell]
+standard_refs:
+  - {source_id: google-shell, controls: [interpreter]}
+lifecycle_inputs: [shell-missing-shebang-review]

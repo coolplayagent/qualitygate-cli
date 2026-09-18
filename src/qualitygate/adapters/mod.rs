@@ -21,5 +21,6 @@ pub mod python;
 mod python_metadata;
 pub mod reports;
 pub mod rules;
+mod shell_conventions;
 mod structure_rules;
 pub mod syntax;

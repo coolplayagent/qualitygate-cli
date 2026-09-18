@@ -1,5 +1,16 @@
 # Requirements acceptance evidence
 
+## Issue 12 Shell built-ins
+
+| Requirement | Current evidence |
+|---|---|
+| Eighteen discoverable opt-in rules with fixed Shell scope and declared severities | `tests/issue12_rules.rs::all_shell_rules_are_opt_in_discoverable_and_fixed_to_shell_scope`; packaged YAML, standard registry/lifecycle mappings, release archive checks |
+| Shell extension and extensionless shebang recognition; unrelated language exclusion | `domain::language::tests::extensionless_shell_shebang_is_recognized_without_reclassifying_other_files`; `tests/issue12_rules.rs::source_patterns_cover_shell_extensions_and_shebang_scripts_only` |
+| First-line absence and three-line code-like comment blocks need bounded dedicated evaluators | `tests/issue12_rules.rs::first_line_and_three_line_comment_rules_keep_bad_text_incomplete`; `adapters::shell_conventions` |
+| Strict invalid-scope handling and budget failures remain incomplete | `tests/issue12_rules.rs::all_shell_rules_are_opt_in_discoverable_and_fixed_to_shell_scope`, `source_pattern_diagnostic_budget_blocks_excessive_matches` |
+| Independent pass/fail goldens for every rule in minimal, typical, stress | `fixtures/{minimal,typical,stress}/issue12-cases.json` and `fixtures/golden/issue12-{minimal,typical,stress}.json`; `tests/selfcheck.rs` |
+| Explicit lexical limits and optional adoption | `docs/rules.md`, `skills/qualitygate-cli/references/builtin-rules.md`, lifecycle matrix critical adoption fields |
+
 ## Issue 11 Python and neutral built-ins
 
 | Requirement | Current evidence |

@@ -1,0 +1,16 @@
+id: shell-line-start-operator
+version: 1
+description: Review leading pipe or logical operators
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['^\s*(?:\|\|?|\&\&)\s+']
+standard_refs:
+  - {source_id: gnu-bash, controls: [shell-semantics]}
+lifecycle_inputs: [shell-line-start-operator-review]
