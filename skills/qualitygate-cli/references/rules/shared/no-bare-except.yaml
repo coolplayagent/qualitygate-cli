@@ -1,0 +1,15 @@
+id: no-bare-except
+version: 1
+description: Flag bare except clauses in added Python files
+implementation: file-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    pattern: '^\s*except\s*:'
+standard_refs:
+  - {source_id: python-pep8, controls: [exception-handling]}
+lifecycle_inputs: [python-bare-except-review]

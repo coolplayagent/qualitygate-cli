@@ -14,6 +14,78 @@ taxonomy:
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
 inputs:
+  - id: python-bare-except-review
+    status: enforced
+    rule_id: no-bare-except
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [python-pep8]
+    evidence: [added-file-bytes, line-pattern]
+    applicability: Added Python files when a repository opts into this stricter exception convention.
+    critical_adoption: PEP 8 allows narrow bare except uses; lexical matches in comments or strings need review.
+  - id: python-pathlib-convention
+    status: enforced
+    rule_id: no-os-path
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [python-pep428]
+    evidence: [added-file-bytes, line-pattern]
+    applicability: Added Python files when a repository selects pathlib in place of specified os.path calls.
+    critical_adoption: PEP 428 does not ban os.path; lexical call matches are a configurable style signal.
+  - id: python-print-review
+    status: enforced
+    rule_id: no-print
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-python]
+    evidence: [added-file-bytes, line-pattern]
+    applicability: Added Python files selected by a repository print-call convention.
+    critical_adoption: CLI output and scripts can use print intentionally; this warning is opt-in and path-scoped.
+  - id: emoji-text-convention
+    status: enforced
+    rule_id: no-emoji
+    lifecycle_stage: implementation
+    languages: [all]
+    concerns: [coding, documentation]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [google-code-review]
+    evidence: [added-file-bytes, unicode-range-match]
+    applicability: Added UTF-8 files selected by a repository emoji style convention.
+    critical_adoption: The review source does not prescribe an emoji ban; this opt-in pattern covers specified ranges, not all emoji sequences or commit messages.
+  - id: conventional-commit-subject
+    status: enforced
+    rule_id: commit-message-format
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [conventional-commits]
+    evidence: [added-commit-subject, commit-pattern]
+    applicability: Added commit subjects when a repository selects this Conventional Commits subset.
+    critical_adoption: The default regex restricts types more than the specification and is configurable by policy.
+  - id: python-test-name-style
+    status: enforced
+    rule_id: python-test-naming
+    lifecycle_stage: verification
+    languages: [python]
+    concerns: [testing, coding]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [pytest-good-practices]
+    evidence: [test-structure, syntax-spans]
+    applicability: Added test-prefixed functions in selected Python files.
+    critical_adoption: pytest discovers test-prefixed names in eligible test files; the lower snake case pattern is stricter and opt-in, and paths should select the repository's test files.
   - id: source-format-hygiene
     status: enforced
     rule_id: line-ending

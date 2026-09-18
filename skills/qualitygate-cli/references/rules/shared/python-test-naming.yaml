@@ -1,0 +1,15 @@
+id: python-test-naming
+version: 1
+description: Require lower snake case for added pytest tests
+implementation: test-naming
+language: [python]
+requires_capabilities: [test_methods]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    pattern: '^test_[a-z][a-z0-9_]*$'
+standard_refs:
+  - {source_id: pytest-good-practices, controls: [test-discovery]}
+lifecycle_inputs: [python-test-name-style]

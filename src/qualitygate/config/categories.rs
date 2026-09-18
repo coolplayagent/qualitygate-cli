@@ -91,6 +91,12 @@ fn origin(entry: &Entry) -> &str {
         | "parameterized-tests"
         | "ai-code-traceability" => "test",
         "file-pattern" if rule.id == "no-test-sleep" => "test",
+        "file-pattern"
+            if ["no-bare-except", "no-os-path", "no-print", "no-emoji"]
+                .contains(&rule.id.as_str()) =>
+        {
+            "style"
+        }
         "source-pattern" | "file-pattern" if rule.id != "todo-marker" => "security",
         "import-boundary" | "module-boundary" | "used-undeclared" => "architecture",
         _ => "style",

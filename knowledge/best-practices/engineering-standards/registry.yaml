@@ -11,6 +11,50 @@ coverage:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: python-pep8
+    organization: Python Software Foundation
+    title: PEP 8 Style Guide for Python Code
+    authority: language-ecosystem
+    kind: specification
+    url: https://peps.python.org/pep-0008/
+    languages: [python]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, reliability]
+    controls: [exception-handling]
+    summary: Recommends specific exception handlers, with narrow documented cases where a bare except may be appropriate.
+  - id: python-pep428
+    organization: Python Software Foundation
+    title: PEP 428 The pathlib module
+    authority: language-ecosystem
+    kind: specification
+    url: https://peps.python.org/pep-0428/
+    languages: [python]
+    lifecycle_stages: [implementation]
+    concerns: [coding]
+    controls: [pathlib-api]
+    summary: Defines pathlib path objects as an alternative interface to string-based path operations.
+  - id: pytest-good-practices
+    organization: pytest-dev
+    title: pytest Good Integration Practices
+    authority: language-ecosystem
+    kind: documentation
+    url: https://docs.pytest.org/en/stable/explanation/goodpractices.html
+    languages: [python]
+    lifecycle_stages: [verification]
+    concerns: [testing]
+    controls: [test-discovery]
+    summary: Documents default test file and test function discovery prefixes.
+  - id: conventional-commits
+    organization: Conventional Commits
+    title: Conventional Commits 1.0.0
+    authority: industry-standard
+    kind: specification
+    url: https://www.conventionalcommits.org/en/v1.0.0/
+    languages: [all]
+    lifecycle_stages: [review]
+    concerns: [reviewability, change-management]
+    controls: [commit-subject]
+    summary: Defines type and optional scope followed by a description for structured commit messages.
   - id: alibaba-ajcg
     organization: Alibaba
     title: Alibaba Java Coding Guidelines

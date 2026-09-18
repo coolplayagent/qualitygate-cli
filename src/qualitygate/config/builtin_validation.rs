@@ -136,6 +136,11 @@ pub(super) fn validate(
     {
         bail!("{id} requires languages: [java]");
     }
+    if builtin_id == "python-test-naming"
+        && rule.parameters.get("languages") != Some(&serde_json::json!(["python"]))
+    {
+        bail!("python-test-naming requires languages: [python]");
+    }
     if id == "file-pattern"
         && rule.parameters.get("languages") != Some(&serde_json::json!(builtin_languages))
     {

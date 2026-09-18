@@ -49,7 +49,7 @@ fn progressive_discovery_categories_are_mutable_and_do_not_enable_rules() {
             .unwrap()
             .iter()
             .any(|c| c["name"] == "core"
-                && c["rule_count"] == 4
+                && c["rule_count"] == 5
                 && c["enabled_count"] == 0
                 && c["custom"] == false)
     );

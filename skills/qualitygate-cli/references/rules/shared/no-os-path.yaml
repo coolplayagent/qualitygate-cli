@@ -1,0 +1,15 @@
+id: no-os-path
+version: 1
+description: Flag selected os.path calls in added Python files
+implementation: file-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    pattern: '\bos\.path\.(?:join|exists|isfile|isdir|dirname|basename|abspath|normpath|splitext|split|splitdrive|relpath|realpath|expanduser|expandvars|samefile|getsize|getatime|getmtime|getctime)\s*\('
+standard_refs:
+  - {source_id: python-pep428, controls: [pathlib-api]}
+lifecycle_inputs: [python-pathlib-convention]

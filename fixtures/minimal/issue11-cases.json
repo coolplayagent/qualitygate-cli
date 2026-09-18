@@ -1,0 +1,134 @@
+[
+  {
+    "id": "issue11-bare-pass",
+    "rule": "no-bare-except",
+    "description": "minimal pass case for no-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "test_case.py": "try:\n    risky()\nexcept FileNotFoundError:\n    pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-bare-fail",
+    "rule": "no-bare-except",
+    "description": "minimal fail case for no-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "test_case.py": "try:\n    risky()\nexcept:\n    pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-path-pass",
+    "rule": "no-os-path",
+    "description": "minimal pass case for no-os-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "paths.py": "from pathlib import Path\nresult = Path('a') / 'b'\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-path-fail",
+    "rule": "no-os-path",
+    "description": "minimal fail case for no-os-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "paths.py": "import os\nresult = os.path.join('a', 'b')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-print-pass",
+    "rule": "no-print",
+    "description": "minimal pass case for no-print",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "app.py": "logger.info('ready')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-print-fail",
+    "rule": "no-print",
+    "description": "minimal fail case for no-print",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "app.py": "print('ready')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-emoji-pass",
+    "rule": "no-emoji",
+    "description": "minimal pass case for no-emoji",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "README.md": "Ready for review.\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-emoji-fail",
+    "rule": "no-emoji",
+    "description": "minimal fail case for no-emoji",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "README.md": "Ready for review 😀.\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-naming-pass",
+    "rule": "python-test-naming",
+    "description": "minimal pass case for python-test-naming",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "test_case.py": "def test_working_case():\n    assert True\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-naming-fail",
+    "rule": "python-test-naming",
+    "description": "minimal fail case for python-test-naming",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "test_case.py": "def test1():\n    assert True\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-commit-pass",
+    "rule": "commit-message-format",
+    "description": "minimal pass commit subject",
+    "input": {
+      "kind": "rule",
+      "commits": [
+        "feat: add check"
+      ]
+    }
+  },
+  {
+    "id": "issue11-commit-fail",
+    "rule": "commit-message-format",
+    "description": "minimal fail commit subject",
+    "input": {
+      "kind": "rule",
+      "commits": [
+        "Add check"
+      ]
+    }
+  }
+]
