@@ -1,0 +1,16 @@
+id: go-float-loop-counter
+version: 1
+description: Review floating literal for-loop counters
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\bfor\s+[A-Za-z_]\w*\s*(?::=|=)\s*\d+\.\d+']
+standard_refs:
+  - {source_id: go-spec, controls: [for-statements]}
+lifecycle_inputs: [go-float-loop-counter-review]

@@ -23,7 +23,7 @@ checks:
 Replace the example producer with the project's existing analyzer and adopt its
 actual command, tool inputs, timeout and findings exit codes through normal
 policy review. Diagnostic formats include generic `diagnostics`, Checkstyle,
-PMD, SpotBugs, SARIF, Cargo Clippy JSON Lines and ESLint JSON. A baseline path is mandatory. Test statistics and
+PMD, SpotBugs, SARIF, Cargo Clippy JSON Lines, ESLint JSON and golangci-lint v2 JSON. A baseline path is mandatory. Test statistics and
 coverage cannot use this mode, even when supplied inside generic JSON.
 
 ## Clippy from captured stdout
@@ -79,6 +79,31 @@ complete fresh report. Provision a pinned ESLint and any parser/plugins for
 both materialized snapshots; the version probe and executable digest must
 match. A project may use its own lockfile-backed setup, but a missing
 dependency cannot be replaced by a clean report.
+
+## golangci-lint v2 from captured stdout
+
+The packaged [Go reference policy](../skills/qualitygate-cli/references/golangci-lint-ratchet.yaml)
+uses [golangci-lint v2 output flags](https://golangci-lint.run/docs/configuration/cli/#run)
+to send JSON to stdout and text to stderr. `--show-stats=false` keeps stdout a
+single JSON document. `--max-issues-per-linter=0`, `--max-same-issues=0`, and
+`--uniq-by-line=false` preserve the full issue count needed for a ratchet.
+`findings_exit_codes: [1]` accepts lint findings; other nonzero exits remain
+incomplete. The adapter rejects analyzer errors, warnings, typecheck issues,
+missing enabled-linter inventory, invalid locations and malformed JSON. It
+uses the linter name as `tool`, an explicit rule code such as `SA5009` or `G101`
+when present as `rule`, and otherwise the linter name as `rule`.
+Qualitygate's configured check `severity` decides whether count growth blocks;
+golangci-lint's per-issue `Severity` remains in the retained raw report and
+does not silently override that policy.
+
+Keep v2 linter selection in a tracked `.golangci.yml`; the command's final
+`./...` can be narrowed to a package path, while test selection belongs in
+the Go analyzer configuration or `--tests=false`. Use a provisioned, pinned
+binary and Go toolchain for both snapshots. Avoid `--new`, `--fast-only`,
+`--fix` and count-limiting flags: these change the observed debt or source.
+The reference uses `--modules-download-mode=readonly` to keep module manifests
+unchanged. Cache paths should be isolated from unrelated runtime state; raw
+JSON and tool/version evidence remain attached to each check.
 
 Counts preserve multiplicity and are grouped by `(tool, rule)` independently
 within each report. Formats without tool names use `null` for that key component.

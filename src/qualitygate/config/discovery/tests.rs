@@ -16,6 +16,7 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
     write(root.path(), "target/Cargo.toml", "[package]");
     write(root.path(), "java/pom.xml", "<project/>");
     write(root.path(), "java/src/Test.java", "class Test {}");
+    write(root.path(), "go/main.go", "package example\n");
     write(
         root.path(),
         "py/pyproject.toml",
@@ -37,7 +38,7 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
             .iter()
             .map(|value| value.language.as_str())
             .collect::<Vec<_>>(),
-        ["java", "python", "ruby", "shell", "typescript"]
+        ["go", "java", "python", "ruby", "shell", "typescript"]
     );
     assert_eq!(
         report
@@ -59,6 +60,7 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
     assert!(report.available_rulesets.contains_key("lang-java"));
     assert!(report.available_rulesets.contains_key("lang-python"));
     assert!(report.available_rulesets.contains_key("lang-typescript"));
+    assert!(report.available_rulesets.contains_key("lang-go"));
     let shell = report
         .languages
         .iter()

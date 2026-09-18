@@ -157,6 +157,8 @@ pub(super) fn validate(
         Some("rust")
     } else if builtin_id.starts_with("ts-") {
         Some("typescript")
+    } else if builtin_id.starts_with("go-") {
+        Some("go")
     } else {
         None
     };

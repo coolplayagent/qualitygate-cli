@@ -1,5 +1,14 @@
 # Requirements acceptance evidence
 
+## Issue 15 golangci-lint ratchet and Go rules
+
+| Requirement | Current evidence |
+|---|---|
+| Native v2 JSON, complete linter inventory, bounded stdout and paired count ratchet | `tests/golangci_ratchet.rs::real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure`; `adapters::reports::golangci_json::tests` |
+| Analyzer error, warning, typecheck issue, invalid source and unsupported format fail closed | `adapters::reports::golangci_json::tests`; `tests/golangci_ratchet.rs` |
+| Working v2 reference command with full counts, target and tool guidance | `skills/qualitygate-cli/references/golangci-lint-ratchet.yaml`; `docs/diagnostic-ratchets.md` |
+| Twelve opt-in fixed-scope Go review patterns with documented lexical limits | `tests/issue15_rules.rs`; `lang-go` package and source/lifecycle archive |
+| Independent pass/fail goldens in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue15-cases.json`, `fixtures/golden/issue15-*.json`; `tests/selfcheck.rs` |
 
 ## Issue 14 ESLint ratchet and TypeScript rules
 

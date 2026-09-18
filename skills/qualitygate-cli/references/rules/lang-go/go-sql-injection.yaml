@@ -1,0 +1,18 @@
+id: go-sql-injection
+version: 1
+description: Review same-line SQL formatting and concatenation on changed lines
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go:
+        - '(?i)\bfmt\.Sprintf\s*\([^)]*\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b'
+        - '(?i)["\x60][^"\x60]*\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b[^"\x60]*["\x60]\s*\+\s*[A-Za-z_]\w*'
+standard_refs:
+  - {source_id: gosec-rules, controls: [go-security-patterns]}
+lifecycle_inputs: [go-sql-injection-review]

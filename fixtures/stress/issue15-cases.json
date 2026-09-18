@@ -1,0 +1,290 @@
+[
+  {
+    "id": "issue15-sql-injection-pass-stress",
+    "rule": "go-sql-injection",
+    "description": "stress pass Go review signal go-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "db.Query(\"SELECT * FROM users WHERE id=?\", id)\n",
+        "src/unrelated.py": "fmt.Sprintf(\"SELECT * FROM users WHERE id=%d\", id)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sql-injection-fail-stress",
+    "rule": "go-sql-injection",
+    "description": "stress fail Go review signal go-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "fmt.Sprintf(\"SELECT * FROM users WHERE id=%d\", id)\n",
+        "src/unrelated.py": "fmt.Sprintf(\"SELECT * FROM users WHERE id=%d\", id)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-insecure-randomness-pass-stress",
+    "rule": "go-insecure-randomness",
+    "description": "stress pass Go review signal go-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "import \"crypto/rand\"\n",
+        "src/unrelated.py": "import \"math/rand\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-insecure-randomness-fail-stress",
+    "rule": "go-insecure-randomness",
+    "description": "stress fail Go review signal go-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "import \"math/rand\"\n",
+        "src/unrelated.py": "import \"math/rand\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-tls-insecure-skip-verify-pass-stress",
+    "rule": "go-tls-insecure-skip-verify",
+    "description": "stress pass Go review signal go-tls-insecure-skip-verify",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "tls.Config{MinVersion: tls.VersionTLS12}\n",
+        "src/unrelated.py": "tls.Config{InsecureSkipVerify: true}\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-tls-insecure-skip-verify-fail-stress",
+    "rule": "go-tls-insecure-skip-verify",
+    "description": "stress fail Go review signal go-tls-insecure-skip-verify",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "tls.Config{InsecureSkipVerify: true}\n",
+        "src/unrelated.py": "tls.Config{InsecureSkipVerify: true}\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-hardcoded-credentials-pass-stress",
+    "rule": "go-hardcoded-credentials",
+    "description": "stress pass Go review signal go-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "password := os.Getenv(\"PASSWORD\")\n",
+        "src/unrelated.py": "password := \"secret123\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-hardcoded-credentials-fail-stress",
+    "rule": "go-hardcoded-credentials",
+    "description": "stress fail Go review signal go-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "password := \"secret123\"\n",
+        "src/unrelated.py": "password := \"secret123\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-ssh-insecure-ignore-host-key-pass-stress",
+    "rule": "go-ssh-insecure-ignore-host-key",
+    "description": "stress pass Go review signal go-ssh-insecure-ignore-host-key",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "ssh.FixedHostKey(key)\n",
+        "src/unrelated.py": "ssh.InsecureIgnoreHostKey()\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-ssh-insecure-ignore-host-key-fail-stress",
+    "rule": "go-ssh-insecure-ignore-host-key",
+    "description": "stress fail Go review signal go-ssh-insecure-ignore-host-key",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "ssh.InsecureIgnoreHostKey()\n",
+        "src/unrelated.py": "ssh.InsecureIgnoreHostKey()\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-file-permission-creation-pass-stress",
+    "rule": "go-file-permission-creation",
+    "description": "stress pass Go review signal go-file-permission-creation",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "os.WriteFile(path, data, 0o600)\n",
+        "src/unrelated.py": "os.WriteFile(path, data, 0o666)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-file-permission-creation-fail-stress",
+    "rule": "go-file-permission-creation",
+    "description": "stress fail Go review signal go-file-permission-creation",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "os.WriteFile(path, data, 0o666)\n",
+        "src/unrelated.py": "os.WriteFile(path, data, 0o666)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-panic-in-exported-function-pass-stress",
+    "rule": "go-panic-in-exported-function",
+    "description": "stress pass Go review signal go-panic-in-exported-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "return err\n",
+        "src/unrelated.py": "panic(err)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-panic-in-exported-function-fail-stress",
+    "rule": "go-panic-in-exported-function",
+    "description": "stress fail Go review signal go-panic-in-exported-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "panic(err)\n",
+        "src/unrelated.py": "panic(err)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-cgo-cstring-without-defer-free-pass-stress",
+    "rule": "go-cgo-cstring-without-defer-free",
+    "description": "stress pass Go review signal go-cgo-cstring-without-defer-free",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "ptr := []byte(name)\n",
+        "src/unrelated.py": "ptr := C.CString(name)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-cgo-cstring-without-defer-free-fail-stress",
+    "rule": "go-cgo-cstring-without-defer-free",
+    "description": "stress fail Go review signal go-cgo-cstring-without-defer-free",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "ptr := C.CString(name)\n",
+        "src/unrelated.py": "ptr := C.CString(name)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-relative-import-path-pass-stress",
+    "rule": "go-relative-import-path",
+    "description": "stress pass Go review signal go-relative-import-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "import \"example.com/project/other\"\n",
+        "src/unrelated.py": "import \"../other\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-relative-import-path-fail-stress",
+    "rule": "go-relative-import-path",
+    "description": "stress fail Go review signal go-relative-import-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "import \"../other\"\n",
+        "src/unrelated.py": "import \"../other\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-dot-import-pass-stress",
+    "rule": "go-dot-import",
+    "description": "stress pass Go review signal go-dot-import",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "import \"fmt\"\n",
+        "src/unrelated.py": "import . \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-dot-import-fail-stress",
+    "rule": "go-dot-import",
+    "description": "stress fail Go review signal go-dot-import",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "import . \"fmt\"\n",
+        "src/unrelated.py": "import . \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sensitive-info-in-log-pass-stress",
+    "rule": "go-sensitive-info-in-log",
+    "description": "stress pass Go review signal go-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "log.Printf(\"user=%s\", user)\n",
+        "src/unrelated.py": "log.Printf(\"password=%s\", password)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sensitive-info-in-log-fail-stress",
+    "rule": "go-sensitive-info-in-log",
+    "description": "stress fail Go review signal go-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "log.Printf(\"password=%s\", password)\n",
+        "src/unrelated.py": "log.Printf(\"password=%s\", password)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-float-loop-counter-pass-stress",
+    "rule": "go-float-loop-counter",
+    "description": "stress pass Go review signal go-float-loop-counter",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "for i := 0; i < 10; i++ { }\n",
+        "src/unrelated.py": "for i := 0.0; i < 10; i++ { }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-float-loop-counter-fail-stress",
+    "rule": "go-float-loop-counter",
+    "description": "stress fail Go review signal go-float-loop-counter",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "for i := 0.0; i < 10; i++ { }\n",
+        "src/unrelated.py": "for i := 0.0; i < 10; i++ { }\n"
+      }
+    }
+  }
+]

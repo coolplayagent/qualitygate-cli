@@ -16,8 +16,10 @@ TypeScript lint support and planned expansion across its common languages.[1]
 Qualitygate recognizes TypeScript and Go test structures for generic rules.
 The optional `lang-typescript` package now supplies twelve changed-line lexical
 review signals, while `eslint_json` normalizes a fresh ESLint formatter report
-for a paired diagnostic ratchet. The patterns do not prove type, data-flow,
-dependency or runtime safety. Go-specific static analysis remains planned.
+for a paired diagnostic ratchet. The optional `lang-go` package adds twelve
+changed-line Go signals and `golangci_json` normalizes the v2 producer for the
+same paired ratchet. These patterns do not prove type, data-flow, dependency,
+resource lifetime or runtime safety.
 
 ## Promotion requirements
 
@@ -49,3 +51,10 @@ owns lint selection. [MDN's Math.random](https://developer.mozilla.org/en-US/doc
 and [postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)
 references support optional review signals. The standards registry and
 lifecycle matrix record the narrower scope and adoption limits of each rule.
+
+For Go, the [golangci-lint v2 CLI](https://golangci-lint.run/docs/configuration/cli/#run)
+defines JSON output and count-preserving flags. The [Go modules FAQ](https://go.dev/wiki/Modules),
+[Go review comments](https://go.dev/wiki/CodeReviewComments), [cgo documentation](https://pkg.go.dev/cmd/cgo),
+and [gosec rules](https://github.com/securego/gosec#available-rules) support
+specific optional review signals. The registry and lifecycle matrix name the
+provenance and lexical limits per rule.

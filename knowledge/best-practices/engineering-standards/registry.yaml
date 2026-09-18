@@ -11,6 +11,72 @@ coverage:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: gosec-rules
+    organization: gosec Project
+    title: Go Security Checker rule catalogue
+    authority: language-ecosystem
+    kind: documentation
+    url: https://github.com/securego/gosec#available-rules
+    languages: [go]
+    lifecycle_stages: [implementation, static-analysis]
+    concerns: [security, coding, static-gate]
+    controls: [go-security-patterns]
+    summary: Gosec documents security checks for SQL construction, credentials, SSH, file modes, TLS and random sources.
+  - id: go-cgo-memory
+    organization: Go Project
+    title: cgo command documentation
+    authority: language-ecosystem
+    kind: documentation
+    url: https://pkg.go.dev/cmd/cgo
+    languages: [go]
+    lifecycle_stages: [implementation, review]
+    concerns: [reliability, coding]
+    controls: [cgo-ownership]
+    summary: C.CString and C.CBytes allocate C heap memory that the caller must free.
+  - id: go-modules
+    organization: Go Project
+    title: Go modules FAQ
+    authority: language-ecosystem
+    kind: documentation
+    url: https://go.dev/wiki/Modules
+    languages: [go]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, architecture]
+    controls: [import-paths]
+    summary: Module-aware Go imports use package paths instead of relative import strings.
+  - id: effective-go
+    organization: Go Project
+    title: Effective Go
+    authority: language-ecosystem
+    kind: documentation
+    url: https://go.dev/doc/effective_go
+    languages: [go]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, reliability]
+    controls: [panic-and-control-flow]
+    summary: Go guidance discusses panic and control-flow conventions; lexical review remains a local policy.
+  - id: go-spec
+    organization: Go Project
+    title: The Go Programming Language Specification
+    authority: language-ecosystem
+    kind: specification
+    url: https://go.dev/ref/spec
+    languages: [go]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, reliability]
+    controls: [for-statements]
+    summary: Defines for-statement forms; floating counter review is an optional local heuristic.
+  - id: owasp-logging
+    organization: OWASP
+    title: Logging Cheat Sheet
+    authority: industry-consortium
+    kind: guide
+    url: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    languages: [all]
+    lifecycle_stages: [implementation, review]
+    concerns: [security]
+    controls: [sensitive-logging]
+    summary: Sensitive data should be excluded from application logs.
   - id: eslint-rules
     organization: ESLint Project
     title: ESLint core rules reference
@@ -284,8 +350,8 @@ sources:
     languages: [go]
     lifecycle_stages: [implementation, review, static-analysis]
     concerns: [coding, documentation, architecture, reliability]
-    controls: [gofmt, context-propagation, api-naming, documentation]
-    summary: Go-native review guidance treats gofmt as mechanical baseline and preserves explicit context propagation, API names, documentation, and cancellation semantics.
+    controls: [gofmt, context-propagation, api-naming, documentation, import-style]
+    summary: Go-native review guidance covers formatting, context propagation, API names, documentation and dot-import exceptions.
   - id: google-code-review
     organization: Google
     title: The Standard of Code Review

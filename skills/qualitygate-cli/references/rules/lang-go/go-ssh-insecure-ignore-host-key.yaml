@@ -1,0 +1,16 @@
+id: go-ssh-insecure-ignore-host-key
+version: 1
+description: Flag insecure SSH host key callback calls on changed lines
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\b(?:ssh\.)?InsecureIgnoreHostKey\s*\(']
+standard_refs:
+  - {source_id: gosec-rules, controls: [go-security-patterns]}
+lifecycle_inputs: [go-ssh-insecure-ignore-host-key-review]

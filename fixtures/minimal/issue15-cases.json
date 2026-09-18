@@ -1,0 +1,266 @@
+[
+  {
+    "id": "issue15-sql-injection-pass-minimal",
+    "rule": "go-sql-injection",
+    "description": "minimal pass Go review signal go-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "db.Query(\"SELECT * FROM users WHERE id=?\", id)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sql-injection-fail-minimal",
+    "rule": "go-sql-injection",
+    "description": "minimal fail Go review signal go-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "fmt.Sprintf(\"SELECT * FROM users WHERE id=%d\", id)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-insecure-randomness-pass-minimal",
+    "rule": "go-insecure-randomness",
+    "description": "minimal pass Go review signal go-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"crypto/rand\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-insecure-randomness-fail-minimal",
+    "rule": "go-insecure-randomness",
+    "description": "minimal fail Go review signal go-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"math/rand\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-tls-insecure-skip-verify-pass-minimal",
+    "rule": "go-tls-insecure-skip-verify",
+    "description": "minimal pass Go review signal go-tls-insecure-skip-verify",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "tls.Config{MinVersion: tls.VersionTLS12}\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-tls-insecure-skip-verify-fail-minimal",
+    "rule": "go-tls-insecure-skip-verify",
+    "description": "minimal fail Go review signal go-tls-insecure-skip-verify",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "tls.Config{InsecureSkipVerify: true}\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-hardcoded-credentials-pass-minimal",
+    "rule": "go-hardcoded-credentials",
+    "description": "minimal pass Go review signal go-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "password := os.Getenv(\"PASSWORD\")\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-hardcoded-credentials-fail-minimal",
+    "rule": "go-hardcoded-credentials",
+    "description": "minimal fail Go review signal go-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "password := \"secret123\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-ssh-insecure-ignore-host-key-pass-minimal",
+    "rule": "go-ssh-insecure-ignore-host-key",
+    "description": "minimal pass Go review signal go-ssh-insecure-ignore-host-key",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ssh.FixedHostKey(key)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-ssh-insecure-ignore-host-key-fail-minimal",
+    "rule": "go-ssh-insecure-ignore-host-key",
+    "description": "minimal fail Go review signal go-ssh-insecure-ignore-host-key",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ssh.InsecureIgnoreHostKey()\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-file-permission-creation-pass-minimal",
+    "rule": "go-file-permission-creation",
+    "description": "minimal pass Go review signal go-file-permission-creation",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "os.WriteFile(path, data, 0o600)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-file-permission-creation-fail-minimal",
+    "rule": "go-file-permission-creation",
+    "description": "minimal fail Go review signal go-file-permission-creation",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "os.WriteFile(path, data, 0o666)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-panic-in-exported-function-pass-minimal",
+    "rule": "go-panic-in-exported-function",
+    "description": "minimal pass Go review signal go-panic-in-exported-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "return err\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-panic-in-exported-function-fail-minimal",
+    "rule": "go-panic-in-exported-function",
+    "description": "minimal fail Go review signal go-panic-in-exported-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "panic(err)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-cgo-cstring-without-defer-free-pass-minimal",
+    "rule": "go-cgo-cstring-without-defer-free",
+    "description": "minimal pass Go review signal go-cgo-cstring-without-defer-free",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ptr := []byte(name)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-cgo-cstring-without-defer-free-fail-minimal",
+    "rule": "go-cgo-cstring-without-defer-free",
+    "description": "minimal fail Go review signal go-cgo-cstring-without-defer-free",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ptr := C.CString(name)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-relative-import-path-pass-minimal",
+    "rule": "go-relative-import-path",
+    "description": "minimal pass Go review signal go-relative-import-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"example.com/project/other\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-relative-import-path-fail-minimal",
+    "rule": "go-relative-import-path",
+    "description": "minimal fail Go review signal go-relative-import-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"../other\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-dot-import-pass-minimal",
+    "rule": "go-dot-import",
+    "description": "minimal pass Go review signal go-dot-import",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-dot-import-fail-minimal",
+    "rule": "go-dot-import",
+    "description": "minimal fail Go review signal go-dot-import",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import . \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sensitive-info-in-log-pass-minimal",
+    "rule": "go-sensitive-info-in-log",
+    "description": "minimal pass Go review signal go-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "log.Printf(\"user=%s\", user)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sensitive-info-in-log-fail-minimal",
+    "rule": "go-sensitive-info-in-log",
+    "description": "minimal fail Go review signal go-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "log.Printf(\"password=%s\", password)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-float-loop-counter-pass-minimal",
+    "rule": "go-float-loop-counter",
+    "description": "minimal pass Go review signal go-float-loop-counter",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "for i := 0; i < 10; i++ { }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-float-loop-counter-fail-minimal",
+    "rule": "go-float-loop-counter",
+    "description": "minimal fail Go review signal go-float-loop-counter",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "for i := 0.0; i < 10; i++ { }\n"
+      }
+    }
+  }
+]

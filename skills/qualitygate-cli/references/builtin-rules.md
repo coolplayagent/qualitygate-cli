@@ -124,6 +124,32 @@ for semantic lint results.
 | `ts-no-commented-code` | warning | code-like line comment |
 | `ts-no-personal-info-in-comments` | warning | contact marker in same-line comment |
 
+## Go review signals
+
+Select `rulesets: [lang-go]` and the desired rule IDs. All twelve rules are
+opt-in, fixed to `languages: [go]`, and inspect changed UTF-8 `.go` lines with
+bounded `source-pattern` matching. They accept `paths` and
+`prohibited_patterns.go` overrides. Comments and strings can match. SQL
+formatting does not establish taint, `math/rand` may serve nonsecurity uses,
+the panic rule does not determine function visibility, and the cgo rule does
+not prove a missing free. Use the [golangci-lint reference](golangci-lint-ratchet.yaml)
+for semantic lint results.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `go-sql-injection` | error | SQL keyword in same-line fmt.Sprintf or string concatenation |
+| `go-insecure-randomness` | warning | math/rand import or common call |
+| `go-tls-insecure-skip-verify` | error | literal InsecureSkipVerify true |
+| `go-hardcoded-credentials` | error | literal credential assignment |
+| `go-ssh-insecure-ignore-host-key` | error | InsecureIgnoreHostKey call |
+| `go-file-permission-creation` | warning | literal 0666 or 0777 mode in file write call |
+| `go-panic-in-exported-function` | warning | panic call for visibility review |
+| `go-cgo-cstring-without-defer-free` | warning | C.CString or C.CBytes allocation call |
+| `go-relative-import-path` | warning | relative import path |
+| `go-dot-import` | warning | dot import outside reviewed exceptions |
+| `go-sensitive-info-in-log` | warning | sensitive variable name in log call |
+| `go-float-loop-counter` | warning | floating literal for-loop initializer |
+
 ## Rust review signals
 
 All three Rust rules are opt-in source patterns with fixed `languages: [rust]`.

@@ -1,0 +1,16 @@
+id: go-panic-in-exported-function
+version: 1
+description: Review panic calls including those in exported functions
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\bpanic\s*\(']
+standard_refs:
+  - {source_id: effective-go, controls: [panic-and-control-flow]}
+lifecycle_inputs: [go-panic-in-exported-function-review]

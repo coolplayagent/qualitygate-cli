@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test issue11_rules --test issue12_rules --test issue13_rules --test issue14_rules --test clippy_ratchet --test eslint_ratchet --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
+            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test issue11_rules --test issue12_rules --test issue13_rules --test issue14_rules --test issue15_rules --test clippy_ratchet --test eslint_ratchet --test golangci_ratchet --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
           - gate: selfcheck-minimal
             command: cargo run --locked -- selfcheck --fixture minimal --format json
           - gate: documentation
@@ -165,6 +165,25 @@ jobs:
       - run: rustup show
       - name: Live ESLint JSON ratchet and repair acceptance
         run: cargo test --locked --test eslint_ratchet -- --ignored --nocapture
+
+  golangci-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.8'
+          cache: false
+      - run: rustup show
+      - name: Install pinned golangci-lint v2 binary
+        run: |
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/golangci-lint.tar.gz" https://github.com/golangci/golangci-lint/releases/download/v2.13.2/golangci-lint-2.13.2-linux-amd64.tar.gz
+          tar -C "$RUNNER_TEMP" -xzf "$RUNNER_TEMP/golangci-lint.tar.gz"
+      - name: Live golangci-lint JSON ratchet and repair acceptance
+        env:
+          GOLANGCI_LINT_BIN: ${{ runner.temp }}/golangci-lint-2.13.2-linux-amd64/golangci-lint
+        run: cargo test --locked --test golangci_ratchet -- --ignored --nocapture
 
   coverage-producers:
     runs-on: ubuntu-latest

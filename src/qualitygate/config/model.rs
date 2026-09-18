@@ -10,6 +10,7 @@ pub const RULESETS: &[&str] = &[
     "lang-java",
     "lang-python",
     "lang-typescript",
+    "lang-go",
 ];
 
 fn schema_one() -> u32 {
@@ -314,6 +315,7 @@ pub struct ReportSpec {
 pub enum ReportFormat {
     CargoClippy,
     EslintJson,
+    GolangciJson,
     Junit,
     Checkstyle,
     Spotbugs,
