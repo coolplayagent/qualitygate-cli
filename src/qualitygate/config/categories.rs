@@ -85,8 +85,12 @@ fn origin(entry: &Entry) -> &str {
     };
     match rule.implementation.as_str() {
         "line-ending" | "commit-message" | "diff-size" => "core",
-        "test-naming" | "parameterized-tests" | "ai-code-traceability" => "test",
-        "source-pattern" if rule.id != "todo-marker" => "security",
+        "test-naming"
+        | "test-naming-strict"
+        | "test-annotation-dependency"
+        | "parameterized-tests"
+        | "ai-code-traceability" => "test",
+        "source-pattern" | "file-pattern" if rule.id != "todo-marker" => "security",
         "import-boundary" | "module-boundary" | "used-undeclared" => "architecture",
         _ => "style",
     }

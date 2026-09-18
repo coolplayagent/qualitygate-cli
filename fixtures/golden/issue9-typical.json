@@ -1,0 +1,10 @@
+{
+  "issue9-commit-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-commit-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/subject":"[BAD9]feat: wrong ticket prefix"},
+  "issue9-naming-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-naming-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"src/test/java/Case.java"},
+  "issue9-dependency-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0,"/metadata/dependency_scope/annotation":"Audit"},
+  "issue9-dependency-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/group":"org.example","/diagnostics/0/evidence/artifact":"audit-test"},
+  "issue9-secret-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-secret-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"src/main/java/New.java"}
+}

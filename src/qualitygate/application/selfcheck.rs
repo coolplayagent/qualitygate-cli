@@ -38,7 +38,7 @@ fn empty_report(fixture: Option<String>, rule: Option<String>) -> SelfcheckRepor
     SelfcheckReport {
         schema_version: 1,
         tool_version: env!("CARGO_PKG_VERSION").into(),
-        corpus_digest: snapshot::digest(config::selfcheck::SUITES.iter().flat_map(|(suite, cases, golden)| [*suite, *cases, *golden]).collect::<String>().as_bytes()),
+        corpus_digest: snapshot::digest(config::selfcheck::SUITES.iter().flat_map(|(suite, path, cases, golden_path, golden)| [*suite, *path, *cases, *golden_path, *golden]).collect::<String>().as_bytes()),
         rules_digest: String::new(),
         fixture_filter: fixture,
         rule_filter: rule,

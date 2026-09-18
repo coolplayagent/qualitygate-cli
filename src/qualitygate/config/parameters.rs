@@ -9,6 +9,9 @@ pub(super) fn names(implementation: &str) -> Result<&'static [&'static str]> {
         "commit-message" => &["pattern"],
         "diff-size" => &["max_added_lines"],
         "test-naming" => &["pattern", "patterns", "paths", "languages"],
+        "test-naming-strict" => &["pattern", "paths", "languages"],
+        "test-annotation-dependency" => &["annotation", "group", "artifact", "paths", "languages"],
+        "file-pattern" => &["pattern", "paths", "languages"],
         "parameterized-tests" => &["minimum_similar", "paths", "languages"],
         "comment-language" => &["language", "exempt_patterns", "paths", "languages"],
         "ai-code-traceability" => &["marker", "provenance_scope", "paths", "languages"],
@@ -23,10 +26,13 @@ pub(super) fn names(implementation: &str) -> Result<&'static [&'static str]> {
 pub fn describe(implementation: &str, defaults: &Value) -> Result<Vec<Value>> {
     names(implementation)?.iter().map(|name| {
         let (kind, description, schema) = match *name {
-            "pattern" => ("string", "Regular expression matched against the commit subject or test name.", json!({"type":"string"})),
+            "pattern" => ("string", "Regular expression matched against the selected commit subject, test name or source line.", json!({"type":"string","minLength":1,"maxLength":512})),
+            "annotation" => ("string", "Simple Java annotation name selecting test methods.", json!({"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z_$][A-Za-z0-9_$]*$"})),
+            "group" | "artifact" => ("string", "Required Maven dependency coordinate component.", json!({"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_.-]+$"})),
             "patterns" => ("object", "Language names mapped to test-name regular expressions.", json!({"type":"object","additionalProperties":{"type":"string"}})),
             "prohibited_patterns" | "forbidden_imports" => ("object", "Supported language names (or all) mapped to 1..32 distinct regular expressions, each 1..512 bytes.", json!({"type":"object","minProperties":1,"maxProperties":32,"additionalProperties":{"type":"array","minItems":1,"maxItems":32,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":512}}})),
             "paths" => ("array", "Repository-relative glob patterns selecting source files.", strings()),
+            "languages" if ["test-naming-strict", "test-annotation-dependency", "file-pattern"].contains(&implementation) => ("array", "Fixed Java syntax scope for this built-in.", json!({"type":"array","const":["java"]})),
             "languages" => ("array", "Syntax adapter languages: java, python, typescript, go, rust, shell.", strings()),
             "exempt_patterns" => ("array", "Regular expressions exempting matching comments.", strings()),
             "modules" => ("array", "1..256 unique normalized repository module roots.", json!({"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"type":"string"}})),

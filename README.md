@@ -64,6 +64,7 @@ See [coverage reports](docs/coverage.md) for JaCoCo, Cobertura and coverage.py c
 See [SARIF analysis](docs/sarif.md) for indexed locations, baseline identities and real Clippy acceptance.
 See [Java interface compatibility](docs/compatibility.md) for paired snapshot builds and binary/source API checks.
 See [built-in rules](docs/rules.md) for Skill-owned rule assets, language adapters and team-specific configuration.
+Issue 9 adds opt-in commit subject, strict Java test naming, annotation dependency and literal credential rules; changed-file syntax and added-file scans use bounded parallel workers.
 
 Use [rule management](docs/rule-management.md) for dynamic categories,
 progressive discovery, enable/disable, parameter descriptions and atomic

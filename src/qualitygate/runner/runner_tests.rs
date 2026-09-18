@@ -87,7 +87,7 @@ async fn cancelling_the_future_kills_descendants() {
             &[
                 "sh".into(),
                 "-c".into(),
-                "touch ready; (sleep 1; touch escaped) & wait".into(),
+                "(touch child_ready; while [ ! -f release ]; do sleep 0.1; done; touch escaped) & wait".into(),
             ],
             &path,
             None,
@@ -96,14 +96,16 @@ async fn cancelling_the_future_kills_descendants() {
         .await
     });
     for _ in 0..100 {
-        if root.path().join("ready").exists() {
+        if root.path().join("child_ready").exists() {
             break;
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    assert!(root.path().join("ready").exists());
+    assert!(root.path().join("child_ready").exists());
+    assert!(!root.path().join("escaped").exists());
     task.abort();
     assert!(task.await.unwrap_err().is_cancelled());
+    std::fs::write(root.path().join("release"), b"release").unwrap();
     tokio::time::sleep(Duration::from_millis(1100)).await;
     assert!(!root.path().join("escaped").exists());
 }

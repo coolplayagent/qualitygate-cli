@@ -1,6 +1,7 @@
 //! Rule and ecosystem adapters produce shared results without CLI dependencies.
 
 pub mod attestation;
+mod builtin_conventions;
 pub mod compatibility;
 pub mod custom_rules;
 mod entity_changes;
@@ -9,6 +10,7 @@ pub mod git_trailers;
 mod markers;
 pub mod maven;
 pub mod maven_usage;
+mod parallel;
 pub mod pilot_acceptance;
 pub mod pilot_authorization;
 pub mod policy_approval;

@@ -31,7 +31,7 @@ fn full(feedback: &Value) -> Value {
 fn recheck(root: &Path, argv: &Value, code: i32) -> Value {
     let argv: Vec<String> = serde_json::from_value(argv.clone()).unwrap();
     assert_eq!(argv[1], "--root");
-    assert_eq!(Path::new(&argv[2]), root);
+    assert_eq!(Path::new(&argv[2]), root.canonicalize().unwrap());
     report(
         &cli(
             root,

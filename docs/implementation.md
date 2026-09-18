@@ -353,8 +353,8 @@ pending until the pilot protocol yields measured, human-reviewed records.
 The finite DSL now supports `require_pattern` and minimum triggered entity
 counts beyond complete file inventories. Retained marker obligations do not
 satisfy a minimum added-test count. Four independent minimal goldens cover
-required text, empty targets and syntax incompleteness. The corpus now has
-338 fixtures; existing golden assertions remain unchanged.
+required text, empty targets and syntax incompleteness. At that verification
+stage the corpus had 338 fixtures; existing golden assertions remained unchanged.
 
 Command and task configurations can opt into [test effectiveness](test-effectiveness.md).
 Each added or content-modified independent test file needs a comparable case

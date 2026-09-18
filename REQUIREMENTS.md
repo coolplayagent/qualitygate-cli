@@ -66,6 +66,8 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 | 新依赖声明检查 | 由生态工具解析导入归属、模块边界与依赖清单，确认未声明后报 error | 不能仅按 import 文本猜测；不支持解析时报告能力缺失 |
 | 模块依赖边界 | 变更违反团队约定的模块访问或依赖方向 → error | 优先接入现有架构检查工具 |
 
+Issue 9 扩展四个默认不启用的可配置内置规则：`commit-message-convention` 校验新增提交主题，`test-naming-strict` 校验新增 Java 测试方法名，`test-annotation-dependency` 仅对带指定注解的新增 Java 测试方法要求指定 Maven 依赖的声明及解析事实，`no-hardcoded-secrets` 检查新增 Java 文件中的字面凭据赋值。四者默认级别为 error；缺失或失效的必需事实、语法解析失败及预算超限均报告未完成。大仓库分析使用有界并行、固定截止时间和有序结果。需求到测试证据见 [Issue 9 验收映射](docs/acceptance-evidence.md#issue-9-reusable-built-ins)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

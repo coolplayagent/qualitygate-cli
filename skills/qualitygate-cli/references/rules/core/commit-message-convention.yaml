@@ -1,0 +1,15 @@
+id: commit-message-convention
+version: 1
+description: Require ticket-prefixed conventional commit subjects
+implementation: commit-message
+language: []
+requires_capabilities: [commits]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    pattern: '^\[(?:VUL|BUG|US|WI)\d{1,13}\](?:feat|fix|docs|refactor|test):\s.+'
+standard_refs:
+  - {source_id: aws-code-review, controls: [change-review, completion-criteria]}
+  - {source_id: cloudflare-codex, controls: [governed-standards, merge-gate]}
+lifecycle_inputs: [ticketed-commit-subject]

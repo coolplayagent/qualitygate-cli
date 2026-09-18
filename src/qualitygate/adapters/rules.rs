@@ -104,6 +104,15 @@ pub fn evaluate_with_context(
                 Ok(())
             }
             "commit-message" => commits(&mut result, setting, snapshot),
+            "test-annotation-dependency" => super::builtin_conventions::annotation_dependency(
+                &mut result,
+                setting,
+                snapshot,
+                projects,
+            ),
+            "file-pattern" => {
+                super::builtin_conventions::file_pattern(&mut result, setting, snapshot)
+            }
             "diff-size" => diff_size(&mut result, setting, snapshot),
             "module-boundary" => {
                 super::project_rules::module_boundary(&mut result, setting, snapshot, projects)
@@ -113,6 +122,7 @@ pub fn evaluate_with_context(
             }
             "source-pattern" => source_patterns(&mut result, setting, snapshot),
             "test-naming"
+            | "test-naming-strict"
             | "parameterized-tests"
             | "comment-language"
             | "ai-code-traceability"

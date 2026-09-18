@@ -185,6 +185,10 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "security-sensitive-api",
         "todo-marker",
         "import-boundary",
+        "commit-message-convention",
+        "test-naming-strict",
+        "test-annotation-dependency",
+        "no-hardcoded-secrets",
         "forbidden_imports",
         "rules list --format json",
     ] {
@@ -216,6 +220,20 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         assert!(
             release.contains(expected),
             "release workflow missing {expected}"
+        );
+    }
+    for rule in [
+        "core/commit-message-convention",
+        "shared/test-naming-strict",
+        "shared/test-annotation-dependency",
+        "shared/no-hardcoded-secrets",
+    ] {
+        assert!(release.contains(rule), "release workflow missing {rule}");
+        assert!(
+            root.join(format!(
+                "skills/qualitygate-cli/references/rules/{rule}.yaml"
+            ))
+            .is_file()
         );
     }
 }

@@ -63,6 +63,24 @@ mismatches remain blocking even when they occur outside the feedback path.
 
 ## Reproducible performance and regression checks
 
+### Issue 9 rule analysis
+
+`cargo test --lib builtin_conventions` covers a captured 18,000-file tree with
+512 changed Java test files. The strict naming parser and added-file
+credential scanner together must finish within the fixture's 30-second budget;
+each rule invocation has its own 30-second worker deadline. The parser takes
+at most 64 changed files per batch before charging the 50,000-test budget.
+Both rules must produce 512 matched entities and ignore unrelated files. The adapter worker
+test proves actual four-thread overlap, the cap, input-order preservation and
+fail-closed error, panic and deadline handling. Each rule invocation uses at
+most four CPU workers, capped by available parallelism; fewer than 16 selected
+files execute on the caller's blocking worker. Parsing still has its per-file
+two-second budget and the collector's 50,000-test limit. Annotation dependency
+analysis caps selected tests at 10,000 and the file scanner caps diagnostics at
+10,000. Parallel output order is deterministic; a shared-host
+elapsed time is a regression guard, not a promised speedup ratio. Snapshot
+acquisition limits above remain separate and still apply to all tree files.
+
 Run `cargo test --all-features --test large_repository -- --nocapture`.
 The Rust harness creates an isolated repository with 18,000 unique 2 KiB blobs,
 over 32 MiB of contents and a one-file delta. It compares serial and four-reader

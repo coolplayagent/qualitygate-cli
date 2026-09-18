@@ -21,6 +21,10 @@ The current syntax adapters parse Java/JUnit, Python/pytest, TypeScript/Jest or 
 
 `test-naming` compares base and current entities and checks added tests. Default patterns preserve each framework's discovery conventions. Configure `parameters.pattern` for one pattern or `parameters.patterns` for a map keyed by language. `parameters.paths` confines the rule to explicit path globs.
 
+[Issue 9](https://github.com/coolplayagent/qualitygate-cli/issues/9) adds four opt-in built-ins. `commit-message-convention` uses a ticket-prefixed commit-subject regex; configure `parameters.pattern` for a team's prefix and subject format. `test-naming-strict` applies `^should_.+_when_.+` to added Java tests and accepts `pattern` and `paths`. `test-annotation-dependency` selects added Java tests bearing `parameters.annotation` (default `Test`) and requires the Maven `parameters.group` and `parameters.artifact` in the owning test module's declared and resolved test classpath. Configure a snapshot-bound Maven project-facts command under `checks` and name it in the rule's `depends_on`; missing, stale or ambiguous facts make the check incomplete when an annotated added test is selected. An empty annotation selection passes without Maven facts if no producer prerequisite is configured; configured prerequisites remain required. `no-hardcoded-secrets` applies a configurable single-line `parameters.pattern` to added Java files; a match is a bounded literal-assignment signal, not a complete secret scan. The three Java rules require `languages: [java]`; all four default to error and are disabled until selected by repository policy.
+
+The Java syntax collector parses changed files on up to four CPU workers and preserves ordered results before matching test identity. The added-file scanner uses the same bounded worker design; each invocation has a shared 30-second deadline across its workers. Annotation dependency analysis is capped at 10,000 selected tests and the scanner at 10,000 diagnostics. Worker failure, syntax failure, timeout or excess findings are incomplete execution. The [large-repository contract](large-repositories.md#issue-9-rule-analysis) records the regression fixture and its limits.
+
 `parameterized-tests` suggests sharing a parameterized test when at least three new tests within a file and class have the same syntax shape. Existing recognized parameterized tests are excluded. Configure `parameters.minimum_similar` (at least two). Its default severity is warning; increase severity only after the team's false-positive evaluation supports enforcement.
 
 `comment-language` requires `parameters.language` to be `chinese`, `english`, or `bilingual`. It checks changed parsed comments, with `parameters.exempt_patterns` for terminology and code fragments. Language classification is a documented heuristic and defaults to warning severity.
@@ -66,7 +70,7 @@ rules:
         fields: [author, date, description]
 ```
 
-Core rules are `line-ending`, `commit-message`, and `diff-size`. Commit patterns use `parameters.pattern`; diff size uses `parameters.max_added_lines`. Enabling a rule edits a candidate configuration. Rules are not automatically imposed on repositories merely because an ecosystem is detected.
+Core rules are `line-ending`, `commit-message`, `commit-message-convention`, and `diff-size`. Commit patterns use `parameters.pattern`; diff size uses `parameters.max_added_lines`. Enabling a rule edits a candidate configuration. Rules are not automatically imposed on repositories merely because an ecosystem is detected.
 
 Each packaged definition declares `standard_refs` and
 `lifecycle_inputs`. The catalog resolves both against the reviewed

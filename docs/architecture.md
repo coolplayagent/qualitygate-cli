@@ -47,6 +47,11 @@ reads and schema parsing, then combines results in deterministic path order.
 The interfaces layer invokes discovery and mutations through `spawn_blocking`.
 No owner dependency direction changes. See [rule management](rule-management.md).
 
+The Issue 9 built-ins keep parameter validation in `config` and Java syntax,
+literal-file matching and Maven-fact consumption in `adapters`. The adapter's
+bounded CPU workers parse independent changed files and scan added files; they
+join before publishing ordered evidence. No owner dependency direction changes.
+
 Category memberships and evidence/candidate/version/transition records belong
 to `domain`. `config::policy_store` owns confined content-addressed objects,
 bounded reads and atomic archive-index publication; `policy_candidates` validates

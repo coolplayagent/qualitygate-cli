@@ -25,7 +25,7 @@ pub(super) fn evaluate_with_provenance(
 ) -> Result<()> {
     let changes = collect(setting, snapshot, facts.git_trailers)?;
     match id {
-        "test-naming" => naming(result, setting, &changes),
+        "test-naming" | "test-naming-strict" => naming(result, setting, &changes),
         "parameterized-tests" => parameterized(result, setting, &changes),
         "comment-language" => comments(result, setting, &changes, snapshot),
         "ai-code-traceability" => markers(result, setting, &changes, snapshot, facts),

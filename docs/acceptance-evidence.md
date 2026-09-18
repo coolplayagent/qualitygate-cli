@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 9 reusable built-ins
+
+| Requirement | Current evidence |
+|---|---|
+| Four discoverable, configurable, opt-in packages with error defaults | `tests/issue9_rules.rs::four_conventions_are_discoverable_and_fail_closed_on_invalid_parameters`; packaged YAML definitions and lifecycle mappings |
+| Commit subject, added Java test naming and added-file secret diagnostics with repair and configurable pattern | `tests/issue9_rules.rs::commit_test_name_and_secret_rules_report_violations_then_repairs`, `commit_pattern_override_changes_the_enforced_convention` |
+| Annotated added tests require declared and resolved Maven coordinates; missing, stale or ambiguous facts are incomplete; an empty annotation selection passes | `adapters::builtin_conventions::tests::annotation_dependency_selects_added_annotated_tests_and_requires_bound_maven_facts`; `tests/issue9_rules.rs::dependency_rule_without_bound_maven_producer_is_incomplete`, `annotation_dependency_uses_fresh_resolved_maven_project_facts` |
+| Bounded large-repository parallelism with deterministic evidence | `adapters::parallel::tests`, `adapters::builtin_conventions::tests::large_unchanged_tree_and_many_java_changes_keep_bounded_analysis`; existing `tests/large_repository.rs` covers snapshot acquisition |
+
+
 The [phase-A baseline record](pilot-phase-a.md) tracks REQUIREMENTS §12 and
 EVO-01/03/05 preparation: versioned Rust task templates, real assertion
 regressions, pinned repository tool evidence, and the user-selected Codex
@@ -61,6 +71,7 @@ production claim; the real-pilot evidence below remains separate.
 | Requirement | Authoritative evidence |
 |---|---|
 | Minimal/typical/stress and independent goldens for each rule | `fixtures/**`, `config/selfcheck.rs`, `application/selfcheck.rs::validate_coverage`; every catalog rule needs compliant/violating pairs in every suite |
+| Issue 9 conventions and large-tree performance | `tests/issue9_rules.rs`, `adapters/builtin_conventions_tests.rs`, `adapters/parallel.rs` tests, and each suite's `issue9-cases.json`/`issue9-*.json` pair; CLI violations, incomplete Maven evidence, 18,000-file selection, bounded worker overlap, and deterministic serial/parallel parsing are asserted |
 | Full and filtered installed selfcheck | `tests/selfcheck.rs::full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golden_agreement`, `filters_are_composable_and_unknown_rules_cannot_pass_empty_regression` |
 | Rule weakening must turn regression red | `weakening_commit_rule_is_falsified_with_fixture_assertion_and_input_evidence` changes a copied active rule to accept empty subjects; unchanged goldens require exit 1 |
 | Fixture, assertion and input diagnostics; incomplete is distinct | Golden comparison unit test; mutation integration test; `missing_rule_assets_are_structured_incomplete_evidence`; native missing-object, oversized-file, symlink, timeout and overflow cases |

@@ -18,7 +18,38 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
         }
         match key.as_str() {
             "pattern" => {
-                regex::Regex::new(value.as_str().context("pattern must be a string")?)?;
+                let pattern = value.as_str().context("pattern must be a string")?;
+                if pattern.is_empty() || pattern.len() > 512 {
+                    bail!("pattern must contain 1..512 bytes");
+                }
+                regex::Regex::new(pattern)?;
+            }
+            "annotation" => {
+                let name = value.as_str().context("annotation must be a string")?;
+                if name.is_empty()
+                    || name.len() > 128
+                    || !name.bytes().next().is_some_and(|byte| {
+                        byte.is_ascii_alphabetic() || byte == b'_' || byte == b'$'
+                    })
+                    || !name
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$')
+                {
+                    bail!("annotation must be a simple Java annotation name of 1..128 bytes");
+                }
+            }
+            "group" | "artifact" => {
+                let text = value
+                    .as_str()
+                    .context("Maven coordinate must be a string")?;
+                if text.is_empty()
+                    || text.len() > 128
+                    || !text.bytes().all(|byte| {
+                        byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-')
+                    })
+                {
+                    bail!("{key} must be a Maven coordinate component of 1..128 bytes");
+                }
             }
             "patterns" => {
                 for value in value
@@ -89,6 +120,26 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
     }
     if id == "source-pattern" && !rule.parameters.contains_key("prohibited_patterns") {
         bail!("source-pattern requires prohibited_patterns");
+    }
+    if [
+        "test-naming-strict",
+        "test-annotation-dependency",
+        "file-pattern",
+    ]
+    .contains(&id)
+        && rule.parameters.get("languages") != Some(&serde_json::json!(["java"]))
+    {
+        bail!("{id} requires languages: [java]");
+    }
+    if id == "test-annotation-dependency"
+        && ["annotation", "group", "artifact"]
+            .iter()
+            .any(|key| !rule.parameters.contains_key(*key))
+    {
+        bail!("test-annotation-dependency requires annotation, group and artifact");
+    }
+    if id == "file-pattern" && !rule.parameters.contains_key("pattern") {
+        bail!("file-pattern requires pattern");
     }
     if id == "import-boundary" && rule.enabled && !rule.parameters.contains_key("forbidden_imports")
     {

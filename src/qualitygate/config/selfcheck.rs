@@ -7,21 +7,48 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub const SUITES: &[(&str, &str, &str)] = &[
+pub const SUITES: &[(&str, &str, &str, &str, &str)] = &[
     (
         "minimal",
+        "fixtures/minimal/cases.json",
         include_str!("../../../fixtures/minimal/cases.json"),
+        "fixtures/golden/minimal.json",
         include_str!("../../../fixtures/golden/minimal.json"),
     ),
     (
+        "minimal",
+        "fixtures/minimal/issue9-cases.json",
+        include_str!("../../../fixtures/minimal/issue9-cases.json"),
+        "fixtures/golden/issue9-minimal.json",
+        include_str!("../../../fixtures/golden/issue9-minimal.json"),
+    ),
+    (
         "typical",
+        "fixtures/typical/cases.json",
         include_str!("../../../fixtures/typical/cases.json"),
+        "fixtures/golden/typical.json",
         include_str!("../../../fixtures/golden/typical.json"),
     ),
     (
+        "typical",
+        "fixtures/typical/issue9-cases.json",
+        include_str!("../../../fixtures/typical/issue9-cases.json"),
+        "fixtures/golden/issue9-typical.json",
+        include_str!("../../../fixtures/golden/issue9-typical.json"),
+    ),
+    (
         "stress",
+        "fixtures/stress/cases.json",
         include_str!("../../../fixtures/stress/cases.json"),
+        "fixtures/golden/stress.json",
         include_str!("../../../fixtures/golden/stress.json"),
+    ),
+    (
+        "stress",
+        "fixtures/stress/issue9-cases.json",
+        include_str!("../../../fixtures/stress/issue9-cases.json"),
+        "fixtures/golden/issue9-stress.json",
+        include_str!("../../../fixtures/golden/issue9-stress.json"),
     ),
 ];
 
@@ -119,23 +146,29 @@ pub struct Case {
 
 pub fn load() -> Result<Vec<Case>> {
     let mut cases = Vec::new();
-    for (suite, input, golden) in SUITES {
-        cases.extend(parse_suite(suite, input, golden)?);
+    for (suite, path, input, golden_path, golden) in SUITES {
+        cases.extend(parse_suite(suite, path, input, golden_path, golden)?);
     }
     Ok(cases)
 }
 
-fn parse_suite(suite: &str, input: &str, golden: &str) -> Result<Vec<Case>> {
+fn parse_suite(
+    suite: &str,
+    path: &str,
+    input: &str,
+    golden_path: &str,
+    golden: &str,
+) -> Result<Vec<Case>> {
     if input.len() + golden.len() > 2 * 1024 * 1024 {
         bail!("Fixture suite {suite} exceeds 2 MiB");
     }
-    let fixtures: Vec<Fixture> = serde_json::from_str(input)
-        .with_context(|| format!("Invalid fixtures/{suite}/cases.json"))?;
+    let fixtures: Vec<Fixture> =
+        serde_json::from_str(input).with_context(|| format!("Invalid {path}"))?;
     // Validate mapping uniqueness before typed maps can overwrite keys.
-    let _: serde_norway::Value = serde_norway::from_str(golden)
-        .with_context(|| format!("Invalid fixtures/golden/{suite}.json mapping"))?;
-    let mut expected: BTreeMap<String, BTreeMap<String, Value>> = serde_json::from_str(golden)
-        .with_context(|| format!("Invalid fixtures/golden/{suite}.json"))?;
+    let _: serde_norway::Value =
+        serde_norway::from_str(golden).with_context(|| format!("Invalid {golden_path} mapping"))?;
+    let mut expected: BTreeMap<String, BTreeMap<String, Value>> =
+        serde_json::from_str(golden).with_context(|| format!("Invalid {golden_path}"))?;
     if fixtures.is_empty() || fixtures.len() > 512 {
         bail!("Suite {suite} requires 1..512 fixtures");
     }
@@ -165,7 +198,7 @@ fn parse_suite(suite: &str, input: &str, golden: &str) -> Result<Vec<Case>> {
         cases.push(Case {
             suite: (*suite).into(),
             fixture,
-            input: format!("fixtures/{suite}/cases.json#/{index}/input"),
+            input: format!("{path}#/{index}/input"),
             golden,
         });
     }
@@ -194,16 +227,43 @@ mod tests {
             (case, r#"{"a":{"bad":1}}"#),
             (case, r#"{"a":{"/verdict":"pass"},"b":{}}"#),
         ] {
-            assert!(parse_suite("test", input, golden).is_err());
+            assert!(
+                parse_suite(
+                    "test",
+                    "fixtures/test/cases.json",
+                    input,
+                    "fixtures/golden/test.json",
+                    golden
+                )
+                .is_err()
+            );
         }
-        assert!(parse_suite("test", case, r#"{"a":{"/verdict":"pass"}}"#).is_ok());
+        assert!(
+            parse_suite(
+                "test",
+                "fixtures/test/cases.json",
+                case,
+                "fixtures/golden/test.json",
+                r#"{"a":{"/verdict":"pass"}}"#
+            )
+            .is_ok()
+        );
         for golden in [
             r#"{"a":{"/verdict":"pass"},"a":{"/verdict":"fail"}}"#,
             r#"{"a":{"/verdict":"pass","/verdict":"fail"}}"#,
             r#"{"a":{"/reason":{"$contains":""}}}"#,
             r#"{"a":{"/reason":{"$contains":"text","ignored":true}}}"#,
         ] {
-            assert!(parse_suite("test", case, golden).is_err());
+            assert!(
+                parse_suite(
+                    "test",
+                    "fixtures/test/cases.json",
+                    case,
+                    "fixtures/golden/test.json",
+                    golden
+                )
+                .is_err()
+            );
         }
     }
 }

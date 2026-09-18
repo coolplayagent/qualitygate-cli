@@ -1,0 +1,17 @@
+id: test-naming-strict
+version: 1
+description: Require should_behavior_when_condition names for added Java tests
+implementation: test-naming-strict
+language: [java]
+requires_capabilities: [test_methods, annotations]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [java]
+    pattern: '^should_.+_when_.+'
+standard_refs:
+  - {source_id: alibaba-ajcg, controls: [naming, test-maintainability]}
+  - {source_id: google-java, controls: [naming, source-file]}
+  - {source_id: huawei-codearts, controls: [coding-style, static-gate]}
+lifecycle_inputs: [strict-java-test-naming]
