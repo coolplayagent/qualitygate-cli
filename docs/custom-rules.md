@@ -14,7 +14,7 @@ fail. `core` contains line endings, commit subjects and diff size; `shared`
 contains general test, comment, quality, security, and configurable source
 architecture rules. Selecting `lang-java` exposes `junit-naming` and the Maven
 `module-boundary` and `used-undeclared` rules; `lang-python` exposes
-`pytest-naming`; `lang-typescript` exposes twelve optional changed-line
+`pytest-naming` and thirteen optional Python review signals; `lang-typescript` exposes twelve optional changed-line
 review signals for TypeScript and JavaScript; and `lang-go` exposes twelve
 optional changed-line Go review signals.
 

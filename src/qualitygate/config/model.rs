@@ -316,6 +316,7 @@ pub enum ReportFormat {
     CargoClippy,
     EslintJson,
     GolangciJson,
+    RuffJson,
     Junit,
     Checkstyle,
     Spotbugs,

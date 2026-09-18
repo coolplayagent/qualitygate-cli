@@ -54,9 +54,9 @@ rebuilding the binary.
 
 ## Coverage and budgets
 
-All seventy-two built-in rule IDs have compliant/violating goldens in each suite.
+All eighty-five built-in rule IDs have compliant/violating goldens in each suite.
 The corpus also covers ten earlier normalized report formats; Cargo Clippy
-JSON Lines, ESLint JSON and golangci-lint v2 JSON have parser-unit and live paired-snapshot acceptance
+JSON Lines, ESLint JSON, golangci-lint v2 JSON and Ruff JSON have parser-unit and live paired-snapshot acceptance
 tests. It covers the custom file DSL,
 policy parsing, gate completeness, native snapshots and process capture.
 Signed synthetic review approval/rejection and japicmp compatibility inventory
@@ -66,7 +66,7 @@ exercise common framework/source forms. Stress cases cover malformed inputs,
 Unicode, physical long paths, symlink modes, missing objects, file/output
 limits, timeouts and changed/foreign evidence.
 
-The corpus contains **686 fixtures**, including **85 policy-evolution fixtures**.
+The corpus contains **764 fixtures**, including **85 policy-evolution fixtures**.
 The issue 9 cases live in separate `issue9-cases.json` and `issue9-*.json`
 goldens for each suite; reported input pointers identify their actual files.
 Issue 10 adds separate `issue10-cases.json` and `issue10-*.json` pairs for
@@ -81,6 +81,8 @@ Issue 14 adds separate `issue14-cases.json` and `issue14-*.json` pairs
 for twelve TypeScript and JavaScript review signals.
 Issue 15 adds separate `issue15-cases.json` and `issue15-*.json` pairs
 for twelve Go review signals.
+Issue 16 adds separate `issue16-cases.json` and `issue16-*.json` pairs
+for thirteen Python review signals.
 `--rule policy-evolution` selects this regression group; it is not an installable
 rule ID.
 

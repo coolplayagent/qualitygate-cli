@@ -11,6 +11,17 @@ coverage:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: ruff-rules
+    organization: Astral
+    title: Ruff rules reference
+    authority: language-ecosystem
+    kind: documentation
+    url: https://docs.astral.sh/ruff/rules/
+    languages: [python]
+    lifecycle_stages: [implementation, static-analysis]
+    concerns: [coding, security, static-gate]
+    controls: [python-lint-patterns]
+    summary: Ruff documents Python syntax, security, reliability and style rules; lexical review remains a local policy.
   - id: gosec-rules
     organization: gosec Project
     title: Go Security Checker rule catalogue

@@ -1,0 +1,16 @@
+id: py-bare-except
+version: 1
+description: Review bare except clauses on changed Python lines
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['^\s*except\s*:']
+standard_refs:
+  - {source_id: python-pep8, controls: [exception-handling]}
+lifecycle_inputs: [py-bare-except-review]

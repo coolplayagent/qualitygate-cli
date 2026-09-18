@@ -1,0 +1,158 @@
+schema_version: 1
+inputs:
+  - id: py-eval-exec-review
+    status: enforced
+    rule_id: py-eval-exec
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Lexical calls do not prove tainted input and may match comments or strings.
+  - id: py-shell-equals-true-review
+    status: enforced
+    rule_id: py-shell-equals-true
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Only same-line literal shell=True calls are recognized; argument flow needs Ruff or review.
+  - id: py-insecure-randomness-review
+    status: enforced
+    rule_id: py-insecure-randomness
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: The random module has valid nonsecurity uses; sensitivity is not inferred.
+  - id: py-tls-verify-disabled-review
+    status: enforced
+    rule_id: py-tls-verify-disabled
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: A literal assignment is recognized without proving that it controls TLS.
+  - id: py-yaml-unsafe-load-review
+    status: enforced
+    rule_id: py-yaml-unsafe-load
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: All yaml.load calls are review signals; a safe Loader argument may be present.
+  - id: py-sql-string-format-review
+    status: enforced
+    rule_id: py-sql-string-format
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Same-line formatted execute calls are signals; taint and query semantics require analysis.
+  - id: py-hardcoded-credentials-review
+    status: enforced
+    rule_id: py-hardcoded-credentials
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Credential-like names and literals do not prove a valid secret.
+  - id: py-tempfile-mktemp-review
+    status: enforced
+    rule_id: py-tempfile-mktemp
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Aliased imports and wrappers are outside same-line matching.
+  - id: py-bare-except-review
+    status: enforced
+    rule_id: py-bare-except
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [python-pep8]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: PEP 8 documents narrow cases for bare except; reviewers assess context.
+  - id: py-mutable-default-argument-review
+    status: enforced
+    rule_id: py-mutable-default-argument
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Same-line list, dict and set defaults are recognized; indirect defaults need analysis.
+  - id: py-assert-in-production-review
+    status: enforced
+    rule_id: py-assert-in-production
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Tests and debug assertions are legitimate; production use is not inferred.
+  - id: py-sensitive-info-in-log-review
+    status: enforced
+    rule_id: py-sensitive-info-in-log
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [owasp-logging]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Credential-like names may be harmless and indirect sensitive values are missed.
+  - id: py-pickle-load-review
+    status: enforced
+    rule_id: py-pickle-load
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [ruff-rules]
+    evidence: [changed-python-line, regex-pattern]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Deserialization calls are flagged without proving that input is untrusted.

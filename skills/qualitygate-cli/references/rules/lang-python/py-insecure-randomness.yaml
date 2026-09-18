@@ -1,0 +1,16 @@
+id: py-insecure-randomness
+version: 1
+description: Review calls to predictable random module functions
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\brandom\.(?:random|randint|choice|shuffle|sample)\s*\(']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-insecure-randomness-review]

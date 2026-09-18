@@ -1,0 +1,15 @@
+# Reference for a provisioned Ruff binary and a tracked ruff.toml or pyproject.toml.
+schema_version: 1
+checks:
+  - id: ruff-ratchet
+    argv: [ruff, check, --output-format=json, --no-fix, --no-fix-only, --no-cache, .]
+    timeout_seconds: 120
+    findings_exit_codes: [1]
+    tools:
+      - {id: ruff, argv: [ruff, --version]}
+    reports:
+      - path: target/ruff.json
+        baseline: target/ruff.json
+        from_stdout: true
+        format: ruff_json
+        mode: ratchet

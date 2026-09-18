@@ -22,8 +22,9 @@ filegroup(
 
 filegroup(
     name = "engineering_standard_assets",
-    srcs = [
-        "knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml",
+    srcs = glob([
+        "knowledge/best-practices/engineering-standards/lifecycle-rule-matrix*.yaml",
+    ]) + [
         "knowledge/best-practices/engineering-standards/registry.yaml",
     ],
 )

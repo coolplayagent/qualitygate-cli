@@ -150,6 +150,32 @@ for semantic lint results.
 | `go-sensitive-info-in-log` | warning | sensitive variable name in log call |
 | `go-float-loop-counter` | warning | floating literal for-loop initializer |
 
+## Python review signals
+
+Select `rulesets: [lang-python]` and the desired rule IDs. All thirteen rules
+are opt-in, fixed to `languages: [python]`, and inspect changed UTF-8 `.py`
+lines with bounded `source-pattern` matching. They accept `paths` and
+`prohibited_patterns.python` overrides. Calls and names are review signals:
+they do not prove tainted input, credential validity, production use, safe YAML
+Loader selection or sensitive log content. Use the [Ruff reference](ruff-ratchet.yaml)
+for semantic lint results.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `py-eval-exec` | error | direct eval or exec call |
+| `py-shell-equals-true` | error | same-line subprocess call with shell=True |
+| `py-insecure-randomness` | warning | common random module call |
+| `py-tls-verify-disabled` | error | literal verify=False assignment |
+| `py-yaml-unsafe-load` | error | yaml.load call for Loader review |
+| `py-sql-string-format` | error | same-line formatted execute argument |
+| `py-hardcoded-credentials` | error | credential-like name assigned a literal |
+| `py-tempfile-mktemp` | error | tempfile.mktemp call |
+| `py-bare-except` | warning | bare except clause |
+| `py-mutable-default-argument` | warning | list, dict or set default in same-line function |
+| `py-assert-in-production` | warning | assert statement for context review |
+| `py-sensitive-info-in-log` | warning | credential-like name in logging call |
+| `py-pickle-load` | error | pickle, shelve or marshal load call |
+
 ## Rust review signals
 
 All three Rust rules are opt-in source patterns with fixed `languages: [rust]`.

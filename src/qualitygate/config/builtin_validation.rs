@@ -159,6 +159,8 @@ pub(super) fn validate(
         Some("typescript")
     } else if builtin_id.starts_with("go-") {
         Some("go")
+    } else if builtin_id.starts_with("py-") {
+        Some("python")
     } else {
         None
     };

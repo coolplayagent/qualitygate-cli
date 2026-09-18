@@ -8,6 +8,7 @@ mod golangci_json;
 mod jacoco;
 mod json;
 mod lcov;
+mod ruff_json;
 mod sarif_locations;
 mod xml;
 mod xml_header;
@@ -126,6 +127,7 @@ pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
         ReportFormat::CargoClippy => cargo_clippy::parse(text)?,
         ReportFormat::EslintJson => eslint_json::parse(text)?,
         ReportFormat::GolangciJson => golangci_json::parse(text)?,
+        ReportFormat::RuffJson => ruff_json::parse(text)?,
         ReportFormat::Lcov => lcov::parse(text)?,
         ReportFormat::Sarif => json::sarif(text)?,
         ReportFormat::CoveragePy => coverage_py::parse(text)?,

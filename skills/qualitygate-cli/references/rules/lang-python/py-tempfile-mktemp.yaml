@@ -1,0 +1,16 @@
+id: py-tempfile-mktemp
+version: 1
+description: Review race-prone tempfile.mktemp calls
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\btempfile\.mktemp\s*\(']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-tempfile-mktemp-review]

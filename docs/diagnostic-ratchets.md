@@ -23,7 +23,7 @@ checks:
 Replace the example producer with the project's existing analyzer and adopt its
 actual command, tool inputs, timeout and findings exit codes through normal
 policy review. Diagnostic formats include generic `diagnostics`, Checkstyle,
-PMD, SpotBugs, SARIF, Cargo Clippy JSON Lines, ESLint JSON and golangci-lint v2 JSON. A baseline path is mandatory. Test statistics and
+PMD, SpotBugs, SARIF, Cargo Clippy JSON Lines, ESLint JSON, golangci-lint v2 JSON and Ruff JSON. A baseline path is mandatory. Test statistics and
 coverage cannot use this mode, even when supplied inside generic JSON.
 
 ## Clippy from captured stdout
@@ -104,6 +104,27 @@ binary and Go toolchain for both snapshots. Avoid `--new`, `--fast-only`,
 The reference uses `--modules-download-mode=readonly` to keep module manifests
 unchanged. Cache paths should be isolated from unrelated runtime state; raw
 JSON and tool/version evidence remain attached to each check.
+
+## Ruff from captured stdout
+
+The packaged [Ruff reference policy](../skills/qualitygate-cli/references/ruff-ratchet.yaml)
+uses `ruff check --output-format=json` and `format: ruff_json` with captured
+stdout. [Ruff returns 1 for findings and 2 for abnormal execution](https://docs.astral.sh/ruff/linter/#exit-codes),
+so the reference accepts only `findings_exit_codes: [1]`. The adapter requires
+rule codes, messages, filenames and valid source ranges; syntax and I/O errors
+are incomplete analysis rather than ratcheted debt. Each rule code is counted
+under `tool: ruff`. Ruff's `severity` does not override Qualitygate's check
+severity. Both raw reports and executable/version evidence are retained.
+
+Ruff JSON returns findings but no checked-file inventory. A clean `[]` means
+Ruff reported no findings for its selected targets; review the explicit final
+path argument and tracked `ruff.toml` or `pyproject.toml` excludes to establish
+scope. Change `.` to `src/` or specific packages when the ratchet should omit
+tests or environments. Pin the Ruff executable for both snapshots. `--no-fix`
+and `--no-fix-only` prevent configured fixes from rewriting the materialized
+source; `--no-cache` forces fresh analysis. Avoid `--exit-zero`,
+`--statistics`, `--add-noqa`, `--add-ignore` and filtered `--select` overrides
+that would change the debt being compared without a policy review.
 
 Counts preserve multiplicity and are grouped by `(tool, rule)` independently
 within each report. Formats without tool names use `null` for that key component.

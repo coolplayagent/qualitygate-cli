@@ -47,6 +47,7 @@ qualitygate-cli-skill-<tag>/
 ├── references/rule-authoring.md
 ├── references/file-contracts.md
 ├── references/diagnostic-ratchets.md
+├── references/ruff-ratchet.yaml
 ├── references/rule-management.md
 ├── references/selfcheck.md
 ├── references/pilot-evidence.md

@@ -1,0 +1,288 @@
+[
+  {
+    "id": "issue16-eval-exec-pass-stress",
+    "rule": "py-eval-exec",
+    "description": "stress pass Python review signal py-eval-exec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "parse(user_input)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-eval-exec-fail-stress",
+    "rule": "py-eval-exec",
+    "description": "stress fail Python review signal py-eval-exec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "eval(user_input)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-shell-equals-true-pass-stress",
+    "rule": "py-shell-equals-true",
+    "description": "stress pass Python review signal py-shell-equals-true",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "subprocess.run(argv, shell=False)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-shell-equals-true-fail-stress",
+    "rule": "py-shell-equals-true",
+    "description": "stress fail Python review signal py-shell-equals-true",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "subprocess.run(command, shell=True)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-insecure-randomness-pass-stress",
+    "rule": "py-insecure-randomness",
+    "description": "stress pass Python review signal py-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "token = secrets.randbelow(100)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-insecure-randomness-fail-stress",
+    "rule": "py-insecure-randomness",
+    "description": "stress fail Python review signal py-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "token = random.randint(0, 100)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tls-verify-disabled-pass-stress",
+    "rule": "py-tls-verify-disabled",
+    "description": "stress pass Python review signal py-tls-verify-disabled",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "requests.get(url, verify=True)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tls-verify-disabled-fail-stress",
+    "rule": "py-tls-verify-disabled",
+    "description": "stress fail Python review signal py-tls-verify-disabled",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "requests.get(url, verify=False)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-yaml-unsafe-load-pass-stress",
+    "rule": "py-yaml-unsafe-load",
+    "description": "stress pass Python review signal py-yaml-unsafe-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "config = yaml.safe_load(text)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-yaml-unsafe-load-fail-stress",
+    "rule": "py-yaml-unsafe-load",
+    "description": "stress fail Python review signal py-yaml-unsafe-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "config = yaml.load(text)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-string-format-pass-stress",
+    "rule": "py-sql-string-format",
+    "description": "stress pass Python review signal py-sql-string-format",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "cursor.execute(\"SELECT * FROM users WHERE id=?\", (user_id,))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-string-format-fail-stress",
+    "rule": "py-sql-string-format",
+    "description": "stress fail Python review signal py-sql-string-format",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "cursor.execute(f\"SELECT * FROM users WHERE id={user_id}\")\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-hardcoded-credentials-pass-stress",
+    "rule": "py-hardcoded-credentials",
+    "description": "stress pass Python review signal py-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "password = os.environ[\"PASSWORD\"]\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-hardcoded-credentials-fail-stress",
+    "rule": "py-hardcoded-credentials",
+    "description": "stress fail Python review signal py-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "password = \"secret123\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tempfile-mktemp-pass-stress",
+    "rule": "py-tempfile-mktemp",
+    "description": "stress pass Python review signal py-tempfile-mktemp",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "path = tempfile.mkstemp()\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tempfile-mktemp-fail-stress",
+    "rule": "py-tempfile-mktemp",
+    "description": "stress fail Python review signal py-tempfile-mktemp",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "path = tempfile.mktemp()\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-bare-except-pass-stress",
+    "rule": "py-bare-except",
+    "description": "stress pass Python review signal py-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "except ValueError:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-bare-except-fail-stress",
+    "rule": "py-bare-except",
+    "description": "stress fail Python review signal py-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "except:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-mutable-default-argument-pass-stress",
+    "rule": "py-mutable-default-argument",
+    "description": "stress pass Python review signal py-mutable-default-argument",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "def collect(items=None): pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-mutable-default-argument-fail-stress",
+    "rule": "py-mutable-default-argument",
+    "description": "stress fail Python review signal py-mutable-default-argument",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "def collect(items=[]): pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-assert-in-production-pass-stress",
+    "rule": "py-assert-in-production",
+    "description": "stress pass Python review signal py-assert-in-production",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "if not authorized: raise PermissionError()\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-assert-in-production-fail-stress",
+    "rule": "py-assert-in-production",
+    "description": "stress fail Python review signal py-assert-in-production",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "assert authorized\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sensitive-info-in-log-pass-stress",
+    "rule": "py-sensitive-info-in-log",
+    "description": "stress pass Python review signal py-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "logger.info(\"user=%s\", user)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sensitive-info-in-log-fail-stress",
+    "rule": "py-sensitive-info-in-log",
+    "description": "stress fail Python review signal py-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "logger.info(\"password=%s\", password)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-pickle-load-pass-stress",
+    "rule": "py-pickle-load",
+    "description": "stress pass Python review signal py-pickle-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "value = json.loads(data)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-pickle-load-fail-stress",
+    "rule": "py-pickle-load",
+    "description": "stress fail Python review signal py-pickle-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.py": "value = pickle.loads(data)\n"
+      }
+    }
+  }
+]

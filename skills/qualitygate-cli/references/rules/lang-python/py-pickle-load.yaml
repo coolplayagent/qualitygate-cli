@@ -1,0 +1,16 @@
+id: py-pickle-load
+version: 1
+description: Review Python object deserialization calls
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\b(?:pickle|cPickle|shelve|marshal)\.(?:load|loads)\s*\(']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-pickle-load-review]

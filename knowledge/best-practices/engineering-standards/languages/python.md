@@ -16,6 +16,7 @@ in CI.[1] [2] [3]
 | test-naming | recognized test entities | generic pattern must not supersede pytest discovery |
 | parameterized-tests | similar parsed test shapes | warning because structural similarity is not semantic equivalence |
 | comment-language | changed parsed comments | warning with terminology exemptions |
+| thirteen opt-in `py-*` review rules | selected changed Python lines | bounded lexical signals with declared false-positive and false-negative limits |
 
 ## Security and static analysis
 
@@ -24,6 +25,14 @@ framework behavior require semantic evidence. A Pysa-like report must identify
 tool version, configuration, selected snapshot, dependency model, and
 suppression rationale. A report that omits dependencies or source scope is
 incomplete evidence, not a clean security result.
+
+Ruff's [rules reference](https://docs.astral.sh/ruff/rules/) informs the
+optional Python review patterns, while a pinned Ruff JSON ratchet supplies
+semantic findings on both snapshots. `yaml.load` and `assert` patterns flag
+calls for contextual review; the source patterns do not establish whether a
+safe Loader is supplied or whether an assertion runs in production. Python
+rule inputs and their source links are recorded in the validated
+[matrix supplement](../lifecycle-rule-matrix-python.yaml).
 
 ## Sources
 

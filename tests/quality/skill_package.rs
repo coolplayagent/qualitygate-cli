@@ -265,6 +265,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/clippy-ratchet.yaml",
         "references/eslint-ratchet.yaml",
         "references/golangci-lint-ratchet.yaml",
+        "references/ruff-ratchet.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
@@ -338,6 +339,19 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "lang-go/go-dot-import",
         "lang-go/go-sensitive-info-in-log",
         "lang-go/go-float-loop-counter",
+        "lang-python/py-eval-exec",
+        "lang-python/py-shell-equals-true",
+        "lang-python/py-insecure-randomness",
+        "lang-python/py-tls-verify-disabled",
+        "lang-python/py-yaml-unsafe-load",
+        "lang-python/py-sql-string-format",
+        "lang-python/py-hardcoded-credentials",
+        "lang-python/py-tempfile-mktemp",
+        "lang-python/py-bare-except",
+        "lang-python/py-mutable-default-argument",
+        "lang-python/py-assert-in-production",
+        "lang-python/py-sensitive-info-in-log",
+        "lang-python/py-pickle-load",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(

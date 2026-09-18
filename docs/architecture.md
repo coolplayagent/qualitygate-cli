@@ -106,7 +106,10 @@ the application to snapshot acquisition and revalidation. No owner direction
 changes; see [large repository acquisition](large-repositories.md).
 
 Selfcheck fixture/golden loading belongs to `config`; compiled JSON assets are
-declared as Bazel compile data. `application` runs bounded production evaluator
+declared as Bazel compile data. The root Bazel filegroup includes every
+`lifecycle-rule-matrix*.yaml` supplement compiled into `config`, so added
+language rule packages remain available in sandboxed Bazel builds.
+`application` runs bounded production evaluator
 and native temporary-repository scenarios on a blocking worker. Pure golden
 comparison, result contracts and verification boundaries belong to `domain`;
 `interfaces` selects filters and renders those results. Selfcheck adds no owner

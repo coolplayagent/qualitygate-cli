@@ -1,0 +1,16 @@
+id: py-mutable-default-argument
+version: 1
+description: Review list, dict and set defaults in same-line function declarations
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\bdef\s+\w+\s*\([^)]*=\s*(?:\[\]|\{\}|set\(\))']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-mutable-default-argument-review]
