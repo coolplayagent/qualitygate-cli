@@ -38,6 +38,11 @@ execution evidence is incomplete validation, never a clean result.
 | `no-printf-log` | C, C++ | error | `printf` or `fprintf` call patterns in added native files |
 | `no-unsafe-string` | C, C++ | error | `strcpy`, `sprintf`, `strcat`, or `gets` call patterns in added native files |
 | `no-test-sleep` | all languages | error | `sleep`, `usleep`, or `nanosleep` call patterns in added test paths |
+| `no-bare-except` | Python | error | bare exception handler patterns in added files |
+| `no-os-path` | Python | error | selected `os.path` calls in added files |
+| `no-print` | Python | warning | `print` calls in added files |
+| `no-emoji` | all languages | error | configured emoji Unicode ranges in added UTF-8 files |
+| `python-test-naming` | Python | error | lower snake case added pytest test names |
 | `parameterized-tests` | Java, Python, Rust, TypeScript, Go | warning | repeated added test shapes |
 | `comment-language` | supported parsed comments | warning | an explicitly selected comment-language convention |
 | `security-sensitive-api` | Java, Python, Rust, TypeScript, Go | warning | changed uses of configured high-risk API patterns |
@@ -77,6 +82,20 @@ they do not establish a parsed call or prove that a replacement API is safe.
 Files outside the selected paths, modified files, and nonmatching languages
 are not inspected. Unreadable selected bytes or exhausted analysis budgets
 make the check incomplete.
+
+The six Issue 11 rules are opt-in: the four added-file rules above, the
+`python-test-naming` syntax rule, and core `commit-message-format`.
+The latter checks added commit subjects against a configurable subset of
+Conventional Commits. `python-test-naming` sees `test`-prefixed Python
+functions, including names like `test1`, then applies
+the stricter default `test_` lower snake case pattern. Configure `paths` to
+select pytest test files; syntax parsing alone cannot prove file collection.
+`no-print` defaults
+to warning; its finding does not block an otherwise complete gate.
+The file rules scan UTF-8 text line by line and can match comments or
+strings. `no-emoji` covers only the configured ranges in files, not commit
+messages or every emoji sequence. PEP 8 allows narrow bare exception
+handlers, and PEP 428 does not require every project to replace `os.path`.
 
 ## Architecture rules
 

@@ -1,0 +1,80 @@
+{
+  "issue11-bare-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-bare-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-path-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-path-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-print-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-print-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-emoji-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-emoji-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-naming-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-naming-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python"
+  },
+  "issue11-commit-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-commit-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/subject": "FEAT: split parser"
+  }
+}

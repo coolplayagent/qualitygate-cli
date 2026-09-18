@@ -1,0 +1,80 @@
+{
+  "issue11-bare-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-bare-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-path-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-path-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-print-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-print-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-emoji-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-emoji-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-naming-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-naming-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python"
+  },
+  "issue11-commit-pass": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-commit-fail": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/subject": "Add check"
+  }
+}

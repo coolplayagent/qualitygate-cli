@@ -41,7 +41,7 @@ pub(super) fn extract(language: &str, path: &str, node: Node<'_>, bytes: &[u8]) 
                 }
             }
             let name = text(node.child_by_field_name("name")?, bytes);
-            if !name.starts_with("test_") {
+            if !name.starts_with("test") {
                 return None;
             }
             name.into()

@@ -1,0 +1,14 @@
+id: commit-message-format
+version: 1
+description: Require an opt-in Conventional Commits subject subset
+implementation: commit-message
+language: []
+requires_capabilities: [commits]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    pattern: '^(feat|fix|refactor|docs|test|chore|perf|ci|build|style|revert)(\([^)]+\))?:\s+\S'
+standard_refs:
+  - {source_id: conventional-commits, controls: [commit-subject]}
+lifecycle_inputs: [conventional-commit-subject]

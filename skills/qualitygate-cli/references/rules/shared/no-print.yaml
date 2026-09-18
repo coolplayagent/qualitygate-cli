@@ -1,0 +1,15 @@
+id: no-print
+version: 1
+description: Warn on print calls in added Python files
+implementation: file-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    pattern: '^\s*print\s*\('
+standard_refs:
+  - {source_id: google-python, controls: [lint]}
+lifecycle_inputs: [python-print-review]

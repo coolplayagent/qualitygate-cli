@@ -1,0 +1,134 @@
+[
+  {
+    "id": "issue11-bare-pass-typical",
+    "rule": "no-bare-except",
+    "description": "typical pass case for no-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/handler.py": "try:\n    serve()\nexcept Exception as error:\n    logger.error(error)\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-bare-fail-typical",
+    "rule": "no-bare-except",
+    "description": "typical fail case for no-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/handler.py": "try:\n    serve()\nexcept :\n    logger.error('failure')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-path-pass-typical",
+    "rule": "no-os-path",
+    "description": "typical pass case for no-os-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/files.py": "from pathlib import Path\nexists = Path('item').exists()\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-path-fail-typical",
+    "rule": "no-os-path",
+    "description": "typical fail case for no-os-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/files.py": "import os\nexists = os.path.exists('item')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-print-pass-typical",
+    "rule": "no-print",
+    "description": "typical pass case for no-print",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "logger.warning('retry')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-print-fail-typical",
+    "rule": "no-print",
+    "description": "typical fail case for no-print",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "    print('retry')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-emoji-pass-typical",
+    "rule": "no-emoji",
+    "description": "typical pass case for no-emoji",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "docs/guide.md": "Deployment complete.\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-emoji-fail-typical",
+    "rule": "no-emoji",
+    "description": "typical fail case for no-emoji",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "docs/guide.md": "Deployment complete ☀.\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-naming-pass-typical",
+    "rule": "python-test-naming",
+    "description": "typical pass case for python-test-naming",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/test_api.py": "def test_api_response():\n    assert True\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-naming-fail-typical",
+    "rule": "python-test-naming",
+    "description": "typical fail case for python-test-naming",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/test_api.py": "def testAgent():\n    assert True\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-commit-pass-typical",
+    "rule": "commit-message-format",
+    "description": "typical pass commit subject",
+    "input": {
+      "kind": "rule",
+      "commits": [
+        "fix(cli): handle error"
+      ]
+    }
+  },
+  {
+    "id": "issue11-commit-fail-typical",
+    "rule": "commit-message-format",
+    "description": "typical fail commit subject",
+    "input": {
+      "kind": "rule",
+      "commits": [
+        "feature: handle error"
+      ]
+    }
+  }
+]

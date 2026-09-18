@@ -1,0 +1,134 @@
+[
+  {
+    "id": "issue11-bare-pass-stress",
+    "rule": "no-bare-except",
+    "description": "stress pass case for no-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/test_case.py": "try:\n    run()\nexcept Exception:\n    pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-bare-fail-stress",
+    "rule": "no-bare-except",
+    "description": "stress fail case for no-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/test_case.py": "try:\n    run()\nexcept:\n    pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-path-pass-stress",
+    "rule": "no-os-path",
+    "description": "stress pass case for no-os-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/files.py": "from pathlib import Path\nbase = Path('x').resolve()\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-path-fail-stress",
+    "rule": "no-os-path",
+    "description": "stress fail case for no-os-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/files.py": "import os\nbase = os.path.realpath('x')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-print-pass-stress",
+    "rule": "no-print",
+    "description": "stress pass case for no-print",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/app.py": "logger.debug('ready')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-print-fail-stress",
+    "rule": "no-print",
+    "description": "stress fail case for no-print",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/app.py": "  print ('ready')\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-emoji-pass-stress",
+    "rule": "no-emoji",
+    "description": "stress pass case for no-emoji",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/guide.md": "No symbols here.\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-emoji-fail-stress",
+    "rule": "no-emoji",
+    "description": "stress fail case for no-emoji",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/guide.md": "A symbol 🧪 appears.\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-naming-pass-stress",
+    "rule": "python-test-naming",
+    "description": "stress pass case for python-test-naming",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/test_api.py": "def test_valid_case():\n    assert True\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-naming-fail-stress",
+    "rule": "python-test-naming",
+    "description": "stress fail case for python-test-naming",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "long/nested/路径/test_api.py": "def test_BadCase():\n    assert True\n"
+      }
+    }
+  },
+  {
+    "id": "issue11-commit-pass-stress",
+    "rule": "commit-message-format",
+    "description": "stress pass commit subject",
+    "input": {
+      "kind": "rule",
+      "commits": [
+        "refactor(core): split parser"
+      ]
+    }
+  },
+  {
+    "id": "issue11-commit-fail-stress",
+    "rule": "commit-message-format",
+    "description": "stress fail commit subject",
+    "input": {
+      "kind": "rule",
+      "commits": [
+        "FEAT: split parser"
+      ]
+    }
+  }
+]

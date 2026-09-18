@@ -192,6 +192,12 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "no-printf-log",
         "no-unsafe-string",
         "no-test-sleep",
+        "no-bare-except",
+        "no-os-path",
+        "no-print",
+        "no-emoji",
+        "commit-message-format",
+        "python-test-naming",
         "forbidden_imports",
         "rules list --format json",
     ] {
@@ -233,6 +239,12 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "shared/no-printf-log",
         "shared/no-unsafe-string",
         "shared/no-test-sleep",
+        "shared/no-bare-except",
+        "shared/no-os-path",
+        "shared/no-print",
+        "shared/no-emoji",
+        "core/commit-message-format",
+        "shared/python-test-naming",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(

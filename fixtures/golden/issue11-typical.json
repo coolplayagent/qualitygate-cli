@@ -1,0 +1,80 @@
+{
+  "issue11-bare-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-bare-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-path-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-path-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-print-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-print-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-emoji-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-emoji-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/assertion": "forbid_pattern"
+  },
+  "issue11-naming-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-naming-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python"
+  },
+  "issue11-commit-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/matched_entities": 1,
+    "/diagnostic_count": 0
+  },
+  "issue11-commit-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/matched_entities": 1,
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/subject": "feature: handle error"
+  }
+}

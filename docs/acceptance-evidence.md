@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 11 Python and neutral built-ins
+
+| Requirement | Current evidence |
+|---|---|
+| Six packaged, discoverable and opt-in rules with fixed file/Python scopes and warning default for `no-print` | `tests/issue11_rules.rs::six_opt_in_rules_are_discoverable_and_reject_invalid_scope`; packaged YAML, lifecycle source mappings and release archive checks |
+| Added Python file patterns, cross-language Unicode range check, independent warning gate and path override | `tests/issue11_rules.rs::python_and_neutral_file_rules_have_independent_scopes_and_warning_gate`; shared bounded scanner and existing malformed-input/overflow unit tests |
+| Added pytest-discoverable `test` prefixes and configurable commit subject format | `tests/issue11_rules.rs::python_naming_detects_all_pytest_prefixes_and_commit_format_is_configurable`; syntax parser and commit evaluator |
+| Independent compliant/violating goldens for each rule in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue11-cases.json` and `fixtures/golden/issue11-{minimal,typical,stress}.json`; `tests/selfcheck.rs` |
+| Explicit lexical and standards limits | `docs/rules.md`, `skills/qualitygate-cli/references/builtin-rules.md`, lifecycle matrix critical adoption fields |
+
 ## Issue 10 native and test file built-ins
 
 | Requirement | Current evidence |

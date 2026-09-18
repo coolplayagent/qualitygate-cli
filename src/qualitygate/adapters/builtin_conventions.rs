@@ -83,6 +83,22 @@ fn file_pattern_guidance(id: &str) -> (&'static str, &'static str) {
             "Added test file contains a sleep call pattern",
             "Control test timing with a mock, callback, or synchronization primitive",
         ),
+        "no-bare-except" => (
+            "Added Python file contains a bare except clause pattern",
+            "Catch a specific exception or document a deliberate broad exception boundary",
+        ),
+        "no-os-path" => (
+            "Added Python file contains a configured os.path call pattern",
+            "Use pathlib when it fits this repository's path convention",
+        ),
+        "no-print" => (
+            "Added Python file contains a print call pattern",
+            "Use a logger for production diagnostics or narrow this rule's paths",
+        ),
+        "no-emoji" => (
+            "Added file contains a character in the configured emoji ranges",
+            "Remove the character or narrow this repository's style rule",
+        ),
         _ => (
             "Added file contains a forbidden source pattern",
             "Remove the forbidden pattern or adjust the rule's intended scope",
