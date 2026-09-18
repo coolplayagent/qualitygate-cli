@@ -97,6 +97,33 @@ strings. `no-emoji` covers only the configured ranges in files, not commit
 messages or every emoji sequence. PEP 8 allows narrow bare exception
 handlers, and PEP 428 does not require every project to replace `os.path`.
 
+## TypeScript and JavaScript review signals
+
+Select `rulesets: [lang-typescript]` and the desired rule IDs. All twelve
+rules are opt-in and fixed to `languages: [typescript]`, which includes
+`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` and `.cjs`. They inspect changed UTF-8
+lines with bounded `source-pattern` matching and accept `paths` and
+`prohibited_patterns.typescript` overrides. A pattern can match a comment or
+string and cannot establish data flow, receiver type or production reachability.
+The two comment rules cover only same-line syntax; the contact marker rule
+does not classify personal data. Use the [ESLint reference](eslint-ratchet.yaml)
+for semantic lint results.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `ts-no-eval` | error | direct eval call |
+| `ts-no-debugger` | error | standalone debugger statement |
+| `ts-no-alert` | warning | browser dialog call |
+| `ts-no-implied-eval` | error | string passed to timer callback |
+| `ts-no-new-function` | error | dynamic Function constructor |
+| `ts-eqeqeq` | warning | loose equality operator |
+| `ts-no-extend-native` | error | direct native prototype assignment |
+| `ts-no-prototype-builtins` | warning | direct prototype method call |
+| `ts-secure-randomness` | warning | Math.random call for review |
+| `ts-no-unsafe-postmessage` | warning | postMessage call for origin review |
+| `ts-no-commented-code` | warning | code-like line comment |
+| `ts-no-personal-info-in-comments` | warning | contact marker in same-line comment |
+
 ## Rust review signals
 
 All three Rust rules are opt-in source patterns with fixed `languages: [rust]`.

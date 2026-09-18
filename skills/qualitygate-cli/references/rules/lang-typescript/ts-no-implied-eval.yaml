@@ -1,0 +1,16 @@
+id: ts-no-implied-eval
+version: 1
+description: Flag string arguments to timer callbacks
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\b(?:setTimeout|setInterval)\s*\(\s*["\x27]']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-implied-eval-review]

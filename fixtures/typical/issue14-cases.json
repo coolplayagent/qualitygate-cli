@@ -1,0 +1,266 @@
+[
+  {
+    "id": "issue14-no-eval-pass-typical",
+    "rule": "ts-no-eval",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nparse(input);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-eval-fail-typical",
+    "rule": "ts-no-eval",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\neval(input);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-debugger-pass-typical",
+    "rule": "ts-no-debugger",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-debugger",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nconst debuggerEnabled = false;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-debugger-fail-typical",
+    "rule": "ts-no-debugger",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-debugger",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\ndebugger;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-alert-pass-typical",
+    "rule": "ts-no-alert",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-alert",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nshowAlert();\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-alert-fail-typical",
+    "rule": "ts-no-alert",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-alert",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nalert('hi');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-implied-eval-pass-typical",
+    "rule": "ts-no-implied-eval",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-implied-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nsetTimeout(() => tick(), 5);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-implied-eval-fail-typical",
+    "rule": "ts-no-implied-eval",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-implied-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nsetTimeout('tick()', 5);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-new-function-pass-typical",
+    "rule": "ts-no-new-function",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-new-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nfunction build() {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-new-function-fail-typical",
+    "rule": "ts-no-new-function",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-new-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nnew Function(source);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-eqeqeq-pass-typical",
+    "rule": "ts-eqeqeq",
+    "description": "typical pass TypeScript or JavaScript review signal ts-eqeqeq",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nconst equal = left === right;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-eqeqeq-fail-typical",
+    "rule": "ts-eqeqeq",
+    "description": "typical fail TypeScript or JavaScript review signal ts-eqeqeq",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nconst equal = left == right;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-extend-native-pass-typical",
+    "rule": "ts-no-extend-native",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-extend-native",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nconst extra = Array.prototype.extra;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-extend-native-fail-typical",
+    "rule": "ts-no-extend-native",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-extend-native",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nArray.prototype.extra = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-prototype-builtins-pass-typical",
+    "rule": "ts-no-prototype-builtins",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-prototype-builtins",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nObject.prototype.hasOwnProperty.call(obj, key);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-prototype-builtins-fail-typical",
+    "rule": "ts-no-prototype-builtins",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-prototype-builtins",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nobj.hasOwnProperty(key);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-secure-randomness-pass-typical",
+    "rule": "ts-secure-randomness",
+    "description": "typical pass TypeScript or JavaScript review signal ts-secure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\ncrypto.getRandomValues(bytes);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-secure-randomness-fail-typical",
+    "rule": "ts-secure-randomness",
+    "description": "typical fail TypeScript or JavaScript review signal ts-secure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nMath.random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-unsafe-postmessage-pass-typical",
+    "rule": "ts-no-unsafe-postmessage",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-unsafe-postmessage",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nsendMessage(payload);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-unsafe-postmessage-fail-typical",
+    "rule": "ts-no-unsafe-postmessage",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-unsafe-postmessage",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\nwindow.postMessage(payload, '*');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-commented-code-pass-typical",
+    "rule": "ts-no-commented-code",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-commented-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\n// Explain the behavior.\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-commented-code-fail-typical",
+    "rule": "ts-no-commented-code",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-commented-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\n// const old = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-personal-info-in-comments-pass-typical",
+    "rule": "ts-no-personal-info-in-comments",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-personal-info-in-comments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\n// Explain the behavior.\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-personal-info-in-comments-fail-typical",
+    "rule": "ts-no-personal-info-in-comments",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-personal-info-in-comments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "const stable = 1;\n// email: alice@example.com\n"
+      }
+    }
+  }
+]

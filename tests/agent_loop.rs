@@ -146,10 +146,10 @@ async fn harness_timeout_keeps_the_attempt_and_unfinished_status() {
         json!([
             env!("CARGO_BIN_EXE_qualitygate"),
             "selfcheck-probe",
-            "timeout"
+            "timeout-long"
         ]),
         3,
-        2,
+        10,
     )
     .await;
     assert_eq!(result["termination"], "time_budget", "{result}");

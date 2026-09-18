@@ -73,6 +73,7 @@ fn execute(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
                 "shared".into(),
                 "lang-java".into(),
                 "lang-python".into(),
+                "lang-typescript".into(),
             ],
             ..Config::default()
         };
@@ -335,6 +336,10 @@ pub async fn probe(mode: &str) -> (String, u8) {
     match mode {
         "timeout" => {
             tokio::time::sleep(Duration::from_secs(3)).await;
+            ("late".into(), 0)
+        }
+        "timeout-long" => {
+            tokio::time::sleep(Duration::from_secs(30)).await;
             ("late".into(), 0)
         }
         "failure" => ("fixture failure".into(), 1),

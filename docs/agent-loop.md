@@ -93,8 +93,13 @@ no user rules/config, approval `never`, and the same three-attempt/30-minute cap
 
 Ordinary `tests/agent_loop.rs` tests exercise successful full rechecks, no
 progress, attempt exhaustion, failed agents, changed selected inputs and
-untracked evidence. Example unit tests reject redirected/stale/oversized source
-proposals. They use temporary repositories and fixed non-model producers.
+untracked evidence. The long fixed timeout probe leaves a reliable startup
+margin on slower hosts while still asserting a timed-out agent attempt with
+retained logs. A budget exhausted before the initial CLI report or before an
+agent starts is recorded as `time_budget`; a running attempt is marked
+`budget_exhausted_before_agent` if it never launched. Example unit tests reject
+redirected/stale/oversized source proposals and prevent launches after an
+expired deadline. They use temporary repositories and fixed non-model producers.
 
 The billable live test is separate and never runs in the stable gate:
 

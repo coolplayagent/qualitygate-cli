@@ -23,6 +23,7 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
     );
     write(root.path(), "py/requirements.txt", "pytest==8.4.2\n");
     write(root.path(), "py/test_api.py", "def test_api(): pass\n");
+    write(root.path(), "web/src/app.ts", "export const answer = 42;\n");
     write(root.path(), "tools/check.sh", "exit 0\n");
     write(root.path(), "ignored.rb", "");
     write(root.path(), "keep.rb", "");
@@ -36,7 +37,7 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
             .iter()
             .map(|value| value.language.as_str())
             .collect::<Vec<_>>(),
-        ["java", "python", "ruby", "shell"]
+        ["java", "python", "ruby", "shell", "typescript"]
     );
     assert_eq!(
         report
@@ -57,6 +58,7 @@ fn nested_languages_manifests_ignore_rules_and_capability_gaps_are_explicit() {
     );
     assert!(report.available_rulesets.contains_key("lang-java"));
     assert!(report.available_rulesets.contains_key("lang-python"));
+    assert!(report.available_rulesets.contains_key("lang-typescript"));
     let shell = report
         .languages
         .iter()

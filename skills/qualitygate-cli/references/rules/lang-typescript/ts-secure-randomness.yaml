@@ -1,0 +1,16 @@
+id: ts-secure-randomness
+version: 1
+description: Review Math.random use in security-sensitive contexts
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\bMath\.random\s*\(']
+standard_refs:
+  - {source_id: mdn-math-random, controls: [secure-randomness]}
+lifecycle_inputs: [ts-secure-randomness-review]

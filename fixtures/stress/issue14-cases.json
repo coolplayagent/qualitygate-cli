@@ -1,0 +1,290 @@
+[
+  {
+    "id": "issue14-no-eval-pass-stress",
+    "rule": "ts-no-eval",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "parse(input);\n",
+        "src/unrelated.py": "eval(input);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-eval-fail-stress",
+    "rule": "ts-no-eval",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "eval(input);\n",
+        "src/unrelated.py": "eval(input);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-debugger-pass-stress",
+    "rule": "ts-no-debugger",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-debugger",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "const debuggerEnabled = false;\n",
+        "src/unrelated.py": "debugger;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-debugger-fail-stress",
+    "rule": "ts-no-debugger",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-debugger",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "debugger;\n",
+        "src/unrelated.py": "debugger;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-alert-pass-stress",
+    "rule": "ts-no-alert",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-alert",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "showAlert();\n",
+        "src/unrelated.py": "alert('hi');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-alert-fail-stress",
+    "rule": "ts-no-alert",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-alert",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "alert('hi');\n",
+        "src/unrelated.py": "alert('hi');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-implied-eval-pass-stress",
+    "rule": "ts-no-implied-eval",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-implied-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "setTimeout(() => tick(), 5);\n",
+        "src/unrelated.py": "setTimeout('tick()', 5);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-implied-eval-fail-stress",
+    "rule": "ts-no-implied-eval",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-implied-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "setTimeout('tick()', 5);\n",
+        "src/unrelated.py": "setTimeout('tick()', 5);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-new-function-pass-stress",
+    "rule": "ts-no-new-function",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-new-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "function build() {}\n",
+        "src/unrelated.py": "new Function(source);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-new-function-fail-stress",
+    "rule": "ts-no-new-function",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-new-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "new Function(source);\n",
+        "src/unrelated.py": "new Function(source);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-eqeqeq-pass-stress",
+    "rule": "ts-eqeqeq",
+    "description": "stress pass TypeScript or JavaScript review signal ts-eqeqeq",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "const equal = left === right;\n",
+        "src/unrelated.py": "const equal = left == right;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-eqeqeq-fail-stress",
+    "rule": "ts-eqeqeq",
+    "description": "stress fail TypeScript or JavaScript review signal ts-eqeqeq",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "const equal = left == right;\n",
+        "src/unrelated.py": "const equal = left == right;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-extend-native-pass-stress",
+    "rule": "ts-no-extend-native",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-extend-native",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "const extra = Array.prototype.extra;\n",
+        "src/unrelated.py": "Array.prototype.extra = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-extend-native-fail-stress",
+    "rule": "ts-no-extend-native",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-extend-native",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "Array.prototype.extra = 1;\n",
+        "src/unrelated.py": "Array.prototype.extra = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-prototype-builtins-pass-stress",
+    "rule": "ts-no-prototype-builtins",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-prototype-builtins",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "Object.prototype.hasOwnProperty.call(obj, key);\n",
+        "src/unrelated.py": "obj.hasOwnProperty(key);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-prototype-builtins-fail-stress",
+    "rule": "ts-no-prototype-builtins",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-prototype-builtins",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "obj.hasOwnProperty(key);\n",
+        "src/unrelated.py": "obj.hasOwnProperty(key);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-secure-randomness-pass-stress",
+    "rule": "ts-secure-randomness",
+    "description": "stress pass TypeScript or JavaScript review signal ts-secure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "crypto.getRandomValues(bytes);\n",
+        "src/unrelated.py": "Math.random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-secure-randomness-fail-stress",
+    "rule": "ts-secure-randomness",
+    "description": "stress fail TypeScript or JavaScript review signal ts-secure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "Math.random();\n",
+        "src/unrelated.py": "Math.random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-unsafe-postmessage-pass-stress",
+    "rule": "ts-no-unsafe-postmessage",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-unsafe-postmessage",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "sendMessage(payload);\n",
+        "src/unrelated.py": "window.postMessage(payload, '*');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-unsafe-postmessage-fail-stress",
+    "rule": "ts-no-unsafe-postmessage",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-unsafe-postmessage",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "window.postMessage(payload, '*');\n",
+        "src/unrelated.py": "window.postMessage(payload, '*');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-commented-code-pass-stress",
+    "rule": "ts-no-commented-code",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-commented-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "// Explain the behavior.\n",
+        "src/unrelated.py": "// const old = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-commented-code-fail-stress",
+    "rule": "ts-no-commented-code",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-commented-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "// const old = 1;\n",
+        "src/unrelated.py": "// const old = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-personal-info-in-comments-pass-stress",
+    "rule": "ts-no-personal-info-in-comments",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-personal-info-in-comments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "// Explain the behavior.\n",
+        "src/unrelated.py": "// email: alice@example.com\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-personal-info-in-comments-fail-stress",
+    "rule": "ts-no-personal-info-in-comments",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-personal-info-in-comments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "// email: alice@example.com\n",
+        "src/unrelated.py": "// email: alice@example.com\n"
+      }
+    }
+  }
+]

@@ -1,0 +1,16 @@
+id: ts-no-eval
+version: 1
+description: Review direct eval calls on changed JavaScript or TypeScript lines
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\beval\s*\(']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-eval-review]

@@ -1,5 +1,16 @@
 # Requirements acceptance evidence
 
+
+## Issue 14 ESLint ratchet and TypeScript rules
+
+| Requirement | Current evidence |
+|---|---|
+| Native ESLint JSON from bounded stdout, paired ratchet, raw artifacts, lint exit code | `tests/eslint_ratchet.rs::real_eslint_stdout_ratchet_growth_repair_and_fatal_parse`; `adapters::reports::eslint_json::tests` |
+| Empty inventory, fatal parse, inconsistent counts and invalid reference format fail closed | `adapters::reports::eslint_json::tests`; `tests/eslint_ratchet.rs` |
+| Working reference configuration with target, rule severity, flat config and version guidance | `skills/qualitygate-cli/references/eslint-ratchet.yaml`; `docs/diagnostic-ratchets.md` |
+| Twelve opt-in fixed-scope TS/JS source patterns with lexical limits | `tests/issue14_rules.rs`; `lang-typescript` rule package and source/lifecycle archive |
+| Independent pass/fail goldens in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue14-cases.json`, `fixtures/golden/issue14-*.json`; `tests/selfcheck.rs` |
+
 ## Issue 13 Clippy ratchet and Rust rules
 
 | Requirement | Current evidence |
@@ -383,3 +394,10 @@ real-task benefit or supply external human authorization.
 [The pilot readiness audit](pilot-readiness.md) tracks the remaining real-task,
 governance, observation and independent-review evidence. Engineering regressions
 do not close those acceptance items.
+
+## Agent loop total time budget
+
+| Requirement | Current evidence |
+|---|---|
+| Initial CLI or pre-agent budget exhaustion remains `time_budget`, retaining bounded logs and attempt status | `examples/agent_loop.rs::tests::expired_deadline_is_typed_and_prevents_process_launch`; `examples/agent_loop.rs::tests::budget_errors_keep_pre_agent_attempts_distinct_from_other_execution_errors` |
+| A launched slow agent retains its timed-out attempt and unfinished recheck | `tests/agent_loop.rs::harness_timeout_keeps_the_attempt_and_unfinished_status` |

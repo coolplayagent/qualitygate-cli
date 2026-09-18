@@ -11,6 +11,61 @@ coverage:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: eslint-rules
+    organization: ESLint Project
+    title: ESLint core rules reference
+    authority: language-ecosystem
+    kind: documentation
+    url: https://eslint.org/docs/latest/rules/
+    languages: [typescript]
+    lifecycle_stages: [implementation, static-analysis]
+    concerns: [coding, security, static-gate]
+    controls: [javascript-lints]
+    summary: Core JavaScript lint rules document eval, timers, debugger, dialogs, equality and prototype calls.
+  - id: mdn-math-random
+    organization: MDN
+    title: Math.random JavaScript reference
+    authority: language-ecosystem
+    kind: documentation
+    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+    languages: [typescript]
+    lifecycle_stages: [implementation, review]
+    concerns: [security, coding]
+    controls: [secure-randomness]
+    summary: Math.random is not cryptographically secure and should not generate security secrets.
+  - id: mdn-postmessage
+    organization: MDN
+    title: Window.postMessage reference
+    authority: language-ecosystem
+    kind: documentation
+    url: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+    languages: [typescript]
+    lifecycle_stages: [implementation, review]
+    concerns: [security, coding]
+    controls: [postmessage-origin]
+    summary: Sending messages to another window requires careful target-origin selection.
+  - id: google-kernelctf-style
+    organization: Google
+    title: kernelCTF exploit submission style guide
+    authority: official-company
+    kind: guide
+    url: https://google.github.io/security-research/kernelctf/style_guide.html
+    languages: [all]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding]
+    controls: [commented-code]
+    summary: Advises removing commented-out code; adopted here only as an optional lexical review convention.
+  - id: owasp-info-leakage
+    organization: OWASP
+    title: Web Security Testing Guide information leakage review
+    authority: industry-consortium
+    kind: guide
+    url: https://wstg.owasp.org/latest/4-Web_Application_Security_Testing/01-Information_Gathering/05-Review_Web_Page_Content_for_Information_Leakage/
+    languages: [all]
+    lifecycle_stages: [implementation, review]
+    concerns: [security]
+    controls: [comment-information]
+    summary: Comment content can disclose information; contact markers are only a narrow review signal.
   - id: rust-reference
     organization: Rust Project
     title: The Rust Reference

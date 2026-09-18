@@ -1,0 +1,16 @@
+id: ts-no-prototype-builtins
+version: 1
+description: Review direct prototype method calls on arbitrary objects
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\.\s*(?:hasOwnProperty|isPrototypeOf|propertyIsEnumerable)\s*\(']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-prototype-builtins-review]

@@ -1,0 +1,16 @@
+id: ts-no-alert
+version: 1
+description: Review blocking browser dialog calls on changed lines
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\b(?:alert|confirm|prompt)\s*\(']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-alert-review]

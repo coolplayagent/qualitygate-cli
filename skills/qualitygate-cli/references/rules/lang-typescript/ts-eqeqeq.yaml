@@ -1,0 +1,16 @@
+id: ts-eqeqeq
+version: 1
+description: Review loose equality operators on changed lines
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['(?:[^=!<>]==[^=]|[^!]!=[^=])']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-eqeqeq-review]

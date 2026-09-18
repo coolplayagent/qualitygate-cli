@@ -1,0 +1,16 @@
+id: ts-no-new-function
+version: 1
+description: Review dynamic Function constructor calls
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\bnew\s+Function\s*\(']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-new-function-review]

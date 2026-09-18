@@ -1,0 +1,16 @@
+# Reference for a provisioned, pinned ESLint executable and a tracked flat config.
+schema_version: 1
+checks:
+  - id: eslint-ratchet
+    argv: [eslint, --format=json, --exit-on-fatal-error, src]
+    timeout_seconds: 300
+    findings_exit_codes: [1]
+    tools:
+      - id: eslint
+        argv: [eslint, --version]
+    reports:
+      - path: target/eslint.json
+        baseline: target/eslint.json
+        from_stdout: true
+        format: eslint_json
+        mode: ratchet

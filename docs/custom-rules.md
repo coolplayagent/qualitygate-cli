@@ -14,7 +14,8 @@ fail. `core` contains line endings, commit subjects and diff size; `shared`
 contains general test, comment, quality, security, and configurable source
 architecture rules. Selecting `lang-java` exposes `junit-naming` and the Maven
 `module-boundary` and `used-undeclared` rules; `lang-python` exposes
-`pytest-naming`.
+`pytest-naming`, and `lang-typescript` exposes twelve optional changed-line
+review signals for TypeScript and JavaScript.
 
 Package selection makes definitions available. A rule runs only when enabled in `rules` and selected by the profile. Detection never enables source declarations automatically. Parameterization, comment language and diff size default to warning severity; explicit policy settings take precedence.
 
