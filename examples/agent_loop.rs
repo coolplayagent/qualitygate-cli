@@ -5,9 +5,21 @@ use qualitygate::{domain::Report, runner, snapshot};
 use serde_json::{Value, json};
 use std::{
     collections::BTreeSet,
+    fmt,
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
+
+#[derive(Debug)]
+struct TimeBudgetExpired;
+
+impl fmt::Display for TimeBudgetExpired {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("Task time budget exhausted")
+    }
+}
+
+impl std::error::Error for TimeBudgetExpired {}
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum FeedbackMode {
@@ -72,7 +84,7 @@ async fn command(
 ) -> Result<runner::Output> {
     let remaining = deadline.saturating_duration_since(Instant::now());
     if remaining.is_zero() {
-        bail!("Task time budget exhausted");
+        return Err(TimeBudgetExpired.into());
     }
     tokio::select! {
         output = runner::capture(argv,root,input,remaining) => output,
@@ -318,11 +330,14 @@ async fn check(
     let output = command(&argv, &options.root, None, deadline).await?;
     let stdout = save(evidence, &format!("{label}-feedback.json"), &output.stdout)?;
     let stderr = save(evidence, &format!("{label}-stderr.log"), &output.stderr)?;
-    let envelope: Value = serde_json::from_slice(&output.stdout)
-        .context("CLI did not return usable JSON; inspect retained logs")?;
-    if output.timed_out || output.capture_error.is_some() {
+    if output.timed_out {
+        return Err(TimeBudgetExpired.into());
+    }
+    if output.capture_error.is_some() {
         bail!("CLI execution incomplete; inspect retained logs");
     }
+    let envelope: Value = serde_json::from_slice(&output.stdout)
+        .context("CLI did not return usable JSON; inspect retained logs")?;
     let full_path = if matches!(options.feedback_mode, FeedbackMode::Compact) {
         envelope["full_report"]["path"].as_str()
     } else {
@@ -560,13 +575,28 @@ async fn run_isolated(options: &mut Options) -> Result<Value> {
             "An accepted result covers the fixed task contract, not unspecified business behavior"]});
     persist_ledger(&evidence, &ledger)?;
     if let Err(error) = execute(options, &evidence, &instructions, &agent, &mut ledger).await {
-        ledger["termination"] = json!("execution_incomplete");
-        ledger["error"] = json!(format!("{error:#}"));
+        record_execution_error(&mut ledger, &error);
     }
     persist_ledger(&evidence, &ledger)?;
     Ok(
         json!({"evidence":evidence,"complete":ledger["complete"],"termination":ledger["termination"]}),
     )
+}
+
+fn record_execution_error(ledger: &mut Value, error: &anyhow::Error) {
+    if error.is::<TimeBudgetExpired>() {
+        ledger["termination"] = json!("time_budget");
+        if let Some(attempt) = ledger["attempts"]
+            .as_array_mut()
+            .and_then(|items| items.last_mut())
+            && attempt["status"] == "running"
+        {
+            attempt["status"] = json!("budget_exhausted_before_agent");
+        }
+    } else {
+        ledger["termination"] = json!("execution_incomplete");
+    }
+    ledger["error"] = json!(format!("{error:#}"));
 }
 
 #[cfg(not(test))]
@@ -587,6 +617,35 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn expired_deadline_is_typed_and_prevents_process_launch() {
+        let deadline = Instant::now() - Duration::from_millis(1);
+        let error = command(
+            &["missing-agent-binary".into()],
+            Path::new("."),
+            None,
+            deadline,
+        )
+        .await
+        .unwrap_err();
+        assert!(error.is::<TimeBudgetExpired>());
+    }
+    #[test]
+    fn budget_errors_keep_pre_agent_attempts_distinct_from_other_execution_errors() {
+        let mut ledger = json!({"attempts":[{"status":"running"}]});
+        record_execution_error(&mut ledger, &TimeBudgetExpired.into());
+        assert_eq!(ledger["termination"], "time_budget");
+        assert_eq!(
+            ledger["attempts"][0]["status"],
+            "budget_exhausted_before_agent"
+        );
+        let mut initial = json!({"attempts":[]});
+        record_execution_error(&mut initial, &TimeBudgetExpired.into());
+        assert_eq!(initial["termination"], "time_budget");
+        assert_eq!(initial["attempts"].as_array().unwrap().len(), 0);
+        record_execution_error(&mut initial, &anyhow::anyhow!("invalid report"));
+        assert_eq!(initial["termination"], "execution_incomplete");
+    }
     #[test]
     fn changed_or_repeated_diagnostics_do_not_reset_the_no_progress_budget() {
         let before = BTreeSet::from(["a".into(), "b".into()]);

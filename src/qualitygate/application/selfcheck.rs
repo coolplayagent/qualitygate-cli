@@ -338,6 +338,10 @@ pub async fn probe(mode: &str) -> (String, u8) {
             tokio::time::sleep(Duration::from_secs(3)).await;
             ("late".into(), 0)
         }
+        "timeout-long" => {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            ("late".into(), 0)
+        }
         "failure" => ("fixture failure".into(), 1),
         "overflow" => ("x".repeat(crate::runner::MAX_OUTPUT_BYTES + 1), 0),
         _ => ("fixture success".into(), 0),

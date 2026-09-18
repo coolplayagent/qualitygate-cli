@@ -47,7 +47,7 @@ enum Command {
     },
     #[command(hide = true)]
     SelfcheckProbe {
-        #[arg(value_parser = ["success", "failure", "timeout", "overflow"])]
+        #[arg(value_parser = ["success", "failure", "timeout", "timeout-long", "overflow"])]
         mode: String,
     },
     /// Discover the repository and create a candidate policy without overwriting.

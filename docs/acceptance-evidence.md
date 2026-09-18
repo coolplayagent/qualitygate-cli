@@ -1,5 +1,6 @@
 # Requirements acceptance evidence
 
+
 ## Issue 14 ESLint ratchet and TypeScript rules
 
 | Requirement | Current evidence |
@@ -393,3 +394,10 @@ real-task benefit or supply external human authorization.
 [The pilot readiness audit](pilot-readiness.md) tracks the remaining real-task,
 governance, observation and independent-review evidence. Engineering regressions
 do not close those acceptance items.
+
+## Agent loop total time budget
+
+| Requirement | Current evidence |
+|---|---|
+| Initial CLI or pre-agent budget exhaustion remains `time_budget`, retaining bounded logs and attempt status | `examples/agent_loop.rs::tests::expired_deadline_is_typed_and_prevents_process_launch`; `examples/agent_loop.rs::tests::budget_errors_keep_pre_agent_attempts_distinct_from_other_execution_errors` |
+| A launched slow agent retains its timed-out attempt and unfinished recheck | `tests/agent_loop.rs::harness_timeout_keeps_the_attempt_and_unfinished_status` |
