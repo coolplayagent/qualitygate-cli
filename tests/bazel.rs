@@ -114,6 +114,18 @@ fn bazel_uses_the_pinned_rust_toolchain_and_cargo_dependency_graph() {
     assert!(MODULE_LOCK.contains("rules_rust"));
     assert!(CARGO_ROOT_DEPS.contains("_CARGO_ROOT_PACKAGE = \"\""));
     assert!(CARGO_ROOT_DEPS.contains("package_name = _CARGO_ROOT_PACKAGE"));
+    assert!(
+        BUILD
+            .contains("knowledge/best-practices/engineering-standards/lifecycle-rule-matrix*.yaml")
+    );
+    assert!(
+        OWNER_BUILDS
+            .iter()
+            .find(|(owner, _)| *owner == "config")
+            .unwrap()
+            .1
+            .contains("//:engineering_standard_assets")
+    );
     assert!(CARGO_ROOT_DEPS.contains(&format!("_CARGO_PACKAGE_VERSION = \"{package_version}\"")));
     for owner in VERSIONED_OWNER_BUILDS {
         let source = OWNER_BUILDS

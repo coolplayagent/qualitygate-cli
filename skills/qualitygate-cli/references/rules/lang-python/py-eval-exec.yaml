@@ -1,0 +1,16 @@
+id: py-eval-exec
+version: 1
+description: Review direct eval and exec calls on changed Python lines
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\b(?:eval|exec)\s*\(']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-eval-exec-review]

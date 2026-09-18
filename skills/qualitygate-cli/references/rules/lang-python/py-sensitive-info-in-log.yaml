@@ -1,0 +1,16 @@
+id: py-sensitive-info-in-log
+version: 1
+description: Review credential-like names passed to logging calls
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['(?i)\b(?:logging|log|logger)\.(?:debug|info|warning|error|critical)\s*\([^)]*(?:password|passwd|secret|token|key|credential)']
+standard_refs:
+  - {source_id: owasp-logging, controls: [sensitive-logging]}
+lifecycle_inputs: [py-sensitive-info-in-log-review]

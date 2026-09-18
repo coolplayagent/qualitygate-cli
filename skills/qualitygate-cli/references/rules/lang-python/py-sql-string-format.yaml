@@ -1,0 +1,19 @@
+id: py-sql-string-format
+version: 1
+description: Review formatted SQL passed directly to execute calls
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python:
+        - '\b(?:execute|executemany)\s*\(\s*f["'']'
+        - '\b(?:execute|executemany)\s*\([^)]*\.format\s*\('
+        - '\b(?:execute|executemany)\s*\([^)]*%\s*\w+'
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-sql-string-format-review]

@@ -1,0 +1,16 @@
+id: py-shell-equals-true
+version: 1
+description: Review same-line subprocess calls with shell=True
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\bsubprocess\.\w+\s*\([^)]*\bshell\s*=\s*True\b']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-shell-equals-true-review]

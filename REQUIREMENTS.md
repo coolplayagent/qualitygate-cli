@@ -80,6 +80,8 @@ Issue 14 通过 ESLint JSON 文件结果适配和两个快照中的真实工具�
 
 Issue 15 通过 golangci-lint v2 JSON 报告适配和两个不可变快照中的真实工具执行支持 Go 诊断数量棘轮。必须禁用生产者的数量截断、逐行去重和 stdout 统计摘要；分析错误、警告、编译类型错误、缺失位置或不认可的退出码报告未完成。另增十二个默认不启用的 Go 新增行文本审查规则，需显式选择 `lang-go` 包。这些规则只提供同一行文本信号，不证明输入污染、凭据有效性、函数可见性、CGO 释放配对或实际日志敏感性。需求到测试证据见 [Issue 15 验收映射](docs/acceptance-evidence.md#issue-15-golangci-lint-ratchet-and-go-rules)。
 
+Issue 16 通过 Ruff JSON 报告适配和两个不可变快照中的真实 Ruff 执行支持 Python 规则数量棘轮。配置错误、解析失败、无效位置或不认可的退出码均报告未完成；Ruff JSON 没有已检查文件清单，空数组须结合明确目标路径审查。另增十三个默认不启用的 Python 新增行文本审查规则，需显式选择 `lang-python` 包；调用、参数与变量名模式不证明污点来源、凭据有效性、安全 Loader、生产环境用途或日志敏感性。需求到测试证据见 [Issue 16 验收映射](docs/acceptance-evidence.md#issue-16-ruff-ratchet-and-python-rules)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

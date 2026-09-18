@@ -5,7 +5,9 @@ definitions. The archive keeps short, dated summaries and stable source links;
 it does not copy full pages or PDFs.
 
 The machine-readable index is [registry.yaml](registry.yaml); the rule-to-stage
-contracts are in [lifecycle-rule-matrix.yaml](lifecycle-rule-matrix.yaml).
+contracts are in [lifecycle-rule-matrix.yaml](lifecycle-rule-matrix.yaml) and
+the validated [Python supplement](lifecycle-rule-matrix-python.yaml). Each
+supplement has its own schema version; duplicate IDs across files are rejected.
 Each source note records the company, authority level, topics, and the evidence
 that qualitygate can reasonably consume. The source IDs and normalized control
 IDs in built-in rule files, and their lifecycle input IDs, are checked against

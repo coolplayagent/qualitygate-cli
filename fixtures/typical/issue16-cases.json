@@ -1,0 +1,288 @@
+[
+  {
+    "id": "issue16-eval-exec-pass-typical",
+    "rule": "py-eval-exec",
+    "description": "typical pass Python review signal py-eval-exec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "parse(user_input)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-eval-exec-fail-typical",
+    "rule": "py-eval-exec",
+    "description": "typical fail Python review signal py-eval-exec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "eval(user_input)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-shell-equals-true-pass-typical",
+    "rule": "py-shell-equals-true",
+    "description": "typical pass Python review signal py-shell-equals-true",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "subprocess.run(argv, shell=False)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-shell-equals-true-fail-typical",
+    "rule": "py-shell-equals-true",
+    "description": "typical fail Python review signal py-shell-equals-true",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "subprocess.run(command, shell=True)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-insecure-randomness-pass-typical",
+    "rule": "py-insecure-randomness",
+    "description": "typical pass Python review signal py-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "token = secrets.randbelow(100)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-insecure-randomness-fail-typical",
+    "rule": "py-insecure-randomness",
+    "description": "typical fail Python review signal py-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "token = random.randint(0, 100)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tls-verify-disabled-pass-typical",
+    "rule": "py-tls-verify-disabled",
+    "description": "typical pass Python review signal py-tls-verify-disabled",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "requests.get(url, verify=True)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tls-verify-disabled-fail-typical",
+    "rule": "py-tls-verify-disabled",
+    "description": "typical fail Python review signal py-tls-verify-disabled",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "requests.get(url, verify=False)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-yaml-unsafe-load-pass-typical",
+    "rule": "py-yaml-unsafe-load",
+    "description": "typical pass Python review signal py-yaml-unsafe-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "config = yaml.safe_load(text)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-yaml-unsafe-load-fail-typical",
+    "rule": "py-yaml-unsafe-load",
+    "description": "typical fail Python review signal py-yaml-unsafe-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "config = yaml.load(text)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-string-format-pass-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical pass Python review signal py-sql-string-format",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "cursor.execute(\"SELECT * FROM users WHERE id=?\", (user_id,))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-string-format-fail-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical fail Python review signal py-sql-string-format",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "cursor.execute(f\"SELECT * FROM users WHERE id={user_id}\")\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-hardcoded-credentials-pass-typical",
+    "rule": "py-hardcoded-credentials",
+    "description": "typical pass Python review signal py-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "password = os.environ[\"PASSWORD\"]\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-hardcoded-credentials-fail-typical",
+    "rule": "py-hardcoded-credentials",
+    "description": "typical fail Python review signal py-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "password = \"secret123\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tempfile-mktemp-pass-typical",
+    "rule": "py-tempfile-mktemp",
+    "description": "typical pass Python review signal py-tempfile-mktemp",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "path = tempfile.mkstemp()\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-tempfile-mktemp-fail-typical",
+    "rule": "py-tempfile-mktemp",
+    "description": "typical fail Python review signal py-tempfile-mktemp",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "path = tempfile.mktemp()\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-bare-except-pass-typical",
+    "rule": "py-bare-except",
+    "description": "typical pass Python review signal py-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "except ValueError:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-bare-except-fail-typical",
+    "rule": "py-bare-except",
+    "description": "typical fail Python review signal py-bare-except",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "except:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-mutable-default-argument-pass-typical",
+    "rule": "py-mutable-default-argument",
+    "description": "typical pass Python review signal py-mutable-default-argument",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "def collect(items=None): pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-mutable-default-argument-fail-typical",
+    "rule": "py-mutable-default-argument",
+    "description": "typical fail Python review signal py-mutable-default-argument",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "def collect(items=[]): pass\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-assert-in-production-pass-typical",
+    "rule": "py-assert-in-production",
+    "description": "typical pass Python review signal py-assert-in-production",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "if not authorized: raise PermissionError()\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-assert-in-production-fail-typical",
+    "rule": "py-assert-in-production",
+    "description": "typical fail Python review signal py-assert-in-production",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "assert authorized\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sensitive-info-in-log-pass-typical",
+    "rule": "py-sensitive-info-in-log",
+    "description": "typical pass Python review signal py-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "logger.info(\"user=%s\", user)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sensitive-info-in-log-fail-typical",
+    "rule": "py-sensitive-info-in-log",
+    "description": "typical fail Python review signal py-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "logger.info(\"password=%s\", password)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-pickle-load-pass-typical",
+    "rule": "py-pickle-load",
+    "description": "typical pass Python review signal py-pickle-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "value = json.loads(data)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-pickle-load-fail-typical",
+    "rule": "py-pickle-load",
+    "description": "typical fail Python review signal py-pickle-load",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "value = pickle.loads(data)\n"
+      }
+    }
+  }
+]

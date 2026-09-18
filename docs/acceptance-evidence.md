@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 16 Ruff ratchet and Python rules
+
+| Requirement | Current evidence |
+|---|---|
+| Native Ruff JSON, source ranges and paired per-rule ratchet | `tests/ruff_ratchet.rs::real_ruff_stdout_ratchet_growth_repair_and_invalid_syntax`; `adapters::reports::ruff_json::tests` |
+| Invalid syntax, malformed findings, unsupported format and unrecognized exit remain incomplete | `adapters::reports::ruff_json::tests`; `tests/ruff_ratchet.rs` |
+| Pinned, nonmutating reference command and target guidance | `skills/qualitygate-cli/references/ruff-ratchet.yaml`; `docs/diagnostic-ratchets.md` |
+| Thirteen opt-in fixed-scope Python review patterns with lexical limits | `tests/issue16_rules.rs`; `lang-python` package and Python lifecycle supplement |
+| Independent pass/fail goldens in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue16-cases.json`, `fixtures/golden/issue16-*.json`; `tests/selfcheck.rs` |
+
 ## Issue 15 golangci-lint ratchet and Go rules
 
 | Requirement | Current evidence |

@@ -1,0 +1,16 @@
+id: py-tls-verify-disabled
+version: 1
+description: Review literal verify=False assignments on changed Python lines
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\bverify\s*=\s*False\b']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-tls-verify-disabled-review]

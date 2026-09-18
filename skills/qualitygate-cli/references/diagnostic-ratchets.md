@@ -30,7 +30,7 @@ checks:
 ```
 
 Supported diagnostic formats are `diagnostics`, `sarif`, `checkstyle`, `pmd`,
-`spotbugs`, `cargo_clippy`, `eslint_json` and `golangci_json`. For Clippy, use the bundled
+`spotbugs`, `cargo_clippy`, `eslint_json`, `golangci_json` and `ruff_json`. For Clippy, use the bundled
 [reference policy](clippy-ratchet.yaml): `cargo clippy --message-format=json`
 emits JSON Lines to captured stdout, so set `from_stdout: true` and use a
 confined `path` only as the report identity. `baseline` is mandatory in the
@@ -62,6 +62,15 @@ Track `.golangci.yml` for linter selection and edit the final package target
 for scope. Keep the Go toolchain and golangci-lint binary pinned for both
 snapshots. Analyzer warnings, errors, typecheck issues and invalid locations
 are incomplete; do not use `--new`, `--fix` or `--fast-only` in the ratchet.
+
+For Python, use the bundled [Ruff reference policy](ruff-ratchet.yaml): JSON
+findings come from captured stdout with `findings_exit_codes: [1]`. Ruff
+configuration owns rule selection and excludes; an explicit final path owns
+target scope. The adapter rejects syntax and I/O diagnostics and malformed
+locations as incomplete. Ruff JSON has no checked-file inventory, so `[]`
+requires reviewing the target path and tracked config. Pin Ruff for both
+snapshots and keep `--no-fix --no-fix-only --no-cache` for fresh, nonmutating
+analysis.
 
 Declare report-producing tools and stable version probes, plus `tools[].inputs`
 for repository analyzer scripts, wrappers or other tool assets. Both runs need

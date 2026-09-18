@@ -1,0 +1,16 @@
+id: py-yaml-unsafe-load
+version: 1
+description: Review yaml.load calls and their Loader arguments
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python: ['\byaml\.load\s*\(']
+standard_refs:
+  - {source_id: ruff-rules, controls: [python-lint-patterns]}
+lifecycle_inputs: [py-yaml-unsafe-load-review]

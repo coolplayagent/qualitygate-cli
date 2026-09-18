@@ -139,6 +139,13 @@ struct LifecycleMatrix {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct LifecycleSupplement {
+    schema_version: u32,
+    inputs: Vec<LifecycleInput>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct LifecyclePolicy {
     missing_required_evidence: String,
     enforced_input_rule: String,
@@ -194,6 +201,9 @@ const STANDARD_REGISTRY: &str =
 const LIFECYCLE_MATRIX: &str = include_str!(
     "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml"
 );
+const LIFECYCLE_SUPPLEMENTS: &[&str] = &[include_str!(
+    "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml"
+)];
 
 const SOURCE_AUTHORITIES: &[&str] = &[
     "repository-policy",
@@ -524,7 +534,11 @@ fn supported_enforced_input(input: &LifecycleInput) -> bool {
                 .any(|item| item == "selected-snapshot" || item == "snapshot-digest"))
 }
 
-fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
+fn standards_from(
+    registry_yaml: &str,
+    matrix_yaml: &str,
+    supplements: &[&str],
+) -> Result<Standards> {
     let registry: StandardRegistry =
         serde_norway::from_str(registry_yaml).context("Invalid built-in standards registry")?;
     if registry.schema_version != 5
@@ -566,10 +580,18 @@ fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
         bail!("Built-in standards registry does not satisfy its declared coverage");
     }
 
-    let matrix: LifecycleMatrix =
+    let mut matrix: LifecycleMatrix =
         serde_norway::from_str(matrix_yaml).context("Invalid lifecycle rule input matrix")?;
     if !matrix_metadata_is_valid(&matrix) || matrix.inputs.is_empty() {
         bail!("Lifecycle rule input matrix has invalid metadata or no inputs");
+    }
+    for source in supplements {
+        let supplement: LifecycleSupplement = serde_norway::from_str(source)
+            .context("Invalid lifecycle rule input matrix supplement")?;
+        if supplement.schema_version != 1 || supplement.inputs.is_empty() {
+            bail!("Lifecycle rule input matrix supplement has invalid metadata or no inputs");
+        }
+        matrix.inputs.extend(supplement.inputs);
     }
     let mut inputs = BTreeMap::new();
     for input in matrix.inputs {
@@ -643,7 +665,7 @@ fn standards_from(registry_yaml: &str, matrix_yaml: &str) -> Result<Standards> {
 
 #[cfg(test)]
 pub(super) fn validate_standard_inputs(registry_yaml: &str, matrix_yaml: &str) -> Result<()> {
-    standards_from(registry_yaml, matrix_yaml).map(|_| ())
+    standards_from(registry_yaml, matrix_yaml, &[]).map(|_| ())
 }
 
 #[cfg(test)]
@@ -730,7 +752,7 @@ fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<B
 #[cfg(test)]
 pub(super) fn validate_builtin_mapping(rule_yaml: &str) -> Result<()> {
     let rule: Builtin = super::parse_yaml(rule_yaml.as_bytes())?;
-    let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX)?;
+    let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, LIFECYCLE_SUPPLEMENTS)?;
     validate_builtin_standards(&rule, &standards).map(|_| ())
 }
 
@@ -752,7 +774,7 @@ impl Catalog {
         files: impl IntoIterator<Item = (&'a str, &'a [u8])>,
     ) -> Result<Self> {
         required_archive_coverage_is_valid(STANDARD_REGISTRY)?;
-        let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX)?;
+        let standards = standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, LIFECYCLE_SUPPLEMENTS)?;
         let mut entries = BTreeMap::new();
         let mut mapped_inputs = BTreeSet::new();
         for packaged in packaged_rules()? {
@@ -856,5 +878,21 @@ impl Catalog {
         validation::validate(&effective)?;
         super::source_reviews::evidence(&effective, self)?;
         Ok(effective)
+    }
+}
+
+#[cfg(test)]
+mod supplement_tests {
+    use super::{LIFECYCLE_MATRIX, LIFECYCLE_SUPPLEMENTS, STANDARD_REGISTRY, standards_from};
+
+    #[test]
+    fn supplemental_inputs_are_validated_and_cannot_shadow_primary_ids() {
+        assert!(standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, LIFECYCLE_SUPPLEMENTS).is_ok());
+        let invalid_version =
+            LIFECYCLE_SUPPLEMENTS[0].replace("schema_version: 1", "schema_version: 2");
+        assert!(standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, &[&invalid_version]).is_err());
+        let duplicate = LIFECYCLE_SUPPLEMENTS[0]
+            .replace("id: py-eval-exec-review", "id: go-sql-injection-review");
+        assert!(standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, &[&duplicate]).is_err());
     }
 }
