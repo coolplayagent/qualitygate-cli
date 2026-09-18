@@ -73,6 +73,7 @@ fn execute(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
                 "shared".into(),
                 "lang-java".into(),
                 "lang-python".into(),
+                "lang-typescript".into(),
             ],
             ..Config::default()
         };

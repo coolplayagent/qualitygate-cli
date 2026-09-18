@@ -1,0 +1,16 @@
+id: ts-no-debugger
+version: 1
+description: Flag standalone debugger statements on changed lines
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['^\s*debugger\s*;?\s*$']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-debugger-review]

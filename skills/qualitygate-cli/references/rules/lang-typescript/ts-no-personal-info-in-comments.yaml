@@ -1,0 +1,16 @@
+id: ts-no-personal-info-in-comments
+version: 1
+description: Review personal contact markers in same-line comments
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['(?i)(?://|/\*|\*)[^\n]*(?:@author|email\s*[:=]|phone\s*[:=]|\b[\w.+-]+@[\w.-]+\.[a-z]{2,})']
+standard_refs:
+  - {source_id: owasp-info-leakage, controls: [comment-information]}
+lifecycle_inputs: [ts-no-personal-info-in-comments-review]

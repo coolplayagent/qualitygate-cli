@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 14 ESLint ratchet and TypeScript rules
+
+| Requirement | Current evidence |
+|---|---|
+| Native ESLint JSON from bounded stdout, paired ratchet, raw artifacts, lint exit code | `tests/eslint_ratchet.rs::real_eslint_stdout_ratchet_growth_repair_and_fatal_parse`; `adapters::reports::eslint_json::tests` |
+| Empty inventory, fatal parse, inconsistent counts and invalid reference format fail closed | `adapters::reports::eslint_json::tests`; `tests/eslint_ratchet.rs` |
+| Working reference configuration with target, rule severity, flat config and version guidance | `skills/qualitygate-cli/references/eslint-ratchet.yaml`; `docs/diagnostic-ratchets.md` |
+| Twelve opt-in fixed-scope TS/JS source patterns with lexical limits | `tests/issue14_rules.rs`; `lang-typescript` rule package and source/lifecycle archive |
+| Independent pass/fail goldens in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue14-cases.json`, `fixtures/golden/issue14-*.json`; `tests/selfcheck.rs` |
+
 ## Issue 13 Clippy ratchet and Rust rules
 
 | Requirement | Current evidence |

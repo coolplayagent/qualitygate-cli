@@ -1,0 +1,266 @@
+[
+  {
+    "id": "issue14-no-eval-pass-minimal",
+    "rule": "ts-no-eval",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "parse(input);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-eval-fail-minimal",
+    "rule": "ts-no-eval",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "eval(input);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-debugger-pass-minimal",
+    "rule": "ts-no-debugger",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-debugger",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "const debuggerEnabled = false;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-debugger-fail-minimal",
+    "rule": "ts-no-debugger",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-debugger",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "debugger;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-alert-pass-minimal",
+    "rule": "ts-no-alert",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-alert",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "showAlert();\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-alert-fail-minimal",
+    "rule": "ts-no-alert",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-alert",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "alert('hi');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-implied-eval-pass-minimal",
+    "rule": "ts-no-implied-eval",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-implied-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "setTimeout(() => tick(), 5);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-implied-eval-fail-minimal",
+    "rule": "ts-no-implied-eval",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-implied-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "setTimeout('tick()', 5);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-new-function-pass-minimal",
+    "rule": "ts-no-new-function",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-new-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "function build() {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-new-function-fail-minimal",
+    "rule": "ts-no-new-function",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-new-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "new Function(source);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-eqeqeq-pass-minimal",
+    "rule": "ts-eqeqeq",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-eqeqeq",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "const equal = left === right;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-eqeqeq-fail-minimal",
+    "rule": "ts-eqeqeq",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-eqeqeq",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "const equal = left == right;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-extend-native-pass-minimal",
+    "rule": "ts-no-extend-native",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-extend-native",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "const extra = Array.prototype.extra;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-extend-native-fail-minimal",
+    "rule": "ts-no-extend-native",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-extend-native",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "Array.prototype.extra = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-prototype-builtins-pass-minimal",
+    "rule": "ts-no-prototype-builtins",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-prototype-builtins",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "Object.prototype.hasOwnProperty.call(obj, key);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-prototype-builtins-fail-minimal",
+    "rule": "ts-no-prototype-builtins",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-prototype-builtins",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "obj.hasOwnProperty(key);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-secure-randomness-pass-minimal",
+    "rule": "ts-secure-randomness",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-secure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "crypto.getRandomValues(bytes);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-secure-randomness-fail-minimal",
+    "rule": "ts-secure-randomness",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-secure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "Math.random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-unsafe-postmessage-pass-minimal",
+    "rule": "ts-no-unsafe-postmessage",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-unsafe-postmessage",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "sendMessage(payload);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-unsafe-postmessage-fail-minimal",
+    "rule": "ts-no-unsafe-postmessage",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-unsafe-postmessage",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "window.postMessage(payload, '*');\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-commented-code-pass-minimal",
+    "rule": "ts-no-commented-code",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-commented-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "// Explain the behavior.\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-commented-code-fail-minimal",
+    "rule": "ts-no-commented-code",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-commented-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "// const old = 1;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-personal-info-in-comments-pass-minimal",
+    "rule": "ts-no-personal-info-in-comments",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-personal-info-in-comments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "// Explain the behavior.\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-personal-info-in-comments-fail-minimal",
+    "rule": "ts-no-personal-info-in-comments",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-personal-info-in-comments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "// email: alice@example.com\n"
+      }
+    }
+  }
+]

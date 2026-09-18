@@ -4,7 +4,13 @@ use crate::domain::Severity;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-pub const RULESETS: &[&str] = &["core", "shared", "lang-java", "lang-python"];
+pub const RULESETS: &[&str] = &[
+    "core",
+    "shared",
+    "lang-java",
+    "lang-python",
+    "lang-typescript",
+];
 
 fn schema_one() -> u32 {
     1
@@ -307,6 +313,7 @@ pub struct ReportSpec {
 #[serde(rename_all = "snake_case")]
 pub enum ReportFormat {
     CargoClippy,
+    EslintJson,
     Junit,
     Checkstyle,
     Spotbugs,

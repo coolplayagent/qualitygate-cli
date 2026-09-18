@@ -2,7 +2,13 @@
 
 use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
-const PACKAGES: &[&str] = &["core", "shared", "lang-java", "lang-python"];
+const PACKAGES: &[&str] = &[
+    "core",
+    "shared",
+    "lang-java",
+    "lang-python",
+    "lang-typescript",
+];
 
 #[derive(Debug)]
 pub(super) struct PackagedRule {

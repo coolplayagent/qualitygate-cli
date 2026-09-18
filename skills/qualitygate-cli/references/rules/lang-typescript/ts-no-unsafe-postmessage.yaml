@@ -1,0 +1,16 @@
+id: ts-no-unsafe-postmessage
+version: 1
+description: Review postMessage target origin at changed call sites
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\bpostMessage\s*\(']
+standard_refs:
+  - {source_id: mdn-postmessage, controls: [postmessage-origin]}
+lifecycle_inputs: [ts-no-unsafe-postmessage-review]

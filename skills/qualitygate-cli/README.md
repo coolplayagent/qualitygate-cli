@@ -51,7 +51,7 @@ qualitygate-cli-skill-<tag>/
 ├── references/selfcheck.md
 ├── references/pilot-evidence.md
 ├── references/schemas/project-rule.schema.json
-├── references/rules/{core,shared,lang-java,lang-python}/*.yaml
+├── references/rules/{core,shared,lang-java,lang-python,lang-typescript}/*.yaml
 ├── assets/pilot/observation-v7.json
 ├── assets/pilot/observation-v8.json
 ├── assets/pilot/observation-v9.json

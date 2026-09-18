@@ -30,7 +30,7 @@ checks:
 ```
 
 Supported diagnostic formats are `diagnostics`, `sarif`, `checkstyle`, `pmd`,
-`spotbugs` and `cargo_clippy`. For Clippy, use the bundled
+`spotbugs`, `cargo_clippy` and `eslint_json`. For Clippy, use the bundled
 [reference policy](clippy-ratchet.yaml): `cargo clippy --message-format=json`
 emits JSON Lines to captured stdout, so set `from_stdout: true` and use a
 confined `path` only as the report identity. `baseline` is mandatory in the
@@ -45,6 +45,15 @@ selection belongs in flags, source attributes or Cargo's `[lints.clippy]`;
 `clippy.toml` tunes lint configuration. Pin the Rust toolchain and probe
 `cargo clippy --version`. A malformed stream, failed compilation or missing
 `build-finished` record is incomplete.
+
+For ESLint, use the bundled [reference policy](eslint-ratchet.yaml). The
+`--format=json` command emits a file-result array to stdout, so set
+`from_stdout: true`, `format: eslint_json`, and `findings_exit_codes: [1]`.
+Use `--exit-on-fatal-error` so parse errors exit 2. The `src` target and the
+project's flat config establish analyzed scope, rule selection and ignores;
+the rule counts are not a substitute for complete scope evidence. Provision
+a pinned ESLint executable and plugins for both snapshots, retain its version
+probe, and do not use cache, quiet or fix modes for a fresh ratchet report.
 
 Declare report-producing tools and stable version probes, plus `tools[].inputs`
 for repository analyzer scripts, wrappers or other tool assets. Both runs need

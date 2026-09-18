@@ -14,6 +14,150 @@ taxonomy:
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
 inputs:
+  - id: ts-no-eval-review
+    status: enforced
+    rule_id: ts-no-eval
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Text matching may include comments and strings and does not prove dynamic execution.
+  - id: ts-no-debugger-review
+    status: enforced
+    rule_id: ts-no-debugger
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Only standalone same-line debugger statements match; production reachability is not analyzed.
+  - id: ts-no-alert-review
+    status: enforced
+    rule_id: ts-no-alert
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: A dialog call may be intentional; this lexical signal needs review.
+  - id: ts-no-implied-eval-review
+    status: enforced
+    rule_id: ts-no-implied-eval
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: The pattern recognizes a same-line string literal at a timer call and cannot resolve aliases.
+  - id: ts-no-new-function-review
+    status: enforced
+    rule_id: ts-no-new-function
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Constructor aliases and comments need semantic review beyond this pattern.
+  - id: ts-eqeqeq-review
+    status: enforced
+    rule_id: ts-eqeqeq
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Text matching cannot identify intentional null comparisons or type context.
+  - id: ts-no-extend-native-review
+    status: enforced
+    rule_id: ts-no-extend-native
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Only direct prototype assignments match; aliases and property descriptors require an analyzer.
+  - id: ts-no-prototype-builtins-review
+    status: enforced
+    rule_id: ts-no-prototype-builtins
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [eslint-rules]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Text matching cannot establish the receiver type or trusted ownership.
+  - id: ts-secure-randomness-review
+    status: enforced
+    rule_id: ts-secure-randomness
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [mdn-math-random]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Math.random has nonsecurity uses; this does not prove token generation.
+  - id: ts-no-unsafe-postmessage-review
+    status: enforced
+    rule_id: ts-no-unsafe-postmessage
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [mdn-postmessage]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: A postMessage call may use a safe origin; inspect its targetOrigin and receiver.
+  - id: ts-no-commented-code-review
+    status: enforced
+    rule_id: ts-no-commented-code
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-kernelctf-style]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: A prose comment can look like code; this style convention is opt-in.
+  - id: ts-no-personal-info-in-comments-review
+    status: enforced
+    rule_id: ts-no-personal-info-in-comments
+    lifecycle_stage: implementation
+    languages: [typescript]
+    concerns: [security, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [owasp-info-leakage]
+    evidence: [changed-typescript-line, regex-pattern]
+    applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
+    critical_adoption: Same-line markers may be harmless and can appear in strings; this does not classify personal data.
   - id: rust-extern-without-abi-review
     status: enforced
     rule_id: rust-extern-without-abi

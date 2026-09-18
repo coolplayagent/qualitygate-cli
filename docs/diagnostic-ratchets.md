@@ -23,7 +23,7 @@ checks:
 Replace the example producer with the project's existing analyzer and adopt its
 actual command, tool inputs, timeout and findings exit codes through normal
 policy review. Diagnostic formats include generic `diagnostics`, Checkstyle,
-PMD, SpotBugs, SARIF and Cargo Clippy JSON Lines. A baseline path is mandatory. Test statistics and
+PMD, SpotBugs, SARIF, Cargo Clippy JSON Lines and ESLint JSON. A baseline path is mandatory. Test statistics and
 coverage cannot use this mode, even when supplied inside generic JSON.
 
 ## Clippy from captured stdout
@@ -53,6 +53,32 @@ Pin the Rust toolchain in `rust-toolchain.toml`, keep `Cargo.lock`, and retain
 the `cargo clippy --version` probe. The current and baseline runs must report
 comparable versions and executable identities. Lint IDs can change across
 toolchain versions, so review upgrades as policy changes.
+
+## ESLint from captured stdout
+
+The packaged [ESLint reference policy](../skills/qualitygate-cli/references/eslint-ratchet.yaml)
+uses a provisioned `eslint` executable with `--format=json` and
+`--exit-on-fatal-error`, `findings_exit_codes: [1]`, and an `eslint_json`
+stdout report. [ESLint's JSON formatter](https://eslint.org/docs/latest/use/formatters/)
+emits file results, not the generic `diagnostics` envelope. ESLint exits 1
+for lint errors and 2 for configuration or internal failures, per its
+[CLI contract](https://eslint.org/docs/latest/use/command-line-interface).
+Qualitygate rejects empty file inventories, malformed or contradictory counts,
+fatal parser messages, unmappable locations and unrecognized exits as
+incomplete. The report path is a confined identity for captured stdout, not a
+file ESLint writes. Both raw reports remain in the check artifacts.
+
+`src` in the reference command limits the analyzer's declared targets;
+configure [flat config `files` and `ignores`](https://eslint.org/docs/latest/use/configure/configuration-files)
+for the actual `.js` and `.ts` source inventory. ESLint rule severity
+`off` removes a finding, `warn` reports it without nonzero exit, and `error`
+returns 1; Qualitygate's check severity controls whether ratchet growth
+blocks. Rule selection and inline suppression belong to ESLint config and are
+reviewed as source inputs. Do not use `--quiet`, `--cache`, or `--fix` for a
+complete fresh report. Provision a pinned ESLint and any parser/plugins for
+both materialized snapshots; the version probe and executable digest must
+match. A project may use its own lockfile-backed setup, but a missing
+dependency cannot be replaced by a clean report.
 
 Counts preserve multiplicity and are grouped by `(tool, rule)` independently
 within each report. Formats without tool names use `null` for that key component.

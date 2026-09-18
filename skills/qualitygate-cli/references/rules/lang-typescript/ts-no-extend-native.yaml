@@ -1,0 +1,16 @@
+id: ts-no-extend-native
+version: 1
+description: Review assignments to native object prototypes
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['\b(?:Object|Array|String|Number|Boolean|Function|Date|RegExp|Error)\.prototype(?:\.[A-Za-z_$][\w$]*)?\s*=[^=]']
+standard_refs:
+  - {source_id: eslint-rules, controls: [javascript-lints]}
+lifecycle_inputs: [ts-no-extend-native-review]

@@ -76,6 +76,8 @@ Issue 12 扩展十八个默认不启用的 Shell 内置规则，涵盖凭据、�
 
 Issue 13 通过有界 stdout 报告和 Cargo JSON Lines 解析支持真实 Clippy 诊断数量棘轮：两个不可变快照分别运行相同工具，按 `(tool, rule)` 计数；缺失完成记录、编译错误、失效路径或版本不一致报告未完成。另增三个默认不启用的 Rust 单行文本审查规则，分别提示未显式声明 ABI 的 extern 块、动态库非字面量路径、同一行宏定义中的 unsafe 块。文本信号不能证明攻击者输入或语义安全。需求到测试证据见 [Issue 13 验收映射](docs/acceptance-evidence.md#issue-13-clippy-ratchet-and-rust-rules)。
 
+Issue 14 通过 ESLint JSON 文件结果适配和两个快照中的真实工具执行支持诊断数量棘轮，保留版本、命令、原始报告及源位置证据。空文件清单、致命解析错误、计数矛盾、路径无法映射或不认可的退出码报告未完成。另增十二个默认不启用的 TypeScript/JavaScript 新增行文本审查规则，需显式选择 `lang-typescript` 规则包；它们不证明注入路径、随机数安全用途、消息目标安全或个人信息分类。需求到测试证据见 [Issue 14 验收映射](docs/acceptance-evidence.md#issue-14-eslint-ratchet-and-typescript-rules)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

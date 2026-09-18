@@ -1,0 +1,16 @@
+id: ts-no-commented-code
+version: 1
+description: Review changed line comments that resemble disabled code
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript: ['^\s*//\s*(?:const|let|var|function|return|if|for|while|switch|class|import|export)\b']
+standard_refs:
+  - {source_id: google-kernelctf-style, controls: [commented-code]}
+lifecycle_inputs: [ts-no-commented-code-review]

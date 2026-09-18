@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test issue11_rules --test issue12_rules --test issue13_rules --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
+            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test issue11_rules --test issue12_rules --test issue13_rules --test issue14_rules --test clippy_ratchet --test eslint_ratchet --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
           - gate: selfcheck-minimal
             command: cargo run --locked -- selfcheck --fixture minimal --format json
           - gate: documentation
@@ -153,6 +153,18 @@ jobs:
         run: cargo test --locked --test sarif_live -- --ignored --nocapture
       - name: Live Clippy stdout ratchet and repair acceptance
         run: cargo test --locked --test clippy_ratchet -- --ignored --nocapture
+
+  eslint-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: rustup show
+      - name: Live ESLint JSON ratchet and repair acceptance
+        run: cargo test --locked --test eslint_ratchet -- --ignored --nocapture
 
   coverage-producers:
     runs-on: ubuntu-latest
