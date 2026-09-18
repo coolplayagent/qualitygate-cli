@@ -225,14 +225,14 @@ jobs:
           test -f "dist/$package/references/rules/shared/import-boundary.yaml"
           test -f "dist/$package/references/rules/lang-java/module-boundary.yaml"
           test -f "dist/$package/references/rules/lang-python/pytest-naming.yaml"
-          for rule in core/commit-message-convention shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets; do
+          for rule in core/commit-message-convention shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep; do
             test -f "dist/$package/references/rules/$rule.yaml"
           done
           "dist/$package/assets/linux-x86_64/qualitygate" \
             --root "$GITHUB_WORKSPACE" --format json rules list > "dist/rules-list.json"
           grep -F '"origin": "skill:references/rules/shared/security-sensitive-api.yaml"' "dist/rules-list.json"
           grep -F '"id": "import-boundary"' "dist/rules-list.json"
-          for rule in commit-message-convention test-naming-strict test-annotation-dependency no-hardcoded-secrets; do
+          for rule in commit-message-convention test-naming-strict test-annotation-dependency no-hardcoded-secrets no-printf-log no-unsafe-string no-test-sleep; do
             grep -F "\"id\": \"$rule\"" "dist/rules-list.json"
           done
           tar -C dist -czf "dist/$package.tar.gz" "$package"
@@ -253,7 +253,7 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/security-sensitive-api.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/todo-marker.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/import-boundary.yaml" >/dev/null
-          for rule in core/commit-message-convention shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets; do
+          for rule in core/commit-message-convention shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep; do
             tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/$rule.yaml" >/dev/null
           done
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/linux-x86_64/qualitygate" >/dev/null

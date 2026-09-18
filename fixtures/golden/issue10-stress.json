@@ -1,0 +1,8 @@
+{
+  "issue10-printf-pass-stress":{"/execution/status":"completed","/verdict":"pass","/matched_entities":2,"/diagnostic_count":0},
+  "issue10-printf-fail-stress":{"/execution/status":"completed","/verdict":"fail","/matched_entities":2,"/diagnostic_count":1,"/diagnostics/0/file":"native/b.cxx"},
+  "issue10-unsafe-pass-stress":{"/execution/status":"completed","/verdict":"pass","/matched_entities":2,"/diagnostic_count":0},
+  "issue10-unsafe-fail-stress":{"/execution/status":"completed","/verdict":"fail","/matched_entities":2,"/diagnostic_count":1,"/diagnostics/0/file":"native/b.cpp"},
+  "issue10-sleep-pass-stress":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-sleep-fail-stress":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"tests/unit/clock_test.go"}
+}

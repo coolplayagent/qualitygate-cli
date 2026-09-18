@@ -101,7 +101,7 @@ pub fn discover(root: &Path) -> Result<Discovery> {
                 "cs" => Some("csharp"),
                 "kt" | "kts" => Some("kotlin"),
                 "c" | "h" => Some("c"),
-                "cc" | "cpp" | "hpp" => Some("cpp"),
+                "cc" | "cpp" | "cxx" | "hh" | "hpp" | "hxx" => Some("cpp"),
                 "swift" => Some("swift"),
                 _ => None,
             };

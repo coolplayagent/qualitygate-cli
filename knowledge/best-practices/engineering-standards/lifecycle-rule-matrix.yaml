@@ -8,7 +8,7 @@ policy:
   conflict_rule: See guides/critical-adoption.md before changing severity or applicability.
 taxonomy:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
-  languages: [all, java, python, rust, cpp, cuda, typescript, go]
+  languages: [all, java, python, rust, cpp, c, cuda, typescript, go]
   concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations, static-gate]
   enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
   outcomes: [violation, warning, incomplete, advisory]
@@ -98,6 +98,42 @@ inputs:
     evidence: [added-java-file, configured-pattern]
     applicability: Added Java source files with literal assignments matching the configured regex.
     critical_adoption: Regex matching is a bounded signal and cannot detect every secret or prove that a match is a live credential.
+  - id: native-printf-log-review
+    status: enforced
+    rule_id: no-printf-log
+    lifecycle_stage: static-analysis
+    languages: [c, cpp]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [google-cpp, huawei-codearts]
+    evidence: [added-native-file, configured-pattern]
+    applicability: Added C/C++ source files matching a printf or fprintf call pattern.
+    critical_adoption: A lexical match may be a diagnostic helper or an intentional console program; select this rule only for repositories with a logging abstraction.
+  - id: native-unsafe-string-review
+    status: enforced
+    rule_id: no-unsafe-string
+    lifecycle_stage: static-analysis
+    languages: [c, cpp]
+    concerns: [security, static-gate]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [huawei-codearts, meta-zoncolan]
+    evidence: [added-native-file, configured-pattern]
+    applicability: Added C/C++ source files matching an unsafe string API call pattern.
+    critical_adoption: A lexical match is a bounded signal; macro expansion, aliases, and destination capacity require further review.
+  - id: added-test-sleep-review
+    status: enforced
+    rule_id: no-test-sleep
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [testing, reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [google-code-review]
+    evidence: [added-test-file, configured-pattern, configured-paths]
+    applicability: Added text files selected by configurable test path globs and matching a sleep call pattern.
+    critical_adoption: A lexical match can include comments and deliberate timing integration tests; scope the rule to the repository's test conventions.
   - id: deferred-work-marker
     status: enforced
     rule_id: todo-marker

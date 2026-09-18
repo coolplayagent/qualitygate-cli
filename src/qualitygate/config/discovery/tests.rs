@@ -102,6 +102,9 @@ fn language_scoped_builtins_are_not_advertised_outside_lifecycle_lanes() {
         ["cpp"]
     );
     let shared = report.available_rulesets.get("shared").unwrap();
+    assert!(shared.iter().any(|rule| rule["id"] == "no-printf-log"));
+    assert!(shared.iter().any(|rule| rule["id"] == "no-unsafe-string"));
+    assert!(shared.iter().any(|rule| rule["id"] == "no-test-sleep"));
     assert!(shared.iter().all(|rule| {
         !["test-naming", "parameterized-tests"].contains(&rule["id"].as_str().unwrap())
     }));
@@ -111,6 +114,16 @@ fn language_scoped_builtins_are_not_advertised_outside_lifecycle_lanes() {
             .iter()
             .any(|gap| gap.reason == "No syntax adapter for cpp")
     );
+}
+
+#[test]
+fn cxx_extension_advertises_native_file_rules() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "native/main.cxx", "int main() { return 0; }\n");
+    let report = discover(root.path()).unwrap();
+    assert_eq!(report.languages[0].language, "cpp");
+    let shared = report.available_rulesets.get("shared").unwrap();
+    assert!(shared.iter().any(|rule| rule["id"] == "no-printf-log"));
 }
 
 #[test]

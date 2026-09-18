@@ -35,6 +35,9 @@ execution evidence is incomplete validation, never a clean result.
 | `test-naming-strict` | Java | error | added test names matching a team pattern |
 | `test-annotation-dependency` | Java | error | annotated added tests and resolved Maven dependency facts |
 | `no-hardcoded-secrets` | Java | error | literal credential patterns in added files |
+| `no-printf-log` | C, C++ | error | `printf` or `fprintf` call patterns in added native files |
+| `no-unsafe-string` | C, C++ | error | `strcpy`, `sprintf`, `strcat`, or `gets` call patterns in added native files |
+| `no-test-sleep` | all languages | error | `sleep`, `usleep`, or `nanosleep` call patterns in added test paths |
 | `parameterized-tests` | Java, Python, Rust, TypeScript, Go | warning | repeated added test shapes |
 | `comment-language` | supported parsed comments | warning | an explicitly selected comment-language convention |
 | `security-sensitive-api` | Java, Python, Rust, TypeScript, Go | warning | changed uses of configured high-risk API patterns |
@@ -63,6 +66,17 @@ configured producer prerequisite. Configured prerequisites still run.
 `no-hardcoded-secrets` checks added Java files with a configurable single-line
 regex and does not prove that every secret or live credential was found.
 These Java rules are opt-in and keep a fixed Java scope.
+
+The three Issue 10 rules are also opt-in. `no-printf-log` and
+`no-unsafe-string` inspect added C/C++ files with a fixed `languages: [c, cpp]`
+scope, including `.h` headers. `no-test-sleep` uses an empty language scope
+and defaults to common test directory and filename globs; configure `paths`
+for a repository's test layout. All three scan UTF-8 file lines with bounded
+regular expressions. Matches in comments and strings can be false positives;
+they do not establish a parsed call or prove that a replacement API is safe.
+Files outside the selected paths, modified files, and nonmatching languages
+are not inspected. Unreadable selected bytes or exhausted analysis budgets
+make the check incomplete.
 
 ## Architecture rules
 

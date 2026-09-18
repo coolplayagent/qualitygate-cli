@@ -90,6 +90,7 @@ fn origin(entry: &Entry) -> &str {
         | "test-annotation-dependency"
         | "parameterized-tests"
         | "ai-code-traceability" => "test",
+        "file-pattern" if rule.id == "no-test-sleep" => "test",
         "source-pattern" | "file-pattern" if rule.id != "todo-marker" => "security",
         "import-boundary" | "module-boundary" | "used-undeclared" => "architecture",
         _ => "style",

@@ -1,0 +1,16 @@
+id: no-unsafe-string
+version: 1
+description: Reject unsafe string API call patterns in added C/C++ files
+implementation: file-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [c, cpp]
+    pattern: '\b(?:strcpy|sprintf|strcat|gets)\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [security-quality, static-gate]}
+  - {source_id: meta-zoncolan, controls: [source-sink-analysis, rule-validation]}
+lifecycle_inputs: [native-unsafe-string-review]

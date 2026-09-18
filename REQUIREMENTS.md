@@ -68,6 +68,8 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 
 Issue 9 扩展四个默认不启用的可配置内置规则：`commit-message-convention` 校验新增提交主题，`test-naming-strict` 校验新增 Java 测试方法名，`test-annotation-dependency` 仅对带指定注解的新增 Java 测试方法要求指定 Maven 依赖的声明及解析事实，`no-hardcoded-secrets` 检查新增 Java 文件中的字面凭据赋值。四者默认级别为 error；缺失或失效的必需事实、语法解析失败及预算超限均报告未完成。大仓库分析使用有界并行、固定截止时间和有序结果。需求到测试证据见 [Issue 9 验收映射](docs/acceptance-evidence.md#issue-9-reusable-built-ins)。
 
+Issue 10 扩展三个默认不启用、默认级别为 error 的新增文件规则：`no-printf-log` 和 `no-unsafe-string` 检查 C/C++ 源码中的调用文本模式，`no-test-sleep` 在可配置的测试路径中检查跨语言休眠调用文本模式。语言范围固定，路径和正则可配置；这些检测属于逐行文本信号，注释、字符串或声明可能匹配，不宣称语义解析。选中文件缺失、非 UTF-8、配置失效或预算超限报告未完成。需求到测试证据见 [Issue 10 验收映射](docs/acceptance-evidence.md#issue-10-native-and-test-file-built-ins)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

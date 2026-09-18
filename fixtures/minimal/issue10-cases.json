@@ -1,0 +1,8 @@
+[
+  {"id":"issue10-printf-pass","rule":"no-printf-log","description":"Added C source uses its logging interface","input":{"kind":"rule","files":{"src/main.c":"void run() { project_log(\"ready\"); }\n"}}},
+  {"id":"issue10-printf-fail","rule":"no-printf-log","description":"Added C source calls printf","input":{"kind":"rule","files":{"src/main.c":"void run() { printf(\"ready\"); }\n"}}},
+  {"id":"issue10-unsafe-pass","rule":"no-unsafe-string","description":"Added C++ source uses a bounded string API","input":{"kind":"rule","files":{"src/main.cpp":"void run() { snprintf(dst, size, \"ok\"); }\n"}}},
+  {"id":"issue10-unsafe-fail","rule":"no-unsafe-string","description":"Added C++ source calls strcpy","input":{"kind":"rule","files":{"src/main.cpp":"void run() { strcpy(dst, src); }\n"}}},
+  {"id":"issue10-sleep-pass","rule":"no-test-sleep","description":"Added Python test advances a fake clock","input":{"kind":"rule","files":{"tests/test_clock.py":"clock.advance(1)\n"}}},
+  {"id":"issue10-sleep-fail","rule":"no-test-sleep","description":"Added Python test calls sleep","input":{"kind":"rule","files":{"tests/test_clock.py":"sleep(1)\n"}}}
+]

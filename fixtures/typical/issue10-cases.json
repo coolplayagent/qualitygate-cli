@@ -1,0 +1,8 @@
+[
+  {"id":"issue10-printf-pass-typical","rule":"no-printf-log","description":"C++ implementation uses a structured logger","input":{"kind":"rule","files":{"native/server.cc":"void run() { logger.error(\"failure\"); }\n"}}},
+  {"id":"issue10-printf-fail-typical","rule":"no-printf-log","description":"C++ implementation calls fprintf","input":{"kind":"rule","files":{"native/server.cc":"void run() { fprintf(stderr, \"failure\"); }\n"}}},
+  {"id":"issue10-unsafe-pass-typical","rule":"no-unsafe-string","description":"C header uses bounded copy","input":{"kind":"rule","files":{"include/server.h":"void run() { strncpy(dst, src, capacity); }\n"}}},
+  {"id":"issue10-unsafe-fail-typical","rule":"no-unsafe-string","description":"C header uses strcat","input":{"kind":"rule","files":{"include/server.h":"void run() { strcat(dst, src); }\n"}}},
+  {"id":"issue10-sleep-pass-typical","rule":"no-test-sleep","description":"Added Java test uses a latch","input":{"kind":"rule","files":{"src/ClockTest.java":"class ClockTest { void test() { latch.await(); } }\n"}}},
+  {"id":"issue10-sleep-fail-typical","rule":"no-test-sleep","description":"Added Java test calls nanosleep","input":{"kind":"rule","files":{"src/ClockTest.java":"class ClockTest { void test() { nanosleep(1); } }\n"}}}
+]

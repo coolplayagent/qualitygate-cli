@@ -1,5 +1,16 @@
 # Requirements acceptance evidence
 
+## Issue 10 native and test file built-ins
+
+| Requirement | Current evidence |
+|---|---|
+| Three discoverable, opt-in, error-level packages with fixed language scope and configurable test paths | `tests/issue10_rules.rs::three_rules_are_discoverable_and_language_scope_is_fixed`; packaged YAML, lifecycle mappings and release archive checks |
+| Added C/C++ unsafe and printf patterns, including headers; modified and unrelated files excluded | `tests/issue10_rules.rs::native_rules_find_added_c_and_cpp_calls_and_ignore_modified_or_other_languages` |
+| Language-neutral sleep patterns limited to test paths, with repository path override | `tests/issue10_rules.rs::test_sleep_uses_default_and_configured_test_paths_across_languages` |
+| Independent pass/fail goldens for all three rules in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue10-cases.json` and `fixtures/golden/issue10-{minimal,typical,stress}.json`; `tests/selfcheck.rs` |
+| Bounded scanner, deterministic output and incomplete selected malformed text or overflow | `adapters::builtin_conventions::tests::native_and_neutral_file_rules_do_not_pass_unreadable_selected_inputs`, `literal_secret_rule_checks_only_added_java_files_and_hides_the_value`; shared `adapters::parallel` worker tests |
+
+
 ## Issue 9 reusable built-ins
 
 | Requirement | Current evidence |

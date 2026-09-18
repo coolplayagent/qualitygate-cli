@@ -1,0 +1,16 @@
+id: no-printf-log
+version: 1
+description: Reject printf and fprintf call patterns in added C/C++ files
+implementation: file-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [c, cpp]
+    pattern: '\b(?:printf|fprintf)\s*\('
+standard_refs:
+  - {source_id: google-cpp, controls: [readability]}
+  - {source_id: huawei-codearts, controls: [coding-style, static-gate]}
+lifecycle_inputs: [native-printf-log-review]

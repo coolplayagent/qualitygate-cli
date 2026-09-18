@@ -189,6 +189,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "test-naming-strict",
         "test-annotation-dependency",
         "no-hardcoded-secrets",
+        "no-printf-log",
+        "no-unsafe-string",
+        "no-test-sleep",
         "forbidden_imports",
         "rules list --format json",
     ] {
@@ -227,6 +230,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "shared/test-naming-strict",
         "shared/test-annotation-dependency",
         "shared/no-hardcoded-secrets",
+        "shared/no-printf-log",
+        "shared/no-unsafe-string",
+        "shared/no-test-sleep",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(
