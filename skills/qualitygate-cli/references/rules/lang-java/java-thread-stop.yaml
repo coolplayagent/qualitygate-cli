@@ -1,0 +1,17 @@
+id: java-thread-stop
+version: 1
+description: Review deprecated Thread.stop calls
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\b[Tt]hread[A-Za-z0-9_]*\.stop\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [security-quality]}
+lifecycle_inputs: [java-thread-stop-review]

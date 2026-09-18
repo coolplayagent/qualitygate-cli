@@ -315,3 +315,5 @@ mapping is a configuration error rather than an empty successful check.
    severity or architecture pattern on the user's behalf.
 5. Run the requested snapshot check and report warnings, violations, and
    incomplete evidence separately.
+
+The optional `lang-java` package adds twelve fixed-Java source-pattern reviews for direct concurrency, resource, locale, exception and security signals. See the repository Java rule triage guide for exact scope; comments, strings, aliases and multiline forms limit lexical findings.

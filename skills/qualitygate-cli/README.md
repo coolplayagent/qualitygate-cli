@@ -50,6 +50,7 @@ qualitygate-cli-skill-<tag>/
 ├── references/ruff-ratchet.yaml
 ├── references/gcc-analyzer-ratchet.yaml
 ├── references/clang-static-analyzer-ratchet.yaml
+├── references/{checkstyle,pmd,spotbugs}-ratchet.yaml
 ├── references/rule-management.md
 ├── references/selfcheck.md
 ├── references/pilot-evidence.md

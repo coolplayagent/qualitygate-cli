@@ -121,3 +121,5 @@ Locations are validated in both reports before filtering. A valid empty report
 means the analyzer reported zero findings, not that it scanned everything.
 Retain producer-scope limits and the CLI verification fields in the result;
 scoped checks and synthetic fixtures do not prove delivery readiness.
+
+Java analyzer starting policies: [Checkstyle](checkstyle-ratchet.yaml), [PMD](pmd-ratchet.yaml), and [SpotBugs](spotbugs-ratchet.yaml). Use each producer’s real XML format, pinned executable, tracked configuration and identical source/class scope in the immutable baseline and current snapshots. The the repository Java rule triage guide explains incomplete execution and semantic limits.

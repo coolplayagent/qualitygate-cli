@@ -1,0 +1,266 @@
+[
+  {
+    "id": "issue20-thread-stop-pass-minimal",
+    "rule": "java-thread-stop",
+    "description": "minimal pass Java review signal java-thread-stop",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "thread.interrupt();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-thread-stop-fail-minimal",
+    "rule": "java-thread-stop",
+    "description": "minimal fail Java review signal java-thread-stop",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "thread.stop();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-thread-yield-pass-minimal",
+    "rule": "java-thread-yield",
+    "description": "minimal pass Java review signal java-thread-yield",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "Thread.sleep(1);\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-thread-yield-fail-minimal",
+    "rule": "java-thread-yield",
+    "description": "minimal fail Java review signal java-thread-yield",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "Thread.yield();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-manual-gc-pass-minimal",
+    "rule": "java-manual-gc",
+    "description": "minimal pass Java review signal java-manual-gc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "doWork();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-manual-gc-fail-minimal",
+    "rule": "java-manual-gc",
+    "description": "minimal fail Java review signal java-manual-gc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "System.gc();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-finalizer-pass-minimal",
+    "rule": "java-finalizer",
+    "description": "minimal pass Java review signal java-finalizer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "protected void close() {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-finalizer-fail-minimal",
+    "rule": "java-finalizer",
+    "description": "minimal fail Java review signal java-finalizer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "protected void finalize() {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-implicit-charset-pass-minimal",
+    "rule": "java-implicit-charset",
+    "description": "minimal pass Java review signal java-implicit-charset",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "bytes = text.getBytes(StandardCharsets.UTF_8);\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-implicit-charset-fail-minimal",
+    "rule": "java-implicit-charset",
+    "description": "minimal fail Java review signal java-implicit-charset",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "bytes = text.getBytes();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-implicit-locale-pass-minimal",
+    "rule": "java-implicit-locale",
+    "description": "minimal pass Java review signal java-implicit-locale",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "text.toLowerCase(Locale.ROOT);\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-implicit-locale-fail-minimal",
+    "rule": "java-implicit-locale",
+    "description": "minimal fail Java review signal java-implicit-locale",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "text.toLowerCase();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-insecure-random-pass-minimal",
+    "rule": "java-insecure-random",
+    "description": "minimal pass Java review signal java-insecure-random",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "SecureRandom r = new SecureRandom();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-insecure-random-fail-minimal",
+    "rule": "java-insecure-random",
+    "description": "minimal fail Java review signal java-insecure-random",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "Random r = new Random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-weak-crypto-pass-minimal",
+    "rule": "java-weak-crypto",
+    "description": "minimal pass Java review signal java-weak-crypto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "MessageDigest.getInstance(\"SHA-256\");\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-weak-crypto-fail-minimal",
+    "rule": "java-weak-crypto",
+    "description": "minimal fail Java review signal java-weak-crypto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "MessageDigest.getInstance(\"MD5\");\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-empty-catch-pass-minimal",
+    "rule": "java-empty-catch",
+    "description": "minimal pass Java review signal java-empty-catch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "catch (Exception e) { report(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-empty-catch-fail-minimal",
+    "rule": "java-empty-catch",
+    "description": "minimal fail Java review signal java-empty-catch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "catch (Exception e) {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-finally-exit-pass-minimal",
+    "rule": "java-finally-exit",
+    "description": "minimal pass Java review signal java-finally-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "finally { cleanup(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-finally-exit-fail-minimal",
+    "rule": "java-finally-exit",
+    "description": "minimal fail Java review signal java-finally-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "finally { return result; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-sql-concat-pass-minimal",
+    "rule": "java-sql-concat",
+    "description": "minimal pass Java review signal java-sql-concat",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "stmt.executeQuery(\"SELECT ?\");\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-sql-concat-fail-minimal",
+    "rule": "java-sql-concat",
+    "description": "minimal fail Java review signal java-sql-concat",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "stmt.executeQuery(\"SELECT \" + user);\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-runtime-exec-pass-minimal",
+    "rule": "java-runtime-exec",
+    "description": "minimal pass Java review signal java-runtime-exec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "safeProcess(command);\n"
+      }
+    }
+  },
+  {
+    "id": "issue20-runtime-exec-fail-minimal",
+    "rule": "java-runtime-exec",
+    "description": "minimal fail Java review signal java-runtime-exec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/Main.java": "Runtime.getRuntime().exec(command);\n"
+      }
+    }
+  }
+]

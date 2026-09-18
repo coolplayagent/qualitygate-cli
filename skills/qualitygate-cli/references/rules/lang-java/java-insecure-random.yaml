@@ -1,0 +1,17 @@
+id: java-insecure-random
+version: 1
+description: Review new Random calls in security-sensitive code
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\bnew\s+Random\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [security-quality]}
+lifecycle_inputs: [java-insecure-random-review]

@@ -1,0 +1,17 @@
+id: java-manual-gc
+version: 1
+description: Review explicit garbage-collection calls
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\b(?:System\.gc|Runtime\.getRuntime\(\)\.gc)\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [coding-style]}
+lifecycle_inputs: [java-manual-gc-review]

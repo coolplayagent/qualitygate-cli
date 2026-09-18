@@ -268,6 +268,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/ruff-ratchet.yaml",
         "references/gcc-analyzer-ratchet.yaml",
         "references/clang-static-analyzer-ratchet.yaml",
+        "references/checkstyle-ratchet.yaml",
+        "references/pmd-ratchet.yaml",
+        "references/spotbugs-ratchet.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
@@ -370,6 +373,18 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "lang-cpp/cpp-no-std-move-local-return",
         "lang-cpp/cpp-no-unsafe-rand",
         "lang-cpp/cpp-no-throw-spec",
+        "lang-java/java-thread-stop",
+        "lang-java/java-thread-yield",
+        "lang-java/java-manual-gc",
+        "lang-java/java-finalizer",
+        "lang-java/java-implicit-charset",
+        "lang-java/java-implicit-locale",
+        "lang-java/java-insecure-random",
+        "lang-java/java-weak-crypto",
+        "lang-java/java-empty-catch",
+        "lang-java/java-finally-exit",
+        "lang-java/java-sql-concat",
+        "lang-java/java-runtime-exec",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(
@@ -517,6 +532,7 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
         "lang-python/pytest-naming.yaml",
         "lang-c/c-array-safety.yaml",
         "lang-cpp/cpp-no-realloc.yaml",
+        "lang-java/java-thread-stop.yaml",
     ] {
         assert!(
             root.join("skills/qualitygate-cli/references/rules")

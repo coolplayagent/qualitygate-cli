@@ -1,0 +1,13 @@
+# Provide a pinned SpotBugs CLI and build target/classes in both snapshots.
+schema_version: 1
+checks:
+  - id: spotbugs-ratchet
+    argv: [spotbugs, -textui, -xml:withMessages=spotbugs.xml, target/classes]
+    timeout_seconds: 120
+    tools:
+      - {id: spotbugs, argv: [spotbugs, -version]}
+    reports:
+      - path: spotbugs.xml
+        baseline: spotbugs.xml
+        format: spotbugs
+        mode: ratchet

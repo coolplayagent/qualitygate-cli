@@ -1,0 +1,146 @@
+schema_version: 1
+inputs:
+  - id: java-thread-stop-review
+    status: enforced
+    rule_id: java-thread-stop
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Direct thread stop calls are review signals; variable names and aliases may evade the pattern.
+  - id: java-thread-yield-review
+    status: enforced
+    rule_id: java-thread-yield
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: A yield call does not prove scheduling dependence.
+  - id: java-manual-gc-review
+    status: enforced
+    rule_id: java-manual-gc
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Explicit GC may be legitimate in controlled diagnostics; performance impact needs context.
+  - id: java-finalizer-review
+    status: enforced
+    rule_id: java-finalizer
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Only simple same-line finalize declarations are recognized.
+  - id: java-implicit-charset-review
+    status: enforced
+    rule_id: java-implicit-charset
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Zero-argument getBytes is flagged without proving external data or encoding harm.
+  - id: java-implicit-locale-review
+    status: enforced
+    rule_id: java-implicit-locale
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Locale-sensitive behavior depends on the value and use.
+  - id: java-insecure-random-review
+    status: enforced
+    rule_id: java-insecure-random
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Random has valid nonsecurity uses; purpose is not inferred.
+  - id: java-weak-crypto-review
+    status: enforced
+    rule_id: java-weak-crypto
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [owasp-cryptographic-storage]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Algorithm names are flagged without proving a security-sensitive use.
+  - id: java-empty-catch-review
+    status: enforced
+    rule_id: java-empty-catch
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Only a same-line empty block is recognized; comments or multiline blocks are outside scope.
+  - id: java-finally-exit-review
+    status: enforced
+    rule_id: java-finally-exit
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Only same-line finally exits are recognized; control flow is not parsed.
+  - id: java-sql-concat-review
+    status: enforced
+    rule_id: java-sql-concat
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [owasp-sql-injection]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Concatenation is a review signal; input taint and SQL semantics require analysis.
+  - id: java-runtime-exec-review
+    status: enforced
+    rule_id: java-runtime-exec
+    lifecycle_stage: implementation
+    languages: [java]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [huawei-codearts]
+    evidence: [changed-java-line, regex-pattern]
+    applicability: Selected changed Java lines when this optional rule is enabled.
+    critical_adoption: Direct process execution is flagged without proving input control.

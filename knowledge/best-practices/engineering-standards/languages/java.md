@@ -43,3 +43,5 @@ finding for every Java diff.
 [2]: https://github.com/alibaba/p3c
 [3]: https://google.github.io/styleguide/javaguide.html
 [4]: https://support.huaweicloud.com/intl/en-us/usermanual-codecheck/devcloud_hlp_00116.html
+
+The optional Java source review supplement is [`lifecycle-rule-matrix-java.yaml`](../lifecycle-rule-matrix-java.yaml). These changed-line rules are lexical signals and do not replace Java type, data-flow or whole-project analysis.

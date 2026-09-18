@@ -211,6 +211,9 @@ const LIFECYCLE_SUPPLEMENTS: &[&str] = &[
     include_str!(
         "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-cpp.yaml"
     ),
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-java.yaml"
+    ),
 ];
 
 const SOURCE_AUTHORITIES: &[&str] = &[

@@ -1,0 +1,17 @@
+id: java-thread-yield
+version: 1
+description: Review direct Thread.yield scheduling calls
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\bThread\.yield\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [coding-style]}
+lifecycle_inputs: [java-thread-yield-review]

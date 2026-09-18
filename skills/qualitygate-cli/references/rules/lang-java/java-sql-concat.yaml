@@ -1,0 +1,17 @@
+id: java-sql-concat
+version: 1
+description: Review concatenation inside SQL execution calls
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\b(?:executeQuery|executeUpdate|prepareStatement)\s*\([^)]*\+'
+standard_refs:
+  - {source_id: owasp-sql-injection, controls: [parameterized-queries]}
+lifecycle_inputs: [java-sql-concat-review]

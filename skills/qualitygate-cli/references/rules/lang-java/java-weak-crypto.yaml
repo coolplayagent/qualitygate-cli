@@ -1,0 +1,17 @@
+id: java-weak-crypto
+version: 1
+description: Review weak named crypto algorithms
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\b(?:MessageDigest|Cipher)\.getInstance\s*\(\s*"(?:MD5|SHA-?1|DES|RC4)"'
+standard_refs:
+  - {source_id: owasp-cryptographic-storage, controls: [algorithm-selection]}
+lifecycle_inputs: [java-weak-crypto-review]

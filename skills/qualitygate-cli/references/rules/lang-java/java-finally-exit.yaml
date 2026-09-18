@@ -1,0 +1,17 @@
+id: java-finally-exit
+version: 1
+description: Review abrupt exits within same-line finally blocks
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\bfinally\s*\{[^}]*(?:return|break|continue|throw)\b'
+standard_refs:
+  - {source_id: huawei-codearts, controls: [coding-style]}
+lifecycle_inputs: [java-finally-exit-review]

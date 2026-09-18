@@ -1,0 +1,14 @@
+# Replace source/config paths with tracked project paths; provision a pinned Checkstyle CLI.
+schema_version: 1
+checks:
+  - id: checkstyle-ratchet
+    argv: [checkstyle, -c, config/checkstyle.xml, -f, xml, -o, checkstyle.xml, src/main/java]
+    timeout_seconds: 120
+    findings_exit_codes: [1]
+    tools:
+      - {id: checkstyle, argv: [checkstyle, -V]}
+    reports:
+      - path: checkstyle.xml
+        baseline: checkstyle.xml
+        format: checkstyle
+        mode: ratchet
