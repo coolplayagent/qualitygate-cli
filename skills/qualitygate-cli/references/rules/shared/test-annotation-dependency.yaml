@@ -1,0 +1,19 @@
+id: test-annotation-dependency
+version: 1
+description: Require a resolved Maven test dependency when added Java tests use a configured annotation
+implementation: test-annotation-dependency
+language: [java]
+requires_capabilities: [test_methods, annotations, dependency_resolution]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    annotation: Test
+    group: org.junit.jupiter
+    artifact: junit-jupiter-api
+    languages: [java]
+standard_refs:
+  - {source_id: alibaba-p3c, controls: [dependency-rules, static-analysis]}
+  - {source_id: aws-component-management, controls: [component-inventory, dependency-management]}
+  - {source_id: huawei-codearts, controls: [security-quality, static-gate]}
+lifecycle_inputs: [java-annotation-dependency]

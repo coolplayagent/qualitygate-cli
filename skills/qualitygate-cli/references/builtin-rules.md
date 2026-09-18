@@ -32,6 +32,9 @@ execution evidence is incomplete validation, never a clean result.
 | Rule | Languages | Default | Use it for |
 | --- | --- | --- | --- |
 | `test-naming` | Java, Python, Rust, TypeScript, Go | error | added test discovery names |
+| `test-naming-strict` | Java | error | added test names matching a team pattern |
+| `test-annotation-dependency` | Java | error | annotated added tests and resolved Maven dependency facts |
+| `no-hardcoded-secrets` | Java | error | literal credential patterns in added files |
 | `parameterized-tests` | Java, Python, Rust, TypeScript, Go | warning | repeated added test shapes |
 | `comment-language` | supported parsed comments | warning | an explicitly selected comment-language convention |
 | `security-sensitive-api` | Java, Python, Rust, TypeScript, Go | warning | changed uses of configured high-risk API patterns |
@@ -47,6 +50,19 @@ language-keyed regex arrays; `paths` and `languages` can scope it.
 `todo-marker` uses the same bounded changed-line engine. It asks for an
 explicit decision about deferred work rather than assuming that every marker is
 a defect or should be deleted.
+
+`commit-message-convention` is a core rule with a ticket-prefixed default
+subject pattern. Configure `parameters.pattern` for the team's convention.
+`test-naming-strict` defaults to `^should_.+_when_.+` on added Java tests.
+`test-annotation-dependency` defaults to `@Test` and
+`org.junit.jupiter:junit-jupiter-api`; set `annotation`, `group`, and
+`artifact` to the actual project contract, and provide a snapshot-bound Maven
+facts producer through `depends_on`. Missing facts are incomplete validation
+when an annotated added test is selected; an empty selection passes without a
+configured producer prerequisite. Configured prerequisites still run.
+`no-hardcoded-secrets` checks added Java files with a configurable single-line
+regex and does not prove that every secret or live credential was found.
+These Java rules are opt-in and keep a fixed Java scope.
 
 ## Architecture rules
 

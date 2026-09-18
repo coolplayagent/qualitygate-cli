@@ -1,5 +1,5 @@
 schema_version: 1
-updated: 2026-09-13
+updated: 2026-09-18
 title: Qualitygate lifecycle rule input matrix
 policy:
   missing_required_evidence: incomplete
@@ -38,6 +38,18 @@ inputs:
     evidence: [commit-subject, selected-commit-history]
     applicability: Commit snapshots with complete local history.
     critical_adoption: A subject convention records intent but cannot replace code review, ownership, or threat analysis.
+  - id: ticketed-commit-subject
+    status: enforced
+    rule_id: commit-message-convention
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [reviewability, quality-gate]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [aws-code-review, cloudflare-codex]
+    evidence: [commit-subject, selected-commit-history, configured-pattern]
+    applicability: New commits in a selected comparison when a team adopts the packaged ticket convention.
+    critical_adoption: The default ticket prefixes are an example convention; teams must configure their own pattern when different.
   - id: focused-change-review
     status: enforced
     rule_id: diff-size
@@ -74,6 +86,18 @@ inputs:
     evidence: [changed-source-lines, regex-pattern]
     applicability: Changed source lines in supported languages that match a packaged or repository-configured review pattern.
     critical_adoption: A matched API is a review signal, not proof of exploitability, data exposure, or an unsafe call path; promote it only with scoped false-positive evidence.
+  - id: java-literal-secret-review
+    status: enforced
+    rule_id: no-hardcoded-secrets
+    lifecycle_stage: static-analysis
+    languages: [java]
+    concerns: [security, static-gate]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [huawei-codearts, meta-zoncolan]
+    evidence: [added-java-file, configured-pattern]
+    applicability: Added Java source files with literal assignments matching the configured regex.
+    critical_adoption: Regex matching is a bounded signal and cannot detect every secret or prove that a match is a live credential.
   - id: deferred-work-marker
     status: enforced
     rule_id: todo-marker
@@ -110,6 +134,18 @@ inputs:
     evidence: [test-structure, syntax-spans]
     applicability: Added tests recognized by a supported syntax adapter.
     critical_adoption: Framework discovery rules outrank a generic naming convention.
+  - id: strict-java-test-naming
+    status: enforced
+    rule_id: test-naming-strict
+    lifecycle_stage: verification
+    languages: [java]
+    concerns: [testing, coding]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [alibaba-ajcg, google-java, huawei-codearts]
+    evidence: [added-java-test, syntax-spans, configured-pattern]
+    applicability: Added Java test methods recognized by the syntax adapter.
+    critical_adoption: The team pattern must preserve framework discovery and allow its established naming convention.
   - id: test-variation-design
     status: enforced
     rule_id: parameterized-tests
@@ -158,6 +194,18 @@ inputs:
     evidence: [resolved-dependency-facts, bytecode-usage, static-report]
     applicability: Maven projects with complete compilation and dependency inventories.
     critical_adoption: Missing bytecode, resolution, or analyzer scope is incomplete evidence, never a clean dependency result.
+  - id: java-annotation-dependency
+    status: enforced
+    rule_id: test-annotation-dependency
+    lifecycle_stage: verification
+    languages: [java]
+    concerns: [testing, dependencies]
+    enforcement: semantic-static
+    outcome: violation
+    source_ids: [alibaba-p3c, aws-component-management, huawei-codearts]
+    evidence: [added-annotated-java-test, resolved-maven-project-facts, snapshot-digest]
+    applicability: Added Java tests bearing the configured annotation and owned by exactly one resolved Maven project.
+    critical_adoption: Missing or stale Maven facts are incomplete evidence; an annotation alone does not prove its library coordinates.
   - id: java-test-conventions
     status: enforced
     rule_id: junit-naming

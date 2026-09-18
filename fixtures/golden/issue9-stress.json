@@ -1,0 +1,10 @@
+{
+  "issue9-commit-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-commit-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/subject":"[WI99]test: "},
+  "issue9-naming-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-naming-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"src/test/java/边界 Case.java"},
+  "issue9-dependency-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-dependency-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/artifact":"junit-jupiter-api"},
+  "issue9-secret-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue9-secret-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"src/main/java/边界 Case.java"}
+}

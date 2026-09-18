@@ -4,7 +4,6 @@ use super::syntax::{self, Entity, Structure};
 use crate::snapshot::{self, File, Snapshot};
 use anyhow::{Result, bail};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
-use std::time::{Duration, Instant};
 
 pub(super) struct TestChange {
     pub entity: Entity,
@@ -70,35 +69,48 @@ fn analyze(
     let filters = filters.build()?;
     let mut head = BTreeMap::new();
     let mut base = BTreeMap::new();
-    let started = Instant::now();
     let mut entity_count = 0;
     // Match across the complete change before filtering; moving into a selected
     // path must not turn an existing entity into a new one.
-    for (path, change) in changes {
-        if started.elapsed() > Duration::from_secs(30) {
-            bail!("Rule structure collection exceeded 30 seconds");
-        }
-        let language = syntax::language(path);
-        if !languages.is_empty()
-            && language.is_none_or(|language| !languages.iter().any(|value| value == language))
-        {
-            continue;
-        }
-        if let Some(file) = files.get(path)
-            && let Some(view) = syntax::parse(path, &file.bytes)?
-        {
-            entity_count += view.tests.len();
-            head.insert(path.clone(), view);
-        }
-        if let Some(path) = &change.old_path
-            && let Some(file) = base_files.get(path)
-            && let Some(view) = syntax::parse(path, &file.bytes)?
-        {
-            entity_count += view.tests.len();
-            base.insert(path.clone(), view);
-        }
-        if entity_count > 50_000 {
-            bail!("Rule structure collection exceeded 50000 test entities");
+    let selected: Vec<_> = changes
+        .iter()
+        .filter(|(path, _)| {
+            syntax::language(path).is_some_and(|language| {
+                languages.is_empty() || languages.iter().any(|value| value == language)
+            })
+        })
+        .collect();
+    let deadline = super::parallel::deadline();
+    for chunk in selected.chunks(64) {
+        let parsed = super::parallel::map(chunk, deadline, |(path, change)| {
+            let current = files
+                .get(*path)
+                .map(|file| syntax::parse(path, &file.bytes))
+                .transpose()?
+                .flatten();
+            let previous = change
+                .old_path
+                .as_ref()
+                .and_then(|old_path| base_files.get(old_path).map(|file| (old_path, file)))
+                .map(|(old_path, file)| syntax::parse(old_path, &file.bytes))
+                .transpose()?
+                .flatten();
+            Ok(((*path).clone(), change.old_path.clone(), current, previous))
+        })?;
+        for (path, old_path, current, previous) in parsed {
+            if let Some(view) = current {
+                entity_count += view.tests.len();
+                head.insert(path, view);
+            }
+            if let Some(path) = old_path
+                && let Some(view) = previous
+            {
+                entity_count += view.tests.len();
+                base.insert(path, view);
+            }
+            if entity_count > 50_000 {
+                bail!("Rule structure collection exceeded 50000 test entities");
+            }
         }
     }
     let old: Vec<_> = base
