@@ -1,0 +1,16 @@
+id: go-tls-insecure-skip-verify
+version: 1
+description: Flag literal TLS verification bypass on changed lines
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\bInsecureSkipVerify\s*:\s*true\b']
+standard_refs:
+  - {source_id: gosec-rules, controls: [go-security-patterns]}
+lifecycle_inputs: [go-tls-insecure-skip-verify-review]

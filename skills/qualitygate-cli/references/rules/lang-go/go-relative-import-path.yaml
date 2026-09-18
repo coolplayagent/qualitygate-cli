@@ -1,0 +1,16 @@
+id: go-relative-import-path
+version: 1
+description: Review relative Go import paths on changed lines
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['^\s*(?:import\s+)?\"\.\.?/']
+standard_refs:
+  - {source_id: go-modules, controls: [import-paths]}
+lifecycle_inputs: [go-relative-import-path-review]

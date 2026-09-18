@@ -4,6 +4,7 @@ mod cargo_clippy;
 mod coverage;
 mod coverage_py;
 mod eslint_json;
+mod golangci_json;
 mod jacoco;
 mod json;
 mod lcov;
@@ -124,6 +125,7 @@ pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
     let data = match format {
         ReportFormat::CargoClippy => cargo_clippy::parse(text)?,
         ReportFormat::EslintJson => eslint_json::parse(text)?,
+        ReportFormat::GolangciJson => golangci_json::parse(text)?,
         ReportFormat::Lcov => lcov::parse(text)?,
         ReportFormat::Sarif => json::sarif(text)?,
         ReportFormat::CoveragePy => coverage_py::parse(text)?,

@@ -1,0 +1,16 @@
+id: go-sensitive-info-in-log
+version: 1
+description: Review sensitive variable names in logging calls
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['(?i)\b(?:log|fmt)\.(?:Print|Fprint|Sprint|Fatal|Panic)\w*\s*\([^)]*\b(?:password|passwd|secret|token|key|credential)\b']
+standard_refs:
+  - {source_id: owasp-logging, controls: [sensitive-logging]}
+lifecycle_inputs: [go-sensitive-info-in-log-review]

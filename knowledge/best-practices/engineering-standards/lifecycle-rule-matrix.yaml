@@ -14,6 +14,150 @@ taxonomy:
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
 inputs:
+  - id: go-sql-injection-review
+    status: enforced
+    rule_id: go-sql-injection
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gosec-rules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Same-line SQL formatting is a review signal; taint and query execution need gosec analysis.
+  - id: go-insecure-randomness-review
+    status: enforced
+    rule_id: go-insecure-randomness
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gosec-rules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: math/rand has valid nonsecurity uses; the signal does not prove sensitive use.
+  - id: go-tls-insecure-skip-verify-review
+    status: enforced
+    rule_id: go-tls-insecure-skip-verify
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gosec-rules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Only literal true assignments on one line are recognized.
+  - id: go-hardcoded-credentials-review
+    status: enforced
+    rule_id: go-hardcoded-credentials
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gosec-rules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: The literal-name heuristic can match comments and misses indirect secrets.
+  - id: go-ssh-insecure-ignore-host-key-review
+    status: enforced
+    rule_id: go-ssh-insecure-ignore-host-key
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gosec-rules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Aliased imports and wrappers require semantic analysis.
+  - id: go-file-permission-creation-review
+    status: enforced
+    rule_id: go-file-permission-creation
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gosec-rules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Only same-line literal 0666 or 0777 modes are recognized.
+  - id: go-panic-in-exported-function-review
+    status: enforced
+    rule_id: go-panic-in-exported-function
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [effective-go]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: All panic calls are flagged; exported-function membership is not inferred.
+  - id: go-cgo-cstring-without-defer-free-review
+    status: enforced
+    rule_id: go-cgo-cstring-without-defer-free
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [go-cgo-memory]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Allocation is flagged; no attempt is made to prove a missing free.
+  - id: go-relative-import-path-review
+    status: enforced
+    rule_id: go-relative-import-path
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [go-modules]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: One-line import paths are checked; module resolution belongs to Go tools.
+  - id: go-dot-import-review
+    status: enforced
+    rule_id: go-dot-import
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [go-code-review]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Go review guidance allows a narrow test-package exception.
+  - id: go-sensitive-info-in-log-review
+    status: enforced
+    rule_id: go-sensitive-info-in-log
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [owasp-logging]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Variable names are a review signal and do not establish data sensitivity.
+  - id: go-float-loop-counter-review
+    status: enforced
+    rule_id: go-float-loop-counter
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [go-spec]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Literal floating initializers only; loop behavior and termination need review.
   - id: ts-no-eval-review
     status: enforced
     rule_id: ts-no-eval

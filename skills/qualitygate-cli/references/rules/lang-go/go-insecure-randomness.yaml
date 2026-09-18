@@ -1,0 +1,16 @@
+id: go-insecure-randomness
+version: 1
+description: Review math/rand imports and calls on changed lines
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\bmath/rand\b|\brand\.(?:Intn|Int|Float64|Read)\s*\(']
+standard_refs:
+  - {source_id: gosec-rules, controls: [go-security-patterns]}
+lifecycle_inputs: [go-insecure-randomness-review]

@@ -1,0 +1,16 @@
+id: go-cgo-cstring-without-defer-free
+version: 1
+description: Review cgo C heap allocation calls for matching frees
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\bC\.(?:CString|CBytes)\s*\(']
+standard_refs:
+  - {source_id: go-cgo-memory, controls: [cgo-ownership]}
+lifecycle_inputs: [go-cgo-cstring-without-defer-free-review]

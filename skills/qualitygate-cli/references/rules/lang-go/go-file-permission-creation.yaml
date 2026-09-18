@@ -1,0 +1,16 @@
+id: go-file-permission-creation
+version: 1
+description: Review world-writable literal modes in file creation calls
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go: ['\b(?:os\.OpenFile|os\.WriteFile|ioutil\.WriteFile)\s*\([^)]*\b0o?(?:666|777)\b']
+standard_refs:
+  - {source_id: gosec-rules, controls: [go-security-patterns]}
+lifecycle_inputs: [go-file-permission-creation-review]

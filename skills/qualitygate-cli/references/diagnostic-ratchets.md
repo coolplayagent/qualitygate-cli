@@ -30,7 +30,7 @@ checks:
 ```
 
 Supported diagnostic formats are `diagnostics`, `sarif`, `checkstyle`, `pmd`,
-`spotbugs`, `cargo_clippy` and `eslint_json`. For Clippy, use the bundled
+`spotbugs`, `cargo_clippy`, `eslint_json` and `golangci_json`. For Clippy, use the bundled
 [reference policy](clippy-ratchet.yaml): `cargo clippy --message-format=json`
 emits JSON Lines to captured stdout, so set `from_stdout: true` and use a
 confined `path` only as the report identity. `baseline` is mandatory in the
@@ -54,6 +54,14 @@ project's flat config establish analyzed scope, rule selection and ignores;
 the rule counts are not a substitute for complete scope evidence. Provision
 a pinned ESLint executable and plugins for both snapshots, retain its version
 probe, and do not use cache, quiet or fix modes for a fresh ratchet report.
+
+For Go, use the bundled [golangci-lint v2 reference policy](golangci-lint-ratchet.yaml).
+It sends JSON to captured stdout and text to stderr, disables stdout stats,
+count limits and line deduplication, and declares `findings_exit_codes: [1]`.
+Track `.golangci.yml` for linter selection and edit the final package target
+for scope. Keep the Go toolchain and golangci-lint binary pinned for both
+snapshots. Analyzer warnings, errors, typecheck issues and invalid locations
+are incomplete; do not use `--new`, `--fix` or `--fast-only` in the ratchet.
 
 Declare report-producing tools and stable version probes, plus `tools[].inputs`
 for repository analyzer scripts, wrappers or other tool assets. Both runs need

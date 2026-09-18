@@ -1,0 +1,266 @@
+[
+  {
+    "id": "issue15-sql-injection-pass-typical",
+    "rule": "go-sql-injection",
+    "description": "typical pass Go review signal go-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "db.Query(\"SELECT * FROM users WHERE id=?\", id)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sql-injection-fail-typical",
+    "rule": "go-sql-injection",
+    "description": "typical fail Go review signal go-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "query := \"SELECT * FROM users WHERE id=\" + userID\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-insecure-randomness-pass-typical",
+    "rule": "go-insecure-randomness",
+    "description": "typical pass Go review signal go-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"crypto/rand\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-insecure-randomness-fail-typical",
+    "rule": "go-insecure-randomness",
+    "description": "typical fail Go review signal go-insecure-randomness",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"math/rand\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-tls-insecure-skip-verify-pass-typical",
+    "rule": "go-tls-insecure-skip-verify",
+    "description": "typical pass Go review signal go-tls-insecure-skip-verify",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "tls.Config{MinVersion: tls.VersionTLS12}\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-tls-insecure-skip-verify-fail-typical",
+    "rule": "go-tls-insecure-skip-verify",
+    "description": "typical fail Go review signal go-tls-insecure-skip-verify",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "tls.Config{InsecureSkipVerify: true}\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-hardcoded-credentials-pass-typical",
+    "rule": "go-hardcoded-credentials",
+    "description": "typical pass Go review signal go-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "password := os.Getenv(\"PASSWORD\")\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-hardcoded-credentials-fail-typical",
+    "rule": "go-hardcoded-credentials",
+    "description": "typical fail Go review signal go-hardcoded-credentials",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "password := \"secret123\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-ssh-insecure-ignore-host-key-pass-typical",
+    "rule": "go-ssh-insecure-ignore-host-key",
+    "description": "typical pass Go review signal go-ssh-insecure-ignore-host-key",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ssh.FixedHostKey(key)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-ssh-insecure-ignore-host-key-fail-typical",
+    "rule": "go-ssh-insecure-ignore-host-key",
+    "description": "typical fail Go review signal go-ssh-insecure-ignore-host-key",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ssh.InsecureIgnoreHostKey()\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-file-permission-creation-pass-typical",
+    "rule": "go-file-permission-creation",
+    "description": "typical pass Go review signal go-file-permission-creation",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "os.WriteFile(path, data, 0o600)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-file-permission-creation-fail-typical",
+    "rule": "go-file-permission-creation",
+    "description": "typical fail Go review signal go-file-permission-creation",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "os.WriteFile(path, data, 0o666)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-panic-in-exported-function-pass-typical",
+    "rule": "go-panic-in-exported-function",
+    "description": "typical pass Go review signal go-panic-in-exported-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "return err\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-panic-in-exported-function-fail-typical",
+    "rule": "go-panic-in-exported-function",
+    "description": "typical fail Go review signal go-panic-in-exported-function",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "panic(err)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-cgo-cstring-without-defer-free-pass-typical",
+    "rule": "go-cgo-cstring-without-defer-free",
+    "description": "typical pass Go review signal go-cgo-cstring-without-defer-free",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ptr := []byte(name)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-cgo-cstring-without-defer-free-fail-typical",
+    "rule": "go-cgo-cstring-without-defer-free",
+    "description": "typical fail Go review signal go-cgo-cstring-without-defer-free",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "ptr := C.CString(name)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-relative-import-path-pass-typical",
+    "rule": "go-relative-import-path",
+    "description": "typical pass Go review signal go-relative-import-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"example.com/project/other\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-relative-import-path-fail-typical",
+    "rule": "go-relative-import-path",
+    "description": "typical fail Go review signal go-relative-import-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"../other\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-dot-import-pass-typical",
+    "rule": "go-dot-import",
+    "description": "typical pass Go review signal go-dot-import",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-dot-import-fail-typical",
+    "rule": "go-dot-import",
+    "description": "typical fail Go review signal go-dot-import",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import . \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sensitive-info-in-log-pass-typical",
+    "rule": "go-sensitive-info-in-log",
+    "description": "typical pass Go review signal go-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "log.Printf(\"user=%s\", user)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-sensitive-info-in-log-fail-typical",
+    "rule": "go-sensitive-info-in-log",
+    "description": "typical fail Go review signal go-sensitive-info-in-log",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "log.Printf(\"password=%s\", password)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-float-loop-counter-pass-typical",
+    "rule": "go-float-loop-counter",
+    "description": "typical pass Go review signal go-float-loop-counter",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "for i := 0; i < 10; i++ { }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-float-loop-counter-fail-typical",
+    "rule": "go-float-loop-counter",
+    "description": "typical fail Go review signal go-float-loop-counter",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "for i := 0.0; i < 10; i++ { }\n"
+      }
+    }
+  }
+]
