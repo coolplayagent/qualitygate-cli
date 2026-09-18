@@ -201,9 +201,14 @@ const STANDARD_REGISTRY: &str =
 const LIFECYCLE_MATRIX: &str = include_str!(
     "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml"
 );
-const LIFECYCLE_SUPPLEMENTS: &[&str] = &[include_str!(
-    "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml"
-)];
+const LIFECYCLE_SUPPLEMENTS: &[&str] = &[
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml"
+    ),
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-c.yaml"
+    ),
+];
 
 const SOURCE_AUTHORITIES: &[&str] = &[
     "repository-policy",

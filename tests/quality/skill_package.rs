@@ -161,7 +161,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "assets/linux-aarch64/qualitygate",
         "assets/windows-x86_64/qualitygate.exe",
         "assets/windows-aarch64/qualitygate.exe",
-        "references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go}/*.yaml",
+        "references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c}/*.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
@@ -266,6 +266,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/eslint-ratchet.yaml",
         "references/golangci-lint-ratchet.yaml",
         "references/ruff-ratchet.yaml",
+        "references/gcc-analyzer-ratchet.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
@@ -352,6 +353,13 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "lang-python/py-assert-in-production",
         "lang-python/py-sensitive-info-in-log",
         "lang-python/py-pickle-load",
+        "lang-c/c-array-safety",
+        "lang-c/c-assertion-discipline",
+        "lang-c/c-control-flow",
+        "lang-c/c-expression-safety",
+        "lang-c/c-file-security",
+        "lang-c/c-function-safety",
+        "lang-c/c-numeric-literal",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(
@@ -497,6 +505,7 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
         "shared/import-boundary.yaml",
         "lang-java/module-boundary.yaml",
         "lang-python/pytest-naming.yaml",
+        "lang-c/c-array-safety.yaml",
     ] {
         assert!(
             root.join("skills/qualitygate-cli/references/rules")

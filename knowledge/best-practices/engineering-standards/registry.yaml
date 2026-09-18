@@ -11,6 +11,28 @@ coverage:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: sei-cert-c
+    organization: SEI CERT
+    title: SEI CERT C Coding Standard
+    authority: industry-standard
+    kind: documentation
+    url: https://wiki.sei.cmu.edu/confluence/display/c
+    languages: [c]
+    lifecycle_stages: [implementation, static-analysis, review]
+    concerns: [coding, security, reliability]
+    controls: [array-safety, assertion-discipline, control-flow, expression-safety, file-security, function-safety, numeric-literal]
+    summary: C secure coding guidance motivates review of bounded arrays, side effects, control flow, file handling, function calls and readable literals; lexical matches alone do not establish conformance.
+  - id: sei-cert-cpp
+    organization: SEI CERT
+    title: SEI CERT C++ Coding Standard
+    authority: industry-standard
+    kind: documentation
+    url: https://wiki.sei.cmu.edu/confluence/x/Wnw-BQ
+    languages: [cpp]
+    lifecycle_stages: [implementation, static-analysis, review]
+    concerns: [coding, security, reliability]
+    controls: [array-safety, assertion-discipline, control-flow, expression-safety, file-security, function-safety, numeric-literal]
+    summary: C++ secure coding guidance references the C standard and motivates contextual review of the same hazard classes; lexical matches alone do not establish conformance.
   - id: ruff-rules
     organization: Astral
     title: Ruff rules reference

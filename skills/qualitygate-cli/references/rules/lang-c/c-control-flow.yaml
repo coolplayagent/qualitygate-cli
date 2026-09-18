@@ -1,0 +1,22 @@
+id: c-control-flow
+version: 1
+description: Review open-ended for loops and floating loop declarations
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\bfor\s*\(\s*;'
+        - '\bfor\s*\(\s*(?:float|double)\b'
+      cpp:
+        - '\bfor\s*\(\s*;'
+        - '\bfor\s*\(\s*(?:float|double)\b'
+standard_refs:
+  - {source_id: sei-cert-c, controls: [control-flow]}
+  - {source_id: sei-cert-cpp, controls: [control-flow]}
+lifecycle_inputs: [c-control-flow-review]

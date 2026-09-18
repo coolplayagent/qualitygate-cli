@@ -1,0 +1,20 @@
+id: c-array-safety
+version: 1
+description: Review variable-bound stack array declarations on changed C/C++ lines
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\b(?:char|short|int|long|float|double|size_t)\s+[A-Za-z_]\w*\s*\[\s*[A-Za-z_]\w*\s*\]'
+      cpp:
+        - '\b(?:char|short|int|long|float|double|size_t)\s+[A-Za-z_]\w*\s*\[\s*[A-Za-z_]\w*\s*\]'
+standard_refs:
+  - {source_id: sei-cert-c, controls: [array-safety]}
+  - {source_id: sei-cert-cpp, controls: [array-safety]}
+lifecycle_inputs: [c-array-safety-review]

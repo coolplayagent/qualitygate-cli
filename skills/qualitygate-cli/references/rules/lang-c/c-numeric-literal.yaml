@@ -1,0 +1,20 @@
+id: c-numeric-literal
+version: 1
+description: Reject visually ambiguous lowercase l integer suffixes
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\b(?:0[xX][0-9A-Fa-f]+|[0-9]+)(?:[uU]?l{1,2}|l{1,2}[uU]?)\b'
+      cpp:
+        - '\b(?:0[xX][0-9A-Fa-f]+|[0-9]+)(?:[uU]?l{1,2}|l{1,2}[uU]?)\b'
+standard_refs:
+  - {source_id: sei-cert-c, controls: [numeric-literal]}
+  - {source_id: sei-cert-cpp, controls: [numeric-literal]}
+lifecycle_inputs: [c-numeric-literal-review]

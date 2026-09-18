@@ -150,6 +150,28 @@ for semantic lint results.
 | `go-sensitive-info-in-log` | warning | sensitive variable name in log call |
 | `go-float-loop-counter` | warning | floating literal for-loop initializer |
 
+## C and C++ review signals
+
+Select `rulesets: [lang-c]` and the desired rule IDs. These seven rules are
+opt-in and fixed to `languages: [c, cpp]`. They match changed UTF-8 source
+lines with bounded regular expressions. `paths`, `prohibited_patterns.c`,
+and `prohibited_patterns.cpp` may be configured, but both language keys must
+remain present. `.h` is classified as C text; `.hh`, `.hpp` and `.hxx` as C++
+text. No C/C++ syntax parser is implied. These signals can match comments or
+strings and cannot establish type safety, data flow or CERT compliance. Use
+the [GCC SARIF ratchet reference](gcc-analyzer-ratchet.yaml) for analyzer
+evidence. The repository's `docs/c-family-ratchet.md` explains adoption.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `c-array-safety` | error | variable-bound array declaration |
+| `c-assertion-discipline` | warning | increment or decrement inside `assert` |
+| `c-control-flow` | warning | empty `for` condition or floating loop declaration |
+| `c-expression-safety` | warning | increment or decrement inside `sizeof` |
+| `c-file-security` | error | `mktemp` or `tmpnam` call |
+| `c-function-safety` | warning | `abort`, `exit`, `realloc`, `alloca`, `pthread_exit` or `ExitThread` call |
+| `c-numeric-literal` | error | lowercase `l` integer suffix |
+
 ## Python review signals
 
 Select `rulesets: [lang-python]` and the desired rule IDs. All thirteen rules

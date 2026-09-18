@@ -1,0 +1,86 @@
+schema_version: 1
+inputs:
+  - id: c-array-safety-review
+    status: enforced
+    rule_id: c-array-safety
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [security, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Variable-bound array declarations need type and bounds review; this regex does not prove stack overflow.
+  - id: c-assertion-discipline-review
+    status: enforced
+    rule_id: c-assertion-discipline
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Same-line increment or decrement inside assert is a review signal; macro expansion and debug configuration are not inspected.
+  - id: c-control-flow-review
+    status: enforced
+    rule_id: c-control-flow
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: An empty for condition or floating counter may be intentional; termination and switch exhaustiveness require control-flow analysis.
+  - id: c-expression-safety-review
+    status: enforced
+    rule_id: c-expression-safety
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Same-line sizeof side effects are flagged for review; operand evaluation depends on types and language rules.
+  - id: c-file-security-review
+    status: enforced
+    rule_id: c-file-security
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [security, reliability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Legacy temporary-name APIs are flagged; permissions and path validation require external analysis.
+  - id: c-function-safety-review
+    status: enforced
+    rule_id: c-function-safety
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [security, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Abrupt termination and allocation calls need context; a call name alone is not proof of unsafe use.
+  - id: c-numeric-literal-review
+    status: enforced
+    rule_id: c-numeric-literal
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Lowercase l suffixes are visually ambiguous; regex may also match comments or strings.

@@ -36,7 +36,7 @@ pub fn describe(implementation: &str, defaults: &Value) -> Result<Vec<Value>> {
             "languages" if ["test-naming-strict", "test-annotation-dependency"].contains(&implementation) => ("array", "Fixed Java syntax scope for this built-in.", json!({"type":"array","const":["java"]})),
             "languages" if implementation == "file-pattern" => ("array", "Fixed file language scope for this built-in; an empty array selects all added files allowed by paths.", json!({"type":"array","const":defaults["languages"]})),
             "languages" if ["shell-shebang", "shell-commented-code"].contains(&implementation) => ("array", "Fixed Shell language scope for this built-in.", json!({"type":"array","const":["shell"]})),
-            "languages" => ("array", "Syntax adapter languages: java, python, typescript, go, rust, shell.", strings()),
+            "languages" => ("array", "Source review languages: java, python, typescript, go, rust, shell; text-only C and C++ for source-pattern.", strings()),
             "exempt_patterns" => ("array", "Regular expressions exempting matching comments.", strings()),
             "modules" => ("array", "1..256 unique normalized repository module roots.", json!({"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"type":"string"}})),
             "max_added_lines" => ("integer", "Maximum added lines in the selected diff (at least one).", json!({"type":"integer","minimum":1})),

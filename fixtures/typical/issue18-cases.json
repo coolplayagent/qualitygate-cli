@@ -1,0 +1,156 @@
+[
+  {
+    "id": "issue18-array-safety-pass-typical",
+    "rule": "c-array-safety",
+    "description": "typical pass C family review signal c-array-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "int values[16];\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-array-safety-fail-typical",
+    "rule": "c-array-safety",
+    "description": "typical fail C family review signal c-array-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "int values[count];\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-assertion-discipline-pass-typical",
+    "rule": "c-assertion-discipline",
+    "description": "typical pass C family review signal c-assertion-discipline",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "assert(index < 10);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-assertion-discipline-fail-typical",
+    "rule": "c-assertion-discipline",
+    "description": "typical fail C family review signal c-assertion-discipline",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "assert(index++ < 10);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-control-flow-pass-typical",
+    "rule": "c-control-flow",
+    "description": "typical pass C family review signal c-control-flow",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "for (int i = 0; i < 10; ++i) { }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-control-flow-fail-typical",
+    "rule": "c-control-flow",
+    "description": "typical fail C family review signal c-control-flow",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "for (;;) { break; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-expression-safety-pass-typical",
+    "rule": "c-expression-safety",
+    "description": "typical pass C family review signal c-expression-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "size_t n = sizeof(index);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-expression-safety-fail-typical",
+    "rule": "c-expression-safety",
+    "description": "typical fail C family review signal c-expression-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "size_t n = sizeof(index++);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-file-security-pass-typical",
+    "rule": "c-file-security",
+    "description": "typical pass C family review signal c-file-security",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "char *name = safe_name();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-file-security-fail-typical",
+    "rule": "c-file-security",
+    "description": "typical fail C family review signal c-file-security",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "char *name = tmpnam(0);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-function-safety-pass-typical",
+    "rule": "c-function-safety",
+    "description": "typical pass C family review signal c-function-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "return error;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-function-safety-fail-typical",
+    "rule": "c-function-safety",
+    "description": "typical fail C family review signal c-function-safety",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "abort();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-numeric-literal-pass-typical",
+    "rule": "c-numeric-literal",
+    "description": "typical pass C family review signal c-numeric-literal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "long n = 123L;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-numeric-literal-fail-typical",
+    "rule": "c-numeric-literal",
+    "description": "typical fail C family review signal c-numeric-literal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "long n = 123l;\n"
+      }
+    }
+  }
+]

@@ -67,7 +67,7 @@ pub(super) fn validate(
                 }
             }
             "prohibited_patterns" | "forbidden_imports" => {
-                pattern_map(key, value)?;
+                pattern_map(key, value, id == "source-pattern")?;
             }
             "paths" | "exempt_patterns" | "languages" => {
                 for value in value
@@ -86,7 +86,8 @@ pub(super) fn validate(
                         regex::Regex::new(text)?;
                     } else if !["java", "python", "typescript", "go", "rust", "shell"]
                         .contains(&text)
-                        && !(id == "file-pattern" && ["c", "cpp"].contains(&text))
+                        && !(["file-pattern", "source-pattern"].contains(&id)
+                            && ["c", "cpp"].contains(&text))
                     {
                         bail!("Unsupported rule language: {text}");
                     }
@@ -130,6 +131,34 @@ pub(super) fn validate(
     }
     if id == "source-pattern" && !rule.parameters.contains_key("prohibited_patterns") {
         bail!("source-pattern requires prohibited_patterns");
+    }
+    if builtin_id == "security-sensitive-api" {
+        if rule
+            .parameters
+            .get("languages")
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(|languages| {
+                languages.iter().any(|language| {
+                    language.as_str().is_none_or(|language| {
+                        !builtin_languages.iter().any(|known| known == language)
+                    })
+                })
+            })
+        {
+            bail!("security-sensitive-api requires its declared language scope");
+        }
+        if rule
+            .parameters
+            .get("prohibited_patterns")
+            .and_then(serde_json::Value::as_object)
+            .is_some_and(|patterns| {
+                patterns.keys().any(|language| {
+                    language != "all" && !builtin_languages.iter().any(|known| known == language)
+                })
+            })
+        {
+            bail!("security-sensitive-api requires patterns within its declared language scope");
+        }
     }
     if ["test-naming-strict", "test-annotation-dependency"].contains(&id)
         && rule.parameters.get("languages") != Some(&serde_json::json!(["java"]))
@@ -176,6 +205,20 @@ pub(super) fn validate(
             bail!("{builtin_id} requires prohibited_patterns.{language} only");
         }
     }
+    if builtin_id.starts_with("c-") && id == "source-pattern" {
+        if rule.parameters.get("languages") != Some(&serde_json::json!(["c", "cpp"])) {
+            bail!("{builtin_id} requires languages: [c, cpp]");
+        }
+        let patterns = rule
+            .parameters
+            .get("prohibited_patterns")
+            .and_then(serde_json::Value::as_object);
+        if patterns.is_none_or(|patterns| {
+            patterns.len() != 2 || !patterns.contains_key("c") || !patterns.contains_key("cpp")
+        }) {
+            bail!("{builtin_id} requires prohibited_patterns.c and .cpp only");
+        }
+    }
     if builtin_id == "no-test-sleep"
         && rule
             .parameters
@@ -202,7 +245,7 @@ pub(super) fn validate(
     Ok(())
 }
 
-fn pattern_map(key: &str, value: &serde_json::Value) -> Result<()> {
+fn pattern_map(key: &str, value: &serde_json::Value, text_source: bool) -> Result<()> {
     let values = value
         .as_object()
         .with_context(|| format!("{key} must map languages to regex arrays"))?;
@@ -212,6 +255,7 @@ fn pattern_map(key: &str, value: &serde_json::Value) -> Result<()> {
     for (language, entries) in values {
         if language != "all"
             && !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str())
+            && !(text_source && ["c", "cpp"].contains(&language.as_str()))
         {
             bail!("{key} has unsupported language: {language}");
         }
