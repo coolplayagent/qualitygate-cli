@@ -9,6 +9,7 @@
 | Language-neutral sleep patterns limited to test paths, with repository path override | `tests/issue10_rules.rs::test_sleep_uses_default_and_configured_test_paths_across_languages` |
 | Independent pass/fail goldens for all three rules in minimal, typical and stress suites | `fixtures/{minimal,typical,stress}/issue10-cases.json` and `fixtures/golden/issue10-{minimal,typical,stress}.json`; `tests/selfcheck.rs` |
 | Bounded scanner, deterministic output and incomplete selected malformed text or overflow | `adapters::builtin_conventions::tests::native_and_neutral_file_rules_do_not_pass_unreadable_selected_inputs`, `literal_secret_rule_checks_only_added_java_files_and_hides_the_value`; shared `adapters::parallel` worker tests |
+| Pure-domain Miri remains complete within CI time budgets | `.github/workflows/pr-checks.yml` partitions `domain::` into four disjoint filters; test-harness `--list` counted 2 + 12 + 21 + 27 = 62, matching the full selector. The prior 30-minute job ended incomplete during a slow interpreted evidence test. |
 
 
 ## Issue 9 reusable built-ins

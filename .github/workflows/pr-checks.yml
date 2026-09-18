@@ -170,8 +170,13 @@ jobs:
         run: cargo test --locked --test coverage_live --test coverage_llvm_live -- --ignored --nocapture
 
   miri:
+    name: miri (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [evolution, pilot-base, pilot-versions, other-domain]
     steps:
       - uses: actions/checkout@v6
       - run: rustup toolchain install nightly --profile minimal --component miri
@@ -179,7 +184,21 @@ jobs:
       - name: Miri pure-domain gate
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-deterministic-concurrency
-        run: 'cargo +nightly miri test --locked --lib --all-features domain::'
+        run: |
+          case "${{ matrix.shard }}" in
+            evolution)
+              cargo +nightly miri test --locked --lib --all-features domain::evolution::
+              ;;
+            pilot-base)
+              cargo +nightly miri test --locked --lib --all-features domain::pilot::tests:: -- --skip domain::pilot::tests::v
+              ;;
+            pilot-versions)
+              cargo +nightly miri test --locked --lib --all-features domain::pilot::tests::v
+              ;;
+            other-domain)
+              cargo +nightly miri test --locked --lib --all-features domain:: -- --skip domain::evolution:: --skip domain::pilot::tests::
+              ;;
+          esac
 
   address-sanitizer:
     runs-on: ubuntu-latest
