@@ -1,0 +1,398 @@
+[
+  {
+    "id": "issue12-hardcoded-secret-pass-typical",
+    "rule": "shell-hardcoded-secret",
+    "description": "typical pass shell convention shell-hardcoded-secret",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-hardcoded-secret-fail-typical",
+    "rule": "shell-hardcoded-secret",
+    "description": "typical fail shell convention shell-hardcoded-secret",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\npassword='abc'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-debug-mode-pass-typical",
+    "rule": "shell-debug-mode",
+    "description": "typical pass shell convention shell-debug-mode",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-debug-mode-fail-typical",
+    "rule": "shell-debug-mode",
+    "description": "typical fail shell convention shell-debug-mode",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nset -x\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-env-dump-pass-typical",
+    "rule": "shell-env-dump",
+    "description": "typical pass shell convention shell-env-dump",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-env-dump-fail-typical",
+    "rule": "shell-env-dump",
+    "description": "typical fail shell convention shell-env-dump",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nenv > log\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-weak-crypto-pass-typical",
+    "rule": "shell-weak-crypto",
+    "description": "typical pass shell convention shell-weak-crypto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-weak-crypto-fail-typical",
+    "rule": "shell-weak-crypto",
+    "description": "typical fail shell convention shell-weak-crypto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nhash=md5\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-password-echo-pass-typical",
+    "rule": "shell-password-echo",
+    "description": "typical pass shell convention shell-password-echo",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-password-echo-fail-typical",
+    "rule": "shell-password-echo",
+    "description": "typical fail shell convention shell-password-echo",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nread password\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-sql-injection-pass-typical",
+    "rule": "shell-sql-injection",
+    "description": "typical pass shell convention shell-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-sql-injection-fail-typical",
+    "rule": "shell-sql-injection",
+    "description": "typical fail shell convention shell-sql-injection",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\npsql -c \"SELECT * FROM t WHERE id=$1\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-exec-terminates-pass-typical",
+    "rule": "shell-exec-terminates",
+    "description": "typical pass shell convention shell-exec-terminates",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-exec-terminates-fail-typical",
+    "rule": "shell-exec-terminates",
+    "description": "typical fail shell convention shell-exec-terminates",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nexec worker\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-assignment-spaces-pass-typical",
+    "rule": "shell-assignment-spaces",
+    "description": "typical pass shell convention shell-assignment-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-assignment-spaces-fail-typical",
+    "rule": "shell-assignment-spaces",
+    "description": "typical fail shell convention shell-assignment-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nVALUE = word\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-spaces-pass-typical",
+    "rule": "shell-comparison-spaces",
+    "description": "typical pass shell convention shell-comparison-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-spaces-fail-typical",
+    "rule": "shell-comparison-spaces",
+    "description": "typical fail shell convention shell-comparison-spaces",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\n[[$a == $b]]\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-line-start-operator-pass-typical",
+    "rule": "shell-line-start-operator",
+    "description": "typical pass shell convention shell-line-start-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-line-start-operator-fail-typical",
+    "rule": "shell-line-start-operator",
+    "description": "typical fail shell convention shell-line-start-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\n| grep needle\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-stream-merge-position-pass-typical",
+    "rule": "shell-stream-merge-position",
+    "description": "typical pass shell convention shell-stream-merge-position",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-stream-merge-position-fail-typical",
+    "rule": "shell-stream-merge-position",
+    "description": "typical fail shell convention shell-stream-merge-position",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\ncmd 2>&1 > out\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-uncapturable-pass-typical",
+    "rule": "shell-trap-uncapturable",
+    "description": "typical pass shell convention shell-trap-uncapturable",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-uncapturable-fail-typical",
+    "rule": "shell-trap-uncapturable",
+    "description": "typical fail shell convention shell-trap-uncapturable",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\ntrap 'echo stop' SIGKILL\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-numeric-signal-pass-typical",
+    "rule": "shell-trap-numeric-signal",
+    "description": "typical pass shell convention shell-trap-numeric-signal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-numeric-signal-fail-typical",
+    "rule": "shell-trap-numeric-signal",
+    "description": "typical fail shell convention shell-trap-numeric-signal",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\ntrap 'cleanup' 15\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-double-quotes-pass-typical",
+    "rule": "shell-trap-double-quotes",
+    "description": "typical pass shell convention shell-trap-double-quotes",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-double-quotes-fail-typical",
+    "rule": "shell-trap-double-quotes",
+    "description": "typical fail shell convention shell-trap-double-quotes",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\ntrap \"cleanup\" EXIT\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-tilde-path-pass-typical",
+    "rule": "shell-tilde-path",
+    "description": "typical pass shell convention shell-tilde-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-tilde-path-fail-typical",
+    "rule": "shell-tilde-path",
+    "description": "typical fail shell convention shell-tilde-path",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\necho \"~/cache\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-temp-file-hardcoded-pass-typical",
+    "rule": "shell-temp-file-hardcoded",
+    "description": "typical pass shell convention shell-temp-file-hardcoded",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-temp-file-hardcoded-fail-typical",
+    "rule": "shell-temp-file-hardcoded",
+    "description": "typical fail shell convention shell-temp-file-hardcoded",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nfile=/tmp/data\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-missing-shebang-pass-typical",
+    "rule": "shell-missing-shebang",
+    "description": "typical pass shell convention shell-missing-shebang",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/typical.sh": "#!/bin/sh\nprintf '%s' ok\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-missing-shebang-fail-typical",
+    "rule": "shell-missing-shebang",
+    "description": "typical fail shell convention shell-missing-shebang",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/typical.sh": "echo no shebang\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-commented-dead-code-pass-typical",
+    "rule": "shell-commented-dead-code",
+    "description": "typical pass shell convention shell-commented-dead-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\n# if explanation\n# for context\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-commented-dead-code-fail-typical",
+    "rule": "shell-commented-dead-code",
+    "description": "typical fail shell convention shell-commented-dead-code",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\n# if broken\n# for item\n# exit 1\n"
+      }
+    }
+  }
+]

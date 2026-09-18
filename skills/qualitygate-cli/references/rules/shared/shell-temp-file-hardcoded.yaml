@@ -1,0 +1,16 @@
+id: shell-temp-file-hardcoded
+version: 1
+description: Review predictable temporary paths
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?i)/tmp/[a-z]']
+standard_refs:
+  - {source_id: google-shell, controls: [shell-style]}
+lifecycle_inputs: [shell-temp-file-hardcoded-review]

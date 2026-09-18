@@ -11,10 +11,11 @@ suite. Catalog growth without those pairs makes selfcheck incomplete. The
 corpus also exercises all ten external report formats, the custom file DSL,
 strict policy loading, gate decisions, native Git snapshots and process capture.
 
-The 416-case corpus includes 85 policy-evolution fixtures. Separate issue 9
+The 524-case corpus includes 85 policy-evolution fixtures. Separate issue 9
 case files and goldens add compliant and violating cases for four rules to
 each suite. Separate issue 10 pairs do the same for three C/C++ and test-file
-rules. Separate issue 11 pairs cover six Python and language-neutral rules. Run
+rules. Separate issue 11 pairs cover six Python and language-neutral rules.
+Separate issue 12 pairs cover eighteen Shell rules. Run
 `qualitygate selfcheck --rule policy-evolution --format json` for paired oracles,
 category context, protected suite budgets, synthetic signatures, immutable
 archives, lifecycle changes, and nine real paired Git workflows. Native cases

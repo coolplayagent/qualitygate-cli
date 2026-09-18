@@ -1,0 +1,16 @@
+id: shell-comparison-spaces
+version: 1
+description: Flag comparison delimiters missing inner spaces
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?:\[\[[^\s\[]|\[[^\s\[]|[^\s\]]\]\]?)']
+standard_refs:
+  - {source_id: gnu-bash, controls: [shell-semantics]}
+lifecycle_inputs: [shell-comparison-spaces-review]

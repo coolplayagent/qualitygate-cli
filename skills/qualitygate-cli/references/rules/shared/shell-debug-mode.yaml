@@ -1,0 +1,16 @@
+id: shell-debug-mode
+version: 1
+description: Review xtrace and verbose shell execution
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['\b(?:set\s+-[A-Za-z]*[xv]\b|bash\s+-[A-Za-z]*[xv]\b)']
+standard_refs:
+  - {source_id: gnu-bash, controls: [tracing]}
+lifecycle_inputs: [shell-debug-mode-review]

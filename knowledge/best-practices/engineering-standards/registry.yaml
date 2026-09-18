@@ -7,10 +7,76 @@ source_policy:
   freshness_rule: Recheck continuously maintained pages before changing enforcement.
 coverage:
   organizations: [Alibaba, Google, Huawei Cloud, NVIDIA, AWS, Microsoft Azure, Cloudflare, Meta]
-  languages: [java, python, rust, cpp, cuda, typescript, go]
+  languages: [java, python, rust, cpp, cuda, typescript, go, shell]
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
   concerns: [coding, architecture, security, performance, static-gate, quality-gate]
 sources:
+  - id: google-shell
+    organization: Google
+    title: Google Shell Style Guide
+    authority: official-company
+    kind: guide
+    url: https://google.github.io/styleguide/shellguide.html
+    languages: [shell]
+    lifecycle_stages: [implementation, review]
+    concerns: [coding, documentation, security]
+    controls: [interpreter, shell-style, comments]
+    summary: Describes shell interpreter directives, test syntax, quoting, comments, and script hygiene.
+  - id: gnu-bash
+    organization: GNU
+    title: Bash Reference Manual
+    authority: language-ecosystem
+    kind: documentation
+    url: https://www.gnu.org/software/bash/manual/bash.html
+    languages: [shell]
+    lifecycle_stages: [implementation]
+    concerns: [coding, reliability, security]
+    controls: [shell-semantics, tracing, redirection, traps, read-builtin]
+    summary: Defines Bash parsing, expansions, builtins, traps, redirection order, and tracing behavior.
+  - id: shellcheck-wiki
+    organization: ShellCheck
+    title: ShellCheck diagnostics reference
+    authority: language-ecosystem
+    kind: documentation
+    url: https://www.shellcheck.net/wiki/
+    languages: [shell]
+    lifecycle_stages: [implementation, static-analysis]
+    concerns: [coding, reliability, static-gate]
+    controls: [trap-quoting, tilde-expansion]
+    summary: Documents common shell pitfalls including eager trap handler expansion and quoted tilde paths.
+  - id: owasp-secrets
+    organization: OWASP
+    title: Secrets Management Cheat Sheet
+    authority: industry-consortium
+    kind: guide
+    url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    languages: [all]
+    lifecycle_stages: [implementation, review]
+    concerns: [security]
+    controls: [hardcoded-credentials, secret-exposure]
+    summary: Describes risks from plaintext source credentials and accidental environment or log disclosure.
+  - id: owasp-sql-injection
+    organization: OWASP
+    title: SQL Injection Prevention Cheat Sheet
+    authority: industry-consortium
+    kind: guide
+    url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    languages: [all]
+    lifecycle_stages: [implementation, review]
+    concerns: [security]
+    controls: [parameterized-queries]
+    summary: Recommends binding data separately from SQL code instead of concatenating untrusted input.
+  - id: owasp-cryptographic-storage
+    organization: OWASP
+    title: Cryptographic Storage Cheat Sheet
+    authority: industry-consortium
+    kind: guide
+    url: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    languages: [all]
+    lifecycle_stages: [implementation, review]
+    concerns: [security]
+    controls: [algorithm-selection]
+    summary: Recommends modern cryptographic algorithms for security uses while acknowledging context-specific choices.
   - id: python-pep8
     organization: Python Software Foundation
     title: PEP 8 Style Guide for Python Code

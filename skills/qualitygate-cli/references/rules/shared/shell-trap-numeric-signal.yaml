@@ -1,0 +1,16 @@
+id: shell-trap-numeric-signal
+version: 1
+description: Review numeric trap signal identifiers
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?i)\btrap\b.*\b(?:[1-9]|[12][0-9])\b']
+standard_refs:
+  - {source_id: gnu-bash, controls: [traps]}
+lifecycle_inputs: [shell-trap-numeric-signal-review]

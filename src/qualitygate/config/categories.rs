@@ -91,6 +91,21 @@ fn origin(entry: &Entry) -> &str {
         | "parameterized-tests"
         | "ai-code-traceability" => "test",
         "file-pattern" if rule.id == "no-test-sleep" => "test",
+        "shell-shebang" | "shell-commented-code" => "style",
+        "source-pattern"
+            if rule.id.starts_with("shell-")
+                && ![
+                    "shell-hardcoded-secret",
+                    "shell-debug-mode",
+                    "shell-env-dump",
+                    "shell-weak-crypto",
+                    "shell-password-echo",
+                    "shell-sql-injection",
+                ]
+                .contains(&rule.id.as_str()) =>
+        {
+            "style"
+        }
         "file-pattern"
             if ["no-bare-except", "no-os-path", "no-print", "no-emoji"]
                 .contains(&rule.id.as_str()) =>

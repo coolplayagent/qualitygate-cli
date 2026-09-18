@@ -229,6 +229,7 @@ const ARCHIVE_LANGUAGES: &[&str] = &[
     "go",
     "c",
     "objective-c",
+    "shell",
 ];
 const ARCHIVE_CONCERNS: &[&str] = &[
     "coding",
@@ -259,6 +260,7 @@ const INPUT_LANGUAGES: &[&str] = &[
     "cuda",
     "typescript",
     "go",
+    "shell",
 ];
 const INPUT_CONCERNS: &[&str] = &[
     "coding",
@@ -304,8 +306,16 @@ const REQUIRED_ARCHIVE_ORGANIZATIONS: &[&str] = &[
     "Cloudflare",
     "Meta",
 ];
-const REQUIRED_ARCHIVE_LANGUAGES: &[&str] =
-    &["java", "python", "rust", "cpp", "cuda", "typescript", "go"];
+const REQUIRED_ARCHIVE_LANGUAGES: &[&str] = &[
+    "java",
+    "python",
+    "rust",
+    "cpp",
+    "cuda",
+    "typescript",
+    "go",
+    "shell",
+];
 const REQUIRED_ARCHIVE_CONCERNS: &[&str] = &[
     "coding",
     "architecture",

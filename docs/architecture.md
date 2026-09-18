@@ -27,6 +27,13 @@ scans consume captured files on the blocking rule worker. Diagnostic ratchets
 use a pure domain comparison and the existing paired report execution flow.
 Both extensions preserve the owner table and dependency directions above.
 
+Shell source recognition is a pure `domain::language` decision: `.sh` and
+`.bash` paths are explicit, while an extensionless file needs a bounded
+first-line `sh` or `bash` shebang. The `adapters` owner applies changed-line
+regular expressions and the separate first-line/consecutive-comment checks
+to immutable snapshots. A missing shebang on an extensionless file cannot
+establish its language. These source forms do not add a dependency edge.
+
 Policy approval/promotion/rollback storage entry points are public across the
 separate Bazel owner crates. They perform transactional consistency checks;
 application callers authenticate signatures and live trust before publication.

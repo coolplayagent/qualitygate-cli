@@ -146,6 +146,25 @@ pub(super) fn validate(
     {
         bail!("{builtin_id} requires languages: {builtin_languages:?}");
     }
+    if ["shell-shebang", "shell-commented-code"].contains(&id)
+        && rule.parameters.get("languages") != Some(&serde_json::json!(["shell"]))
+    {
+        bail!("{builtin_id} requires languages: [shell]");
+    }
+    if builtin_id.starts_with("shell-") && id == "source-pattern" {
+        if rule.parameters.get("languages") != Some(&serde_json::json!(["shell"])) {
+            bail!("{builtin_id} requires languages: [shell]");
+        }
+        let shell_patterns = rule
+            .parameters
+            .get("prohibited_patterns")
+            .and_then(serde_json::Value::as_object);
+        if shell_patterns
+            .is_none_or(|patterns| patterns.len() != 1 || !patterns.contains_key("shell"))
+        {
+            bail!("{builtin_id} requires prohibited_patterns.shell only");
+        }
+    }
     if builtin_id == "no-test-sleep"
         && rule
             .parameters

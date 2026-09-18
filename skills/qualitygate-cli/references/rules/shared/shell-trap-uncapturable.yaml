@@ -1,0 +1,16 @@
+id: shell-trap-uncapturable
+version: 1
+description: Flag traps for SIGKILL or SIGSTOP
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?i)\btrap\b.*\b(?:SIGKILL|9|SIGSTOP|19)\b']
+standard_refs:
+  - {source_id: gnu-bash, controls: [traps]}
+lifecycle_inputs: [shell-trap-uncapturable-review]

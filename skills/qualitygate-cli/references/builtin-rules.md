@@ -97,6 +97,43 @@ strings. `no-emoji` covers only the configured ranges in files, not commit
 messages or every emoji sequence. PEP 8 allows narrow bare exception
 handlers, and PEP 428 does not require every project to replace `os.path`.
 
+## Shell conventions
+
+All eighteen Shell rules are opt-in and use a fixed `shell` scope. Source
+patterns inspect changed lines in `.sh`, `.bash`, and extensionless scripts
+with a recognized `sh` or `bash` shebang. Each accepts `paths`; the sixteen
+source-pattern rules accept `prohibited_patterns.shell` overrides. They are
+lexical review signals, not proof of an exploit or broken execution. Comments,
+strings, valid uses of `exec`, checksums, signal numbers, and continued pipelines
+can match. The password-read pattern covers simple forms, not every flag
+combination. The stream-merge pattern targets a following conflicting
+redirection. `shell-missing-shebang` checks added scripts and changed first
+lines; a file with no extension or shebang cannot be identified as Shell.
+`shell-commented-dead-code` requires three consecutive code-like comments
+with at least one added line. Selected invalid UTF-8 and exceeded budgets
+remain incomplete.
+
+| Rule | Default | Review signal |
+| --- | --- | --- |
+| `shell-hardcoded-secret` | error | Flag quoted credential assignments |
+| `shell-debug-mode` | warning | Review xtrace and verbose shell execution |
+| `shell-env-dump` | warning | Review environment dump commands |
+| `shell-weak-crypto` | warning | Review legacy algorithm tokens in shell scripts |
+| `shell-password-echo` | warning | Review password reads without silent mode |
+| `shell-sql-injection` | error | Flag database client commands with interpolated variables |
+| `shell-exec-terminates` | warning | Review exec replacing the current shell |
+| `shell-assignment-spaces` | error | Flag spaces adjacent to Shell assignment operators |
+| `shell-comparison-spaces` | error | Flag comparison delimiters missing inner spaces |
+| `shell-line-start-operator` | warning | Review leading pipe or logical operators |
+| `shell-stream-merge-position` | warning | Review stream merges followed by conflicting redirections |
+| `shell-trap-uncapturable` | error | Flag traps for SIGKILL or SIGSTOP |
+| `shell-trap-numeric-signal` | warning | Review numeric trap signal identifiers |
+| `shell-trap-double-quotes` | warning | Review double-quoted trap handlers |
+| `shell-tilde-path` | warning | Review tilde path components |
+| `shell-temp-file-hardcoded` | warning | Review predictable temporary paths |
+| `shell-missing-shebang` | error | first-line interpreter directive on added Shell scripts |
+| `shell-commented-dead-code` | warning | three or more consecutive code-like comment lines |
+
 ## Architecture rules
 
 `import-boundary` is packaged for Java, Python, Rust, TypeScript, and Go, but

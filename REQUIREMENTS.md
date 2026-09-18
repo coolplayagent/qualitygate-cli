@@ -72,6 +72,8 @@ Issue 10 扩展三个默认不启用、默认级别为 error 的新增文件规�
 
 Issue 11 扩展六个默认不启用的内置规则：`no-bare-except`、`no-os-path` 和默认 warning 的 `no-print` 检查新增 Python 文件，`no-emoji` 检查新增 UTF-8 文件的配置 Unicode 范围，`commit-message-format` 校验新增提交主题，`python-test-naming` 校验新增 pytest 可发现测试方法名。默认语言范围固定，路径或正则可按仓库政策调整。文件模式是逐行文本信号，`no-emoji` 不检查提交信息，也不涵盖全部 emoji 序列；PEP 8、PEP 428 和 Conventional Commits 并不强制这些更严格的项目约定。选中文件不可读取、语法错误、配置无效或预算超限仍报告未完成。需求到测试证据见 [Issue 11 验收映射](docs/acceptance-evidence.md#issue-11-python-and-neutral-built-ins)。
 
+Issue 12 扩展十八个默认不启用的 Shell 内置规则，涵盖凭据、调试输出、SQL 插值、赋值和比较空格、重定向、信号处理、shebang、临时路径及连续注释代码。十六项针对新增行使用可配置文本正则；`shell-missing-shebang` 检查新增脚本或变更后的首行，`shell-commented-dead-code` 检查含新增行的连续三行代码式注释。语言范围固定为 `shell`，识别 `.sh`、`.bash` 及带可识别 Shell shebang 的无扩展名文件；无法从无扩展名且无 shebang 的文件推断 Shell 类型。文本规则是需人工评估的信号，不宣称证实秘密泄漏、SQL 注入、密码算法用途或 Shell 运行结果。超出 30 秒、10000 条诊断、1000000 行范围以及选中输入失效均报告未完成。需求到测试证据见 [Issue 12 验收映射](docs/acceptance-evidence.md#issue-12-shell-built-ins)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

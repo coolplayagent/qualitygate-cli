@@ -1,0 +1,16 @@
+id: shell-stream-merge-position
+version: 1
+description: Review stream merges followed by conflicting redirections
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell: ['(?:2>&1\s+>|1>&2\s+2>)']
+standard_refs:
+  - {source_id: gnu-bash, controls: [redirection]}
+lifecycle_inputs: [shell-stream-merge-position-review]

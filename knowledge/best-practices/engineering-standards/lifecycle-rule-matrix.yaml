@@ -8,12 +8,228 @@ policy:
   conflict_rule: See guides/critical-adoption.md before changing severity or applicability.
 taxonomy:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
-  languages: [all, java, python, rust, cpp, c, cuda, typescript, go]
+  languages: [all, java, python, rust, cpp, c, cuda, typescript, go, shell]
   concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations, static-gate]
   enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
   outcomes: [violation, warning, incomplete, advisory]
   statuses: [enforced, evidence-contract, planned]
 inputs:
+  - id: shell-hardcoded-secret-review
+    status: enforced
+    rule_id: shell-hardcoded-secret
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [owasp-secrets]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal; it does not prove secret exposure, cryptographic misuse, or an injection data flow.
+  - id: shell-debug-mode-review
+    status: enforced
+    rule_id: shell-debug-mode
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal; it does not prove secret exposure, cryptographic misuse, or an injection data flow.
+  - id: shell-env-dump-review
+    status: enforced
+    rule_id: shell-env-dump
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [owasp-secrets]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal; it does not prove secret exposure, cryptographic misuse, or an injection data flow.
+  - id: shell-weak-crypto-review
+    status: enforced
+    rule_id: shell-weak-crypto
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [owasp-cryptographic-storage]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal; it does not prove secret exposure, cryptographic misuse, or an injection data flow.
+  - id: shell-password-echo-review
+    status: enforced
+    rule_id: shell-password-echo
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal; it does not prove secret exposure, cryptographic misuse, or an injection data flow.
+  - id: shell-sql-injection-review
+    status: enforced
+    rule_id: shell-sql-injection
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [owasp-sql-injection]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal; it does not prove secret exposure, cryptographic misuse, or an injection data flow.
+  - id: shell-exec-terminates-review
+    status: enforced
+    rule_id: shell-exec-terminates
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-assignment-spaces-review
+    status: enforced
+    rule_id: shell-assignment-spaces
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-comparison-spaces-review
+    status: enforced
+    rule_id: shell-comparison-spaces
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-line-start-operator-review
+    status: enforced
+    rule_id: shell-line-start-operator
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-stream-merge-position-review
+    status: enforced
+    rule_id: shell-stream-merge-position
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-trap-uncapturable-review
+    status: enforced
+    rule_id: shell-trap-uncapturable
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-trap-numeric-signal-review
+    status: enforced
+    rule_id: shell-trap-numeric-signal
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [gnu-bash]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-trap-double-quotes-review
+    status: enforced
+    rule_id: shell-trap-double-quotes
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [shellcheck-wiki]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-tilde-path-review
+    status: enforced
+    rule_id: shell-tilde-path
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [reliability, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [shellcheck-wiki]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-temp-file-hardcoded-review
+    status: enforced
+    rule_id: shell-temp-file-hardcoded
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [coding, documentation]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-shell]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: This is a lexical review signal and may match valid shell syntax; configure paths and review diagnostics.
+  - id: shell-missing-shebang-review
+    status: enforced
+    rule_id: shell-missing-shebang
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [coding, documentation]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [google-shell]
+    evidence: [changed-shell-file, first-line]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: Only added or changed first lines of recognized Shell files are enforced; extensionless files without a shebang cannot be inferred to be Shell.
+  - id: shell-commented-dead-code-review
+    status: enforced
+    rule_id: shell-commented-dead-code
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [coding, documentation]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-shell]
+    evidence: [changed-shell-file, consecutive-comments]
+    applicability: Selected changed Shell files when this optional repository rule is enabled.
+    critical_adoption: Three code-like comment lines are a heuristic and explanatory comments may match.
   - id: python-bare-except-review
     status: enforced
     rule_id: no-bare-except

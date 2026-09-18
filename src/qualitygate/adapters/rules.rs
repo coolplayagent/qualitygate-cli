@@ -113,6 +113,9 @@ pub fn evaluate_with_context(
             "file-pattern" => {
                 super::builtin_conventions::file_pattern(&mut result, setting, snapshot)
             }
+            "shell-shebang" | "shell-commented-code" => {
+                super::shell_conventions::evaluate(implementation, &mut result, setting, snapshot)
+            }
             "diff-size" => diff_size(&mut result, setting, snapshot),
             "module-boundary" => {
                 super::project_rules::module_boundary(&mut result, setting, snapshot, projects)
@@ -269,6 +272,7 @@ fn source_patterns(
     setting: &RuleSetting,
     snapshot: &Snapshot,
 ) -> Result<()> {
+    let deadline = super::parallel::deadline();
     let patterns = compiled_patterns(setting, "prohibited_patterns")?;
     let paths = path_filter(setting)?;
     let languages = string_parameter(setting, "languages")?;
@@ -276,15 +280,20 @@ fn source_patterns(
         if !snapshot.includes(path) || !paths.as_ref().is_none_or(|filter| filter.is_match(path)) {
             continue;
         }
-        let Some(language) = super::syntax::language(path) else {
+        let Some(file) = snapshot.files.get(path) else {
+            if change.kind != "deleted" {
+                bail!("Changed source file is absent from snapshot: {path}");
+            }
+            continue;
+        };
+        let Some(language) =
+            crate::domain::language::for_source(path, &file.bytes).map(|found| found.name)
+        else {
             continue;
         };
         if !languages.is_empty() && !languages.iter().any(|value| value == language) {
             continue;
         }
-        let Some(file) = snapshot.files.get(path) else {
-            continue;
-        };
         let text = std::str::from_utf8(&file.bytes)
             .map_err(|_| anyhow::anyhow!("Changed source file is not UTF-8: {path}"))?;
         let mut active = BTreeSet::new();
@@ -303,12 +312,21 @@ fn source_patterns(
             .enumerate()
             .map(|(index, line)| (index + 1, line))
         {
+            if line_number % 256 == 0 && std::time::Instant::now() >= deadline {
+                bail!("Source pattern analysis exceeded 30 seconds");
+            }
             if !change.added_lines.contains(&line_number) {
                 continue;
             }
             result.matched_entities += 1;
+            if result.matched_entities > 1_000_000 {
+                bail!("Source pattern scope exceeds 1000000 added lines");
+            }
             for (pattern, regex) in &selected {
                 if regex.is_match(line) {
+                    if result.diagnostics.len() >= 10_000 {
+                        bail!("Source pattern diagnostics exceed 10000");
+                    }
                     result.diagnostics.push(diagnostic(
                         &result.id,
                         Some(path),
@@ -324,6 +342,9 @@ fn source_patterns(
                 }
             }
         }
+    }
+    if std::time::Instant::now() >= deadline {
+        bail!("Source pattern analysis exceeded 30 seconds");
     }
     Ok(())
 }
