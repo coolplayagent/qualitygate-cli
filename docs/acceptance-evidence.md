@@ -1,5 +1,16 @@
 # Requirements acceptance evidence
 
+## Issue 24 decision protocol and judgment pilot
+
+| Requirement | Current evidence |
+|---|---|
+| Versioned exported schemas, command discriminants, unknown versions and variants, incomplete and digest binding | `tests/decision_envelope.rs::decision_schema_and_discriminants_reject_unknown_versions_variants_and_partial_states`; `tests/decision_envelope.rs::metadata_envelopes_reject_malformed_evidence_and_identity_fields`; `domain::decision_envelope`; shipped decision and feedback schemas |
+| Check, rule validation, selfcheck and feedback preserve outcome, warnings, gaps, pending checks, omissions and full report pointer | `tests/decision_envelope.rs`; existing `tests/feedback.rs`; `domain::decision_envelope::validate` |
+| Fixed external provider inputs, version, typed output, retained raw evidence and unchanged gate | `tests/judgment_provider.rs::advisory_provider_retains_original_gate_and_binds_calibrated_warning_evidence`; `application::judgment` |
+| Missing/timeout/invalid output, abstention and invalid calibration fail closed | `tests/judgment_provider.rs`; `domain::judgment::tests`; `application::judgment` |
+| Isolated warning pilot, independent labels, Brier/log loss, risk coverage and seeded audit | `tests/judgment_provider.rs::advisory_provider_retains_original_gate_and_binds_calibrated_warning_evidence`; `application::judgment::pilot`; [protocol limits](decision-protocol.md) |
+| Packaged schema assets and CLI exports | `tests/quality/skill_package.rs`; `.github/workflows/release.yml`; `tests/decision_envelope.rs` |
+
 ## Issue 20 Java rules and analyzer ratchet references
 
 | Requirement | Current evidence |

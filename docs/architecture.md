@@ -27,6 +27,15 @@ scans consume captured files on the blocking rule worker. Diagnostic ratchets
 use a pure domain comparison and the existing paired report execution flow.
 Both extensions preserve the owner table and dependency directions above.
 
+Versioned decision envelopes and the assessment/calibration union are pure
+`domain` contracts. `config` owns their pinned JSON schemas and strict judgment
+policy loading. `application` binds a check report to the bounded external
+provider through `runner`, retains complete artifacts, and computes pilot
+metrics on a blocking worker; `interfaces` only parses commands and renders
+the selected view. The optional provider cannot mutate the original gate.
+These modules add no owner dependency direction; run the architecture gate
+after changes to their imports. See [decision protocol](decision-protocol.md).
+
 Shell source recognition is a pure `domain::language` decision: `.sh` and
 `.bash` paths are explicit, while an extensionless file needs a bounded
 first-line `sh` or `bash` shebang. The `adapters` owner applies changed-line

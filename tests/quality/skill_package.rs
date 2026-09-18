@@ -127,6 +127,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     assert!(skill_text.contains("QUALITYGATE_BUILTIN_RULES_DIR"));
     assert!(!skill_text.contains("TODO"));
     assert!(skill_text.contains("references/schemas/project-rule.schema.json"));
+    assert!(skill_text.contains("references/decision-protocol.md"));
     for expected in [
         "rules validate candidate.yaml",
         "rules generate --input",
@@ -163,6 +164,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "assets/windows-aarch64/qualitygate.exe",
         "references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c,lang-cpp}/*.yaml",
         "references/schemas/project-rule.schema.json",
+        "references/schemas/decision.schema.json",
+        "references/schemas/feedback.schema.json",
+        "references/decision-protocol.md",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
         "assets/pilot/observation-v8.json",
@@ -273,6 +277,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/spotbugs-ratchet.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
+        "references/schemas/decision.schema.json",
+        "references/schemas/feedback.schema.json",
+        "decision-protocol",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
         "assets/pilot/observation-v8.json",

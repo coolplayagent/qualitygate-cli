@@ -1,9 +1,9 @@
 //! Serializable rule-authoring outcomes, with invalid inputs distinct from I/O gaps.
 
 use super::Decision;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleIssue {
     pub stage: String,
     pub instance_path: String,
@@ -22,7 +22,7 @@ impl RuleIssue {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleFileValidation {
     pub file: String,
     pub rule_id: Option<String>,
@@ -30,7 +30,7 @@ pub struct RuleFileValidation {
     pub issues: Vec<RuleIssue>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RuleValidationReport {
     pub schema_version: u32,
     pub schema_id: String,

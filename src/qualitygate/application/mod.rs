@@ -9,6 +9,7 @@ mod external;
 pub mod feedback;
 mod generated_reports;
 mod git_trailers;
+pub mod judgment;
 mod manual;
 pub mod pilot;
 mod policy;

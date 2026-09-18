@@ -90,6 +90,7 @@ Route the requested capability before editing policy:
 | Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
 | Supply bounded repair context to an external Agent | [Agent feedback](references/agent-feedback.md); `check --feedback`, complete report references and full rechecks |
+| Consume versioned decisions or assess warning findings with an external provider | [Decision protocol](references/decision-protocol.md); exported decision/feedback schemas, optional `--envelope`, and shadow/advisory judgment |
 | Seal, authorize, independently accept or summarize a predeclared pilot inventory | [Pilot evidence](references/pilot-evidence.md); plan and acceptance subjects, signed external owner/reviewer records, full-report bindings and unknown metrics |
 | Verify the installed runtime or repair the CLI | [Selfcheck](references/selfcheck.md); bounded fixture/golden agreement |
 
