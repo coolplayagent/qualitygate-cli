@@ -2,7 +2,13 @@ use super::{Marker, RuleSetting};
 use anyhow::{Context, Result, bail};
 use std::collections::BTreeSet;
 
-pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
+pub(super) fn validate(
+    builtin_id: &str,
+    implementation: &str,
+    builtin_languages: &[String],
+    rule: &RuleSetting,
+) -> Result<()> {
+    let id = implementation;
     if id == "used-undeclared" {
         super::project_rules::used_undeclared(rule)?;
         return Ok(());
@@ -72,13 +78,17 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
                         .as_str()
                         .with_context(|| format!("{key} values must be strings"))?;
                     if key == "paths" {
+                        if text.is_empty() {
+                            bail!("paths values must be nonempty globs");
+                        }
                         globset::Glob::new(text)?;
                     } else if key == "exempt_patterns" {
                         regex::Regex::new(text)?;
                     } else if !["java", "python", "typescript", "go", "rust", "shell"]
                         .contains(&text)
+                        && !(id == "file-pattern" && ["c", "cpp"].contains(&text))
                     {
-                        bail!("Unsupported syntax language: {text}");
+                        bail!("Unsupported rule language: {text}");
                     }
                 }
             }
@@ -121,15 +131,24 @@ pub(super) fn validate(id: &str, rule: &RuleSetting) -> Result<()> {
     if id == "source-pattern" && !rule.parameters.contains_key("prohibited_patterns") {
         bail!("source-pattern requires prohibited_patterns");
     }
-    if [
-        "test-naming-strict",
-        "test-annotation-dependency",
-        "file-pattern",
-    ]
-    .contains(&id)
+    if ["test-naming-strict", "test-annotation-dependency"].contains(&id)
         && rule.parameters.get("languages") != Some(&serde_json::json!(["java"]))
     {
         bail!("{id} requires languages: [java]");
+    }
+    if id == "file-pattern"
+        && rule.parameters.get("languages") != Some(&serde_json::json!(builtin_languages))
+    {
+        bail!("{builtin_id} requires languages: {builtin_languages:?}");
+    }
+    if builtin_id == "no-test-sleep"
+        && rule
+            .parameters
+            .get("paths")
+            .and_then(serde_json::Value::as_array)
+            .is_none_or(Vec::is_empty)
+    {
+        bail!("no-test-sleep requires at least one test path glob");
     }
     if id == "test-annotation-dependency"
         && ["annotation", "group", "artifact"]

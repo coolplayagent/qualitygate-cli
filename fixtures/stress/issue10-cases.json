@@ -1,0 +1,8 @@
+[
+  {"id":"issue10-printf-pass-stress","rule":"no-printf-log","description":"Multiple added C++ files avoid raw logging","input":{"kind":"rule","files":{"native/a.hpp":"void a() { log_info(\"a\"); }\n","native/b.cxx":"void b() { log_error(\"b\"); }\n"}}},
+  {"id":"issue10-printf-fail-stress","rule":"no-printf-log","description":"One of multiple added C++ files uses printf","input":{"kind":"rule","files":{"native/a.hpp":"void a() { log_info(\"a\"); }\n","native/b.cxx":"void b() { printf(\"b\"); }\n"}}},
+  {"id":"issue10-unsafe-pass-stress","rule":"no-unsafe-string","description":"Multiple added native files avoid unbounded string calls","input":{"kind":"rule","files":{"native/a.c":"void a() { snprintf(dst, n, \"a\"); }\n","native/b.cpp":"void b() { memcpy(dst, src, n); }\n"}}},
+  {"id":"issue10-unsafe-fail-stress","rule":"no-unsafe-string","description":"One of multiple native files calls sprintf","input":{"kind":"rule","files":{"native/a.c":"void a() { snprintf(dst, n, \"a\"); }\n","native/b.cpp":"void b() { sprintf(dst, \"b\"); }\n"}}},
+  {"id":"issue10-sleep-pass-stress","rule":"no-test-sleep","description":"Test file uses callbacks while production sleep is outside scope","input":{"kind":"rule","files":{"tests/unit/clock_test.go":"func TestClock() { callback() }\n","src/clock.go":"func Wait() { sleep(1) }\n"}}},
+  {"id":"issue10-sleep-fail-stress","rule":"no-test-sleep","description":"Test file uses usleep while production sleep is outside scope","input":{"kind":"rule","files":{"tests/unit/clock_test.go":"func TestClock() { usleep(1) }\n","src/clock.go":"func Wait() { sleep(1) }\n"}}}
+]

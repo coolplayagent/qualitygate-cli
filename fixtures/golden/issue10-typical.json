@@ -1,0 +1,8 @@
+{
+  "issue10-printf-pass-typical":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-printf-fail-typical":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"native/server.cc"},
+  "issue10-unsafe-pass-typical":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-unsafe-fail-typical":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"include/server.h"},
+  "issue10-sleep-pass-typical":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-sleep-fail-typical":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/file":"src/ClockTest.java"}
+}

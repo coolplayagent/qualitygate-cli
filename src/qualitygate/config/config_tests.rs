@@ -179,7 +179,7 @@ policy:
   conflict_rule: Read conflicts before adoption.
 taxonomy:
   lifecycle_stages: [plan, architecture, implementation, review, static-analysis, verification, release, operations]
-  languages: [all, java, python, rust, cpp, cuda, typescript, go]
+  languages: [all, java, python, rust, cpp, c, cuda, typescript, go]
   concerns: [coding, documentation, testing, architecture, dependencies, security, performance, reliability, reviewability, quality-gate, operations, static-gate]
   enforcement: [deterministic-static, semantic-static, external-report, design-evidence, benchmark-evidence, operational-evidence]
   outcomes: [violation, warning, incomplete, advisory]

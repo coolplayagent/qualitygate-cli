@@ -12,7 +12,7 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
     assert_eq!(result["decision"], "pass");
     assert!(result["errors"].as_array().unwrap().is_empty());
     let cases = result["fixtures"].as_array().unwrap();
-    assert_eq!(cases.len(), 362, "Shipped fixture inventory changed");
+    assert_eq!(cases.len(), 380, "Shipped fixture inventory changed");
     for suite in ["minimal", "typical", "stress"] {
         let case = cases
             .iter()
@@ -22,6 +22,17 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
             case["input"],
             format!("fixtures/{suite}/issue9-cases.json#/7/input")
         );
+        let native = cases
+            .iter()
+            .find(|case| case["suite"] == suite && case["fixture"] == "issue10-sleep-fail")
+            .or_else(|| {
+                cases.iter().find(|case| {
+                    case["suite"] == suite
+                        && case["fixture"] == format!("issue10-sleep-fail-{suite}")
+                })
+            })
+            .unwrap();
+        assert_eq!(native["rule"], "no-test-sleep");
     }
     let evolution: Vec<_> = cases
         .iter()

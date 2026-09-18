@@ -191,6 +191,43 @@ fn literal_secret_rule_checks_only_added_java_files_and_hides_the_value() {
 }
 
 #[test]
+fn native_and_neutral_file_rules_do_not_pass_unreadable_selected_inputs() {
+    let native = setting(json!({"pattern":"\\bstrcpy\\s*\\(","languages":["c","cpp"]}));
+    let mut bad_native = snapshot("src/main.cpp", None, "strcpy(dst, src);\n");
+    bad_native.files.get_mut("src/main.cpp").unwrap().bytes = vec![0xff];
+    let incomplete = rules::evaluate_as("no-unsafe-string", "file-pattern", &native, &bad_native);
+    assert_eq!(incomplete.verdict, None);
+    assert!(incomplete.diagnostics.is_empty());
+    assert!(incomplete.execution.reason.unwrap().contains("UTF-8"));
+    let unsupported = setting(json!({"pattern":"strcpy","languages":["unknown"]}));
+    assert_eq!(
+        rules::evaluate_as(
+            "no-unsafe-string",
+            "file-pattern",
+            &unsupported,
+            &bad_native
+        )
+        .verdict,
+        None
+    );
+
+    let neutral =
+        setting(json!({"pattern":"\\bsleep\\s*\\(","languages":[],"paths":["**/tests/**"]}));
+    let selected = snapshot("tests/timer.bin", None, "sleep(1);\n");
+    let mut invalid = selected.clone();
+    invalid.files.get_mut("tests/timer.bin").unwrap().bytes = vec![0xff];
+    assert_eq!(
+        rules::evaluate_as("no-test-sleep", "file-pattern", &neutral, &invalid).verdict,
+        None
+    );
+    let modified = snapshot("tests/timer.py", Some("ready()\n"), "sleep(1);\n");
+    assert_eq!(
+        rules::evaluate_as("no-test-sleep", "file-pattern", &neutral, &modified).verdict,
+        Some(Verdict::Pass)
+    );
+}
+
+#[test]
 fn large_unchanged_tree_and_many_java_changes_keep_bounded_analysis() {
     let mut input = snapshot(
         "src/test/java/Case000.java",

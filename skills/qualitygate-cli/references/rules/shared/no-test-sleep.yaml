@@ -1,0 +1,16 @@
+id: no-test-sleep
+version: 1
+description: Reject sleep call patterns in added test files
+implementation: file-pattern
+language: []
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: error
+  parameters:
+    languages: []
+    pattern: '(?i)\b(?:sleep|usleep|nanosleep)\s*\('
+    paths: ['**/test/**', '**/tests/**', '**/*_test.*', '**/*_test_*.*', '**/*Test.*']
+standard_refs:
+  - {source_id: google-code-review, controls: [test-design, evidence-over-preference]}
+lifecycle_inputs: [added-test-sleep-review]

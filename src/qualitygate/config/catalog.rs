@@ -255,6 +255,7 @@ const INPUT_LANGUAGES: &[&str] = &[
     "python",
     "rust",
     "cpp",
+    "c",
     "cuda",
     "typescript",
     "go",
@@ -816,7 +817,12 @@ impl Catalog {
             parameters.extend(setting.parameters.clone());
             setting.parameters = parameters;
             if let Some(builtin) = &entry.builtin {
-                super::builtin_validation::validate(&builtin.implementation, setting)?;
+                super::builtin_validation::validate(
+                    &builtin.id,
+                    &builtin.implementation,
+                    &builtin.language,
+                    setting,
+                )?;
             }
             if setting.source.is_none() {
                 setting.source = defaults.source;

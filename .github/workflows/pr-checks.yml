@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
+            command: cargo test --locked --test bazel --test cli --test custom_rules --test file_contracts --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
           - gate: selfcheck-minimal
             command: cargo run --locked -- selfcheck --fixture minimal --format json
           - gate: documentation
@@ -170,8 +170,13 @@ jobs:
         run: cargo test --locked --test coverage_live --test coverage_llvm_live -- --ignored --nocapture
 
   miri:
+    name: miri (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [evolution, pilot-base, pilot-versions, other-domain]
     steps:
       - uses: actions/checkout@v6
       - run: rustup toolchain install nightly --profile minimal --component miri
@@ -179,7 +184,21 @@ jobs:
       - name: Miri pure-domain gate
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-deterministic-concurrency
-        run: 'cargo +nightly miri test --locked --lib --all-features domain::'
+        run: |
+          case "${{ matrix.shard }}" in
+            evolution)
+              cargo +nightly miri test --locked --lib --all-features domain::evolution::
+              ;;
+            pilot-base)
+              cargo +nightly miri test --locked --lib --all-features domain::pilot::tests:: -- --skip domain::pilot::tests::v
+              ;;
+            pilot-versions)
+              cargo +nightly miri test --locked --lib --all-features domain::pilot::tests::v
+              ;;
+            other-domain)
+              cargo +nightly miri test --locked --lib --all-features domain:: -- --skip domain::evolution:: --skip domain::pilot::tests::
+              ;;
+          esac
 
   address-sanitizer:
     runs-on: ubuntu-latest

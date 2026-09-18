@@ -1,0 +1,8 @@
+{
+  "issue10-printf-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-printf-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"forbid_pattern"},
+  "issue10-unsafe-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-unsafe-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"forbid_pattern"},
+  "issue10-sleep-pass":{"/execution/status":"completed","/verdict":"pass","/matched_entities":1,"/diagnostic_count":0},
+  "issue10-sleep-fail":{"/execution/status":"completed","/verdict":"fail","/matched_entities":1,"/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"forbid_pattern"}
+}

@@ -1,4 +1,4 @@
-//! Built-in conventions over captured Java files and resolved Maven facts.
+//! Built-in conventions over captured files and resolved Maven facts.
 
 use super::{entity_changes, parallel, rules::diagnostic};
 use crate::{
@@ -30,6 +30,64 @@ fn paths(setting: &RuleSetting) -> Result<Vec<String>> {
         .map(|value| serde_json::from_value(value.clone()).map_err(Into::into))
         .transpose()
         .map(Option::unwrap_or_default)
+}
+
+fn file_languages(setting: &RuleSetting) -> Result<Vec<String>> {
+    let languages: Vec<String> = serde_json::from_value(
+        setting
+            .parameters
+            .get("languages")
+            .context("Missing file-pattern languages parameter")?
+            .clone(),
+    )?;
+    for language in &languages {
+        if !matches!(language.as_str(), "c" | "cpp")
+            && crate::domain::language::named(language).is_none()
+        {
+            bail!("Unsupported file-pattern language: {language}");
+        }
+    }
+    Ok(languages)
+}
+
+fn matches_file_language(path: &str, languages: &[String]) -> bool {
+    if languages.is_empty() {
+        return true;
+    }
+    let extension = path.rsplit_once('.').map(|(_, extension)| extension);
+    languages.iter().any(|language| match language.as_str() {
+        "c" => matches!(extension, Some("c" | "h")),
+        "cpp" => matches!(
+            extension,
+            Some("cc" | "cpp" | "cxx" | "h" | "hh" | "hpp" | "hxx")
+        ),
+        name => crate::domain::language::for_path(path).is_some_and(|found| found.name == name),
+    })
+}
+
+fn file_pattern_guidance(id: &str) -> (&'static str, &'static str) {
+    match id {
+        "no-hardcoded-secrets" => (
+            "Added Java file contains a configured literal credential pattern",
+            "Move the credential out of source and review any exposed value",
+        ),
+        "no-printf-log" => (
+            "Added C/C++ file contains a printf/fprintf call pattern",
+            "Use the project's structured logging interface",
+        ),
+        "no-unsafe-string" => (
+            "Added C/C++ file contains an unsafe string API call pattern",
+            "Use a length-bounded API and verify the destination capacity",
+        ),
+        "no-test-sleep" => (
+            "Added test file contains a sleep call pattern",
+            "Control test timing with a mock, callback, or synchronization primitive",
+        ),
+        _ => (
+            "Added file contains a forbidden source pattern",
+            "Remove the forbidden pattern or adjust the rule's intended scope",
+        ),
+    }
 }
 
 pub(super) fn annotation_dependency(
@@ -126,6 +184,7 @@ pub(super) fn file_pattern(
 ) -> Result<()> {
     let pattern = parameter(setting, "pattern")?;
     let regex = Regex::new(pattern)?;
+    let languages = file_languages(setting)?;
     let mut filter = GlobSetBuilder::new();
     for path in paths(setting)? {
         filter.add(Glob::new(&path)?);
@@ -136,7 +195,7 @@ pub(super) fn file_pattern(
         .iter()
         .filter(|(path, change)| {
             change.kind == "added"
-                && path.ends_with(".java")
+                && matches_file_language(path, &languages)
                 && snapshot.includes(path)
                 && (filter.is_empty() || filter.is_match(path))
         })
@@ -144,14 +203,15 @@ pub(super) fn file_pattern(
             let file = snapshot
                 .files
                 .get(path)
-                .with_context(|| format!("Added Java file is absent from snapshot: {path}"))?;
+                .with_context(|| format!("Added file is absent from snapshot: {path}"))?;
             Ok((path, file))
         })
         .collect::<Result<Vec<_>>>()?;
+    let (message, fix) = file_pattern_guidance(&result.id);
     let matches = AtomicUsize::new(0);
     let batches = parallel::map(&selected, parallel::deadline(), |(path, file)| {
         let source = std::str::from_utf8(&file.bytes)
-            .with_context(|| format!("Added Java source is not UTF-8: {path}"))?;
+            .with_context(|| format!("Added source is not UTF-8: {path}"))?;
         let mut diagnostics = Vec::new();
         for (index, line) in source.lines().enumerate() {
             if regex.is_match(line) {
@@ -166,9 +226,9 @@ pub(super) fn file_pattern(
                         start_line: line_number,
                         end_line: line_number,
                     }),
-                    "Added Java file contains a configured literal credential pattern".into(),
+                    message.into(),
                     serde_json::json!({"assertion":"forbid_pattern","pattern":pattern}),
-                    "Move the credential out of source and review any exposed value",
+                    fix,
                     &format!("{path}:{line_number}:forbid_pattern"),
                 ));
             }
