@@ -1,0 +1,8 @@
+[
+  {"id":"issue13-extern-pass-typical","rule":"rust-extern-without-abi","description":"explicit system ABI","input":{"kind":"rule","files":{"src/platform.rs":"pub fn ready() {}\nunsafe extern \"system\" { fn invoke(); }\n"}}},
+  {"id":"issue13-extern-fail-typical","rule":"rust-extern-without-abi","description":"unsafe extern still needs explicit ABI","input":{"kind":"rule","files":{"src/platform.rs":"pub fn ready() {}\nunsafe extern { fn invoke(); }\n"}}},
+  {"id":"issue13-library-pass-typical","rule":"rust-untrusted-dynamic-library-loading","description":"literal path and unrelated variable","input":{"kind":"rule","files":{"src/loader.rs":"let candidate = \"plugin.so\";\nunsafe { Library::new(\"fixed.so\") };\n"}}},
+  {"id":"issue13-library-fail-typical","rule":"rust-untrusted-dynamic-library-loading","description":"dlopen variable path","input":{"kind":"rule","files":{"src/loader.rs":"let candidate = get_path();\nunsafe { dlopen(candidate, flags) };\n"}}},
+  {"id":"issue13-macro-pass-typical","rule":"rust-unsafe-block-in-macro-definition","description":"macro without unsafe block","input":{"kind":"rule","files":{"src/macros.rs":"macro_rules! identity { ($x:expr) => { $x } }\n"}}},
+  {"id":"issue13-macro-fail-typical","rule":"rust-unsafe-block-in-macro-definition","description":"same line macro transcriber hides unsafe","input":{"kind":"rule","files":{"src/macros.rs":"macro_rules! read { ($p:expr) => { unsafe { *$p } } }\n"}}}
+]

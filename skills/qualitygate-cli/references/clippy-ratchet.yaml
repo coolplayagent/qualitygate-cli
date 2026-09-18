@@ -1,0 +1,15 @@
+# Reference for a library crate. Run from the repository root with a pinned Rust toolchain.
+schema_version: 1
+checks:
+  - id: clippy-ratchet
+    argv: [cargo, clippy, --locked, --message-format=json, --lib, --, -W, clippy::all]
+    timeout_seconds: 300
+    tools:
+      - id: clippy
+        argv: [cargo, clippy, --version]
+    reports:
+      - path: target/clippy.jsonl
+        baseline: target/clippy.jsonl
+        from_stdout: true
+        format: cargo_clippy
+        mode: ratchet

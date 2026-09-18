@@ -216,6 +216,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "shell-temp-file-hardcoded",
         "shell-missing-shebang",
         "shell-commented-dead-code",
+        "rust-extern-without-abi",
+        "rust-untrusted-dynamic-library-loading",
+        "rust-unsafe-block-in-macro-definition",
         "forbidden_imports",
         "rules list --format json",
     ] {
@@ -235,6 +238,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "CLAWHUB_TOKEN",
         "clawhub publish skills/qualitygate-cli",
         "references/rules/shared/security-sensitive-api.yaml",
+        "references/clippy-ratchet.yaml",
         "skill:references/rules/shared/security-sensitive-api.yaml",
         "references/schemas/project-rule.schema.json",
         "references/pilot-evidence.md",
@@ -281,6 +285,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "shared/shell-temp-file-hardcoded",
         "shared/shell-missing-shebang",
         "shared/shell-commented-dead-code",
+        "shared/rust-extern-without-abi",
+        "shared/rust-untrusted-dynamic-library-loading",
+        "shared/rust-unsafe-block-in-macro-definition",
     ] {
         assert!(release.contains(rule), "release workflow missing {rule}");
         assert!(

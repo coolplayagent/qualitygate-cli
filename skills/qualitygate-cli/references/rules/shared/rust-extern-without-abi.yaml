@@ -1,0 +1,16 @@
+id: rust-extern-without-abi
+version: 1
+description: Review Rust extern blocks without an explicit ABI
+implementation: source-pattern
+language: [rust]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [rust]
+    prohibited_patterns:
+      rust: ['^\s*(?:unsafe\s+)?extern\s*\{']
+standard_refs:
+  - {source_id: rust-reference, controls: [explicit-extern-abi]}
+lifecycle_inputs: [rust-extern-without-abi-review]

@@ -74,6 +74,8 @@ Issue 11 扩展六个默认不启用的内置规则：`no-bare-except`、`no-os-
 
 Issue 12 扩展十八个默认不启用的 Shell 内置规则，涵盖凭据、调试输出、SQL 插值、赋值和比较空格、重定向、信号处理、shebang、临时路径及连续注释代码。十六项针对新增行使用可配置文本正则；`shell-missing-shebang` 检查新增脚本或变更后的首行，`shell-commented-dead-code` 检查含新增行的连续三行代码式注释。语言范围固定为 `shell`，识别 `.sh`、`.bash` 及带可识别 Shell shebang 的无扩展名文件；无法从无扩展名且无 shebang 的文件推断 Shell 类型。文本规则是需人工评估的信号，不宣称证实秘密泄漏、SQL 注入、密码算法用途或 Shell 运行结果。超出 30 秒、10000 条诊断、1000000 行范围以及选中输入失效均报告未完成。需求到测试证据见 [Issue 12 验收映射](docs/acceptance-evidence.md#issue-12-shell-built-ins)。
 
+Issue 13 通过有界 stdout 报告和 Cargo JSON Lines 解析支持真实 Clippy 诊断数量棘轮：两个不可变快照分别运行相同工具，按 `(tool, rule)` 计数；缺失完成记录、编译错误、失效路径或版本不一致报告未完成。另增三个默认不启用的 Rust 单行文本审查规则，分别提示未显式声明 ABI 的 extern 块、动态库非字面量路径、同一行宏定义中的 unsafe 块。文本信号不能证明攻击者输入或语义安全。需求到测试证据见 [Issue 13 验收映射](docs/acceptance-evidence.md#issue-13-clippy-ratchet-and-rust-rules)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

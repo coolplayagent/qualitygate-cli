@@ -1,0 +1,8 @@
+{
+  "issue13-extern-pass":{"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "issue13-extern-fail":{"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/language":"rust"},
+  "issue13-library-pass":{"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "issue13-library-fail":{"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/language":"rust"},
+  "issue13-macro-pass":{"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
+  "issue13-macro-fail":{"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/language":"rust"}
+}

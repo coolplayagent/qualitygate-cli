@@ -151,18 +151,23 @@ pub(super) fn validate(
     {
         bail!("{builtin_id} requires languages: [shell]");
     }
-    if builtin_id.starts_with("shell-") && id == "source-pattern" {
-        if rule.parameters.get("languages") != Some(&serde_json::json!(["shell"])) {
-            bail!("{builtin_id} requires languages: [shell]");
+    let fixed_language = if builtin_id.starts_with("shell-") {
+        Some("shell")
+    } else if builtin_id.starts_with("rust-") {
+        Some("rust")
+    } else {
+        None
+    };
+    if let Some(language) = fixed_language.filter(|_| id == "source-pattern") {
+        if rule.parameters.get("languages") != Some(&serde_json::json!([language])) {
+            bail!("{builtin_id} requires languages: [{language}]");
         }
-        let shell_patterns = rule
+        let patterns = rule
             .parameters
             .get("prohibited_patterns")
             .and_then(serde_json::Value::as_object);
-        if shell_patterns
-            .is_none_or(|patterns| patterns.len() != 1 || !patterns.contains_key("shell"))
-        {
-            bail!("{builtin_id} requires prohibited_patterns.shell only");
+        if patterns.is_none_or(|patterns| patterns.len() != 1 || !patterns.contains_key(language)) {
+            bail!("{builtin_id} requires prohibited_patterns.{language} only");
         }
     }
     if builtin_id == "no-test-sleep"

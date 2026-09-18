@@ -29,11 +29,22 @@ checks:
         mode: ratchet
 ```
 
-Supported diagnostic formats are `diagnostics`, `sarif`, `checkstyle`, `pmd`
-and `spotbugs`. `baseline` is a mandatory fresh output path in the base
-workspace, usually equal to `path`; it is not a stored count file or a Git
+Supported diagnostic formats are `diagnostics`, `sarif`, `checkstyle`, `pmd`,
+`spotbugs` and `cargo_clippy`. For Clippy, use the bundled
+[reference policy](clippy-ratchet.yaml): `cargo clippy --message-format=json`
+emits JSON Lines to captured stdout, so set `from_stdout: true` and use a
+confined `path` only as the report identity. `baseline` is mandatory in the
+base workspace, usually equal to `path`; it is not a stored count file or a Git
 reference. Test statistics, `minimum_tests` and coverage are incompatible with
 this mode, including test/coverage data inside generic JSON.
+
+For Clippy, select `--lib`, `--bin NAME` or `--bins` to restrict targets to
+production `src/` code. Use `-W` with ratchet for nonfatal lint findings; `-A`
+suppresses lints, and `-D` requires a declared findings exit code. Lint
+selection belongs in flags, source attributes or Cargo's `[lints.clippy]`;
+`clippy.toml` tunes lint configuration. Pin the Rust toolchain and probe
+`cargo clippy --version`. A malformed stream, failed compilation or missing
+`build-finished` record is incomplete.
 
 Declare report-producing tools and stable version probes, plus `tools[].inputs`
 for repository analyzer scripts, wrappers or other tool assets. Both runs need

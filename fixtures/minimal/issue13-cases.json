@@ -1,0 +1,8 @@
+[
+  {"id":"issue13-extern-pass","rule":"rust-extern-without-abi","description":"explicit C ABI","input":{"kind":"rule","files":{"src/ffi.rs":"unsafe extern \"C\" { fn call(); }\n"}}},
+  {"id":"issue13-extern-fail","rule":"rust-extern-without-abi","description":"implicit extern ABI","input":{"kind":"rule","files":{"src/ffi.rs":"extern { fn call(); }\n"}}},
+  {"id":"issue13-library-pass","rule":"rust-untrusted-dynamic-library-loading","description":"literal library path","input":{"kind":"rule","files":{"src/plugin.rs":"unsafe { libloading::Library::new(\"plugin.so\") };\n"}}},
+  {"id":"issue13-library-fail","rule":"rust-untrusted-dynamic-library-loading","description":"variable library path","input":{"kind":"rule","files":{"src/plugin.rs":"unsafe { libloading::Library::new(candidate) };\n"}}},
+  {"id":"issue13-macro-pass","rule":"rust-unsafe-block-in-macro-definition","description":"ordinary macro definition","input":{"kind":"rule","files":{"src/macros.rs":"macro_rules! safe { () => { 1 } }\n"}}},
+  {"id":"issue13-macro-fail","rule":"rust-unsafe-block-in-macro-definition","description":"unsafe block in macro definition","input":{"kind":"rule","files":{"src/macros.rs":"macro_rules! hidden { () => { unsafe { call() } } }\n"}}}
+]

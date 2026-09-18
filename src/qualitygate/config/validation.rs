@@ -148,11 +148,23 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
                 );
             }
         }
+        if check
+            .reports
+            .iter()
+            .filter(|report| report.from_stdout)
+            .count()
+            > 1
+        {
+            bail!("A command may declare only one stdout report");
+        }
         for report in &check.reports {
             if !outputs.insert(report.path.as_str()) {
                 bail!("Check output paths must be distinct");
             }
             crate::paths::relative(Path::new(&report.path))?;
+            if report.format == ReportFormat::CargoClippy && !report.from_stdout {
+                bail!("cargo_clippy reports require from_stdout: true");
+            }
             if let Some(baseline) = &report.baseline {
                 crate::paths::relative(Path::new(baseline))?;
             }

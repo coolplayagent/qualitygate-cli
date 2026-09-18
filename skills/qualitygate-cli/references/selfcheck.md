@@ -25,7 +25,7 @@ with bounded inputs and execution. A filter provides partial feedback only.
 The four `custom-contract-*` minimal fixtures additionally cover required text,
 nonempty test-entity matching and syntax incompleteness.
 
-The 524-case corpus includes 85 policy-evolution regressions: paired independent
+The 542-case corpus includes 85 policy-evolution regressions: paired independent
 oracles, category context, protected suite limits, synthetic approval/rollback
 signatures, native immutable archives/lifecycle, and nine real paired Git
 workflows. This filter is a fixture group, not a selectable rule. Fixed Git
