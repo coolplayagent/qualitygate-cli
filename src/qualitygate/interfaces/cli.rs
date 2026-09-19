@@ -29,12 +29,25 @@ pub struct Cli {
     config: String,
     #[arg(long, global = true, value_enum, default_value = "table")]
     format: Format,
+    /// Emit the versioned machine decision envelope for check, selfcheck, or rules validate.
+    #[arg(long, global = true)]
+    envelope: bool,
     #[command(subcommand)]
     command: Command,
 }
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Run a bounded external warning assessment without changing a check gate.
+    Judgment {
+        #[command(subcommand)]
+        command: Judgment,
+    },
+    /// Export a versioned machine-output JSON Schema.
+    Schema {
+        #[command(subcommand)]
+        kind: SchemaKind,
+    },
     /// Read-only pilot evidence and verification of externally signed start authorization.
     Pilot {
         #[command(subcommand)]
@@ -75,6 +88,41 @@ enum Command {
         #[arg(long, required = true)]
         show: bool,
     },
+}
+
+#[derive(Debug, Subcommand)]
+enum Judgment {
+    /// Compute the source digest for a versioned question YAML document.
+    QuestionDigest {
+        #[arg(long)]
+        input: PathBuf,
+    },
+    Run {
+        #[arg(long)]
+        report: PathBuf,
+        #[arg(long)]
+        policy: PathBuf,
+        #[arg(long)]
+        output_dir: PathBuf,
+        #[arg(long)]
+        fingerprint: Option<String>,
+    },
+    /// Summarize retained warning triage runs against independent review labels.
+    Pilot {
+        #[arg(long)]
+        runs: PathBuf,
+        #[arg(long)]
+        labels: PathBuf,
+        #[arg(long)]
+        audit_seed: String,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum SchemaKind {
+    Decision,
+    Feedback,
+    ProjectRule,
 }
 
 #[derive(Debug, Subcommand)]
@@ -238,13 +286,30 @@ struct CheckArgs {
 
 impl Cli {
     pub async fn run(self) -> Result<(String, u8)> {
+        if self.envelope && self.format != Format::Json {
+            bail!("--envelope requires --format json");
+        }
         if let Command::SelfcheckProbe { mode } = self.command {
             return Ok(application::selfcheck::probe(&mode).await);
         }
         if let Command::Selfcheck { fixture, rule } = self.command {
             let report = application::selfcheck::run(fixture, rule).await;
             let code = report.decision.exit_code();
+            if self.envelope {
+                let envelope =
+                    crate::domain::decision_envelope::DecisionEnvelope::from_selfcheck(&report)?;
+                return Ok((decision_json(&envelope)?, code));
+            }
             return Ok((super::render::selfcheck(&report, self.format)?, code));
+        }
+        if let Command::Schema { kind } = self.command {
+            let document = tokio::task::spawn_blocking(move || match kind {
+                SchemaKind::Decision => config::decision_schema::document(),
+                SchemaKind::Feedback => config::decision_schema::feedback_document(),
+                SchemaKind::ProjectRule => config::rule_schema::document(),
+            })
+            .await??;
+            return Ok((serde_json::to_string_pretty(&document)?, 0));
         }
         if let Command::Rules {
             command: Rules::Schema,
@@ -258,6 +323,7 @@ impl Cli {
             .canonicalize()
             .context("Repository root does not exist")?;
         match self.command {
+            Command::Schema { .. } => unreachable!("schema export does not require a repository"),
             Command::SelfcheckProbe { .. } => {
                 unreachable!("fixed probe handled before repository discovery")
             }
@@ -283,8 +349,68 @@ impl Cli {
                     application::policy_active::configuration(root, self.config.clone()).await?;
                 Ok((super::render::metadata(&value, self.format)?, 0))
             }
-            Command::Rules { command } => run_rules(root, self.config, command, self.format).await,
+            Command::Rules { command } => {
+                run_rules(root, self.config, command, self.format, self.envelope).await
+            }
+            Command::Judgment { command } => {
+                if self.envelope && !matches!(&command, Judgment::Pilot { .. }) {
+                    bail!("Judgment run already emits its typed assessment report");
+                }
+                let resolve = |path: PathBuf| {
+                    if path.is_absolute() {
+                        path
+                    } else {
+                        root.join(path)
+                    }
+                };
+                let (value, code) = match command {
+                    Judgment::QuestionDigest { input } => (
+                        application::judgment::question_digest(resolve(input)).await?,
+                        0,
+                    ),
+                    Judgment::Run {
+                        report,
+                        policy,
+                        output_dir,
+                        fingerprint,
+                    } => {
+                        application::judgment::run(application::judgment::Options {
+                            root: root.clone(),
+                            report: resolve(report),
+                            policy: resolve(policy),
+                            output_dir: resolve(output_dir),
+                            fingerprint,
+                        })
+                        .await?
+                    }
+                    Judgment::Pilot {
+                        runs,
+                        labels,
+                        audit_seed,
+                    } => {
+                        application::judgment::summarize(application::judgment::PilotOptions {
+                            runs: resolve(runs),
+                            labels: resolve(labels),
+                            audit_seed,
+                        })
+                        .await?
+                    }
+                };
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_metadata(
+                            crate::domain::decision_envelope::CommandKind::Pilot,
+                            value,
+                            code,
+                        )?;
+                    return Ok((decision_json(&envelope)?, code));
+                }
+                Ok((super::render::metadata(&value, self.format)?, code))
+            }
             Command::Pilot { command } => {
+                if self.envelope && !matches!(&command, super::pilot::Pilot::Summarize { .. }) {
+                    bail!("--envelope is available for pilot summarize only");
+                }
                 let resolve = |input: PathBuf| {
                     if input.is_absolute() {
                         input
@@ -328,10 +454,45 @@ impl Cli {
                         .await?
                     }
                 };
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_metadata(
+                            crate::domain::decision_envelope::CommandKind::Pilot,
+                            value,
+                            code,
+                        )?;
+                    return Ok((decision_json(&envelope)?, code));
+                }
                 Ok((super::render::metadata(&value, self.format)?, code))
             }
             Command::Policy { command } => {
+                if self.envelope
+                    && !matches!(
+                        &command,
+                        super::policy::Policy::Rollback { .. }
+                            | super::policy::Policy::Candidate {
+                                command: super::policy::Candidate::Promote { .. }
+                                    | super::policy::Candidate::Approve { .. }
+                                    | super::policy::Candidate::Validate { .. }
+                                    | super::policy::Candidate::Reject { .. }
+                                    | super::policy::Candidate::Abandon { .. }
+                                    | super::policy::Candidate::Create { .. }
+                                    | super::policy::Candidate::Rules { .. }
+                            }
+                    )
+                {
+                    bail!("--envelope is available for policy transitions only");
+                }
                 let (value, code) = super::policy::run(root, self.config, command).await?;
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_metadata(
+                            crate::domain::decision_envelope::CommandKind::PolicyTransition,
+                            value,
+                            code,
+                        )?;
+                    return Ok((decision_json(&envelope)?, code));
+                }
                 Ok((super::render::metadata(&value, self.format)?, code))
             }
             Command::Check(args) => {
@@ -394,15 +555,39 @@ impl Cli {
                         .await?;
                 let code = report.gate.decision.exit_code();
                 if args.feedback {
-                    return Ok((
-                        application::feedback::render(
-                            report,
-                            args.feedback_max_bytes.unwrap_or(32768) as usize,
-                            args.severity,
-                        )
-                        .await?,
-                        code,
-                    ));
+                    let max_bytes = args.feedback_max_bytes.unwrap_or(32768) as usize;
+                    let feedback =
+                        application::feedback::render(report.clone(), max_bytes, args.severity)
+                            .await?;
+                    if self.envelope {
+                        let payload: serde_json::Value = serde_json::from_str(&feedback)?;
+                        config::decision_schema::validate_feedback(&payload)?;
+                        let mut envelope =
+                            crate::domain::decision_envelope::DecisionEnvelope::from_feedback(
+                                &report, payload,
+                            )?;
+                        let mut output = serde_json::to_string(&envelope)?;
+                        if output.len() + 1 > max_bytes {
+                            envelope.compact_feedback()?;
+                            output = serde_json::to_string(&envelope)?;
+                        }
+                        config::decision_schema::validate_feedback(&envelope.payload)?;
+                        config::decision_schema::validate_decision(&serde_json::to_value(
+                            &envelope,
+                        )?)?;
+                        if output.len() + 1 > max_bytes {
+                            bail!(
+                                "Feedback envelope exceeds byte limit; inspect the retained full report"
+                            );
+                        }
+                        return Ok((output, code));
+                    }
+                    return Ok((feedback, code));
+                }
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_check(&report)?;
+                    return Ok((decision_json(&envelope)?, code));
                 }
                 Ok((
                     super::render::report(&report, self.format, args.severity)?,
@@ -418,7 +603,11 @@ async fn run_rules(
     path: String,
     command: Rules,
     format: Format,
+    envelope: bool,
 ) -> Result<(String, u8)> {
+    if envelope && !matches!(command, Rules::Validate { .. }) {
+        bail!("--envelope is available for rules validate only");
+    }
     use crate::domain::rule_lifecycle::RuleState;
     let lifecycle = match &command {
         Rules::Revalidate(_) => Some(RuleState::Revalidate),
@@ -489,5 +678,17 @@ async fn run_rules(
     if active.is_some() && value.get("review_trust").is_some() {
         value["review_trust"] = serde_json::json!("signed_active_policy");
     }
+    if envelope {
+        let report: crate::domain::RuleValidationReport = serde_json::from_value(value)?;
+        let decision =
+            crate::domain::decision_envelope::DecisionEnvelope::from_rule_validation(&report)?;
+        return Ok((decision_json(&decision)?, code));
+    }
     Ok((super::render::metadata(&value, format)?, code))
+}
+
+fn decision_json(envelope: &crate::domain::decision_envelope::DecisionEnvelope) -> Result<String> {
+    let value = serde_json::to_value(envelope)?;
+    config::decision_schema::validate_decision(&value)?;
+    Ok(serde_json::to_string_pretty(&value)?)
 }

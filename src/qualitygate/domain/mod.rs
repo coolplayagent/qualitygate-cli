@@ -3,9 +3,11 @@
 mod attestation;
 pub mod case_provenance;
 mod category;
+pub mod decision_envelope;
 pub mod evolution;
 pub mod feedback;
 mod gate;
+pub mod judgment;
 pub mod language;
 pub mod normative;
 pub mod pilot;

@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:decision:1",
+  "title": "Qualitygate decision envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_uri",
+    "protocol_version",
+    "decision_id",
+    "command_kind",
+    "subject",
+    "policy",
+    "execution",
+    "gate",
+    "evidence_refs",
+    "verification",
+    "payload"
+  ],
+  "properties": {
+    "schema_uri": {
+      "const": "urn:qualitygate:decision:1"
+    },
+    "protocol_version": {
+      "const": "1.0.0"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "command_kind": {
+      "enum": [
+        "check",
+        "rule_validation",
+        "selfcheck",
+        "feedback",
+        "policy_transition",
+        "pilot"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_digest",
+        "task_digest",
+        "source_digest"
+      ],
+      "properties": {
+        "snapshot_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "task_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "digest",
+        "trust",
+        "evaluator_digest"
+      ],
+      "properties": {
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trust": {
+          "type": "string"
+        },
+        "evaluator_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete",
+        "omissions"
+      ],
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "route",
+        "warning_count",
+        "execution_gap_count",
+        "pending_check_count"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "pass",
+            "fail",
+            "incomplete"
+          ]
+        },
+        "route": {
+          "enum": [
+            "accept",
+            "review",
+            "block",
+            "inspect_gap"
+          ]
+        },
+        "warning_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_gap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending_check_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "digest",
+          "bytes"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conclusion",
+        "verified_shapes",
+        "known_limits",
+        "unverified_assumptions"
+      ],
+      "properties": {
+        "conclusion": {
+          "type": "string"
+        },
+        "verified_shapes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "known_limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unverified_assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "gate": {
+            "properties": {
+              "outcome": {
+                "const": "incomplete"
+              },
+              "route": {
+                "const": "inspect_gap"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "gate": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "pass",
+                  "fail"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "command_kind": {
+          "const": "check"
+        },
+        "payload": {
+          "required": [
+            "schema_version",
+            "run_id",
+            "snapshot",
+            "policy",
+            "gate",
+            "checks",
+            "summary",
+            "verification"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "command_kind": {
+          "const": "rule_validation"
+        },
+        "payload": {
+          "required": [
+            "schema_version",
+            "schema_id",
+            "schema_digest",
+            "complete",
+            "decision",
+            "files",
+            "issues"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "command_kind": {
+          "const": "selfcheck"
+        },
+        "payload": {
+          "required": [
+            "schema_version",
+            "corpus_digest",
+            "rules_digest",
+            "complete",
+            "decision",
+            "fixtures",
+            "errors"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "command_kind": {
+          "const": "feedback"
+        },
+        "payload": {
+          "required": [
+            "schema_version",
+            "kind",
+            "run_id",
+            "full_report",
+            "gate",
+            "findings",
+            "execution_gaps"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "command_kind": {
+          "const": "policy_transition"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "properties": {
+        "command_kind": {
+          "const": "pilot"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:feedback:1",
+  "title": "Qualitygate bounded feedback v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "run_id",
+    "full_report",
+    "max_bytes",
+    "scope",
+    "profile",
+    "snapshot",
+    "policy",
+    "task",
+    "delivery_ready",
+    "gate",
+    "findings",
+    "execution_gaps",
+    "blockers",
+    "pending_delivery_checks",
+    "acceptance",
+    "recheck",
+    "delivery_recheck",
+    "verification",
+    "evidence_availability",
+    "diagnostic_evidence",
+    "truncated"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "agent_feedback"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "max_bytes": {"type": "integer", "minimum": 4096, "maximum": 262144},
+    "scope": {"type": "string"},
+    "profile": {"type": "string"},
+    "snapshot": {"type": "object"},
+    "policy": {"type": "object"},
+    "task": {"type": "object"},
+    "delivery_ready": {"type": "boolean"},
+    "full_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "digest",
+        "bytes"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete",
+        "decision"
+      ],
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "decision": {
+          "enum": [
+            "pass",
+            "fail",
+            "incomplete"
+          ]
+        }
+      }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "filtered",
+        "omitted",
+        "report_pointer",
+        "items"
+      ],
+      "properties": {"total": {"type": "integer", "minimum": 0}, "filtered": {"type": "integer", "minimum": 0}, "omitted": {"type": "integer", "minimum": 0}, "report_pointer": {"type": "string"}, "items": {"type": "array"}}
+    },
+    "execution_gaps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "filtered",
+        "omitted",
+        "report_pointer",
+        "items"
+      ],
+      "properties": {"total": {"type": "integer", "minimum": 0}, "filtered": {"type": "integer", "minimum": 0}, "omitted": {"type": "integer", "minimum": 0}, "report_pointer": {"type": "string"}, "items": {"type": "array"}}
+    },
+    "blockers": {"type": "object"},
+    "pending_delivery_checks": {
+      "type": "object",
+      "required": [
+        "total",
+        "omitted",
+        "report_pointer"
+      ]
+    },
+    "acceptance": {"type": "object"},
+    "recheck": {"type": "object"},
+    "delivery_recheck": {"type": "object"},
+    "verification": {"type": "object"},
+    "evidence_availability": {"type": "string"},
+    "diagnostic_evidence": {"type": "string"},
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"gate": {"properties": {"complete": {"const": false}}}}},
+      "then": {"properties": {"gate": {"properties": {"decision": {"const": "incomplete"}}}, "delivery_ready": {"const": false}}}
+    },
+    {
+      "if": {"properties": {"gate": {"properties": {"complete": {"const": true}}}}},
+      "then": {"properties": {"gate": {"properties": {"decision": {"enum": ["pass", "fail"]}}}}}
+    }
+  ]
+}

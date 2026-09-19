@@ -678,3 +678,11 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 
 发布工作流成功与正式试点收益验收相互独立；站点只陈述已实现能力，
 不能把受控 fixture 或未启动的 8 任务/7 天试点称为真实收益。
+
+## 14. 类型化决策与可选判断
+
+| 编号 | 要求 | 验收证据 |
+|---|---|---|
+| DEC-01 | 可导出版本化 decision、feedback 和 project-rule Schema；`check`、feedback、rule validation、selfcheck 及策略/试点摘要可选择带判别类型的 envelope，保留原始 payload、证据摘要、warning、gap、pending 与 omission；未完成不得表示为通过 | `tests/decision_envelope.rs`、[协议](docs/decision-protocol.md)、[证据矩阵](docs/acceptance-evidence.md) |
+| DEC-02 | 外置 provider 仅用固定命令、版本与输入摘要对 warning 做 shadow/advisory 评估；deterministic、probabilistic、abstained、execution-gap 类型闭合，非法输出或失效校准不改变原门禁并留下原始证据 | `tests/judgment_provider.rs`、`domain::judgment::tests`、[协议](docs/decision-protocol.md) |
+| DEC-03 | warning 试点隔离校准与验证时间，使用独立标签计算校准与风险指标，对高优先级建议抽样审计；缺证据保持未完成，策略变更仍走外部批准流程 | `tests/judgment_provider.rs`、[协议](docs/decision-protocol.md)、[策略演进](docs/policy-evolution.md) |

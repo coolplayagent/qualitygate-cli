@@ -20,6 +20,10 @@ The tracked skill directory is intentionally lightweight:
 - [rule authoring](references/rule-authoring.md) and the executable
   [project rule schema](references/schemas/project-rule.schema.json) guide
   schema-validated extraction into `qualitygate/rules`.
+- [decision protocol](references/decision-protocol.md) and the pinned
+  [decision](references/schemas/decision.schema.json) and
+  [feedback](references/schemas/feedback.schema.json) schemas describe
+  opt-in machine envelopes and external warning assessment.
 - [file contracts](references/file-contracts.md) cover instruction budgets,
   unchanged file inventories, required files and evidence-driven repair.
 - [diagnostic ratchets](references/diagnostic-ratchets.md) cover comparable
@@ -54,7 +58,10 @@ qualitygate-cli-skill-<tag>/
 ├── references/rule-management.md
 ├── references/selfcheck.md
 ├── references/pilot-evidence.md
+├── references/decision-protocol.md
 ├── references/schemas/project-rule.schema.json
+├── references/schemas/decision.schema.json
+├── references/schemas/feedback.schema.json
 ├── references/rules/{core,shared,lang-java,lang-python,lang-typescript,lang-go,lang-c,lang-cpp}/*.yaml
 ├── assets/pilot/observation-v7.json
 ├── assets/pilot/observation-v8.json

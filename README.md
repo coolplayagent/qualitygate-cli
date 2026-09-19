@@ -21,6 +21,7 @@ The CLI, checks and test harnesses are implemented in Rust. Git is required for 
 
 See [quality gates](docs/quality.md) for CI, coverage and deep verification.
 See [selfcheck](docs/selfcheck.md) for bundled fixture regression and explicit verification boundaries.
+See [decision envelopes and optional judgment](docs/decision-protocol.md) for versioned machine output and external warning triage.
 See [Bazel builds](docs/bazel.md) for cached Bzlmod builds and Cargo-aligned dependency checks.
 See [external engineering standards](knowledge/best-practices/engineering-standards/README.md) for the reviewed Alibaba, Google, Huawei, NVIDIA, AWS, Azure, Cloudflare and Meta source archive, lifecycle matrix, and rule mapping.
 See [initialization](docs/init.md) for nested project discovery, capability gaps and command suggestions.
