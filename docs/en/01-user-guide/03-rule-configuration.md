@@ -35,7 +35,7 @@ exported schema, validate a candidate, and only then publish it:
 ```bash
 qualitygate rules schema
 qualitygate rules validate candidate.yaml
-qualitygate rules generate --input reviewed-source.md
+qualitygate rules generate --input candidate.yaml
 ```
 
 Generated rules preserve source hashes and declared capability limits, but
@@ -46,3 +46,7 @@ adapter's supported capability produce incomplete validation.
 
 Use file contracts for required or size-bounded files, and report ratchets for
 external analyzer debt. Neither is an invented built-in rule ID.
+
+For the complete workflow from repository prose such as `AGENTS.md` to a
+source-bound, Schema-validated rule candidate, continue with
+[Schema-guided repository rules](06-schema-guided-repository-rules.md).

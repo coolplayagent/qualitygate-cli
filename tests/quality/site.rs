@@ -14,6 +14,7 @@ fn pages_site_links_resolve_and_match_the_release_version() {
         "docs/en/README.md",
         "docs/zh/README.md",
         "docs/en/01-user-guide/01-installation-and-first-check.md",
+        "docs/en/01-user-guide/06-schema-guided-repository-rules.md",
     ] {
         assert!(
             html.contains(&format!(

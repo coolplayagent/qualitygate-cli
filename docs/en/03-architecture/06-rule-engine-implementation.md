@@ -252,6 +252,25 @@ with `change: all` includes unchanged files under a 30-second, 50,000-file, and
 assertions require their explicit producers; missing capability is incomplete,
 not “no match.”
 
+The structured path deliberately separates five identities:
+
+```mermaid
+flowchart LR
+    P[Normative prose bytes] --> B[Source binding<br/>document + section + digest]
+    S[Project-rule JSON Schema] --> C[Typed candidate]
+    B --> C
+    C --> V[Schema + semantic validation]
+    V --> R[Versioned rule definition]
+    R --> E[Snapshot evaluation evidence]
+```
+
+The LLM may propose `C`, but it cannot manufacture `B`, redefine `S`, declare
+`V` successful, adopt `R`, or synthesize `E`. `rules source`, `rules schema`,
+`rules validate`, `rules generate`, policy planning, and check execution keep
+those responsibilities in the matching CLI. This is why repository prose such
+as `AGENTS.md` can become maintainable structured rules without turning a prompt
+interpretation into runtime authority.
+
 ## External lint/report implementation
 
 External lint is not another catalog implementation string. It is a bounded

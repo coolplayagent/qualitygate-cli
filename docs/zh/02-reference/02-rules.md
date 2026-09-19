@@ -32,6 +32,27 @@ Rust、Shell、C 和 C++ 包。适用时结构规则使用 tree-sitter。许多�
 未知字段、重复身份、无效正则、能力缺失、语法错误和解析预算耗尽会使验证失败或检查未完成。
 规则生成从不等于批准。
 
+### 结构化 Schema 契约
+
+project-rule JSON Schema 是 CLI、Skill、生成、校验及不可变策略加载共享的可执行序列化契约。对象通过
+`additionalProperties: false` 闭合；条件分支把每种 entity 与必需 capability 关联，并限制完整文件
+清单、marker binding 和 dependency evidence 等字段组合。
+
+`rules schema` 导出运行时副本，匹配版本的 Skill 在
+`references/schemas/project-rule.schema.json` 携带同一份 Schema。两份 JSON 解析后相等只证明协议兼容，
+不代表来源获批。CLI 还会执行 Rust regex/glob、受限路径、唯一身份、精确来源章节 hash、capability
+组合和有限预算等语义校验。
+
+### 从仓库 prose 到可执行规则
+
+`rules source` 从 `AGENTS.md` 或其他仓库策略中抽取唯一无歧义章节，并返回精确 source binding。LLM
+只能把明确且可表达的约束翻译进有限 DSL。文件清单、计数、名称、有界文本、marker、import 与受支持
+dependency fact 有结构化表示；图、类型、数据流、运行时或人工判断约束必须路由到相应 lint/project
+adapter、command check 或 manual decision，不能用正则近似。
+
+[Schema 驱动流程](../01-user-guide/06-schema-guided-repository-rules.md)展示完整的抽取、校验、生成及独立
+采用步骤；权威的随包 Agent 流程见 Skill 的[规则编写指南](../../../skills/qualitygate-cli/references/rule-authoring.md)。
+
 ## 报告、文件契约与规则评估
 
 分析器棘轮属于 command check，会在基线与当前两个不可变快照上归一化报告。file contract 可覆盖

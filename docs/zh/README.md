@@ -2,8 +2,8 @@
 
 [English](../en/README.md)
 
-本书说明如何执行绑定 Git 快照的仓库检查、配置规则、解释证据、接入 Agent
-修复闭环，以及参与 Qualitygate CLI 开发。
+本书说明如何执行绑定 Git 快照的仓库检查、把仓库说明转成 Schema 校验的规则、解释证据、接入
+Agent 修复闭环，以及参与 Qualitygate CLI 开发。
 
 1. [用户指南](01-user-guide/README.md)：安装、检查、修复与真实仓库试点。
 2. [参考手册](02-reference/README.md)：命令、规则、报告、证据、退出码与限制。

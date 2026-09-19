@@ -42,6 +42,36 @@ Unknown fields, duplicate identities, invalid regexes, missing capabilities,
 malformed syntax, and exhausted parser budgets fail validation or produce an
 incomplete check. Rule generation is never approval.
 
+### Structured Schema contract
+
+The project-rule JSON Schema is the executable serialization contract shared by
+the CLI, Skill, generation, validation, and immutable policy loading. Objects
+are closed with `additionalProperties: false`; conditional branches connect
+each entity to its required capability and restrict combinations such as
+full-inventory file assertions, marker binding, and dependency evidence.
+
+`rules schema` exports the runtime copy. The matching Skill carries the same
+bytes at `references/schemas/project-rule.schema.json`. Parsed equality between
+those two documents establishes protocol compatibility; it does not establish
+source approval. The CLI adds semantic validation for Rust regex/glob syntax,
+confined paths, unique identities, exact source-section hashes, capability
+combinations, and finite budgets.
+
+### Repository prose to executable rules
+
+`rules source` extracts one unambiguous section from `AGENTS.md` or another
+repository policy and returns the exact source binding. An LLM may translate
+only explicit, representable obligations into the finite DSL. File inventory,
+counts, names, bounded text, markers, imports, and supported dependency facts
+have structured representations. Graph, type, data-flow, runtime, or human
+judgment obligations must instead use the appropriate lint/project adapter,
+command check, or manual decision; they must not be approximated by a regex.
+
+The [Schema-guided workflow](../01-user-guide/06-schema-guided-repository-rules.md)
+shows the complete extraction, validation, generation, and separate adoption
+sequence. The authoritative packaged procedure is the Skill's
+[rule-authoring reference](../../../skills/qualitygate-cli/references/rule-authoring.md).
+
 ## Reports, file contracts, and triage
 
 Analyzer ratchets are command checks whose reports are normalized on both

@@ -1,6 +1,6 @@
 ---
 name: qualitygate-cli
-description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
+description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
 metadata:
   version: "0.5.2"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
@@ -8,13 +8,42 @@ metadata:
 
 # Qualitygate CLI
 
-Use the published `qualitygate` executable as the control surface. This skill
-does not replace repository policy, task acceptance, review, or signed evidence
-with an agent judgment.
+Use this Skill as the decision and safety layer over the published
+`qualitygate` executable. The Skill routes intent and preserves authority
+boundaries; the matching CLI is the executable source of truth for Schema
+export, source binding, validation, generation, planning, and checks. Never
+replace a CLI result with an LLM's interpretation or an unvalidated equivalent.
+
+This Skill has two primary workflows:
+
+- verify a selected repository snapshot against existing policy and task
+  contracts;
+- translate explicit repository constraints, including applicable sections of
+  `AGENTS.md`, into source-bound, Schema-validated project-rule candidates.
+
+Neither workflow replaces repository policy, task acceptance, review, or
+signed evidence with an agent judgment.
 
 For implementation, bug fixes, and refactors, use the existing repository gate
 to verify the final code snapshot before reporting the task as complete.
 The gate's coverage and evidence determine what that claim means.
+
+## Use the Skill over the CLI
+
+For ordinary code work, let this Skill select the snapshot, profile, evidence,
+and recheck workflow, then use the CLI to execute it. For rule authoring, let
+the Skill classify each prose obligation by evidence strength, then use
+`rules schema`, `rules source`, `rules validate`, and `rules generate` from the
+matching CLI. The LLM may draft a candidate; it may not invent a source digest,
+extend the finite DSL, declare validation successful, enable the rule, or treat
+generation as approval.
+
+Do not hand-write a project rule from memory and skip the CLI because its shape
+looks plausible. Read the complete packaged Schema and
+[rule-authoring workflow](references/rule-authoring.md), preserve unsupported
+obligations as explicit gaps, and route graph/type/data-flow/runtime semantics
+to existing lints, project adapters, bounded command checks, or manual review.
+Only write or adopt a rule when the user authorizes that policy mutation.
 
 ## Resolve the executable
 
@@ -212,15 +241,33 @@ user; do not treat an absent tool, missing report, timeout, or partial evidence
 as a success. Read [operations](references/operations.md) before handling task,
 merge-request, manual-acceptance, or trusted-policy flows.
 
-## Extract project rules with the schema
+## Convert repository constraints into structured rules
 
-When asked to extract AGENTS.md, Agent.md, or another project policy into
-rules, first read [rule authoring](references/rule-authoring.md) and the complete
-[project rule schema](references/schemas/project-rule.schema.json). Use the
-schema to construct each candidate, then the matching CLI to validate and
-publish it under `qualitygate/rules`. Do not substitute a prose example for
-schema validation. Source hashes, capabilities, and source review remain
-separate obligations; generation does not enable rules or issue approvals.
+When asked to enforce `AGENTS.md`, `Agent.md`, contributor guidance, or another
+repository policy, first read [rule authoring](references/rule-authoring.md) and
+the complete
+[project rule schema](references/schemas/project-rule.schema.json). Then:
+
+1. Use `rules list --source all` to avoid duplicating a built-in, project rule,
+   lint, or report adapter.
+2. Use `rules schema --format json` and compare the parsed result with the
+   packaged Schema. A mismatch is a compatibility gap.
+3. Use `rules source --document ... --section ... --format json` to obtain the
+   exact source object. Never calculate or guess its digest in prose.
+4. Classify every clause. Translate only subjects and assertions supported by
+   the finite DSL. Keep unrepresentable clauses visible and route them to the
+   evidence owner that can actually prove them.
+5. Draft one complete candidate per obligation, then require
+   `rules validate candidate.yaml --format json` before any publication.
+6. Only after authorized validation, use
+   `rules generate --input candidate.yaml --format json`, inspect the generated
+   file, validate the whole project-rule directory, and report that adoption is
+   still a separate policy/review action.
+
+Do not substitute a prose example for Schema validation. Source binding,
+capability declaration, semantic validation, policy selection, source review,
+and runtime evidence are separate obligations. Generation creates a candidate
+under `qualitygate/rules`; it does not enable the rule or issue approval.
 
 ## Interpret results
 

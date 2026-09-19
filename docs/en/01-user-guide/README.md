@@ -7,3 +7,4 @@
 3. [Rule configuration](03-rule-configuration.md)
 4. [Agent repair and acceptance](04-agent-repair-and-acceptance.md)
 5. [Real-repository pilot](05-real-repository-pilot.md)
+6. [Schema-guided repository rules](06-schema-guided-repository-rules.md)

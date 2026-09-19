@@ -30,7 +30,7 @@ qualitygate --root . rules configure RULE_ID --set key=value
 ```bash
 qualitygate rules schema
 qualitygate rules validate candidate.yaml
-qualitygate rules generate --input reviewed-source.md
+qualitygate rules generate --input candidate.yaml
 ```
 
 生成过程保留来源摘要和能力边界，但不能替代规范审核。模式规则只是有界信号，例如疑似凭据文本或
@@ -38,3 +38,6 @@ qualitygate rules generate --input reviewed-source.md
 
 文件存在性与大小要求使用 file contract；外部分析器债务使用 report ratchet。二者都不是临时编造的
 内置规则 ID。
+
+从 `AGENTS.md` 等仓库 prose 到绑定来源、经过 Schema 校验的规则候选，完整流程见
+[Schema 驱动的仓库规则](06-schema-guided-repository-rules.md)。

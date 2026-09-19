@@ -189,6 +189,23 @@ line 与 word assertion。实体变化复用内置 AST multiset matching。配�
 会纳入未变文件，但受 30 秒、50,000 文件与 32 MiB 选中文本预算约束。AI provenance、Git trailer
 及依赖断言都要求显式 producer；能力缺失是 incomplete，不是“没有匹配”。
 
+结构化路径刻意分离五种身份：
+
+```mermaid
+flowchart LR
+    P[规范 prose 字节] --> B[来源绑定<br/>document + section + digest]
+    S[Project-rule JSON Schema] --> C[类型化候选]
+    B --> C
+    C --> V[Schema + 语义校验]
+    V --> R[带版本的规则定义]
+    R --> E[快照执行证据]
+```
+
+LLM 可以提出 `C`，但不能制造 `B`、重定义 `S`、自行宣布 `V` 成功、采用 `R` 或合成 `E`。
+`rules source`、`rules schema`、`rules validate`、`rules generate`、策略规划与 check 执行都由匹配版本
+的 CLI 负责。因此 `AGENTS.md` 等仓库 prose 可以转化为可维护的结构化规则，而 prompt 解释不会成为
+运行时 authority。
+
 ## 外部 lint 与报告实现
 
 外部 lint 不是另一个 catalog implementation 字符串，而是有界 command check 加类型化 report

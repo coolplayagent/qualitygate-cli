@@ -10,6 +10,7 @@ Qualitygate CLI 是面向仓库策略和任务验收的 Rust 命令行门禁。�
 - 每个结果都绑定不可变 Git 快照、策略和任务身份。
 - 明确区分阻塞违规与未完成执行。
 - 统一处理内置规则、Schema 校验的项目规则和外部报告。
+- 通过封闭 Schema 与 CLI，把 `AGENTS.md` 等仓库说明中的可执行约束转成绑定来源的结构化规则候选。
 - 保持策略、任务、人工验收与签名 provenance 可追溯。
 - 为 Agent 提供有界反馈，同时保留最终 full 检查契约。
 - 限制时间、并发、文件获取、解析和进程输出资源。
@@ -33,6 +34,7 @@ qualitygate --root /path/to/repository \
 - [中文文档](docs/zh/README.md)
 - [English book](docs/en/README.md)
 - [安装与首次检查](docs/zh/01-user-guide/01-installation-and-first-check.md)
+- [Schema 驱动的仓库规则](docs/zh/01-user-guide/06-schema-guided-repository-rules.md)
 - [CLI 参考](docs/zh/02-reference/01-cli-commands.md)
 
 规范性产品需求位于 [CodeSpec requirements](codespec/requirements/qualitygate-cli.md)；仓库导航由

@@ -126,6 +126,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "refactor",
         "full snapshot-bound check",
         "recheck the final snapshot",
+        "AGENTS.md",
+        "schema-validated",
+        "matching CLI",
     ] {
         assert!(
             skill.description.contains(expected),
@@ -143,8 +146,11 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     for expected in [
         "rules validate candidate.yaml",
         "rules generate --input",
+        "rules schema --format json",
+        "rules source --document AGENTS.md",
         "qualitygate/rules",
         "not constitute that review",
+        "acyclic module",
     ] {
         assert!(
             authoring.contains(expected),
@@ -174,6 +180,10 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "final snapshot",
         "complete pass",
         "separately required checks",
+        "AGENTS.md",
+        "exported Schema",
+        "exact source binding",
+        "candidate generation",
     ] {
         assert!(
             openai.interface.default_prompt.contains(expected),

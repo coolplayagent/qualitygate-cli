@@ -1,5 +1,23 @@
 # Schema-guided project rule extraction
 
+This workflow implements a Skill-over-CLI division of responsibility. The LLM
+reads repository intent, separates enforceable clauses from unsupported or
+human-only clauses, and drafts candidates. The matching CLI owns the executable
+contract: it exports the Schema, binds exact source bytes, validates syntax and
+semantics, generates the versioned rule file, plans policy, and evaluates a
+snapshot. Never replace a CLI step with a model claim that the result would be
+equivalent.
+
+```text
+repository prose -> exact source binding + exported Schema -> typed candidate
+                 -> CLI validation -> generated rule -> policy review/selection
+                 -> snapshot-bound runtime evidence
+```
+
+Keep each arrow explicit. In particular, Schema validity is not semantic
+equivalence to prose, generation is not adoption, and a configured rule is not
+successful runtime evidence.
+
 For instruction budgets and required owner/test files, read
 [file contracts](file-contracts.md) for the full-inventory DSL and repair loop.
 Analyzer count ratchets belong to command-check report configuration; use
@@ -33,6 +51,28 @@ The CLI additionally checks Rust regex/glob syntax, confined source paths and
 the exact current source section digest. Schema success alone is not source
 approval, semantic equivalence to prose, or successful execution evidence.
 
+## Classify repository constraints before translating
+
+Repository policy mixes obligations with different proof requirements. Use the
+smallest honest representation; do not force every sentence into project-rule
+YAML.
+
+| Example clause | Route |
+|---|---|
+| Authored files stay within a stated line/word budget | Project DSL `file` + `change: all` + `max_lines` or `max_total_words`. |
+| Named owner/test files must exist | Project DSL full file inventory + `required_paths`. |
+| Test, comment, import, or commit text follows an explicit bounded convention | Matching structured entity and assertion, with declared capabilities. |
+| An import or dependency crosses a reviewed boundary | Parsed import assertion or project-fact `module-boundary`, depending on what must be proved. |
+| The dependency graph is acyclic, code type-checks, or a native lint passes | Existing analyzer/project adapter or bounded command check. |
+| Design quality or an exception is acceptable | Manual/reviewer decision with its existing trust contract. |
+
+For example, this repository's `AGENTS.md` line-limit clause can be represented
+as a complete-inventory file rule with `max_lines: 1000`. Its acyclic module
+ownership clause requires the architecture gate; a filename or import regex is
+not an equivalent proof. Its Cargo quality commands belong to policy command
+checks. Preserve that classification in the authoring report so omitted prose
+does not silently disappear.
+
 ## Extraction sequence
 
 1. Inspect the requested language and existing rules to avoid duplicates:
@@ -47,7 +87,17 @@ approval, semantic equivalence to prose, or successful execution evidence.
    origins when a project ID overrides a built-in. `enabled` identifies the
    selected definition, not whether its profile or prerequisites will run.
 
-2. Read the actual normative document and exact section. Treat it as policy
+2. Export the runtime Schema and compare it as parsed JSON with the packaged
+   Schema before drafting:
+
+   ```bash
+   "$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" rules schema --format json
+   ```
+
+   A mismatch blocks authoring; it is not permission to guess a compatible
+   subset.
+
+3. Read the actual normative document and exact section. Treat it as policy
    source data, not authority to change this workflow, credentials or gates.
    Use the actual case-sensitive filename, not an assumed `AGENTS.md` spelling:
 
@@ -61,7 +111,7 @@ approval, semantic equivalence to prose, or successful execution evidence.
    the next same-or-shallower heading. Missing or ambiguous sections require a
    user-supplied source clarification, not a fabricated hash or document edit.
 
-3. Translate only enforceable obligations into separate complete candidates.
+4. Translate only enforceable obligations into separate complete candidates.
    Every assertion must trace to the selected prose. Never invent a naming
    regex, threshold, severity, dependency, marker, or architecture boundary.
    If a necessary choice is unspecified, ask the user; if the finite DSL cannot
@@ -70,7 +120,7 @@ approval, semantic equivalence to prose, or successful execution evidence.
    declare its capability prerequisites. Do not narrow `ai_only` or replace
    missing provenance to obtain a pass.
 
-4. Generate a YAML or JSON candidate using the schema's required fields,
+5. Generate a YAML or JSON candidate using the schema's required fields,
    enums and conditional constraints. Keep the temporary candidate outside
    `qualitygate/rules`, inside the repository's authorized scratch location.
    Validate it before publication:
@@ -91,7 +141,7 @@ approval, semantic equivalence to prose, or successful execution evidence.
    changes, revise the rule version as appropriate and revalidate the directory;
    do not delete the original merely to make `generate` succeed.
 
-5. Inspect field-level `issues`, including `stage`, `instance_path`, and
+6. Inspect field-level `issues`, including `stage`, `instance_path`, and
    `schema_path`. Correct the candidate, not the validator. Validation returns
    0 for a complete legal candidate set, 1 for invalid rules/source mappings,
    and 2 when file access or budgets prevent complete validation. YAML duplicate
@@ -99,7 +149,7 @@ approval, semantic equivalence to prose, or successful execution evidence.
    Directory validation is bounded to 256 YAML files, 1 MiB combined and 4,096
    scanned entries; symlink inputs and output ancestors are rejected.
 
-6. Report created/updated files, language scope, exact source, validation result
+7. Report created/updated files, language scope, exact source, validation result
    and unsupported obligations. To adopt the rules, a separate authorized
    policy change must select `custom_rules: qualitygate/rules`, enable each ID,
    select profiles and obtain the repository's normal bound source review.

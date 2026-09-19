@@ -7,3 +7,4 @@
 3. [规则配置](03-rule-configuration.md)
 4. [Agent 修复与验收](04-agent-repair-and-acceptance.md)
 5. [真实仓库试点](05-real-repository-pilot.md)
+6. [Schema 驱动的仓库规则](06-schema-guided-repository-rules.md)

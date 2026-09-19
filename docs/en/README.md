@@ -2,9 +2,9 @@
 
 [简体中文](../zh/README.md)
 
-This book explains how to run snapshot-bound repository checks, configure
-rules, interpret evidence, integrate an Agent repair loop, and contribute to
-Qualitygate CLI.
+This book explains how to run snapshot-bound repository checks, convert
+repository instructions into Schema-validated rules, interpret evidence,
+integrate an Agent repair loop, and contribute to Qualitygate CLI.
 
 1. [User guide](01-user-guide/README.md) — install, check, repair, and pilot.
 2. [Reference](02-reference/README.md) — commands, rules, reports, evidence,

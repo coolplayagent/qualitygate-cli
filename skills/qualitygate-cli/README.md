@@ -2,8 +2,10 @@
 
 This ClawHub-compatible skill teaches agents to use the published
 `qualitygate` executable for snapshot-bound repository policy and task
-acceptance checks. It is an instruction layer over the CLI, not a replacement
-for repository policy, protected references, human approval, or evidence.
+acceptance checks and for Schema-guided translation of repository instructions
+such as `AGENTS.md` into structured project-rule candidates. It is a decision
+and safety layer over the CLI, not a replacement for its executable validation,
+repository policy, protected references, human approval, or evidence.
 
 ## Distribution shape
 
@@ -19,7 +21,9 @@ The tracked skill directory is intentionally lightweight:
   matching CLI release at runtime.
 - [rule authoring](references/rule-authoring.md) and the executable
   [project rule schema](references/schemas/project-rule.schema.json) guide
-  schema-validated extraction into `qualitygate/rules`.
+  source-bound, schema-validated extraction from repository prose into
+  `qualitygate/rules`; the matching CLI remains authoritative for Schema
+  export, source binding, validation, and generation.
 - [decision protocol](references/decision-protocol.md) and the pinned
   [decision](references/schemas/decision.schema.json) and
   [feedback](references/schemas/feedback.schema.json) schemas describe

@@ -11,6 +11,8 @@ returns reproducible evidence for developers, CI, and coding Agents.
 - Binds every result to immutable Git snapshot, policy, and task identities.
 - Distinguishes blocking violations from incomplete execution.
 - Unifies built-in rules, schema-validated project rules, and external reports.
+- Turns enforceable repository instructions such as `AGENTS.md` into
+  source-bound structured rule candidates through a closed Schema and CLI.
 - Keeps policy, task, manual acceptance, and signed provenance traceable.
 - Gives Agents bounded feedback without weakening the final full-check contract.
 - Bounds time, concurrency, file acquisition, parsing, and process output.
@@ -35,6 +37,7 @@ incomplete validation.
 - [English book](docs/en/README.md)
 - [中文文档](docs/zh/README.md)
 - [Installation and first check](docs/en/01-user-guide/01-installation-and-first-check.md)
+- [Schema-guided repository rules](docs/en/01-user-guide/06-schema-guided-repository-rules.md)
 - [CLI reference](docs/en/02-reference/01-cli-commands.md)
 
 Normative product requirements live in
