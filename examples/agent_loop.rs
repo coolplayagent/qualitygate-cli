@@ -1,3 +1,10 @@
+#![cfg_attr(
+    test,
+    allow(
+        dead_code,
+        reason = "the integration test imports the full executable harness while the test entry point is disabled"
+    )
+)]
 //! Thin, opt-in external-agent harness. It never implements gate decisions.
 use anyhow::{Context, Result, bail};
 use clap::{Parser, ValueEnum};

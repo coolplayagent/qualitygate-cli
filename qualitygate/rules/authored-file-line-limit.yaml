@@ -1,0 +1,33 @@
+schema_version: 1
+id: authored-file-line-limit
+version: 1
+source:
+  document: AGENTS.md
+  section: Quality contract
+  content_hash: sha256:01abd712b3f0f79e9685c54df4366e2137312d9413ac27582156d473539471f8
+language: []
+required: true
+severity: error
+applies_to:
+  paths:
+  - src/**/*.rs
+  - tests/**/*.rs
+  - examples/**/*.rs
+  - docs/**/*.md
+  - .github/workflows/**/*.yml
+  - .github/workflows/**/*.yaml
+  provenance_scope: null
+requires_capabilities:
+- files
+binding: null
+when:
+  entity: file
+  change: all
+then:
+  require_marker: false
+  require_dependency: null
+  name_pattern: null
+  forbid_pattern: null
+  max_count: null
+  max_lines: 1000
+fix: Split authored source, test, documentation, or workflow files that exceed 1000 lines while preserving their behavior and evidence.
