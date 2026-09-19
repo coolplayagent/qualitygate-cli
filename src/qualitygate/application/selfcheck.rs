@@ -76,6 +76,7 @@ fn execute(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
                 "lang-typescript".into(),
                 "lang-go".into(),
                 "lang-c".into(),
+                "lang-cpp".into(),
             ],
             ..Config::default()
         };

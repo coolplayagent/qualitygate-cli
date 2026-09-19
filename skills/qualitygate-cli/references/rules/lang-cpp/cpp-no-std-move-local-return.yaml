@@ -1,0 +1,17 @@
+id: cpp-no-std-move-local-return
+version: 1
+description: Review std::move in return expressions
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\breturn\s+std::move\s*\('
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [expression-safety]}
+lifecycle_inputs: [cpp-no-std-move-local-return-review]

@@ -31,8 +31,8 @@ sources:
     languages: [cpp]
     lifecycle_stages: [implementation, static-analysis, review]
     concerns: [coding, security, reliability]
-    controls: [array-safety, assertion-discipline, control-flow, expression-safety, file-security, function-safety, numeric-literal]
-    summary: C++ secure coding guidance references the C standard and motivates contextual review of the same hazard classes; lexical matches alone do not establish conformance.
+    controls: [array-safety, assertion-discipline, control-flow, expression-safety, file-security, function-safety, numeric-literal, exception-safety, concurrency-safety, randomness]
+    summary: C++ secure coding guidance references the C standard and motivates contextual review of memory, exceptions, concurrency, and API use; lexical matches alone do not establish conformance.
   - id: ruff-rules
     organization: Astral
     title: Ruff rules reference

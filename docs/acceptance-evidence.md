@@ -1,5 +1,14 @@
 # Requirements acceptance evidence
 
+## Issue 19 CPP rules and ratchet adoption
+
+| Requirement | Current evidence |
+|---|---|
+| Nine opt-in C++ review signals, fixed language scope, warning/error defaults and repair | `tests/issue19_rules.rs`; `lang-cpp` assets and C++ lifecycle supplement |
+| Independent pass/fail goldens in minimal, typical and stress | `fixtures/{minimal,typical,stress}/issue19-cases.json`, `fixtures/golden/issue19-*.json`; `tests/selfcheck.rs` |
+| Real C++ analyzer SARIF ratchet and Clang reference validation | `tests/c_family_ratchet.rs::real_gcc_c_and_cpp_sarif_ratchets_growth_repair_and_compile_failure`; `tests/issue19_rules.rs::clang_sarif_reference_is_valid_and_requires_a_real_baseline` |
+| Proposed semantic rules and ratchet management assessed against snapshot-bound evidence | `docs/cpp-rule-triage.md`, `docs/c-family-ratchet.md`, `docs/diagnostic-ratchets.md` |
+
 ## Issue 18 C family rules and analyzer ratchet
 
 | Requirement | Current evidence |

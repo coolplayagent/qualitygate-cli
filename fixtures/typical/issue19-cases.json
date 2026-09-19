@@ -1,0 +1,200 @@
+[
+  {
+    "id": "issue19-no-realloc-pass-typical",
+    "rule": "cpp-no-realloc",
+    "description": "typical pass C++ review signal cpp-no-realloc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "value = std::vector<int>(n);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-realloc-fail-typical",
+    "rule": "cpp-no-realloc",
+    "description": "typical fail C++ review signal cpp-no-realloc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "value = realloc(ptr, n);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-alloca-pass-typical",
+    "rule": "cpp-no-alloca",
+    "description": "typical pass C++ review signal cpp-no-alloca",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "buf = std::vector<char>(size);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-alloca-fail-typical",
+    "rule": "cpp-no-alloca",
+    "description": "typical fail C++ review signal cpp-no-alloca",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "buf = alloca(size);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-memfunc-pass-typical",
+    "rule": "cpp-no-unsafe-memfunc",
+    "description": "typical pass C++ review signal cpp-no-unsafe-memfunc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "std::copy(src.begin(), src.end(), dst.begin());\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-memfunc-fail-typical",
+    "rule": "cpp-no-unsafe-memfunc",
+    "description": "typical fail C++ review signal cpp-no-unsafe-memfunc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "strcpy(dst, src);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-throw-by-value-pass-typical",
+    "rule": "cpp-throw-by-value",
+    "description": "typical pass C++ review signal cpp-throw-by-value",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "throw Error();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-throw-by-value-fail-typical",
+    "rule": "cpp-throw-by-value",
+    "description": "typical fail C++ review signal cpp-throw-by-value",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "throw new Error();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-catch-by-reference-pass-typical",
+    "rule": "cpp-catch-by-reference",
+    "description": "typical pass C++ review signal cpp-catch-by-reference",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "catch (const Error& e) { handle(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-catch-by-reference-fail-typical",
+    "rule": "cpp-catch-by-reference",
+    "description": "typical fail C++ review signal cpp-catch-by-reference",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "catch (Error e) { handle(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-direct-mutex-pass-typical",
+    "rule": "cpp-no-direct-mutex",
+    "description": "typical pass C++ review signal cpp-no-direct-mutex",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "std::lock_guard<std::mutex> guard(mutex);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-direct-mutex-fail-typical",
+    "rule": "cpp-no-direct-mutex",
+    "description": "typical fail C++ review signal cpp-no-direct-mutex",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "mutex.lock();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-std-move-local-return-pass-typical",
+    "rule": "cpp-no-std-move-local-return",
+    "description": "typical pass C++ review signal cpp-no-std-move-local-return",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "return value;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-std-move-local-return-fail-typical",
+    "rule": "cpp-no-std-move-local-return",
+    "description": "typical fail C++ review signal cpp-no-std-move-local-return",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "return std::move(value);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-rand-pass-typical",
+    "rule": "cpp-no-unsafe-rand",
+    "description": "typical pass C++ review signal cpp-no-unsafe-rand",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "int n = secure_random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-rand-fail-typical",
+    "rule": "cpp-no-unsafe-rand",
+    "description": "typical fail C++ review signal cpp-no-unsafe-rand",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "int n = rand();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-throw-spec-pass-typical",
+    "rule": "cpp-no-throw-spec",
+    "description": "typical pass C++ review signal cpp-no-throw-spec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "void process() noexcept {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-throw-spec-fail-typical",
+    "rule": "cpp-no-throw-spec",
+    "description": "typical fail C++ review signal cpp-no-throw-spec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "void process() throw() {}\n"
+      }
+    }
+  }
+]

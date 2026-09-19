@@ -1,0 +1,17 @@
+id: cpp-no-unsafe-rand
+version: 1
+description: Review rand calls for security-sensitive use
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\brand\s*\('
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [randomness]}
+lifecycle_inputs: [cpp-no-unsafe-rand-review]

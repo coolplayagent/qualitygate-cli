@@ -1,0 +1,17 @@
+id: cpp-no-direct-mutex
+version: 1
+description: Review direct lock and unlock method calls
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\b[A-Za-z_]\w*\.(?:lock|unlock)\s*\('
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [concurrency-safety]}
+lifecycle_inputs: [cpp-no-direct-mutex-review]

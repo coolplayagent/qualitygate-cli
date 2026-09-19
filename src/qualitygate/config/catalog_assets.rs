@@ -10,6 +10,7 @@ const PACKAGES: &[&str] = &[
     "lang-typescript",
     "lang-go",
     "lang-c",
+    "lang-cpp",
 ];
 
 #[derive(Debug)]

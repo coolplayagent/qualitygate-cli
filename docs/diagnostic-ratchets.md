@@ -2,6 +2,8 @@
 
 For C and C++ analyzer SARIF, see the [C family ratchet guide](c-family-ratchet.md)
 and packaged [GCC reference policy](../skills/qualitygate-cli/references/gcc-analyzer-ratchet.yaml).
+The [C++ Clang reference](../skills/qualitygate-cli/references/clang-static-analyzer-ratchet.yaml)
+uses the same immutable baseline/current report comparison.
 
 `reports[].mode: ratchet` allows historical diagnostic debt to decrease or hold,
 and fails when any tool/rule count grows. The same analyzer runs on both

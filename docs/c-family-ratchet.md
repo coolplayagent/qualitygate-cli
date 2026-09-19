@@ -28,6 +28,9 @@ and preserve source paths.
 `clang --analyze --analyzer-output sarif -o report.sarif source.c` for a
 single translation unit. Set `argv`, report `path` and `baseline` to the
 actual command and output path, and include a `clang --version` tool probe.
+The packaged [C++ Clang reference](../skills/qualitygate-cli/references/clang-static-analyzer-ratchet.yaml)
+uses this form for `sample.cpp`. Its policy parser contract is tested; the
+live C++ ratchet acceptance case uses GCC SARIF on both snapshots.
 Other tools can be used when they emit complete, self-contained SARIF 2.1.0
 within this [supported profile](sarif.md). A tool's XML or JSON file does not
 become SARIF by renaming its extension. In particular, clang-tidy's ordinary

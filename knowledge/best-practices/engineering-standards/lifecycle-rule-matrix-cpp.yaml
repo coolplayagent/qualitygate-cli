@@ -1,0 +1,110 @@
+schema_version: 1
+inputs:
+  - id: cpp-no-realloc-review
+    status: enforced
+    rule_id: cpp-no-realloc
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Allocator ownership and failure handling need context.
+  - id: cpp-no-alloca-review
+    status: enforced
+    rule_id: cpp-no-alloca
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: The call name does not establish allocation size or lifetime.
+  - id: cpp-no-unsafe-memfunc-review
+    status: enforced
+    rule_id: cpp-no-unsafe-memfunc
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Call names alone do not establish buffer size or exploitability.
+  - id: cpp-throw-by-value-review
+    status: enforced
+    rule_id: cpp-throw-by-value
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Same-line throw new may transfer pointer ownership; aliases are missed.
+  - id: cpp-catch-by-reference-review
+    status: enforced
+    rule_id: cpp-catch-by-reference
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Only simple same-line type names are recognized; some value catches are intentional.
+  - id: cpp-no-direct-mutex-review
+    status: enforced
+    rule_id: cpp-no-direct-mutex
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Method names do not prove the receiver is a mutex or that RAII is absent.
+  - id: cpp-no-std-move-local-return-review
+    status: enforced
+    rule_id: cpp-no-std-move-local-return
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Returning a member or nonlocal may require move; NRVO applicability needs semantics.
+  - id: cpp-no-unsafe-rand-review
+    status: enforced
+    rule_id: cpp-no-unsafe-rand
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Ordinary nonsecurity randomness may be appropriate; this only prompts review.
+  - id: cpp-no-throw-spec-review
+    status: enforced
+    rule_id: cpp-no-throw-spec
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-cpp]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Only simple same-line signatures are recognized; language mode matters.

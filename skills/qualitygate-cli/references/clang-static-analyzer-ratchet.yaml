@@ -1,0 +1,14 @@
+# Reference for a pinned Clang installation and one tracked C++ translation unit.
+# Change the source path and report path together for your project.
+schema_version: 1
+checks:
+  - id: clang-static-analyzer-ratchet
+    argv: [clang, --analyze, --analyzer-output, sarif, -o, clang-analysis.sarif, sample.cpp]
+    timeout_seconds: 120
+    tools:
+      - {id: clang, argv: [clang, --version]}
+    reports:
+      - path: clang-analysis.sarif
+        baseline: clang-analysis.sarif
+        format: sarif
+        mode: ratchet

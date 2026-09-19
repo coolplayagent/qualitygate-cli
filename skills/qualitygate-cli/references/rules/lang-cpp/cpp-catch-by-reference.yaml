@@ -1,0 +1,17 @@
+id: cpp-catch-by-reference
+version: 1
+description: Review class-like catch parameters passed by value
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\bcatch\s*\(\s*(?:const\s+)?(?:std::)?(?:[A-Z][A-Za-z_]\w*|exception|runtime_error|logic_error)\s+[A-Za-z_]\w*\s*\)'
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [exception-safety]}
+lifecycle_inputs: [cpp-catch-by-reference-review]

@@ -1,0 +1,200 @@
+[
+  {
+    "id": "issue19-no-realloc-pass-stress",
+    "rule": "cpp-no-realloc",
+    "description": "stress pass C++ review signal cpp-no-realloc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "value = std::vector<int>(n);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-realloc-fail-stress",
+    "rule": "cpp-no-realloc",
+    "description": "stress fail C++ review signal cpp-no-realloc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "value = realloc(ptr, n);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-alloca-pass-stress",
+    "rule": "cpp-no-alloca",
+    "description": "stress pass C++ review signal cpp-no-alloca",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "buf = std::vector<char>(size);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-alloca-fail-stress",
+    "rule": "cpp-no-alloca",
+    "description": "stress fail C++ review signal cpp-no-alloca",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "buf = alloca(size);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-memfunc-pass-stress",
+    "rule": "cpp-no-unsafe-memfunc",
+    "description": "stress pass C++ review signal cpp-no-unsafe-memfunc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "std::copy(src.begin(), src.end(), dst.begin());\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-memfunc-fail-stress",
+    "rule": "cpp-no-unsafe-memfunc",
+    "description": "stress fail C++ review signal cpp-no-unsafe-memfunc",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "strcpy(dst, src);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-throw-by-value-pass-stress",
+    "rule": "cpp-throw-by-value",
+    "description": "stress pass C++ review signal cpp-throw-by-value",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "throw Error();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-throw-by-value-fail-stress",
+    "rule": "cpp-throw-by-value",
+    "description": "stress fail C++ review signal cpp-throw-by-value",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "throw new Error();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-catch-by-reference-pass-stress",
+    "rule": "cpp-catch-by-reference",
+    "description": "stress pass C++ review signal cpp-catch-by-reference",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "catch (const Error& e) { handle(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-catch-by-reference-fail-stress",
+    "rule": "cpp-catch-by-reference",
+    "description": "stress fail C++ review signal cpp-catch-by-reference",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "catch (Error e) { handle(e); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-direct-mutex-pass-stress",
+    "rule": "cpp-no-direct-mutex",
+    "description": "stress pass C++ review signal cpp-no-direct-mutex",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "std::lock_guard<std::mutex> guard(mutex);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-direct-mutex-fail-stress",
+    "rule": "cpp-no-direct-mutex",
+    "description": "stress fail C++ review signal cpp-no-direct-mutex",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "mutex.lock();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-std-move-local-return-pass-stress",
+    "rule": "cpp-no-std-move-local-return",
+    "description": "stress pass C++ review signal cpp-no-std-move-local-return",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "return value;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-std-move-local-return-fail-stress",
+    "rule": "cpp-no-std-move-local-return",
+    "description": "stress fail C++ review signal cpp-no-std-move-local-return",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "return std::move(value);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-rand-pass-stress",
+    "rule": "cpp-no-unsafe-rand",
+    "description": "stress pass C++ review signal cpp-no-unsafe-rand",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int n = secure_random();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-unsafe-rand-fail-stress",
+    "rule": "cpp-no-unsafe-rand",
+    "description": "stress fail C++ review signal cpp-no-unsafe-rand",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int n = rand();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-throw-spec-pass-stress",
+    "rule": "cpp-no-throw-spec",
+    "description": "stress pass C++ review signal cpp-no-throw-spec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "void process() noexcept {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-throw-spec-fail-stress",
+    "rule": "cpp-no-throw-spec",
+    "description": "stress fail C++ review signal cpp-no-throw-spec",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "void process() throw() {}\n"
+      }
+    }
+  }
+]

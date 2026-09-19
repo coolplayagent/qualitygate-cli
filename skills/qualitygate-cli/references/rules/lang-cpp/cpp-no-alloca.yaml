@@ -1,0 +1,17 @@
+id: cpp-no-alloca
+version: 1
+description: Review nonstandard stack allocation calls
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\balloca\s*\('
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [function-safety]}
+lifecycle_inputs: [cpp-no-alloca-review]

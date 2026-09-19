@@ -1,0 +1,17 @@
+id: cpp-no-realloc
+version: 1
+description: Review realloc calls in C++ code
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\b(?:std::)?realloc\s*\('
+standard_refs:
+  - {source_id: sei-cert-cpp, controls: [function-safety]}
+lifecycle_inputs: [cpp-no-realloc-review]
