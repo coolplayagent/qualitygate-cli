@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 1
-updated_at: unix:1789193355
+map_version: 2
+updated_at: unix:1789802954
 directories:
 - directory: requirements
   purpose: Product requirements and acceptance criteria.
@@ -10,6 +10,7 @@ directories:
   - codespec/requirements/**
   key_files:
   - codespec/requirements/README.md
+  - codespec/requirements/qualitygate-cli.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -57,3 +58,7 @@ history:
     action: init
     actor: cli
     summary: Created CodeSpec repository map contract.
+  - version: 2
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.

@@ -31,4 +31,4 @@ calibration metrics, risk coverage, review count, slices and a seeded audit
 sample. Missing labels or broken evidence produce an incomplete pilot result.
 Provider and reviewer truth claims require external review; this workflow does
 not approve or promote active policy. See the repository's
-`docs/decision-protocol.md` for policy fields and limits.
+`docs/en/02-reference/04-policy-task-and-signed-evidence.md` for policy fields and limits.

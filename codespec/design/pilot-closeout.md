@@ -28,7 +28,7 @@ CLI 和外部签名流程，取得真实任务与独立人工观察。v10 按用
 ## 验证与证据
 
 A–O 的单元、集成、架构与 Skill 包回归证明上述机器契约可执行；
-[准备度审计](../../docs/pilot-readiness.md)逐项记录真实输入的当前状态。
+[准备度审计](../../docs/en/01-user-guide/05-real-repository-pilot.md)逐项记录真实输入的当前状态。
 通过 `pilot seal`、启动授权、七天观察、`pilot acceptance-subject` 和
 reviewer 签名形成的外部记录，才是 C-01–C-05 的退出证据。
 未提供受信身份和任务时，保持待启动，不制造封存或验收成功记录。

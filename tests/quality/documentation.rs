@@ -243,6 +243,54 @@ fn validate(root: &Path, documents: &BTreeMap<PathBuf, Document>) -> Vec<String>
     errors
 }
 
+const BOOK_VOLUMES: &[&str] = &[
+    "01-user-guide",
+    "02-reference",
+    "03-architecture",
+    "04-contributor-guide",
+];
+
+const RULE_IMPLEMENTATIONS: &[&str] = &[
+    "line-ending",
+    "commit-message",
+    "test-annotation-dependency",
+    "file-pattern",
+    "shell-shebang",
+    "shell-commented-code",
+    "diff-size",
+    "module-boundary",
+    "used-undeclared",
+    "source-pattern",
+    "test-naming",
+    "test-naming-strict",
+    "parameterized-tests",
+    "comment-language",
+    "ai-code-traceability",
+    "import-boundary",
+];
+
+fn markdown_inventory(root: &Path, relative: &Path) -> BTreeSet<PathBuf> {
+    super::files(&root.join(relative))
+        .into_iter()
+        .filter(|path| path.extension().is_some_and(|extension| extension == "md"))
+        .map(|path| {
+            path.strip_prefix(root.join(relative))
+                .unwrap()
+                .to_path_buf()
+        })
+        .collect()
+}
+
+fn linked_markdown_paths(file: &Path, document: &Document) -> BTreeSet<PathBuf> {
+    document
+        .links
+        .iter()
+        .filter_map(|(target, _)| resolve(file, target).ok().flatten())
+        .map(|(path, _)| path)
+        .filter(|path| path.extension().is_some_and(|extension| extension == "md"))
+        .collect()
+}
+
 #[test]
 fn documentation_links_anchors_and_fences_are_valid() {
     let root = dunce::canonicalize(env!("CARGO_MANIFEST_DIR")).unwrap();
@@ -259,6 +307,195 @@ fn documentation_links_anchors_and_fences_are_valid() {
         .collect();
     let errors = validate(&root, &documents);
     assert!(errors.is_empty(), "{}", errors.join("\n"));
+}
+
+#[test]
+fn bilingual_book_has_matching_paths_switches_and_complete_indexes() {
+    let root = dunce::canonicalize(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let english = markdown_inventory(&root, Path::new("docs/en"));
+    let chinese = markdown_inventory(&root, Path::new("docs/zh"));
+    assert_eq!(english, chinese, "English and Chinese book paths differ");
+
+    let documents: BTreeMap<_, _> = ["en", "zh"]
+        .into_iter()
+        .flat_map(|language| {
+            let language_root = root.join("docs").join(language);
+            super::files(&language_root)
+                .into_iter()
+                .filter(|path| path.extension().is_some_and(|extension| extension == "md"))
+                .map(|path| {
+                    let relative = path.strip_prefix(&root).unwrap().to_path_buf();
+                    let document = Document::parse(&std::fs::read_to_string(path).unwrap());
+                    (relative, document)
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+
+    for language in ["en", "zh"] {
+        let other = if language == "en" { "zh" } else { "en" };
+        let edition = PathBuf::from(format!("docs/{language}"));
+        let edition_index = edition.join("README.md");
+        let edition_links = linked_markdown_paths(&edition_index, &documents[&edition_index]);
+
+        for volume in BOOK_VOLUMES {
+            let volume_index = edition.join(volume).join("README.md");
+            assert!(
+                edition_links.contains(&volume_index),
+                "{} does not link {}",
+                edition_index.display(),
+                volume_index.display()
+            );
+            let index_links = linked_markdown_paths(&volume_index, &documents[&volume_index]);
+            let chapters: BTreeSet<_> = documents
+                .keys()
+                .filter(|path| path.parent() == volume_index.parent() && *path != &volume_index)
+                .cloned()
+                .collect();
+            assert!(!chapters.is_empty(), "empty volume: {volume}");
+            assert!(
+                chapters.is_subset(&index_links),
+                "{} does not cover every chapter: {:?}",
+                volume_index.display(),
+                chapters.difference(&index_links).collect::<Vec<_>>()
+            );
+        }
+
+        for relative in markdown_inventory(&root, &edition) {
+            let file = edition.join(&relative);
+            let counterpart = PathBuf::from("docs").join(other).join(&relative);
+            let links = linked_markdown_paths(&file, &documents[&file]);
+            assert!(
+                links.contains(&counterpart),
+                "{} has no language switch to {}",
+                file.display(),
+                counterpart.display()
+            );
+        }
+    }
+}
+
+#[test]
+fn architecture_uses_four_plus_one_views_and_explains_every_rule_implementation() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for language in ["en", "zh"] {
+        let architecture = root.join("docs").join(language).join("03-architecture");
+        let index = std::fs::read_to_string(architecture.join("README.md")).unwrap();
+        assert!(
+            index.contains("```mermaid"),
+            "{language} has no 4+1 diagram"
+        );
+        for chapter in [
+            "01-logical-view.md",
+            "02-process-view.md",
+            "03-development-view.md",
+            "04-physical-view.md",
+            "05-scenarios.md",
+        ] {
+            assert!(
+                index.contains(chapter),
+                "{language} does not link {chapter}"
+            );
+        }
+
+        let scenarios = std::fs::read_to_string(architecture.join("05-scenarios.md")).unwrap();
+        assert!(
+            scenarios.matches("```mermaid").count() >= 4,
+            "{language} scenarios do not connect the views with diagrams"
+        );
+
+        let rules =
+            std::fs::read_to_string(architecture.join("06-rule-engine-implementation.md")).unwrap();
+        for implementation in RULE_IMPLEMENTATIONS {
+            let heading = format!("### `{implementation}`");
+            assert!(
+                rules.contains(&heading),
+                "{language} rule architecture has no technical section for {implementation}"
+            );
+        }
+    }
+}
+
+#[test]
+fn documentation_root_is_a_bookshelf_without_legacy_topic_pages() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let docs = root.join("docs");
+    let entries: BTreeSet<_> = std::fs::read_dir(&docs)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        entries,
+        BTreeSet::from(["README.md".into(), "en".into(), "zh".into()])
+    );
+
+    let removed = [
+        "acceptance-evidence",
+        "agent-feedback",
+        "agent-loop",
+        "architecture",
+        "bazel",
+        "c-family-ratchet",
+        "compatibility",
+        "coverage",
+        "cpp-rule-triage",
+        "custom-rules",
+        "decision-protocol",
+        "diagnostic-ratchets",
+        "file-contracts",
+        "git-trailers",
+        "implementation",
+        "init",
+        "java-rule-triage",
+        "large-repositories",
+        "manual-acceptance",
+        "merge-requests",
+        "pilot-readiness",
+        "pilot-phase-a",
+        "pilot-phase-b",
+        "pilot-phase-c",
+        "pilot-phase-d",
+        "pilot-phase-e",
+        "pilot-phase-f",
+        "pilot-phase-g",
+        "pilot-phase-h",
+        "pilot-phase-i",
+        "pilot-phase-j",
+        "pilot-phase-k",
+        "pilot-phase-l",
+        "pilot-phase-m",
+        "pilot-phase-n",
+        "pilot-phase-o",
+        "pilot",
+        "policy-evolution",
+        "policy-validation",
+        "projects",
+        "provenance",
+        "python-projects",
+        "quality",
+        "reports",
+        "rule-management",
+        "rules",
+        "sarif",
+        "selfcheck",
+        "skill-package",
+        "source-reviews",
+        "tasks",
+        "test-effectiveness",
+    ];
+    let mut stale = Vec::new();
+    for file in super::files(root) {
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            continue;
+        };
+        for name in removed {
+            let old = format!("docs/{name}.md");
+            if text.contains(&old) {
+                stale.push(format!("{} references {old}", file.display()));
+            }
+        }
+    }
+    assert!(stale.is_empty(), "{}", stale.join("\n"));
 }
 
 #[test]

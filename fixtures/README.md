@@ -22,5 +22,5 @@ archives, lifecycle changes, and nine real paired Git workflows. Native cases
 use disposable repositories/trust roots and fixed producers; they never sign
 or promote a policy in the caller's repository.
 
-See [selfcheck](../docs/selfcheck.md) for commands, diagnostics, budgets and
+See [selfcheck](../docs/en/04-contributor-guide/02-selfcheck-and-fixtures.md) for commands, diagnostics, budgets and
 the distinction between falsification evidence and production assumptions.

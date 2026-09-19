@@ -1,0 +1,21 @@
+schema_version: 4
+topic:
+  id: policy-evolution
+  title: policy-evolution
+  description: Added by CLI source registration.
+sources:
+- id: policy-evolution-contract
+  topic: policy-evolution
+  kind: file
+  uri: docs/en/02-reference/04-policy-task-and-signed-evidence.md
+  source_scope: repo
+  read_policy: direct
+  write_policy: manual-review
+  status: active
+  version: 3
+  description: Stable bilingual-book reference for immutable, independently approved policy evolution.
+route:
+  topic: policy-evolution
+  source_order:
+  - policy-evolution-contract
+  fallback: bounded-search

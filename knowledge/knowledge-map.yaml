@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: knowledge
-map_version: 11
-updated_at: unix:1789737866
+map_version: 15
+updated_at: unix:1789803039
 directories:
 - directory: best-practices
   purpose: Reviewed engineering and knowledge-management practices.
@@ -81,16 +81,16 @@ topics:
   description: Added by CLI source registration.
   source_ids:
   - policy-evolution-contract
-  ref: topics/topic-16b01242f1a3e8ea-06eba34978413dfa7899ea6c8a0bfd514ccda62d1b880b7c5115e6590f3feaac.yaml
-  digest: 06eba34978413dfa7899ea6c8a0bfd514ccda62d1b880b7c5115e6590f3feaac
+  ref: topics/topic-16b01242f1a3e8ea-4fe91fabb53fb6387aba1d6f5cbf39509363a2372d22ec989f6539f1e1e1f59e.yaml
+  digest: 4fe91fabb53fb6387aba1d6f5cbf39509363a2372d22ec989f6539f1e1e1f59e
 - id: rule-maintenance
   title: rule-maintenance
   description: Added by CLI source registration.
   source_ids:
   - diagnostic-count-ratchets
   - rule-file-contracts
-  ref: topics/topic-8bbe422fe82bd42b-b57ebb2ff4007604b51bef161c779862bb70ce863c974d1a87ee476ed19abacf.yaml
-  digest: b57ebb2ff4007604b51bef161c779862bb70ce863c974d1a87ee476ed19abacf
+  ref: topics/topic-8bbe422fe82bd42b-6ba57172cf39626157f6b97438def164b5346d58f3f4900f14b54fd765bdd0c4.yaml
+  digest: 6ba57172cf39626157f6b97438def164b5346d58f3f4900f14b54fd765bdd0c4
 - id: software-model
   title: Whole-software model
   description: Code-map-backed architecture, build, deployment, dependency, configuration, and design knowledge.
@@ -145,3 +145,19 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 12
+    action: source.update
+    actor: cli
+    summary: Updated source 'policy-evolution-contract'.
+  - version: 13
+    action: source.update
+    actor: cli
+    summary: Updated source 'rule-file-contracts'.
+  - version: 14
+    action: source.update
+    actor: cli
+    summary: Updated source 'diagnostic-count-ratchets'.
+  - version: 15
+    action: source.update
+    actor: cli
+    summary: Updated source 'policy-evolution-contract'.

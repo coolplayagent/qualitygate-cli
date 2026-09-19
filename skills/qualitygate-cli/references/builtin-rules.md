@@ -160,7 +160,7 @@ remain present. `.h` is classified as C text; `.hh`, `.hpp` and `.hxx` as C++
 text. No C/C++ syntax parser is implied. These signals can match comments or
 strings and cannot establish type safety, data flow or CERT compliance. Use
 the [GCC SARIF ratchet reference](gcc-analyzer-ratchet.yaml) for analyzer
-evidence. The repository's `docs/c-family-ratchet.md` explains adoption.
+evidence. The repository's `docs/en/02-reference/03-projects-and-tool-reports.md` explains adoption.
 
 | Rule | Default | Review signal |
 | --- | --- | --- |

@@ -3,7 +3,7 @@
 > 文档版本：v1.3
 > 状态：阶段 A–O 的工程契约已在本地实现；真实 8 任务、7 天试点及独立验收尚未启动
 > 研究日期：2026-09-15
-> 关联需求：[REQUIREMENTS §12](../../REQUIREMENTS.md#12-跨-agent-验收能力演进)
+> 关联需求：[qualitygate-cli requirements §12](qualitygate-cli.md#12-跨-agent-验收能力演进)
 
 ## 1. 定位与成功标准
 
@@ -16,8 +16,8 @@ Agent 负责理解需求、提出规则和测试、修改代码；CLI 根据明�
 测量相对既有流程的增量收益和执行资源；金额成本仅在有可靠计价时作为补充观察。
 规则数量、支持模型数量和 fixture 通过数不单独构成产品收益。
 
-本文同时记录已交付的阶段 A–O 工程能力及未完成的真实试点。[验收审计](../../docs/acceptance-evidence.md)
-记录实现证据；[试点协议](../../docs/pilot.md)规定真实项目收益的独立验收。
+本文同时记录已交付的阶段 A–O 工程能力及未完成的真实试点。[验收审计](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md)
+记录实现证据；[试点协议](../../docs/en/01-user-guide/05-real-repository-pilot.md)规定真实项目收益的独立验收。
 本文不改变既有 M1–M4 的完成状态，不把文档检查成功或厂商评测结果计为试点通过。
 
 ## 2. 研究依据与产品推论
@@ -66,8 +66,8 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 ### EVO-01 按任务类型组织验收
 
 **问题与基础**：编译和 lint 通过不足以证明需求完成，统一要求旧代码反例也会误拦截合法重构。
-现有[任务契约](../../docs/tasks.md)、[测试有效性](../../docs/test-effectiveness.md)
-与[接口兼容性](../../docs/compatibility.md)提供可复用机制。
+现有[任务契约](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[测试有效性](../../docs/en/02-reference/02-rules.md)
+与[接口兼容性](../../docs/en/02-reference/03-projects-and-tool-reports.md)提供可复用机制。
 
 **优先级**：P0，先验证缺陷修复和重构模板；其余模板随任务样本验证扩展。
 
@@ -111,7 +111,7 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 ### EVO-03 跨 Agent 验收闭环
 
 **问题与基础**：不同 Agent 对退出码和完成条件的理解可能不同，分支分别通过也不能证明组合结果通过。
-现有 Skill、CLI、[任务计划](../../docs/tasks.md)与快照一致性机制提供共同基础。
+现有 Skill、CLI、[任务计划](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)与快照一致性机制提供共同基础。
 
 **优先级**：P0，至少两种实际使用的 Agent，优先同一项目中的缺陷修复与重构。
 2026-09-15 用户限定本地仅使用 Codex：阶段 A/B 本地接入采用同一 Codex 的中、低能力模型配置组模拟两种 Agent。
@@ -133,7 +133,7 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 ### EVO-04 从失败案例演进规则
 
 **问题与基础**：新增规则可能重复已有检查、过拟合个案或误拦截正常实现。
-复用已有[策略演进](../../docs/policy-evolution.md)与[受保护验证](../../docs/policy-validation.md)，
+复用已有[策略演进](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)与[受保护验证](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)，
 增量重点是失败案例质量、独立验证和后续收益，避免重新建设审批与存储机制。
 
 **优先级**：P1，P0 采集可复查失败后推进。
@@ -152,7 +152,7 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 ### EVO-05 真实收益与交付成本评估
 
 **问题与基础**：现有 fixture 和 CI 不能证明审查时间节省，已有分析器的发现也不能重复归因。
-复用[试点协议](../../docs/pilot.md)的样本、诊断归因、修复预算与人工复核要求。
+复用[试点协议](../../docs/en/01-user-guide/05-real-repository-pilot.md)的样本、诊断归因、修复预算与人工复核要求。
 
 **优先级**：P0 定义并采集记录；P1 根据真实样本完善结构化汇总。
 
@@ -211,7 +211,7 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 - 证据保留位置、隐私处理、复核责任人与试点验收记录。
 
 阶段 A 的细化要求 A-01–A-05、实现选择与证据分别见
-[执行设计](../design/pilot-phase-a.md)和[试点记录](../../docs/pilot-phase-a.md)。
+[执行设计](../design/pilot-phase-a.md)和[试点记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 模型组按有日期的官方定位选择；中、低只是相对资源层级，不能当作本项目实测能力排名。
 连接探测、模板 fixture 和真实修复样本分别记录，探测不进入收益分母。
 
@@ -227,67 +227,67 @@ LangSmith 提供评测和运行观察，GitHub 提供 PR 代码质量阈值。
 两种流程及每个 input 相同的完整 cohort 矩阵。摘要绑定协议和 assignment，但有意允许执行后补充
 服务商实际模型标识和 observation。摘要只能检测内容变化，不能认证封存人或可信时间；首次输出
 仍须进入团队持久归档。细化要求与证据见[阶段 D 设计](../design/pilot-phase-d.md)和
-[阶段 D 记录](../../docs/pilot-phase-d.md)。
+[阶段 D 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 E 的 `pilot authorization-subject --input` 从封存清单导出唯一启动主题；外部 human owner
 使用具备 `pilot-plan-authorization` scope 的 Ed25519 key 签署 DSSE record。`pilot summarize`
 在每次调用时重验外部 trust store、仓库、owner key、精确主题、签发/到期窗口和撤销状态，输出
 authenticated 或 absent。签名输入必须位于被测仓库外，不能由仓库提交自授权。普通数字签名仍不
 提供独立可信时间，启动授权也不是最终 reviewer 接受。细化要求与证据见
-[阶段 E 设计](../design/pilot-phase-e.md)和[阶段 E 记录](../../docs/pilot-phase-e.md)。
+[阶段 E 设计](../design/pilot-phase-e.md)和[阶段 E 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 F 的 `pilot acceptance-subject` 只为完整、protocol-ready 的观察生成最终主题。评估聚合
 Qualitygate 组的检测、误报、修复、完成与复核比例，并要求每个匹配对照的 inventory、审查时间、
 full P95 和成本比通过；失败与 unknown 均不能签成 accepted。外部独立 reviewer 使用
 `pilot-trial-acceptance` scope 签署接受或拒绝，`pilot summarize --acceptance` 每次重验主题、
 身份、有效期和撤销。细化要求与证据见[阶段 F 设计](../design/pilot-phase-f.md)和
-[阶段 F 记录](../../docs/pilot-phase-f.md)。
+[阶段 F 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 G 的 schema v2 在封存前要求结构化总预算。纯计算包含两流程、两模型的全部尝试及按
 固定时薪计算的人工活跃时间；缺值保持 unknown，已知部分超限为 not_met。v2 验收主题新增
 第十项总预算检查，旧 v1 已封存记录维持九项语义。细化要求与证据见
-[阶段 G 设计](../design/pilot-phase-g.md)和[阶段 G 记录](../../docs/pilot-phase-g.md)。
+[阶段 G 设计](../design/pilot-phase-g.md)和[阶段 G 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 H 的 schema v3 在封存前要求 `task_mix` 配额总和等于任务总数，并按不同输入 ID
 核对任务类型；不同输入不得复用任务 ID 或契约摘要。摘要绑定配额与任务身份，汇总列出
 去重任务清单。v3 沿用 v2 预算和十项最终阈值，旧 v1/v2 已封存记录维持原语义。
 形式上的唯一性不证明任务在真实项目中独立；来源、抽样和人工复核仍待正式归档。
 细化要求与证据见[阶段 H 设计](../design/pilot-phase-h.md)和
-[阶段 H 记录](../../docs/pilot-phase-h.md)。
+[阶段 H 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 I 的 schema v4 在封存前要求每项独立任务有一份有界来源工件，声明 issue/commit
 身份、相对路径、字节数、SHA-256 和选入时间。CLI 每次封存、导出签名主题或汇总时
 重新核对文件；来源字段进入 plan seal 与汇总审计。旧 v1/v2/v3 已封存记录保持原语义。
 摘要匹配不证明来源内容与时间真实，正式样本仍须外部复核。
 细化要求与证据见[阶段 I 设计](../design/pilot-phase-i.md)和
-[阶段 I 记录](../../docs/pilot-phase-i.md)。
+[阶段 I 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 J 的 schema v5 在封存前要求 `run_order` 恰好排列全部 assignment，按相邻流程
 交替，并在每个任务类型×请求模型层内平衡两流程谁先执行。观察的 `start_sequence`
 声明实际启动次序；缺失或偏离进入汇总的 `schedule_audit` 和协议限制。旧 v1–v4
 封存摘要维持原语义。序号本身不是可信时钟，须对照外部日志人工核对。
 细化要求与证据见[阶段 J 设计](../design/pilot-phase-j.md)和
-[阶段 J 记录](../../docs/pilot-phase-j.md)。
+[阶段 J 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 K 的 schema v6 要求每个 assignment 在观察前有一份可核对的初始完整报告，
 并封存 `no_progress_limit`。CLI 用与阶段 B harness 相同的错误诊断/阻塞项真子集规则
 重算进展；超预算或连续两次无进展后再试进入 `attempt_audit` 协议偏离。失败尝试
 仍保留在分母和成本，初始报告文件缺失/漂移为未完成。旧 v1–v5 封存摘要保持原语义。
 细化要求与证据见[阶段 K 设计](../design/pilot-phase-k.md)和
-[阶段 K 记录](../../docs/pilot-phase-k.md)。
+[阶段 K 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 L 的 schema v7 在每个观察中绑定请求模型、Agent/harness 身份、采集时间和
 报告的实际模型或明确未知原因。CLI 有界复核外部归档 JSON，缺失或失配保持未完成；
 明确未知不再单独阻断协议，比较结论仅针对请求配置。旧 v1–v6 语义保持不变。
 细化要求与证据见[阶段 L 设计](../design/pilot-phase-l.md)和
-[阶段 L 记录](../../docs/pilot-phase-l.md)。
+[阶段 L 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 M 的 schema v8 将模型证据定位到每个尝试，包括失败、超时和放弃的尝试。
 每份归档记录增加 `attempt_number`，与观察中尝试序号、封存请求配置及观察窗口核对；
 每次汇总和最终验收前复查文件。缺记录是未完成，记录的不同实际模型是协议偏离，
 明确未知不冒充报告的身份。运行单元级 v7 记录在 v8 禁用；旧 v1–v7 语义不变。
 细化要求与证据见[阶段 M 设计](../design/pilot-phase-m.md)和
-[阶段 M 记录](../../docs/pilot-phase-m.md)。
+[阶段 M 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 N 的 schema v9 为每次尝试增加归档执行记录，核对开始/结束毫秒与
 `elapsed_ms`、状态、快照、报告摘要及封存 harness 身份；同单元尝试不可
@@ -295,7 +295,7 @@ full P95 和成本比通过；失败与 unknown 均不能签成 accepted。外�
 缺记录保留为未完成，逆序阻止最终接受；记录与清单冲突或归档文件漂移
 拒绝输出。旧 v1–v8 保持原语义，时间真实性仍需 reviewer 对照原始日志。
 细化要求与证据见[阶段 N 设计](../design/pilot-phase-n.md)和
-[阶段 N 记录](../../docs/pilot-phase-n.md)。
+[阶段 N 记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 ## 6. 需求到实现和证据映射
 
@@ -328,59 +328,59 @@ full P95 和成本比通过；失败与 unknown 均不能签成 accepted。外�
 
 - 文档验收检查需求编号、链接、状态和研究来源，运行 `cargo test --locked --test quality documentation`、
   `relay-knowledge map validate --format json`，保持 authored 文件不超过 1000 行。
-- 实现验收按 [Rust 质量契约](../../docs/quality.md)运行格式、编译、Clippy、所有目标与特性测试及至少 90% 行覆盖率；
+- 实现验收按 [Rust 质量契约](../../docs/en/04-contributor-guide/01-development-and-quality-gates.md)运行格式、编译、Clippy、所有目标与特性测试及至少 90% 行覆盖率；
   单元与集成证据分开，临时 Git 仓库隔离，Miri 与 ASan 保持独立。owner 或依赖变化需运行架构门禁。
 - 新行为必须有独立正反例与需求到测试映射。必需工具不可用、未执行的 live producer 或受限平台不能冒充已验证。
 - 真实 Agent 表现和团队收益按 EVO-05 单独验收。本文档、受控回归与内部自检通过均不改变试点的待验收状态。
 
 阶段 B 的实现、契约回归、实际模型记录和未完成观察见
-[阶段 B 设计](../design/pilot-phase-b.md)与[证据记录](../../docs/pilot-phase-b.md)。
+[阶段 B 设计](../design/pilot-phase-b.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 C 的案例来源、试点汇总、离线历史重放和模板证据见
-[阶段 C 设计](../design/pilot-phase-c.md)与[证据记录](../../docs/pilot-phase-c.md)。
+[阶段 C 设计](../design/pilot-phase-c.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 D 的观察前封存、完整对照矩阵与计划漂移拒绝见
-[阶段 D 设计](../design/pilot-phase-d.md)与[证据记录](../../docs/pilot-phase-d.md)。
+[阶段 D 设计](../design/pilot-phase-d.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 E 的外部 owner 身份、精确封存主题、有效期/撤销复验与 absent 状态见
-[阶段 E 设计](../design/pilot-phase-e.md)与[证据记录](../../docs/pilot-phase-e.md)。
+[阶段 E 设计](../design/pilot-phase-e.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 F 的结构化阈值评估、完整 evidence subject 与独立 reviewer 接受/拒绝见
-[阶段 F 设计](../design/pilot-phase-f.md)与[证据记录](../../docs/pilot-phase-f.md)。
+[阶段 F 设计](../design/pilot-phase-f.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 G 的 v2 预算契约、全部尝试和人工费用计算及十项最终验收见
-[阶段 G 设计](../design/pilot-phase-g.md)与[证据记录](../../docs/pilot-phase-g.md)。
+[阶段 G 设计](../design/pilot-phase-g.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 H 的 v3 独立任务分层、重复样本拦截和旧计划兼容性见
-[阶段 H 设计](../design/pilot-phase-h.md)与[证据记录](../../docs/pilot-phase-h.md)。
+[阶段 H 设计](../design/pilot-phase-h.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 I 的 v4 来源工件、越界/变更拒绝和旧计划兼容性见
-[阶段 I 设计](../design/pilot-phase-i.md)与[证据记录](../../docs/pilot-phase-i.md)。
+[阶段 I 设计](../design/pilot-phase-i.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 J 的 v5 交替顺序、分层平衡、执行偏离阻断和旧计划兼容性见
-[阶段 J 设计](../design/pilot-phase-j.md)与[证据记录](../../docs/pilot-phase-j.md)。
+[阶段 J 设计](../design/pilot-phase-j.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 K 的 v6 初始报告、预算与无进展审计和旧计划兼容性见
-[阶段 K 设计](../design/pilot-phase-k.md)与[证据记录](../../docs/pilot-phase-k.md)。
+[阶段 K 设计](../design/pilot-phase-k.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 L 的 v7 模型采集记录、明确未知与旧计划兼容性见
-[阶段 L 设计](../design/pilot-phase-l.md)与[证据记录](../../docs/pilot-phase-l.md)。
+[阶段 L 设计](../design/pilot-phase-l.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 M 的 v8 逐尝试模型记录、路由漂移与旧计划兼容性见
-[阶段 M 设计](../design/pilot-phase-m.md)与[证据记录](../../docs/pilot-phase-m.md)。
+[阶段 M 设计](../design/pilot-phase-m.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 N 的 v9 逐尝试执行记录、耗时/顺序复核与旧计划兼容性见
-[阶段 N 设计](../design/pilot-phase-n.md)与[证据记录](../../docs/pilot-phase-n.md)。
+[阶段 N 设计](../design/pilot-phase-n.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 阶段 O 的 v10 非财务封存、八项阈值与旧计划兼容性见
-[阶段 O 设计](../design/pilot-phase-o.md)与[证据记录](../../docs/pilot-phase-o.md)。
+[阶段 O 设计](../design/pilot-phase-o.md)与[证据记录](../../docs/en/01-user-guide/05-real-repository-pilot.md)。
 
 ## 7. 剩余验收与收尾边界
 
 阶段 O 完成用户明确的非财务契约调整。剩余工作是按已确认的 8 项任务、7 天协议
 采集真实证据并完成独立决策，不继续用 fixture 代替试点。
 [收尾设计](../design/pilot-closeout.md)列出依赖顺序，
-[当前准备度审计](../../docs/pilot-readiness.md)记录已具备和缺失的输入。
+[当前准备度审计](../../docs/en/01-user-guide/05-real-repository-pilot.md)记录已具备和缺失的输入。
 
 当前本地仅获准使用同一 Codex 的 Terra/Luna 两组；这可验证跨模型对照，
 不能满足 EVO-03 对至少两种实际 Agent 产品的跨产品目标。真实试点也尚缺

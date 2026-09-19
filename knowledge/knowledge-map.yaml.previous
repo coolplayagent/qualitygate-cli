@@ -1,0 +1,159 @@
+schema_version: 4
+artifact_kind: map
+map_type: knowledge
+map_version: 14
+updated_at: unix:1789802920
+directories:
+- directory: best-practices
+  purpose: Reviewed engineering and knowledge-management practices.
+  content_scope:
+  - knowledge/best-practices/**
+  key_files:
+  - knowledge/best-practices/README.md
+  load_hint: on_demand
+  relations: []
+  update_rule: reviewed
+- directory: best-practices/engineering-standards
+  purpose: Reviewed external coding, architecture, security, performance, and gate standards
+  content_scope:
+  - knowledge/best-practices/engineering-standards/**
+  key_files:
+  - knowledge/best-practices/engineering-standards/README.md
+  - knowledge/best-practices/engineering-standards/registry.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-c.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-cpp.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-java.yaml
+  - knowledge/best-practices/engineering-standards/guides/lifecycle-rulebook.md
+  - knowledge/best-practices/engineering-standards/guides/critical-adoption.md
+  load_hint: task_match
+  relations:
+  - kind: implements
+    target: codespec:design
+  update_rule: reviewed
+- directory: domain
+  purpose: Domain concepts, models, and business rules.
+  content_scope:
+  - knowledge/domain/**
+  key_files:
+  - knowledge/domain/README.md
+  load_hint: on_demand
+  relations: []
+  update_rule: reviewed
+- directory: glossary
+  purpose: Business terminology, aliases, and technical mappings.
+  content_scope:
+  - knowledge/glossary/**
+  key_files:
+  - knowledge/glossary/README.md
+  load_hint: on_demand
+  relations: []
+  update_rule: reviewed
+- directory: guides
+  purpose: Task-oriented repository knowledge guides.
+  content_scope:
+  - knowledge/guides/**
+  key_files:
+  - knowledge/guides/README.md
+  load_hint: on_demand
+  relations: []
+  update_rule: reviewed
+- directory: ops
+  purpose: Operational procedures and diagnostics.
+  content_scope:
+  - knowledge/ops/**
+  key_files:
+  - knowledge/ops/README.md
+  load_hint: on_demand
+  relations: []
+  update_rule: reviewed
+topics:
+- id: business-knowledge
+  title: Business knowledge
+  description: Version-controlled business domains, terminology, aliases, semantics, and technical mappings.
+  source_ids:
+  - repository-business-glossary
+  ref: topics/topic-17438b0266842113-79d9f29ebf10de1411c359a80aa9f343853d255098085e63fdc9e5c6c43d1adc.yaml
+  digest: 79d9f29ebf10de1411c359a80aa9f343853d255098085e63fdc9e5c6c43d1adc
+- id: policy-evolution
+  title: policy-evolution
+  description: Added by CLI source registration.
+  source_ids:
+  - policy-evolution-contract
+  ref: topics/topic-16b01242f1a3e8ea-a6c4ac3ce2bdfc5ebab92940024b56815a0831f3019438c378082f22f59c5d48.yaml
+  digest: a6c4ac3ce2bdfc5ebab92940024b56815a0831f3019438c378082f22f59c5d48
+- id: rule-maintenance
+  title: rule-maintenance
+  description: Added by CLI source registration.
+  source_ids:
+  - diagnostic-count-ratchets
+  - rule-file-contracts
+  ref: topics/topic-8bbe422fe82bd42b-6ba57172cf39626157f6b97438def164b5346d58f3f4900f14b54fd765bdd0c4.yaml
+  digest: 6ba57172cf39626157f6b97438def164b5346d58f3f4900f14b54fd765bdd0c4
+- id: software-model
+  title: Whole-software model
+  description: Code-map-backed architecture, build, deployment, dependency, configuration, and design knowledge.
+  source_ids:
+  - repository-software-model
+  ref: topics/topic-247e2a0d6f43d185-fc2d5534a38a5ddc28536afa855ff77db8e2941ccaccbfa79f948ddcfaec2f7d.yaml
+  digest: fc2d5534a38a5ddc28536afa855ff77db8e2941ccaccbfa79f948ddcfaec2f7d
+history:
+  omitted_through: 0
+  recent:
+  - version: 1
+    action: init
+    actor: cli
+    summary: Created knowledge map with repository software-model route.
+  - version: 2
+    action: directory.add
+    actor: cli
+    summary: Added governed directory 'best-practices/engineering-standards'.
+  - version: 3
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 4
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 5
+    action: source.add
+    actor: cli
+    summary: Added source 'policy-evolution-contract' to topic 'policy-evolution'.
+  - version: 6
+    action: source.add
+    actor: cli
+    summary: Added source 'rule-file-contracts' to topic 'rule-maintenance'.
+  - version: 7
+    action: source.add
+    actor: cli
+    summary: Added source 'diagnostic-count-ratchets' to topic 'rule-maintenance'.
+  - version: 8
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 9
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 10
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 11
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.
+  - version: 12
+    action: source.update
+    actor: cli
+    summary: Updated source 'policy-evolution-contract'.
+  - version: 13
+    action: source.update
+    actor: cli
+    summary: Updated source 'rule-file-contracts'.
+  - version: 14
+    action: source.update
+    actor: cli
+    summary: Updated source 'diagnostic-count-ratchets'.

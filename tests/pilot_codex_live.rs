@@ -72,13 +72,14 @@ fn version_answers_accept_the_version_or_banner_and_reject_guesses() {
 #[test]
 fn command_observations_accept_a_banner_line_but_reject_failed_or_unrelated_commands() {
     let mut event = json!({"type":"item.completed","item":{"type":"command_execution",
-        "command":"/trusted/qualitygate --version; cat docs/tasks.md","exit_code":0,
+        "command":"/trusted/qualitygate --version; cat docs/en/02-reference/04-policy-task-and-signed-evidence.md","exit_code":0,
         "aggregated_output":format!("setup\nqualitygate {}\nmore documentation\n", env!("CARGO_PKG_VERSION"))}});
     assert!(observed_version(&[event.clone()], "/trusted/qualitygate"));
     event["item"]["exit_code"] = json!(2);
     assert!(!observed_version(&[event.clone()], "/trusted/qualitygate"));
     event["item"]["exit_code"] = json!(0);
-    event["item"]["command"] = json!("cat docs/tasks.md");
+    event["item"]["command"] =
+        json!("cat docs/en/02-reference/04-policy-task-and-signed-evidence.md");
     assert!(!observed_version(&[event.clone()], "/trusted/qualitygate"));
     event["item"]["command"] = json!("/trusted/qualitygate --version");
     event["item"]["aggregated_output"] = json!("expected qualitygate 0.4.0, but unavailable");
@@ -199,7 +200,7 @@ async fn codex_medium_and_lower_models_share_the_same_cli_contract() {
         "This is a read-only phase-A connectivity and protocol probe, not a repair task. \
          Do not modify files, contact other services, spawn agents or inspect credentials. \
          Run exactly this local executable with --version using the shell tool: {}. \
-         Read docs/tasks.md and docs/reports.md in this checkout to determine the existing \
+         Read docs/en/02-reference/04-policy-task-and-signed-evidence.md and docs/en/02-reference/03-projects-and-tool-reports.md in this checkout to determine the existing \
          qualitygate contract. Return the observed version, the exit codes for a complete \
          pass, a blocking violation, and incomplete verification, and whether zero tests, \
          an unauthorized selected-policy change, or quick-only checks can establish final \

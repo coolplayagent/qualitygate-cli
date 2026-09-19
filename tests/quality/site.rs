@@ -10,6 +10,18 @@ fn pages_site_links_resolve_and_match_the_release_version() {
     assert!(html.contains(&format!("releases/tag/{tag}")));
     assert!(html.contains(&format!("qualitygate-cli-skill-{tag}.tar.gz")));
     assert!(html.contains("--strip-components=1"));
+    for documentation in [
+        "docs/en/README.md",
+        "docs/zh/README.md",
+        "docs/en/01-user-guide/01-installation-and-first-check.md",
+    ] {
+        assert!(
+            html.contains(&format!(
+                "https://github.com/coolplayagent/qualitygate-cli/blob/main/{documentation}"
+            )),
+            "missing documentation entry {documentation}"
+        );
+    }
 
     for item in html.split("href=\"").skip(1) {
         let href = item.split('"').next().unwrap();
