@@ -1,5 +1,15 @@
 # Requirements acceptance evidence
 
+## Issue 20 Java rules and analyzer ratchet references
+
+| Requirement | Current evidence |
+|---|---|
+| Twelve optional fixed-scope Java source reviews with severities and repair | `tests/issue20_rules.rs`; `lang-java` YAML and Java lifecycle supplement |
+| Independent positive and negative examples in all three selfcheck suites | `fixtures/{minimal,typical,stress}/issue20-cases.json`, `fixtures/golden/issue20-*.json`; `tests/selfcheck.rs` |
+| Checkstyle, PMD and SpotBugs XML references validate and reject missing baselines | `tests/issue20_rules.rs::java_ratchet_references_require_supported_formats_and_baselines`; existing `tests/ratchet.rs` and `tests/execution.rs` verify immutable snapshot ratchets and missing reports |
+| Lexical limits, semantic-only proposals and producer execution contracts | `docs/java-rule-triage.md`, `docs/diagnostic-ratchets.md` |
+
+
 ## Issue 19 CPP rules and ratchet adoption
 
 | Requirement | Current evidence |

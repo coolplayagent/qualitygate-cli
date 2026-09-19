@@ -86,6 +86,13 @@ pub const SUITES: &[(&str, &str, &str, &str, &str)] = &[
         include_str!("../../../fixtures/golden/issue19-minimal.json"),
     ),
     (
+        "minimal",
+        "fixtures/minimal/issue20-cases.json",
+        include_str!("../../../fixtures/minimal/issue20-cases.json"),
+        "fixtures/golden/issue20-minimal.json",
+        include_str!("../../../fixtures/golden/issue20-minimal.json"),
+    ),
+    (
         "typical",
         "fixtures/typical/cases.json",
         include_str!("../../../fixtures/typical/cases.json"),
@@ -163,6 +170,13 @@ pub const SUITES: &[(&str, &str, &str, &str, &str)] = &[
         include_str!("../../../fixtures/golden/issue19-typical.json"),
     ),
     (
+        "typical",
+        "fixtures/typical/issue20-cases.json",
+        include_str!("../../../fixtures/typical/issue20-cases.json"),
+        "fixtures/golden/issue20-typical.json",
+        include_str!("../../../fixtures/golden/issue20-typical.json"),
+    ),
+    (
         "stress",
         "fixtures/stress/cases.json",
         include_str!("../../../fixtures/stress/cases.json"),
@@ -238,6 +252,13 @@ pub const SUITES: &[(&str, &str, &str, &str, &str)] = &[
         include_str!("../../../fixtures/stress/issue19-cases.json"),
         "fixtures/golden/issue19-stress.json",
         include_str!("../../../fixtures/golden/issue19-stress.json"),
+    ),
+    (
+        "stress",
+        "fixtures/stress/issue20-cases.json",
+        include_str!("../../../fixtures/stress/issue20-cases.json"),
+        "fixtures/golden/issue20-stress.json",
+        include_str!("../../../fixtures/golden/issue20-stress.json"),
     ),
 ];
 

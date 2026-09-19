@@ -163,3 +163,5 @@ ASan CLI additionally completed all 334 fixtures with leak detection and no
 sanitizer diagnostics. The measured
 results and a separately retained under-load budget exhaustion are recorded in
 [policy evolution verification](policy-evolution.md#current-implementation-verification).
+
+Issue 20 contributes 72 independent Java pass/fail cases across minimal, typical and stress suites (932 total fixtures). Each optional lexical rule has an expected diagnostic language and count; analyzer templates are separately validated in `tests/issue20_rules.rs`.

@@ -1,0 +1,17 @@
+id: java-runtime-exec
+version: 1
+description: Review direct Runtime.exec calls
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\bRuntime\.getRuntime\(\)\.exec\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [security-quality]}
+lifecycle_inputs: [java-runtime-exec-review]

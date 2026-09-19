@@ -175,3 +175,7 @@ their current ownership. No new top-level owner or dependency direction is added
 
 Run `cargo test --all-features --test ratchet` separately from native unit tests.
 The Rust integration producer operates only in temporary repositories.
+
+## Java analyzer XML references
+
+The packaged [Checkstyle](../skills/qualitygate-cli/references/checkstyle-ratchet.yaml), [PMD](../skills/qualitygate-cli/references/pmd-ratchet.yaml), and [SpotBugs](../skills/qualitygate-cli/references/spotbugs-ratchet.yaml) policies use their respective XML report adapters and fresh immutable baseline/current executions. [Java triage](java-rule-triage.md) records producer prerequisites and limits. PMD 7 exits 4 for findings and 5 for recoverable errors; only 4 is accepted as findings. Checkstyle accepts a configured findings exit of 1; unexpected exits remain incomplete. SpotBugs needs precompiled classes in both materializations and does not use `-noClassOk` to turn absent classes into an empty report. Pin producers and source/ruleset scope for both snapshots.

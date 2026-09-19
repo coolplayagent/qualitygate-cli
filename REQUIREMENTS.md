@@ -86,6 +86,8 @@ Issue 18 扩展七个默认不启用的 C/C++ 新增行审查规则，需显式�
 
 Issue 19 增加九条默认不启用的 C++ 新增行审查规则和 Clang 静态分析器 SARIF 棘轮参考配置，须显式选择 `lang-cpp` 包及规则。正则仅标记可直接观察的调用、异常语句、锁方法和返回表达式，不证明指针大小、对象生命周期、竞态、随机数安全用途或异常传播；其余提案需要语义分析。棘轮基线始终由不可变 Git 快照重新执行产生，不建立可编辑的债务文件；数量和变化已在报告元数据中显示。需求到测试证据见 [Issue 19 验收映射](docs/acceptance-evidence.md#issue-19-cpp-rules-and-ratchet-adoption)。
 
+Issue 20 增加十二条默认不启用的 Java 新增行文本审查规则，固定 `languages: [java]`，聚焦线程、资源、编码、随机数、弱算法、异常及直接 SQL/命令调用的可见模式。它们不能证实污点、控制流、类型或运行时安全。Checkstyle、PMD、SpotBugs XML 棘轮参考配置使用已有不可变快照和 `(tool, rule)` 计数；无效输出、缺少编译输入或不认可的退出码报告未完成。未纳入内置规则的语义提案和类别棘轮边界见 [Java 规则评估](docs/java-rule-triage.md)，需求到测试证据见 [Issue 20 验收映射](docs/acceptance-evidence.md#issue-20-java-rules-and-analyzer-ratchet-references)。
+
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
 ### 3.2 构建 / 静态质量聚合

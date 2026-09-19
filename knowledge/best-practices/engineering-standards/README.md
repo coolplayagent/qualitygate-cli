@@ -73,3 +73,5 @@ The archive is organized for review from three directions:
 
 The research snapshot was reviewed on 2026-09-13. Recheck live pages before
 changing a rule, especially where a vendor guide is updated continuously.
+
+The [Java lifecycle supplement](lifecycle-rule-matrix-java.yaml) binds the optional Java source review signals to recorded standards and their narrow adoption limits.

@@ -1,0 +1,17 @@
+id: java-finalizer
+version: 1
+description: Review finalize method declarations
+implementation: source-pattern
+language: [java]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [java]
+    prohibited_patterns:
+      java:
+        - '\b(?:protected\s+|public\s+)?void\s+finalize\s*\('
+standard_refs:
+  - {source_id: huawei-codearts, controls: [coding-style]}
+lifecycle_inputs: [java-finalizer-review]

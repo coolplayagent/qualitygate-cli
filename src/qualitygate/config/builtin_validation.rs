@@ -192,6 +192,8 @@ pub(super) fn validate(
         Some("python")
     } else if builtin_id.starts_with("cpp-") {
         Some("cpp")
+    } else if builtin_id.starts_with("java-") {
+        Some("java")
     } else {
         None
     };

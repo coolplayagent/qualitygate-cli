@@ -1,0 +1,14 @@
+# Provision a pinned PMD 7 CLI and a tracked project ruleset/source scope.
+schema_version: 1
+checks:
+  - id: pmd-ratchet
+    argv: [pmd, check, -d, src/main/java, -R, config/pmd-rules.xml, -f, xml, -r, pmd.xml]
+    timeout_seconds: 120
+    findings_exit_codes: [4]
+    tools:
+      - {id: pmd, argv: [pmd, --version]}
+    reports:
+      - path: pmd.xml
+        baseline: pmd.xml
+        format: pmd
+        mode: ratchet

@@ -60,3 +60,5 @@ prove live producer behavior; a Linux run does not prove Windows behavior;
 unknown frameworks and runtime configuration delivery remain outside the
 observed evidence. Ordinary repository checks still require their selected
 snapshot, policy and task; selfcheck is not a replacement for delivery checks.
+
+The Java package adds 72 pass/fail examples across the three fixture suites (932 cases total). These examples exercise bounded source-pattern behavior, not semantic analyzer coverage.
