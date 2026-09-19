@@ -108,6 +108,7 @@ fn bazel_uses_the_pinned_rust_toolchain_and_cargo_dependency_graph() {
     assert!(MODULE.contains("bazel_dep(name = \"rules_rust\""));
     assert!(MODULE.contains(&format!("versions = [\"{rust_version}\"]")));
     assert!(MODULE.contains("cargo_lockfile = \"//:Cargo.lock\""));
+    assert!(MODULE.contains("isolated = False"));
     assert!(MODULE.contains("manifests = [\"//:Cargo.toml\"]"));
     assert!(CARGO_LOCK.contains("name = \"qualitygate-cli\""));
     assert!(MODULE_LOCK.contains("\"lockFileVersion\""));

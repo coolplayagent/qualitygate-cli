@@ -1,6 +1,6 @@
 [package]
 name = "qualitygate-cli"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 rust-version = "1.88"
 description = "Snapshot-bound repository policy and task acceptance gates for coding agents"

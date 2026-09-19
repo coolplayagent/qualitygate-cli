@@ -675,6 +675,7 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 |---|---|---|
 | DIST-01 | Skill 与 CLI、Bazel 的版本一致；版本标签触发 GitHub Actions 先验证 Rust 质量门禁、再构建并核查各平台资产、发布可下载归档及 SHA-256；无标签的手动试运行不发布 | `tests/quality/skill_package.rs`、`tests/bazel.rs`、[发布工作流](.github/workflows/release.yml)的实际运行记录和 Release 资产 |
 | DIST-02 | `main` 的静态 Pages 站点提供当前版本的下载、安装和文档入口；站点内链接及版本在仓库质量门禁中校验，部署结果由 GitHub Pages 实际地址复核 | `tests/quality/site.rs`、[Pages 工作流](.github/workflows/pages.yml)的实际运行记录和在线页面 |
+| DIST-03 | Skill 描述优先匹配代码实现、缺陷修复和重构任务；Agent 只在最终快照的无路径过滤 `full` 检查完整通过、必需交付检查无待执行项，并已完成仓库要求的其他验证后，才能报告代码任务已通过质量验证。违规或证据缺失需修复并复验，不能改弱策略或伪造验收 | [Skill 入口](skills/qualitygate-cli/SKILL.md)、[操作边界](skills/qualitygate-cli/references/operations.md)、`tests/quality/skill_package.rs` 的元数据、引用与版本契约，以及 `tests/cli.rs` 的完整范围 / 快速范围门禁断言 |
 
 发布工作流成功与正式试点收益验收相互独立；站点只陈述已实现能力，
 不能把受控 fixture 或未启动的 8 任务/7 天试点称为真实收益。

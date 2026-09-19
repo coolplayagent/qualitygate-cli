@@ -120,6 +120,18 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     assert_eq!(skill.metadata.version, cargo.package.version);
     assert!(skill.description.len() <= 1024);
     assert!(!skill.description.contains('\n'));
+    for expected in [
+        "implementation",
+        "bug-fix",
+        "refactor",
+        "full snapshot-bound check",
+        "recheck the final snapshot",
+    ] {
+        assert!(
+            skill.description.contains(expected),
+            "missing code-task discovery term: {expected}"
+        );
+    }
     assert!(skill_text.contains("untrusted repository checkout"));
     assert!(skill_text.contains("Exit code `0`"));
     assert!(skill_text.contains("linux-aarch64"));
@@ -158,6 +170,31 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
             .starts_with("Use $qualitygate-cli")
     );
     for expected in [
+        "unfiltered full check",
+        "final snapshot",
+        "complete pass",
+        "separately required checks",
+    ] {
+        assert!(
+            openai.interface.default_prompt.contains(expected),
+            "missing final verification prompt term: {expected}"
+        );
+    }
+    for expected in [
+        "--profile full",
+        "profile: full",
+        "scope: repository",
+        "scope: task",
+        "plan.pending_delivery_checks",
+        "gate.complete: true",
+        "gate.decision: pass",
+    ] {
+        assert!(
+            skill_text.contains(expected),
+            "missing final code-task gate term: {expected}"
+        );
+    }
+    for expected in [
         "assets/linux-x86_64/qualitygate",
         "assets/linux-aarch64/qualitygate",
         "assets/windows-x86_64/qualitygate.exe",
@@ -182,6 +219,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "--trust-store",
         "--evidence-dir",
         "incomplete validation",
+        "plan.pending_delivery_checks",
+        "gate.complete: true",
+        "gate.decision: pass",
     ] {
         assert!(operations.contains(expected), "missing {expected}");
     }

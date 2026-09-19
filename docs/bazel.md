@@ -39,6 +39,10 @@ bazel mod deps --lockfile_mode=update
 ```
 
 `crate.from_cargo` consumes the checked-in Cargo manifest and lock directly.
+It reuses Cargo's configured registry and cache during dependency resolution;
+the checked-in lock and crate checksums remain the dependency authority. This
+also lets Bazel honor the same registry mirror used by the supported Cargo
+workflow instead of requiring separate registry configuration.
 Consequently, a stale Cargo lock, an unresolved Bazel module, or a source target
 whose declared crate dependencies no longer match the Cargo graph fails Bazel
 analysis or the strict module-lock check. `tests/bazel.rs` additionally guards

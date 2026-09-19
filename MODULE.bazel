@@ -1,6 +1,6 @@
 module(
     name = "qualitygate_cli",
-    version = "0.5.1",
+    version = "0.5.2",
 )
 
 # Keep the toolchain aligned with rust-toolchain.toml. Cargo remains the
@@ -19,6 +19,9 @@ crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
 crate.from_cargo(
     name = "crates",
     cargo_lockfile = "//:Cargo.lock",
+    # Reuse Cargo's configured registry and cache. Cargo.lock remains the
+    # authoritative dependency graph and checksum boundary.
+    isolated = False,
     manifests = ["//:Cargo.toml"],
 )
 use_repo(crate, "crates")

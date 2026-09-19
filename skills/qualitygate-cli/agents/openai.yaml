@@ -1,6 +1,6 @@
 interface:
   display_name: "Qualitygate CLI"
-  short_description: "Run rule gates, file contracts and diagnostic ratchets"
-  default_prompt: "Use $qualitygate-cli to inspect the applicable policy, configure requested file contracts or diagnostic ratchets, and run the selected snapshot check with its repair and verification evidence."
+  short_description: "Verify final code changes with repository quality gates"
+  default_prompt: "Use $qualitygate-cli for this repository request. For code implementation, bug fixes, or refactors, inspect existing policy and any applicable task contract, use quick feedback if helpful, then run an unfiltered full check on the final snapshot. Resolve violations or incomplete evidence within the authorized scope; mark the code task complete only after a complete pass and all separately required checks pass. Otherwise report blockers and retained evidence. For rule changes, preserve candidate and adoption boundaries."
 policy:
   allow_implicit_invocation: true

@@ -1,8 +1,8 @@
 ---
 name: qualitygate-cli
-description: "Operate Qualitygate CLI for snapshot-bound checks, schema-validated project rules, instruction/file budgets, required-file contracts, diagnostic debt ratchets, and evidence-backed policy evolution. Use for configuring or running these rule-based gates and bundled selfcheck; not generic review advice or evidence bypasses."
+description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
 metadata:
-  version: "0.5.1"
+  version: "0.5.2"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
@@ -11,6 +11,10 @@ metadata:
 Use the published `qualitygate` executable as the control surface. This skill
 does not replace repository policy, task acceptance, review, or signed evidence
 with an agent judgment.
+
+For implementation, bug fixes, and refactors, use the existing repository gate
+to verify the final code snapshot before reporting the task as complete.
+The gate's coverage and evidence determine what that claim means.
 
 ## Resolve the executable
 
@@ -77,6 +81,34 @@ if (-not $qualitygateReady) {
 Do not run `qualitygate.exe` from bash, sh, zsh, fish, or WSL bash. If neither
 asset nor a published `PATH` executable works, report that installation is
 needed rather than changing the repository or global tool configuration.
+
+## Verify code tasks before completion
+
+Use the repository's current policy and any applicable task contract. Inspect
+the effective configuration and identify the snapshot being delivered. For
+uncommitted edits, `--worktree` captures the current files; use `--staged`,
+`--diff`, or `--mr` only when that is the intended delivery scope. Ensure the
+repository's required build, tests, and analysis run, whether the policy
+selects them or they are required separately. The CLI report describes only
+checks selected by the policy.
+
+Use `--profile quick` or `--path` for feedback while editing. After the last
+change to checked inputs, run an unfiltered `check --profile full` against the
+final snapshot, passing a task contract and trusted policy/evidence inputs when
+the workflow requires them. Read [operations](references/operations.md) for
+snapshot, task, and trust handling. Mark the code task complete only when
+the final report has `profile: full`, `scope: repository` or `scope: task`
+(never `scope: path`), an empty `plan.pending_delivery_checks`,
+`gate.complete: true`, and `gate.decision: pass`, with exit code `0`, and all
+separately required repository checks pass. Retain its snapshot and policy
+digests, and rerun if the checked inputs change.
+
+Resolve violations or missing evidence within the user's authorized scope and
+recheck. Never weaken a required check or invent policy, task acceptance, or
+manual approval to produce a pass. If the CLI, policy, required task evidence,
+or project tools are unavailable, describe the verification gap and the checks
+that did run; report the code task as verification-blocked, not complete.
+Preserve warning findings and the report's stated limits even after a pass.
 
 ## Select a safe workflow
 
@@ -161,10 +193,13 @@ rules only when their documented project evidence is configured.
 
 For a requested check, state the snapshot selector and profile before running
 it. `quick` and `--path` are scoped feedback; they cannot establish delivery
-readiness. A full task check needs the caller's selected task and policy:
+readiness. For a code task without a separate task contract, check the final
+worktree against the repository's existing policy. Add the caller's selected
+task and policy inputs when that workflow requires them:
 
 ```bash
 "$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --worktree --profile quick --format json
+"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --worktree --profile full --format json
 "$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --worktree --profile full \
   --task tasks/request.yaml --policy-ref "$TRUSTED_COMMIT" \
   --trust-store /trusted/qualitygate/trust.json \

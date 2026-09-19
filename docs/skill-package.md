@@ -54,6 +54,8 @@ The workflow does not use its dry-run dispatch to publish a release. It also
 does not create a package version or tag: versioning and release authority
 remain with maintainers.
 
+Version v0.5.2 makes the final full-snapshot verification contract explicit in
+the Skill discovery metadata, entrypoint, UI prompt, and operations reference.
 Version v0.5.1 is the first release after the v10 unpriced pilot contract.
 The v0.5.0 tag stopped at the remote test gate before producing release assets;
 the corrected test fixture consumes the Agent prompt before exiting, while the
@@ -76,6 +78,17 @@ execution separately, preserves snapshot and policy evidence, and never turns
 missing tools, stale reports, or manual-approval gaps into a pass. Task,
 trusted-policy, merge-request, and manual-evidence boundaries are specified in
 its [operations reference](../skills/qualitygate-cli/references/operations.md).
+
+The discovery description now starts with code implementation, bug-fix, and
+refactor verification so an agent can select the Skill for those tasks. The
+entrypoint and UI prompt require an unfiltered `full` check on the final code
+snapshot and all separately required checks to pass before marking the code
+task complete. A passing quick or path-scoped check is feedback only. The agent
+checks `gate.complete`,
+`gate.decision`, pending delivery checks, snapshot/policy identity, and any
+separately required repository tests; failures and missing evidence remain
+visible until repaired and rechecked. This claim is limited to the configured
+checks and retained evidence, not a guarantee of defect-free code.
 
 ## Verification
 
@@ -107,6 +120,7 @@ report configuration using the selected runtime before execution.
 | Actual gate outcomes and incomplete evidence | Separate `file_contracts` and `ratchet` integration suites; full selfcheck remains evidence for its bundled corpus only |
 | DIST-01: versioned GitHub Action release | `skill_package_contract_is_complete_and_matches_the_cli_version`, Bazel version test, tag workflow, and published release archive/checksum inspection |
 | DIST-02: Pages installation and documentation entry | `tests/quality/site.rs` checks version, local assets, repository links, anchors, and workflow source/permissions; Pages run and live URL are checked after deployment |
+| DIST-03: final code-task quality verification | `skill_package_contract_is_complete_and_matches_the_cli_version` checks discoverable, implicitly invokable metadata and bundled operating references; `tests/cli.rs` verifies quick versus full plan/scope behavior and exit-code semantics; review the entrypoint and prompt against the stated completion criteria |
 
 The package validator accepts both LF and CRLF YAML frontmatter delimiters,
 including a closing delimiter at end of file. It preserves the original YAML

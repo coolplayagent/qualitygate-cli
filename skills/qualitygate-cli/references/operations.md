@@ -87,6 +87,13 @@ and incomplete reasons together. Exit status has fixed meaning:
 | `1` | complete with a blocking violation | report the violation; do not silently weaken policy |
 | `2` | incomplete | identify missing evidence or prerequisites; do not claim pass |
 
+For code-task completion, require an unfiltered `full` report for the final
+snapshot with `scope: repository` or `scope: task`, an empty
+`plan.pending_delivery_checks`, `gate.complete: true` and `gate.decision: pass`.
+Quick or path-scoped exit status `0` covers only its selected feedback scope.
+If checked inputs change after the full run, select the new snapshot and rerun.
+Report remaining warnings and the verification boundary alongside the pass.
+
 Use a repair loop only when the user authorizes code or policy changes. After a
 repair, rerun against a newly selected snapshot and retain both reports rather
 than treating a prior report as evidence for changed inputs.
