@@ -2,7 +2,7 @@
 name: qualitygate-cli
 description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
 metadata:
-  version: "0.5.3"
+  version: "0.5.4"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
