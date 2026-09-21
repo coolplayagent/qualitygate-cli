@@ -36,6 +36,20 @@ the configured delivery decision.
 
 ## Large repositories
 
+`--diff` and `--mr` acquire complete base and head trees before mapping changes.
+`--path` filters feedback after acquisition. Language selection and rule path
+filters do not exclude snapshot inputs. A historical file can therefore cause
+an acquisition error even when the only change is a README outside its path.
+This is `incomplete` (exit 2), not a repository-scope rule violation.
+
+The default per-file budget is 2 MiB. For a reviewed larger input, use
+`--snapshot-max-file-mib 8` (supported range 1–8), retaining its complete bytes
+and snapshot identity. `--snapshot-max-mib` controls the separate total budget;
+raising it alone cannot resolve a per-file error. Init preflight and errors
+suggest a sufficient file budget when supported. Files above 8 MiB remain
+unsupported; no implicit ignore, severity downgrade or partial passing gate is
+introduced. Recheck commands retain the selected per-file budget.
+
 Snapshot acquisition checks object sizes before reading contents and uses
 bounded batches and concurrency. Callers can tune the total byte, worker, and
 deadline budgets without changing policy meaning:

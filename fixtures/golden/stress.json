@@ -77,7 +77,7 @@
   "custom-dsl-fail": {"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1},
   "report-coverage_py-corrupt": {"/status":"incomplete"},
   "snapshot-long_path": {"/status":"completed","/files/nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1nested-directory~1特殊 空间!.txt":"staged\n"},
-  "snapshot-oversized": {"/status":"incomplete","/reason":"File exceeds 2097152 bytes: fixture.txt"},
+  "snapshot-oversized": {"/status":"incomplete","/reason":"File exceeds 2097152 bytes: fixture.txt (2097153 bytes); snapshot acquisition limit, not a rule violation; retry with --snapshot-max-file-mib 3. --diff and --path retain full snapshot inputs"},
   "snapshot-symlink": {"/status":"incomplete","/reason":"Unsupported Git mode 120000 at fixture.txt"},
   "snapshot-missing_object": {"/status":"incomplete","/reason":"Git object is not a blob: fixture.txt"},
   "snapshot-changed_input": {"/status":"incomplete","/reason":"Checked input modified during execution: fixture.txt"},

@@ -47,6 +47,21 @@ Only write or adopt a rule when the user authorizes that policy mutation.
 
 ## Resolve the executable
 
+An intact release archive automatically resolves its own rule assets; setting
+`QUALITYGATE_BUILTIN_RULES_DIR` is an optional override. On Windows, after setting
+`$QualitygateSkillRoot` to the extracted Skill directory, this single invocation
+selects x64/ARM64 and runs discovery without changing global configuration:
+
+```powershell
+& (Join-Path $QualitygateSkillRoot ("assets/windows-{0}/qualitygate.exe" -f @{X64='x86_64';Arm64='aarch64'}[[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()])) init --root $RepositoryRoot
+```
+
+Use `init --with-checks` only when candidate command adoption is authorized.
+Read its `snapshot_preflight` and suggested per-file acquisition budget before
+checking an existing repository. The longer resolution examples below support
+asset overrides and a verified PATH fallback; they are not mandatory glue for
+an intact archive.
+
 Release archives place a platform binary under this skill's `assets/` directory.
 Use its absolute path only when it matches the active operating system and
 `--version` succeeds. A lightweight registry installation may omit assets; in

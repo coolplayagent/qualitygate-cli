@@ -7,6 +7,7 @@ mod input_guard;
 mod io_workers;
 mod limits;
 mod merge_request;
+pub mod preflight;
 pub mod test_overlay;
 mod worktree;
 pub use changes::{Change, compare as compare_files};
@@ -20,7 +21,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-pub const MAX_FILE_BYTES: usize = 2 * 1024 * 1024;
+pub const MAX_FILE_BYTES: usize = crate::domain::snapshot_budget::DEFAULT_FILE_BYTES;
 pub const MAX_SNAPSHOT_BYTES: usize = 256 * 1024 * 1024;
 pub const MAX_FILES: usize = 100_000;
 

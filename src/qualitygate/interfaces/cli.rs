@@ -276,6 +276,9 @@ struct CheckArgs {
     /// Maximum total content bytes per snapshot, in MiB (1..=1024).
     #[arg(long, default_value_t = 256, value_parser = clap::value_parser!(u32).range(1..=1024))]
     snapshot_max_mib: u32,
+    /// Maximum bytes per snapshot file, in MiB (1..=8); independent of rule scope.
+    #[arg(long, default_value_t = 2, value_parser = clap::value_parser!(u32).range(1..=8))]
+    snapshot_max_file_mib: u32,
     /// Shared maximum concurrent snapshot content readers (1..=16).
     #[arg(long, default_value_t = 4, value_parser = clap::value_parser!(u32).range(1..=16))]
     snapshot_jobs: u32,
@@ -285,6 +288,15 @@ struct CheckArgs {
 }
 
 impl Cli {
+    pub fn output_format(&self) -> Format {
+        if matches!(&self.command, Command::Check(args) if args.feedback) {
+            // Feedback is a JSON protocol even when no --format was supplied.
+            Format::Json
+        } else {
+            self.format
+        }
+    }
+
     pub async fn run(self) -> Result<(String, u8)> {
         if self.envelope && self.format != Format::Json {
             bail!("--envelope requires --format json");
@@ -332,13 +344,21 @@ impl Cli {
             }
             Command::Init { with_checks } => {
                 let path = self.config.clone();
+                let snapshot_preflight = match crate::snapshot::preflight::inspect(&root).await {
+                    Ok(preflight) => serde_json::to_value(preflight)?,
+                    Err(error) => serde_json::json!({
+                        "complete": false,
+                        "reason": format!("{error:#}"),
+                        "next_steps": ["Snapshot preflight is incomplete; candidate creation does not establish check readiness. Run check after reviewing the acquisition error."]
+                    }),
+                };
                 let initialized = tokio::task::spawn_blocking(move || {
                     config::initialize_at(&root, path.as_ref(), with_checks)
                 })
                 .await??;
                 Ok((
                     super::render::metadata(
-                        &serde_json::json!({"schema_version":1,"source":self.config,"config":initialized.config,"discovery":initialized.discovery,"created":initialized.created,"with_checks_applied":initialized.with_checks_applied,"status":"candidate","message":"Review candidate checks, report requirements and capability gaps before enforcing this policy"}),
+                        &serde_json::json!({"schema_version":1,"source":self.config,"config":initialized.config,"discovery":initialized.discovery,"snapshot_preflight":snapshot_preflight,"created":initialized.created,"with_checks_applied":initialized.with_checks_applied,"status":"candidate","message":"Review candidate checks, report requirements and capability gaps before enforcing this policy"}),
                         self.format,
                     )?,
                     0,
@@ -539,6 +559,7 @@ impl Cli {
                     selection,
                     snapshot_options: crate::snapshot::CaptureOptions {
                         max_bytes: args.snapshot_max_mib as usize * 1024 * 1024,
+                        max_file_bytes: args.snapshot_max_file_mib as usize * 1024 * 1024,
                         jobs: args.snapshot_jobs as usize,
                         timeout: std::time::Duration::from_secs(args.snapshot_timeout_secs.into()),
                         path_filter,

@@ -1,5 +1,5 @@
 use super::limits::Acquisition;
-use super::{File, MAX_FILE_BYTES, MAX_FILES};
+use super::{File, MAX_FILES};
 use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, time::Duration};
 
@@ -156,18 +156,27 @@ fn header<'a>(bytes: &'a [u8], entry: &Entry) -> Result<(&'a [u8], usize)> {
     Ok((&bytes[newline + 1..], fields[2].parse()?))
 }
 
-// At most 4 MiB of content plus 1024 bounded headers per process, below the
-// runner's unchanged 16 MiB stream limit. Inspect sizes before requesting bytes.
+// Normally 4 MiB plus 1024 bounded headers. An explicitly permitted larger blob
+// gets its own batch (at most 8 MiB), below the runner's 16 MiB stream limit.
 const BATCH_BYTES: usize = 4 * 1024 * 1024;
 const BATCH_FILES: usize = 1024;
 
-fn batches(mut entries: Vec<Entry>, sizes: &[u8], budget: usize) -> Result<Vec<Vec<Entry>>> {
+fn batches(
+    mut entries: Vec<Entry>,
+    sizes: &[u8],
+    budget: usize,
+    file_budget: usize,
+) -> Result<Vec<Vec<Entry>>> {
     let mut cursor = sizes;
     let mut total = 0;
     for entry in &mut entries {
         let (rest, size) = header(cursor, entry)?;
-        if size > MAX_FILE_BYTES {
-            bail!("File exceeds {MAX_FILE_BYTES} bytes: {}", entry.path);
+        if size > file_budget {
+            bail!(crate::domain::snapshot_budget::file_limit_message(
+                &entry.path,
+                size as u64,
+                file_budget
+            ));
         }
         total += size;
         if total > budget {
@@ -186,7 +195,7 @@ fn batches(mut entries: Vec<Entry>, sizes: &[u8], budget: usize) -> Result<Vec<V
     let mut batch = Vec::new();
     let mut bytes = 0;
     for entry in entries {
-        if batch.len() == BATCH_FILES || bytes + entry.size > BATCH_BYTES {
+        if !batch.is_empty() && (batch.len() == BATCH_FILES || bytes + entry.size > BATCH_BYTES) {
             batches.push(std::mem::take(&mut batch));
             bytes = 0;
         }
@@ -238,7 +247,10 @@ async fn read_entries(
         run_git(root, &["cat-file", "--batch-check"], Some(input)).await?
     };
     let budget = acquisition.options.max_bytes;
-    let batches = tokio::task::spawn_blocking(move || batches(entries, &sizes, budget)).await??;
+    let file_budget = acquisition.options.max_file_bytes;
+    let batches =
+        tokio::task::spawn_blocking(move || batches(entries, &sizes, budget, file_budget))
+            .await??;
     let mut pending = batches.into_iter();
     let mut tasks = tokio::task::JoinSet::new();
     let mut files = BTreeMap::new();

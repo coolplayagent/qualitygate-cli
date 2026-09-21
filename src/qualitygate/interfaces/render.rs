@@ -58,11 +58,32 @@ pub(super) fn metadata(
         return Ok(out);
     }
     let yaml = serde_norway::to_string(value)?;
-    Ok(if format == Format::Markdown {
+    let mut guidance = String::new();
+    if let Some(preflight) = value.get("snapshot_preflight") {
+        guidance.push_str("Candidate policy: review required; snapshot preflight is advisory.\n");
+        if let Some(files) = preflight["oversized_files"].as_array() {
+            for file in files {
+                guidance.push_str(&format!(
+                    "Snapshot warning: {} ({} bytes) exceeds the default per-file budget.\n",
+                    file["path"].as_str().unwrap_or_default(),
+                    file["bytes"]
+                ));
+            }
+        }
+        if let Some(steps) = preflight["next_steps"].as_array() {
+            for step in steps {
+                guidance.push_str(step.as_str().unwrap_or_default());
+                guidance.push('\n');
+            }
+        }
+        guidance.push('\n');
+    }
+    guidance.push_str(&if format == Format::Markdown {
         format!("```yaml\n{yaml}```\n")
     } else {
         yaml
-    })
+    });
+    Ok(guidance)
 }
 
 pub(super) fn report(

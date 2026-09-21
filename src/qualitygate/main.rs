@@ -11,6 +11,7 @@ async fn main() -> std::process::ExitCode {
             return std::process::ExitCode::from(code);
         }
     };
+    let format = cli.output_format();
     match cli.run().await {
         Ok((output, code)) => {
             println!("{output}");
@@ -19,7 +20,7 @@ async fn main() -> std::process::ExitCode {
         Err(error) => {
             println!(
                 "{}",
-                qualitygate::interfaces::incomplete_report(&format!("{error:#}"))
+                qualitygate::interfaces::render_incomplete(&format!("{error:#}"), format)
             );
             std::process::ExitCode::from(2)
         }

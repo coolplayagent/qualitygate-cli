@@ -480,6 +480,12 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
         base.into(),
         "--snapshot-max-mib".into(),
         (options.snapshot_options.max_bytes / (1024 * 1024)).to_string(),
+        "--snapshot-max-file-mib".into(),
+        options
+            .snapshot_options
+            .max_file_bytes
+            .div_ceil(1024 * 1024)
+            .to_string(),
         "--snapshot-jobs".into(),
         options.snapshot_options.jobs.to_string(),
         "--snapshot-timeout-secs".into(),

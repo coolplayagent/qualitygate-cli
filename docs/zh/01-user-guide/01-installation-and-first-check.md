@@ -30,6 +30,17 @@ qualitygate --root /path/to/repository init --with-checks --format json
 `qualitygate.yaml`，但不会批准候选策略、推断豁免或代表团队完成采用。启用前应审核建议命令、
 项目识别结果和不支持的形态。
 
+未初始化时，`config --show` 返回未完成；table/Markdown 输出独立的
+`Run: qualitygate init` 提示，JSON 保留 `gate.blockers`。`init` 还输出建议性的
+`snapshot_preflight`，检查 HEAD 与符合条件的工作区文件元数据，包括被 discovery 忽略但
+已跟踪的文件。过大文件和不支持条目各最多列出 100 项，并提供总数、截断状态与预检未完成原因。
+这不代表任意 diff/MR 端点、暂存内容、总预算或工具链已经通过检查。
+
+发现超过默认 2 MiB 的历史文件时，按建议给 `check` 添加
+`--snapshot-max-file-mib N`（1–8 MiB）。这是调用者的采集容量，不是策略豁免。
+`--with-checks` 只加入待审查的命令候选，不安装依赖或运行命令。用户授权接入后应审核候选；
+正常调整采集预算重试不需要修改仓库规则。
+
 发现过程有明确边界。文件不可读、清单格式错误、生态不支持或预算耗尽都保留为能力缺口，
 不会静默视为成功。
 

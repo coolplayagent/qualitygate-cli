@@ -52,6 +52,13 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 
 ## 3. 功能需求
 
+### 3.0 存量仓库接入（Issue 33）
+
+| 编号 | 要求 | 验收证据 |
+|---|---|---|
+| INIT-33 | 首次运行错误遵循 JSON/table/Markdown 格式；未初始化时给出下一步。init 提供 HEAD/工作区元数据预检，大文件、不支持条目、截断及预检失败明确可见；候选创建不代表检查通过 | `tests/init.rs`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+| SNAP-33 | 单文件采集容量默认 2 MiB，可显式调整至 1–8 MiB；Git/worktree 保留完整字节与摘要，总量、并发、超时和输出限制继续生效；diff/MR/path 不隐式排除历史文件；重检保留预算，策略变化与违规仍然阻塞 | `tests/large_repository.rs`、`snapshot::git::tests`、`snapshot::tests`；[快照语义](../../docs/zh/01-user-guide/02-snapshots-and-check-workflow.md) |
+
 ### 3.1 变更规范检查（diff 级，核心）
 
 | 检查项 | 检测逻辑 | 说明 |

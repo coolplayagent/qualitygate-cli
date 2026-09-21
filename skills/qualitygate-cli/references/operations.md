@@ -26,10 +26,22 @@ feedback while retaining the complete snapshot for policy and build inputs.
 For large repositories, the default acquisition budget is 256 MiB per tree,
 100,000 files, 2 MiB per file, four concurrent content readers and 120 seconds.
 Git content is size-checked and acquired in batches of at most 4 MiB and 1,024
-objects; the runner's 16 MiB per-stream limit remains unchanged. Caller controls
-are `--snapshot-max-mib` (1–1024), `--snapshot-jobs` (1–16) and
+objects; explicitly allowed larger files use singleton batches up to 8 MiB.
+The runner's 16 MiB per-stream limit remains unchanged. Caller controls
+are `--snapshot-max-mib` (1–1024), `--snapshot-max-file-mib` (1–8, default 2), `--snapshot-jobs` (1–16) and
 `--snapshot-timeout-secs` (1–3600). Choose them for available memory and retain
 budget errors as incomplete execution. Recheck commands preserve these options.
+
+`--diff` and `--mr` retain complete base/head trees before computing changes.
+A per-file acquisition error is not a rule violation: neither rule path filters
+nor severity changes can fix it. Follow the suggested `--snapshot-max-file-mib`
+within its supported maximum; increasing only the total budget is insufficient.
+`init` includes advisory HEAD/worktree metadata preflight, counts and bounded
+details for large/unsupported entries, plus actionable next steps. Its success
+means a candidate was handled, not that snapshot acquisition or tools passed.
+Respect the user's existing adoption authorization; capacity retries do not
+mutate repository policy. Do not downgrade incomplete acquisition to a warning
+and claim a complete gate.
 
 ```bash
 qualitygate check --root "$REPOSITORY_ROOT" --staged --path src --profile quick --snapshot-jobs 4

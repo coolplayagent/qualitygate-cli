@@ -22,6 +22,7 @@ mod report;
 pub mod rule_lifecycle;
 mod rule_validation;
 pub mod selfcheck;
+pub mod snapshot_budget;
 mod source_review;
 mod verification;
 

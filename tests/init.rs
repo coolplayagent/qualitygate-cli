@@ -2,6 +2,98 @@ mod common;
 use common::*;
 use std::path::Path;
 
+#[test]
+fn first_run_errors_honor_formats_and_show_an_action() {
+    let root = fixture();
+    for format in ["table", "markdown"] {
+        let output = cli(root.path(), &["config", "--show", "--format", format]);
+        assert_eq!(output.status.code(), Some(2));
+        let text = String::from_utf8(output.stdout).unwrap();
+        assert!(text.contains("Gate code: 2 | complete: false"), "{text}");
+        assert!(text.contains("Run: qualitygate init"), "{text}");
+        assert!(text.contains("known_limits:"));
+        assert!(!text.starts_with('{'));
+    }
+    let json = report(
+        &cli(root.path(), &["config", "--show", "--format", "json"]),
+        2,
+    );
+    assert_eq!(json["gate"]["decision"], "incomplete");
+    assert_eq!(
+        json["verification"]["verified_shapes"],
+        serde_json::json!([])
+    );
+}
+
+#[test]
+fn init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content() {
+    let root = fixture();
+    write(root.path(), ".gitignore", "legacy/\n");
+    write(root.path(), "legacy/demo.gif", "");
+    std::fs::File::options()
+        .write(true)
+        .open(root.path().join("legacy/demo.gif"))
+        .unwrap()
+        .set_len(5 * 1024 * 1024)
+        .unwrap();
+    git(root.path(), &["add", "-f", "legacy/demo.gif", ".gitignore"]);
+    git(root.path(), &["commit", "-qm", "existing ignored asset"]);
+    // HEAD still contains the file even if it is deleted from the worktree.
+    std::fs::remove_file(root.path().join("legacy/demo.gif")).unwrap();
+    write(root.path(), "untracked.bin", "");
+    std::fs::File::options()
+        .write(true)
+        .open(root.path().join("untracked.bin"))
+        .unwrap()
+        .set_len(3 * 1024 * 1024)
+        .unwrap();
+    let initialized = report(
+        &cli(root.path(), &["init", "--with-checks", "--format", "json"]),
+        0,
+    );
+    let preflight = &initialized["snapshot_preflight"];
+    assert_eq!(preflight["complete"], true);
+    assert_eq!(preflight["oversized_file_count"], 2);
+    assert_eq!(preflight["recommended_max_file_mib"], 5);
+    assert_eq!(preflight["oversized_files"][0]["path"], "legacy/demo.gif");
+    assert_eq!(initialized["discovery"]["commands_executed"], false);
+    let bytes = std::fs::read(root.path().join("qualitygate.yaml")).unwrap();
+    let human = cli(root.path(), &["init", "--format", "table"]);
+    assert!(human.status.success());
+    let human = String::from_utf8(human.stdout).unwrap();
+    assert!(human.contains("Snapshot warning: legacy/demo.gif (5242880 bytes)"));
+    assert!(human.contains("--snapshot-max-file-mib 5"));
+    assert_eq!(
+        std::fs::read(root.path().join("qualitygate.yaml")).unwrap(),
+        bytes
+    );
+}
+
+#[test]
+fn init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget() {
+    let root = fixture();
+    write(root.path(), "huge.bin", "");
+    std::fs::File::options()
+        .write(true)
+        .open(root.path().join("huge.bin"))
+        .unwrap()
+        .set_len(8 * 1024 * 1024 + 1)
+        .unwrap();
+    let initialized = report(&cli(root.path(), &["init", "--format", "json"]), 0);
+    assert_eq!(initialized["snapshot_preflight"]["oversized_file_count"], 1);
+    assert!(initialized["snapshot_preflight"]["recommended_max_file_mib"].is_null());
+    assert!(
+        initialized["snapshot_preflight"]["next_steps"]
+            .to_string()
+            .contains("supported 8 MiB")
+    );
+    let empty = tempfile::tempdir().unwrap();
+    let initialized = report(&cli(empty.path(), &["init", "--format", "json"]), 0);
+    assert_eq!(initialized["created"], true);
+    assert_eq!(initialized["snapshot_preflight"]["complete"], false);
+    assert!(initialized["snapshot_preflight"]["reason"].is_string());
+}
+
 fn write(root: &Path, path: &str, text: &str) {
     let file = root.join(path);
     std::fs::create_dir_all(file.parent().unwrap()).unwrap();

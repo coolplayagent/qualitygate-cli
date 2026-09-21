@@ -4,7 +4,9 @@ mod http;
 
 use common::*;
 use http::{Server, json};
-use serde_json::{Value, json as value};
+#[cfg(unix)]
+use serde_json::Value;
+use serde_json::json as value;
 use std::{path::Path, process::Command};
 
 fn git_output(root: &Path, args: &[&str]) -> String {
