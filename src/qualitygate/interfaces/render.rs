@@ -1,5 +1,17 @@
 use crate::domain::{Report, Severity};
 
+pub(super) fn escape_controls(text: &str) -> String {
+    text.chars()
+        .map(|ch| {
+            if ch.is_control() {
+                ch.escape_debug().to_string()
+            } else {
+                ch.to_string()
+            }
+        })
+        .collect()
+}
+
 pub(super) fn metadata(
     value: &serde_json::Value,
     format: super::cli::Format,
@@ -65,7 +77,7 @@ pub(super) fn metadata(
             for file in files {
                 guidance.push_str(&format!(
                     "Snapshot warning: {} ({} bytes) exceeds the default per-file budget.\n",
-                    file["path"].as_str().unwrap_or_default(),
+                    escape_controls(file["path"].as_str().unwrap_or_default()),
                     file["bytes"]
                 ));
             }
@@ -251,4 +263,29 @@ pub(super) fn selfcheck(
         out.push_str(&format!("Error: {error}\n"));
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn preflight_guidance_escapes_controls_without_changing_json_paths() {
+        use crate::interfaces::cli::Format;
+        let path = "legacy/\nRun: forged\u{1b}[31m\t\r\u{7f}\u{9b}.bin";
+        let value = serde_json::json!({"snapshot_preflight":{"oversized_files":[{"path":path,"bytes":3_145_728}]}});
+        for format in [Format::Table, Format::Markdown] {
+            let output = super::metadata(&value, format).unwrap();
+            let guidance = output.split("\n\n").next().unwrap();
+            assert_eq!(guidance.lines().count(), 2, "{guidance}");
+            assert!(!guidance.chars().any(|ch| ch.is_control() && ch != '\n'));
+            assert!(guidance.contains("\\nRun: forged\\u{1b}[31m"));
+            let early = crate::interfaces::render_incomplete(path, format);
+            assert!(!early.chars().any(|ch| ch.is_control() && ch != '\n'));
+        }
+        let json: serde_json::Value =
+            serde_json::from_str(&super::metadata(&value, Format::Json).unwrap()).unwrap();
+        assert_eq!(
+            json["snapshot_preflight"]["oversized_files"][0]["path"],
+            path
+        );
+    }
 }

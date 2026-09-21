@@ -47,6 +47,8 @@ pub enum Expected {
 #[serde(deny_unknown_fields)]
 pub struct EvaluationBudget {
     pub snapshot_max_mib: u32,
+    #[serde(default = "super::snapshot_budget::default_max_file_mib")]
+    pub snapshot_max_file_mib: u32,
     pub snapshot_jobs: u16,
     pub snapshot_timeout_seconds: u32,
     pub max_live_snapshot_mib: u32,

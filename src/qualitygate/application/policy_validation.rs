@@ -311,7 +311,7 @@ async fn run_case(
     let b = &prepared.inputs.suite.budget;
     let capture = snapshot::CaptureOptions {
         max_bytes: b.snapshot_max_mib as usize * 1024 * 1024,
-        max_file_bytes: snapshot::MAX_FILE_BYTES,
+        max_file_bytes: b.snapshot_max_file_mib as usize * 1024 * 1024,
         jobs: b.snapshot_jobs.into(),
         timeout: Duration::from_secs(b.snapshot_timeout_seconds.into()),
         path_filter: None,

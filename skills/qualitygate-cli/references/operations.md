@@ -32,6 +32,11 @@ are `--snapshot-max-mib` (1–1024), `--snapshot-max-file-mib` (1–8, default 2
 `--snapshot-timeout-secs` (1–3600). Choose them for available memory and retain
 budget errors as incomplete execution. Recheck commands preserve these options.
 
+Test-effectiveness overlays retain the selected per-file capacity and complete
+historical inputs. Protected candidate validation instead uses the external
+suite's `budget.snapshot_max_file_mib` (default 2, range 1–8), bound to the suite
+digest and its external authorization. Ordinary check flags do not override it.
+
 `--diff` and `--mr` retain complete base/head trees before computing changes.
 A per-file acquisition error is not a rule violation: neither rule path filters
 nor severity changes can fix it. Follow the suggested `--snapshot-max-file-mib`
@@ -39,6 +44,8 @@ within its supported maximum; increasing only the total budget is insufficient.
 `init` includes advisory HEAD/worktree metadata preflight, counts and bounded
 details for large/unsupported entries, plus actionable next steps. Its success
 means a candidate was handled, not that snapshot acquisition or tools passed.
+Human guidance escapes control characters in repository paths; JSON keeps the
+original path value for machine consumers.
 Respect the user's existing adoption authorization; capacity retries do not
 mutate repository policy. Do not downgrade incomplete acquisition to a warning
 and claim a complete gate.

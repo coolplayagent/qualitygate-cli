@@ -15,6 +15,9 @@ fn main() {
     }
     let base = value == 1;
     let mode = args[1].as_str();
+    if mode == "large-file" {
+        assert_eq!(std::fs::read("legacy.bin").unwrap(), vec![b'x'; 5 * 1024 * 1024]);
+    }
     if mode == "mutate-current" || (base && mode == "mutate-base") {
         std::fs::write("source.txt", "99").unwrap();
     }
@@ -134,6 +137,43 @@ impl Fixture {
         self.policy["checks"][0]["argv"][1] = json!(mode);
         self.configure();
     }
+}
+
+#[test]
+fn raised_file_budget_reaches_both_test_effectiveness_executions() {
+    let mut fixture = Fixture::new();
+    fixture.mode("large-file");
+    fixture.write("source.txt", "1");
+    fixture.write("tests/a.case", "positive");
+    std::fs::write(
+        fixture.path().join("legacy.bin"),
+        vec![b'x'; 5 * 1024 * 1024],
+    )
+    .unwrap();
+    fixture.commit();
+    fixture.write("source.txt", "2");
+    fixture.write("tests/a.case", "2");
+    let blocked = fixture.run(2, &[]);
+    assert!(
+        blocked["gate"]["blockers"]
+            .to_string()
+            .contains("File exceeds")
+    );
+    let passed = fixture.run(0, &["--snapshot-max-file-mib", "5"]);
+    let check = &passed["checks"][0];
+    assert_eq!(check["verdict"], "pass");
+    assert_eq!(
+        check["metadata"]["current_test_execution"]["execution"]["exit_code"],
+        0
+    );
+    assert_eq!(
+        check["metadata"]["baseline_test_execution"]["execution"]["exit_code"],
+        1
+    );
+    assert_eq!(
+        check["metadata"]["test_effectiveness_files"][0]["counterexamples"],
+        1
+    );
 }
 
 #[test]

@@ -203,6 +203,7 @@ fn effectiveness_separates_oracle_improvement_from_unknown_downstream_use_and_co
         environment_digest: "environment".into(),
         budget: EvaluationBudget {
             snapshot_max_mib: 16,
+            snapshot_max_file_mib: 2,
             snapshot_jobs: 2,
             snapshot_timeout_seconds: 10,
             max_live_snapshot_mib: 64,

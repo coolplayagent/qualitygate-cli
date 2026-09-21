@@ -3,6 +3,10 @@
 pub const DEFAULT_FILE_BYTES: usize = 2 * 1024 * 1024;
 pub const MAX_FILE_BYTES: usize = 8 * 1024 * 1024;
 
+pub fn default_max_file_mib() -> u32 {
+    (DEFAULT_FILE_BYTES / (1024 * 1024)) as u32
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct OversizedFile {
     pub path: String,

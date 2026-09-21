@@ -135,6 +135,7 @@ impl Fixture {
             motivating_evidence: vec![evidence],
             budget: EvaluationBudget {
                 snapshot_max_mib: 16,
+                snapshot_max_file_mib: 2,
                 snapshot_jobs: 2,
                 snapshot_timeout_seconds: 15,
                 max_live_snapshot_mib: 64,

@@ -27,7 +27,7 @@ pub fn render_incomplete(error: &str, format: cli::Format) -> String {
     let mut output = format!(
         "{}\nGate code: 2 | complete: false\nBlocker: {}\n",
         verification["conclusion"].as_str().unwrap_or_default(),
-        error.replace(['\n', '\r'], " ")
+        render::escape_controls(error)
     );
     if error.contains("run qualitygate init first") || error.contains("run init and stage/commit") {
         output.push_str("Run: qualitygate init (use the same --root and --config). For staged/diff checks, stage/commit the candidate after review.\n");

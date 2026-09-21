@@ -15,6 +15,11 @@ the same base/head inputs and permits before the candidate can be promoted.
 Approval and rollback are separate signed subjects. Active policy history is
 append-only and auditable; a local branch name or digest alone is not approval.
 
+The protected suite's optional `budget.snapshot_max_file_mib` defaults to 2 and
+accepts integers 1–8. It applies equally to baseline/candidate captures and test
+overlays. It is bound by the externally authorized suite digest, so capacity
+changes require updated external authorization, not a candidate-policy edit.
+
 Diagnostic trends, oracle review, gate execution, downstream benefit, and
 maintenance cost are separate observations. Missing denominators and absent
 measurements remain unknown. Policy evolution must not convert warnings or

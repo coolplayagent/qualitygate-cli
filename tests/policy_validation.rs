@@ -5,6 +5,87 @@ mod evolution;
 use evolution::*;
 use serde_json::json;
 
+#[test]
+fn protected_file_capacity_is_bounded_authorized_and_used_for_both_policies() {
+    use qualitygate::{
+        config::policy_acceptance::{ValidationSuite, validate_suite},
+        domain::policy_evaluation::CaseKind,
+    };
+    let mut fixture = Fixture::new();
+    let mut legacy = serde_json::to_value(&fixture.suite).unwrap();
+    legacy["budget"]
+        .as_object_mut()
+        .unwrap()
+        .remove("snapshot_max_file_mib");
+    let legacy: ValidationSuite = serde_json::from_value(legacy).unwrap();
+    assert_eq!(legacy.budget.snapshot_max_file_mib, 2);
+    for invalid in [0, 9] {
+        fixture.suite.budget.snapshot_max_file_mib = invalid;
+        assert!(validate_suite(&fixture.suite).is_err());
+    }
+    fixture.suite.budget.snapshot_max_file_mib = 2;
+    std::fs::write(
+        fixture.root.path().join("legacy.bin"),
+        vec![b'x'; 3 * 1024 * 1024],
+    )
+    .unwrap();
+    common::git(fixture.root.path(), &["add", "."]);
+    common::git(
+        fixture.root.path(),
+        &["commit", "-qm", "unchanged historical resource"],
+    );
+    for case in &mut fixture.suite.cases {
+        case.base = head(fixture.root.path());
+        let content = if case.kind == CaseKind::Replay {
+            "bad\r\n"
+        } else {
+            "good\n"
+        };
+        std::fs::write(
+            fixture
+                .root
+                .path()
+                .join(format!("capacity-{}.txt", case.id)),
+            content,
+        )
+        .unwrap();
+        common::git(fixture.root.path(), &["add", "."]);
+        common::git(
+            fixture.root.path(),
+            &["commit", "-qm", "independent capacity case"],
+        );
+        case.head = head(fixture.root.path());
+    }
+    fixture.write_inputs();
+    fixture.enable();
+    let blocked = fixture.validate("1", 2);
+    assert!(
+        blocked["evaluation"]["reasons"]
+            .to_string()
+            .contains("File exceeds")
+    );
+    fixture.suite.budget.snapshot_max_file_mib = 3;
+    // Changing the protected capacity without updating its external authorization is rejected.
+    std::fs::write(
+        fixture.external.path().join("suite.json"),
+        serde_json::to_vec(&fixture.suite).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(fixture.validate("1", 2)["gate"]["complete"], false);
+    fixture.write_inputs();
+    let passed = fixture.validate("1", 0);
+    assert_eq!(passed["evaluation"]["budget"]["snapshot_max_file_mib"], 3);
+    assert!(
+        passed["evaluation"]["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|case| {
+                case["baseline"]["complete"] == true && case["candidate"]["complete"] == true
+            })
+    );
+}
+
 fn probe(directory: &std::path::Path) -> String {
     let source = directory.join("probe.rs");
     std::fs::write(&source, include_str!("common/policy_probe.rs")).unwrap();

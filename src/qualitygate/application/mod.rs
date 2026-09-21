@@ -264,6 +264,7 @@ async fn check_prepared(
                 &snapshot,
                 &protected_paths,
                 options.snapshot_options.max_bytes,
+                options.snapshot_options.max_file_bytes,
             )
             .await
         } else if let (Some(command), Some(workspace), Some(inputs)) =

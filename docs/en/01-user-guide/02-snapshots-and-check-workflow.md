@@ -50,6 +50,13 @@ suggest a sufficient file budget when supported. Files above 8 MiB remain
 unsupported; no implicit ignore, severity downgrade or partial passing gate is
 introduced. Recheck commands retain the selected per-file budget.
 
+Test-effectiveness checks use the same per-file capacity when composing old
+production code with new tests; unrelated historical files remain complete.
+For protected `policy candidate validate`, set `budget.snapshot_max_file_mib`
+in the external acceptance suite instead (default 2, range 1–8). Both policies
+use that bound. Changing it changes the suite digest and requires matching
+external trust; ordinary check flags cannot override protected suite budgets.
+
 Snapshot acquisition checks object sizes before reading contents and uses
 bounded batches and concurrency. Callers can tune the total byte, worker, and
 deadline budgets without changing policy meaning:

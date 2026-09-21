@@ -1,6 +1,6 @@
 //! Bounded immutable old-code/new-test composition. Never edits a Git worktree.
 
-use super::{File, MAX_FILE_BYTES, MAX_FILES, Snapshot, content_digest_until};
+use super::{File, MAX_FILES, Snapshot, content_digest_until};
 use anyhow::{Result, bail};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -29,7 +29,11 @@ pub fn prepare(
     support_paths: &[String],
     protected_paths: &[String],
     max_bytes: usize,
+    max_file_bytes: usize,
 ) -> Result<Prepared> {
+    if !(1..=crate::domain::snapshot_budget::MAX_FILE_BYTES).contains(&max_file_bytes) {
+        bail!("Invalid bounded test overlay per-file budget");
+    }
     let deadline = Instant::now() + Duration::from_secs(30);
     let sources = globs(source_paths)?;
     let tests = globs(test_paths)?;
@@ -96,7 +100,7 @@ pub fn prepare(
         bail!("Test effectiveness source paths matched no captured files in scope");
     }
     let bytes = files.values().try_fold(0usize, |total, file: &File| {
-        if file.bytes.len() > MAX_FILE_BYTES {
+        if file.bytes.len() > max_file_bytes {
             bail!("Test overlay file exceeds size budget");
         }
         total
@@ -170,6 +174,7 @@ fn build_input(path: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::super::MAX_FILE_BYTES;
     use super::*;
 
     fn file(text: &str) -> File {
@@ -214,6 +219,7 @@ mod tests {
                 &["support/**".into()],
                 &[],
                 max,
+                MAX_FILE_BYTES,
             )
         };
         let ready = prepare(&input, 1024).unwrap();
@@ -237,6 +243,9 @@ mod tests {
             },
         );
         assert!(prepare(&oversized, usize::MAX).is_err());
+        for limit in [0, crate::domain::snapshot_budget::MAX_FILE_BYTES + 1] {
+            assert!(super::prepare(&input, &[], &[], &[], &[], usize::MAX, limit).is_err());
+        }
         let mut many = input.clone();
         for i in 0..MAX_FILES {
             many.base_files.insert(format!("keep/{i}"), file(""));

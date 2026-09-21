@@ -169,6 +169,7 @@ fn paired(
 pub(super) fn budget() -> EvaluationBudget {
     EvaluationBudget {
         snapshot_max_mib: 16,
+        snapshot_max_file_mib: 2,
         snapshot_jobs: 2,
         snapshot_timeout_seconds: 10,
         max_live_snapshot_mib: 64,
