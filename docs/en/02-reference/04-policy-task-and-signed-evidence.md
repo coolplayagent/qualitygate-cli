@@ -57,6 +57,8 @@ Reusable-core repository evaluations with a path filter also require this bindin
 only repository evaluations without exclusions or a path filter may use the content
 digest alone. Their same-scope CLI recheck argv is empty: the CLI only verifies
 delivery. The separate delivery recheck explicitly requests delivery verification.
+Feedback leaves unavailable or empty replay commands at `argv: null` and
+`omitted: true`, while retaining an executable delivery recheck when available.
 
 Agent provenance authenticates declared inputs, outputs, transformations, and
 tool identity. Git trailers bind declarations to commits and reject ambiguous

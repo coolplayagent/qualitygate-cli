@@ -79,18 +79,6 @@ pub(super) fn apply(
     let mut current_counts = BTreeMap::new();
     let mut increased = BTreeSet::new();
     let is_ratchet = spec.mode == IncrementMode::Ratchet;
-    if snapshot.delivery() {
-        for issue in &mut data.issues {
-            normalize_issue(issue, snapshot, workspace, false, &mut line_counts)?;
-        }
-        let before = data.issues.len();
-        data.issues
-            .retain(|issue| delivery_issue(issue, snapshot, false));
-        result.metadata.insert(
-            format!("{}:delivery_filtered", spec.path),
-            (before - data.issues.len()).into(),
-        );
-    }
     if spec.mode.needs_baseline() {
         let baseline = baseline.context("Missing baseline analysis")?;
         if is_ratchet {
@@ -120,6 +108,32 @@ pub(super) fn apply(
                 *previous.entry(fingerprint(&issue)).or_insert(0usize) += 1;
             }
         }
+    }
+    if snapshot.delivery() {
+        for issue in &mut data.issues {
+            normalize_issue(issue, snapshot, workspace, false, &mut line_counts)?;
+        }
+        // Retained historical occurrences must consume baseline credit before
+        // filtering, regardless of producer order. Otherwise an identical new
+        // occurrence can consume that credit and disappear from the delivery.
+        if spec.mode == IncrementMode::NewDiagnostics {
+            for issue in data
+                .issues
+                .iter()
+                .filter(|issue| !delivery_issue(issue, snapshot, false))
+            {
+                if let Some(count) = previous.get_mut(&fingerprint(issue)) {
+                    *count = count.saturating_sub(1);
+                }
+            }
+        }
+        let before = data.issues.len();
+        data.issues
+            .retain(|issue| delivery_issue(issue, snapshot, false));
+        result.metadata.insert(
+            format!("{}:delivery_filtered", spec.path),
+            (before - data.issues.len()).into(),
+        );
     }
     if is_ratchet {
         for issue in &data.issues {

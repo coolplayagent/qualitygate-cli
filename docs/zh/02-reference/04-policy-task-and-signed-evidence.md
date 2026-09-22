@@ -42,6 +42,7 @@ delivery 与 repository 范围的证据可以互换。
 可复用核心的 repository 评估带路径过滤时也必须绑定路径范围；只有没有 exclude 和路径过滤的
 repository 评估才可仅使用 content digest。CLI 只验证交付范围，因此核心全仓评估的同范围
 CLI 复查 argv 为空；独立的 delivery_recheck 明确用于交付范围验证。
+反馈将不可用或空的复查命令保留为 `argv: null`、`omitted: true`，同时保留可执行的 delivery_recheck。
 
 Agent provenance 认证所声明的输入、输出、变换和工具身份；Git trailer 把声明绑定到提交，并拒绝
 歧义或缺失关联。这些机制证明谱系，不证明语义正确或独立审核。

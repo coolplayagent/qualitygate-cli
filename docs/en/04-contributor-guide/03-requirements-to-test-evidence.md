@@ -63,3 +63,6 @@ versus configured metadata for both scopes, including an empty denominator.
 `tests/test_effectiveness.rs` retains the no-production-change applicability
 contract using unexcluded context. SARIF and execution regressions distinguish
 historical findings from changed delivery findings without hiding producer errors.
+Report-gate unit tests and SARIF CLI regression preserve current multiplicity
+before delivery filtering in both producer orders. Feedback unit/envelope tests
+keep unavailable repository replays omitted while retaining delivery commands.

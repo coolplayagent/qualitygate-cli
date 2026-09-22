@@ -631,6 +631,43 @@ fn delivery_scope_keeps_changed_lines_file_findings_and_unlocated_failures() {
 }
 
 #[test]
+fn delivery_new_diagnostics_retains_multiplicity_before_filtering_in_either_order() {
+    let mut snapshot = snapshot();
+    snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;
+    for lines in [[1, 2], [2, 1]] {
+        let mut result = pending();
+        apply(
+            &mut result,
+            &spec("new_diagnostics"),
+            data(
+                lines
+                    .into_iter()
+                    .map(|line| issue("src/a.rs", line))
+                    .collect(),
+            ),
+            Some(data(vec![issue("src/a.rs", 1)])),
+            &snapshot,
+            Path::new("/checked"),
+        )
+        .unwrap();
+        assert_eq!(result.diagnostics.len(), 1, "{lines:?}");
+        assert_eq!(result.diagnostics[0].range.as_ref().unwrap().start_line, 2);
+        assert_eq!(result.metadata["report:delivery_filtered"], 1);
+    }
+    let mut moved = pending();
+    apply(
+        &mut moved,
+        &spec("new_diagnostics"),
+        data(vec![issue("src/a.rs", 2)]),
+        Some(data(vec![issue("src/a.rs", 1)])),
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap();
+    assert!(moved.diagnostics.is_empty());
+}
+
+#[test]
 fn delivery_ratchet_compares_removed_and_added_lines_without_historical_count_credit() {
     let mut snapshot = snapshot();
     snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;

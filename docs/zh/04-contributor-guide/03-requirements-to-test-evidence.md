@@ -47,3 +47,5 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 `tests/decision_envelope.rs` 跨平台验证 check/feedback 范围摘要往返，并拒绝用内容摘要替代验证摘要。
 `tests/test_effectiveness.rs` 利用未排除上下文保留“无生产代码变化”的适用性契约；SARIF 与 execution
 回归区分历史诊断和交付诊断，同时保留生产器错误。
+报告门禁单元测试和 SARIF CLI 回归覆盖保留历史实例并新增同标识诊断的两种生产器顺序；
+反馈单元及 envelope 回归确保不可用的全仓复查仍标记 omitted，同时保留交付复查命令。

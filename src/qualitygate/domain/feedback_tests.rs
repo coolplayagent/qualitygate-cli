@@ -117,6 +117,19 @@ fn bounded_output_retains_member_references_and_reports_utf8_and_inventory_trunc
 }
 
 #[test]
+fn unavailable_rechecks_remain_omitted_without_hiding_delivery_commands() {
+    for argv in [vec![], vec![String::new()]] {
+        let mut report = report();
+        report.context.as_mut().unwrap().recheck.argv = argv;
+        let output = decode(&report, 32768, None);
+        assert!(output["recheck"]["argv"].is_null());
+        assert_eq!(output["recheck"]["omitted"], true);
+        assert_eq!(output["delivery_recheck"]["omitted"], false);
+        assert_eq!(output["delivery_recheck"]["argv"][0], "qualitygate");
+    }
+}
+
+#[test]
 fn legacy_reports_invalid_states_limits_and_delivery_boundaries_remain_explicit() {
     let mut report = report();
     let output = decode(&report, 32768, None);

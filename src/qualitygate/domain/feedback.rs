@@ -116,7 +116,12 @@ pub fn render(
             ("delivery_recheck", &context.delivery_recheck),
         ] {
             let bytes = serde_json::to_vec(&command.argv)?.len();
-            if bytes <= remaining / 4 {
+            if command
+                .argv
+                .first()
+                .is_some_and(|executable| !executable.is_empty())
+                && bytes <= remaining / 4
+            {
                 result[key]["argv"] = json!(command.argv);
                 result[key]["omitted"] = json!(false);
                 remaining -= bytes + 1;

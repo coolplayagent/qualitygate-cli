@@ -55,6 +55,11 @@ Incremental modes declare their meaning: `new_diagnostics`, `changed_lines`,
 finding new. When a comparable baseline is unavailable, a required ratchet is
 incomplete unless trusted policy explicitly allows a disclosed full fallback.
 
+For `new_diagnostics`, unchanged current occurrences consume matching baseline
+counts before selecting delivery findings. Adding an identical finding on a
+changed line therefore remains new when the historical occurrence is retained;
+moving an existing occurrence alone does not make it new.
+
 Coverage metadata `<report>:mode` records the effective measurement mode:
 delivery uses `changed_lines`, including when policy configures `full`.
 `<report>:configured_mode` retains the configured value. Reusable-core repository evaluations keep

@@ -41,6 +41,22 @@ fn check_and_feedback_envelopes_bind_scope_on_every_platform() {
                     cli(root, &command)
                 };
                 let value = report(&output, 1);
+                if feedback {
+                    assert_eq!(
+                        value["payload"]["recheck"]["omitted"],
+                        scope == "repository"
+                    );
+                    if scope == "repository" {
+                        assert!(value["payload"]["recheck"]["argv"].is_null());
+                    }
+                    assert_eq!(value["payload"]["delivery_recheck"]["omitted"], false);
+                    assert!(
+                        !value["payload"]["delivery_recheck"]["argv"]
+                            .as_array()
+                            .unwrap()
+                            .is_empty()
+                    );
+                }
                 let envelope =
                     DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
                 let snapshot = &value["payload"]["snapshot"];
