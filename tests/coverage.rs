@@ -101,6 +101,14 @@ fn delivery_coverage_counts_only_changed_executable_lines_and_keeps_evidence_err
         )
     };
     let empty = delivery(0);
+    assert_eq!(
+        empty["checks"][0]["metadata"]["target/coverage:mode"],
+        "changed_lines"
+    );
+    assert_eq!(
+        empty["checks"][0]["metadata"]["target/coverage:configured_mode"],
+        "full"
+    );
     let counts = &empty["checks"][0]["metadata"]["target/coverage:coverage"];
     assert_eq!(counts["no_executable_lines_selected"], true);
     assert!(counts["line_percent"].is_null());
@@ -110,11 +118,24 @@ fn delivery_coverage_counts_only_changed_executable_lines_and_keeps_evidence_err
     )
     .unwrap();
     let changed = delivery(0);
+    assert_eq!(
+        changed["checks"][0]["metadata"]["target/coverage:mode"],
+        "changed_lines"
+    );
     let counts = &changed["checks"][0]["metadata"]["target/coverage:coverage"];
     assert_eq!(counts["lines"], 1);
     assert_eq!(counts["line_percent"], 100.0);
+    let repository = fixture.run(1, &[]);
     assert_eq!(
-        fixture.run(1, &[])["checks"][0]["metadata"]["target/coverage:coverage"]["line_percent"],
+        repository["checks"][0]["metadata"]["target/coverage:mode"],
+        "full"
+    );
+    assert_eq!(
+        repository["checks"][0]["metadata"]["target/coverage:configured_mode"],
+        "full"
+    );
+    assert_eq!(
+        repository["checks"][0]["metadata"]["target/coverage:coverage"]["line_percent"],
         50.0
     );
     std::fs::write(

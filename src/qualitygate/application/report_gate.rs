@@ -63,8 +63,13 @@ pub(super) fn apply(
     } else if spec.minimum_tests.is_some() {
         bail!("Configured minimum_tests requires a test-count report");
     }
+    let mut effective_mode = spec.mode;
     if !data.coverage.is_empty() || !data.coverage_files.is_empty() {
-        super::coverage_gate::apply(result, spec, &data, snapshot, workspace)?;
+        effective_mode = super::coverage_gate::apply(result, spec, &data, snapshot, workspace)?;
+        result.metadata.insert(
+            format!("{}:configured_mode", spec.path),
+            serde_json::to_value(spec.mode)?,
+        );
     } else if spec.minimum_coverage.is_some() || !spec.coverage_paths.is_empty() {
         bail!("Configured coverage gate requires a source inventory and coverage records");
     }
@@ -234,7 +239,7 @@ pub(super) fn apply(
     }
     result.metadata.insert(
         format!("{}:mode", spec.path),
-        serde_json::to_value(spec.mode)?,
+        serde_json::to_value(effective_mode)?,
     );
     result
         .metadata

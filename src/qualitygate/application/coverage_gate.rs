@@ -18,7 +18,7 @@ pub(super) fn apply(
     data: &Data,
     snapshot: &Snapshot,
     workspace: &Path,
-) -> Result<()> {
+) -> Result<IncrementMode> {
     let mut spec = spec.clone();
     if snapshot.delivery() {
         spec.mode = IncrementMode::ChangedLines;
@@ -165,7 +165,7 @@ pub(super) fn apply(
             "coverage-threshold",
         ));
     }
-    Ok(())
+    Ok(spec.mode)
 }
 
 fn map_source(file: &str, data: &Data, snapshot: &Snapshot, workspace: &Path) -> Result<String> {

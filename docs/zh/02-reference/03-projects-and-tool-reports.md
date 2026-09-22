@@ -36,6 +36,10 @@ Java 兼容性检查构建成对快照，并调用配置的二进制/源码兼�
 Bazel 是使用 Bzlmod 且与 Cargo 依赖对齐的额外可复现构建面，不替代 Cargo 必需门禁。缓存状态、
 lockfile 行为、平台和选中 target 都属于证据。
 
+覆盖率元数据 `<report>:mode` 记录实际测量模式：delivery 即使配置为 `full`，也记录
+`changed_lines`；`<report>:configured_mode` 保留配置值。repository 使用配置的模式，
+计数和阈值判定均遵循实际测量模式。
+
 增量模式必须声明含义：`new_diagnostics`、`changed_lines`、`affected_scope` 或 `full`。文件发生变更
 不代表其历史诊断全部变成新增问题。缺少可比基线时，必需 ratchet 保持未完成，除非受信策略事先
 允许且明确披露 full 回退。

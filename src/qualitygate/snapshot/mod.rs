@@ -248,7 +248,7 @@ async fn capture_inner(
             changed_lines: changes.values().map(|change| change.added_lines.len()).sum(),
             execution_context_digest: context_digest.clone(), empty_delivery: changes.is_empty(),
         };
-        let verification_digest = if scope == crate::domain::check_scope::CheckScope::Repository && scope_evidence.exclude.is_empty() {
+        let verification_digest = if scope == crate::domain::check_scope::CheckScope::Repository && scope_evidence.exclude.is_empty() && path_filter.is_none() {
             None
         } else {
             Some(digest(&serde_json::to_vec(&serde_json::json!({"context":context_digest,"base_context":content_digest_until(&base_files, deadline)?,"scope":scope_evidence,"path_filter":path_filter,"changes":changes}))?))

@@ -54,3 +54,8 @@ Incremental modes declare their meaning: `new_diagnostics`, `changed_lines`,
 `affected_scope`, or `full`. A changed file does not make every historical
 finding new. When a comparable baseline is unavailable, a required ratchet is
 incomplete unless trusted policy explicitly allows a disclosed full fallback.
+
+Coverage metadata `<report>:mode` records the effective measurement mode:
+delivery uses `changed_lines`, including when policy configures `full`.
+`<report>:configured_mode` retains the configured value. Repository scope keeps
+the configured coverage mode. Counts and thresholds follow the effective mode.

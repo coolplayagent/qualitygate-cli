@@ -57,6 +57,66 @@ fn check_and_feedback_envelopes_bind_scope_on_every_platform() {
 }
 
 #[test]
+fn repository_path_filters_bind_distinct_check_and_feedback_evidence() {
+    let repository = fixture();
+    let root = repository.path();
+    std::fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrules:\n  line-ending: {}\n",
+    )
+    .unwrap();
+    std::fs::write(root.join("hello.txt"), "changed\r\n").unwrap();
+    std::fs::write(root.join("other.txt"), "clean\n").unwrap();
+    for feedback in [false, true] {
+        let mut digests = Vec::new();
+        let mut contents = Vec::new();
+        for (path, code) in [(None, 1), (Some("hello.txt"), 1), (Some("other.txt"), 0)] {
+            let mut args = vec![
+                "check",
+                "--scope",
+                "repository",
+                "--envelope",
+                "--format",
+                "json",
+            ];
+            if let Some(path) = path {
+                args.extend(["--path", path]);
+            }
+            if feedback {
+                args.push("--feedback");
+            }
+            let value = report(&cli(root, &args), code);
+            let envelope = DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+            let snapshot = &value["payload"]["snapshot"];
+            assert_eq!(snapshot["verification_digest"].is_string(), path.is_some());
+            if path.is_some() {
+                assert_eq!(
+                    value["subject"]["snapshot_digest"],
+                    snapshot["verification_digest"]
+                );
+                let mut rebound = envelope.clone();
+                rebound.subject.snapshot_digest =
+                    Some(snapshot["content_digest"].as_str().unwrap().into());
+                rebound.decision_id.clear();
+                rebound.decision_id =
+                    qualitygate::snapshot::digest(&serde_json::to_vec(&rebound).unwrap());
+                assert!(DecisionEnvelope::parse(&serde_json::to_vec(&rebound).unwrap()).is_err());
+            }
+            digests.push(envelope.subject.snapshot_digest.unwrap());
+            contents.push(snapshot["content_digest"].clone());
+        }
+        assert!(contents.windows(2).all(|pair| pair[0] == pair[1]));
+        assert_eq!(
+            digests
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            3
+        );
+    }
+}
+
+#[test]
 fn metadata_envelopes_reject_malformed_evidence_and_identity_fields() {
     let transition = DecisionEnvelope::from_metadata(
         CommandKind::PolicyTransition,
