@@ -27,8 +27,10 @@ fn fixture(root: &Path) -> (Snapshot, PythonProject, Value, BTreeMap<String, Str
     let report = json!({"version":"1","pip_version":"26.0.1","environment":{"implementation_name":"cpython","implementation_version":"3.12.3","os_name":"posix","platform_machine":"x86_64","platform_python_implementation":"CPython","platform_release":"6.0","platform_system":"Linux","platform_version":"fixture","python_full_version":"3.12.3","python_version":"3.12","sys_platform":"linux"},
         "install":[project,item(metadata("PyTest","8.4.2",json!(["pluggy>=1.5"]))),item(metadata("pluggy","1.6.0",json!([]))),item(metadata("helper","1.0",json!([])))]});
     let snapshot = Snapshot {
+        scope_evidence: Default::default(),
         root: root.into(),
         identity: Identity {
+            verification_digest: None,
             mode: "worktree".into(),
             base: "base".into(),
             head: "head".into(),

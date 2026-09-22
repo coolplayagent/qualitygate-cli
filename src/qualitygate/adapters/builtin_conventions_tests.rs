@@ -19,8 +19,10 @@ fn file(bytes: impl AsRef<[u8]>) -> File {
 
 fn snapshot(path: &str, old: Option<&str>, current: &str) -> Snapshot {
     Snapshot {
+        scope_evidence: Default::default(),
         root: ".".into(),
         identity: Identity {
+            verification_digest: None,
             merge_request: None,
             mode: "worktree".into(),
             base: "base".into(),
@@ -36,6 +38,7 @@ fn snapshot(path: &str, old: Option<&str>, current: &str) -> Snapshot {
             Change {
                 kind: if old.is_some() { "modified" } else { "added" }.into(),
                 old_path: old.map(|_| path.into()),
+                removed_lines: Default::default(),
                 added_lines: (1..=current.lines().count()).collect(),
             },
         )]),
@@ -252,6 +255,7 @@ fn large_unchanged_tree_and_many_java_changes_keep_bounded_analysis() {
             Change {
                 kind: "added".into(),
                 old_path: None,
+                removed_lines: Default::default(),
                 added_lines: [1].into(),
             },
         );

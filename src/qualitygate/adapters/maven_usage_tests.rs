@@ -11,8 +11,10 @@ fn fixture() -> (Snapshot, ProjectFacts) {
         "declared":[{"group":"junit","artifact":"junit","artifact_type":"jar","classifier":"","version":"4.13.2","scope":"test"}],
         "resolved":[{"group":"junit","artifact":"junit","artifact_type":"jar","classifier":"","version":"4.13.2","scope":"test"},{"group":"org.hamcrest","artifact":"hamcrest-core","artifact_type":"jar","classifier":"","version":"1.3","scope":"test"}]})).unwrap();
     let snapshot = Snapshot {
+        scope_evidence: Default::default(),
         root: ".".into(),
         identity: Identity {
+            verification_digest: None,
             mode: "worktree".into(),
             base: "base".into(),
             head: "head".into(),

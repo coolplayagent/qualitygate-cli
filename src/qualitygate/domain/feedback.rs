@@ -81,7 +81,7 @@ pub fn render(
         "gate":{"complete":report.gate.complete,"decision":report.gate.decision},
         "scope":report.scope,"profile":report.profile,
         "snapshot":{"mode":report.snapshot.mode,"base":report.snapshot.base,"head":report.snapshot.head,
-            "content_digest":report.snapshot.content_digest,"report_pointer":"/snapshot"},
+            "content_digest":report.snapshot.content_digest,"verification_digest":report.snapshot.verification_digest,"report_pointer":"/snapshot"},
         "policy":{"resolved_commit":report.policy.resolved_commit,"trust":report.policy.trust,
             "config_digest":report.policy.config_digest,"rules_digest":report.policy.rules_digest,
             "task_contract_digest":report.policy.task_contract_digest,"changes":report.policy.changes.len(),
@@ -116,7 +116,12 @@ pub fn render(
             ("delivery_recheck", &context.delivery_recheck),
         ] {
             let bytes = serde_json::to_vec(&command.argv)?.len();
-            if bytes <= remaining / 4 {
+            if command
+                .argv
+                .first()
+                .is_some_and(|executable| !executable.is_empty())
+                && bytes <= remaining / 4
+            {
                 result[key]["argv"] = json!(command.argv);
                 result[key]["omitted"] = json!(false);
                 remaining -= bytes + 1;

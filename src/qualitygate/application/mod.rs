@@ -1,5 +1,6 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
+mod acquisition;
 mod commands;
 mod compatibility;
 mod compatibility_inputs;
@@ -62,14 +63,21 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
 
 /// Replays may require selectors with an implicit base to retain its identity.
 pub async fn check_with_expected_base(
-    options: CheckOptions,
+    mut options: CheckOptions,
     expected_base: Option<&str>,
 ) -> Result<Report> {
+    let active = policy_active::load(options.root.clone()).await?;
+    let comparison = acquisition::prepare(
+        &mut options,
+        active.as_ref().map(|active| &active.active.config),
+    )
+    .await?;
     let snapshot = Arc::new(
-        snapshot::capture_with_options(
+        snapshot::capture_resolved(
             &options.root,
             &options.selection,
             &options.snapshot_options,
+            comparison,
         )
         .await?,
     );
@@ -79,7 +87,6 @@ pub async fn check_with_expected_base(
         );
     }
     let mut invalid = Vec::new();
-    let active = policy_active::load(options.root.clone()).await?;
     let (loaded, active) = if let Some(active) = active {
         if active.active.evaluator_digest() != evaluator_digest().await? {
             anyhow::bail!("Active policy requires revalidation with this evaluator executable");
@@ -129,7 +136,7 @@ async fn check_prepared(
         plan,
         protected_paths,
     } = loaded;
-    let git_facts = git_trailers::load(&plan, &catalog, &snapshot).await;
+    let git_facts = git_trailers::load(&plan, &catalog, &snapshot, &options.snapshot_options).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
         (Some(store), Some(directory)) => {
             let (root, store, directory, requests) = (
@@ -264,6 +271,7 @@ async fn check_prepared(
                 &snapshot,
                 &protected_paths,
                 options.snapshot_options.max_bytes,
+                options.snapshot_options.max_file_bytes,
             )
             .await
         } else if let (Some(command), Some(workspace), Some(inputs)) =
@@ -287,6 +295,20 @@ async fn check_prepared(
                 .insert("command_definition".into(), serde_json::to_value(command)?);
         }
         if rule.is_some() {
+            if snapshot.delivery() && result.execution.status == ExecutionStatus::Completed {
+                let before = result.diagnostics.len();
+                result.diagnostics.retain(|diagnostic| {
+                    snapshot
+                        .selects_diagnostic(diagnostic.file.as_deref(), diagnostic.range.as_ref())
+                });
+                result.metadata.insert(
+                    "delivery_filtered".into(),
+                    (before - result.diagnostics.len()).into(),
+                );
+                if result.verdict != Some(Verdict::Skipped) {
+                    result.complete();
+                }
+            }
             let entry = &catalog.entries[id];
             result.rule_version = entry.version();
             result
@@ -343,7 +365,9 @@ async fn check_prepared(
         .await
         {
             Ok(current)
-                if current.identity.content_digest != snapshot.identity.content_digest
+                if current.identity.verification_digest
+                    != snapshot.identity.verification_digest
+                    || current.identity.content_digest != snapshot.identity.content_digest
                     || current.identity.base != snapshot.identity.base
                     || current.identity.head != snapshot.identity.head
                     || match (
@@ -389,6 +413,7 @@ async fn check_prepared(
     let summary = Summary::from_checks(&results);
     let gate = evaluate(&results, &plan.required, &invalid);
     let mut delivery_options = options.clone();
+    delivery_options.snapshot_options.scope = check_scope::CheckScope::Delivery;
     delivery_options.profile = "full".into();
     delivery_options.snapshot_options.path_filter = None;
     if let Selection::Path { base, .. } = &options.selection {
@@ -403,7 +428,8 @@ async fn check_prepared(
             policy.resolved_commit.as_deref()
         },
     );
-    let report = Report {
+    let mut report = Report {
+        selection: Some(snapshot.scope_evidence.clone()),
         context: Some(ReportContext {
             report_path: directory.join("report.json").display().to_string(),
             recheck: Recheck { argv: recheck },
@@ -424,7 +450,7 @@ async fn check_prepared(
         } else if plan.task_id.is_some() {
             "task"
         } else {
-            "repository"
+            options.snapshot_options.scope.as_str()
         }
         .into(),
         profile: options.profile,
@@ -444,6 +470,18 @@ async fn check_prepared(
         checks: results,
         summary,
     };
+    if snapshot.delivery() {
+        report.verification.known_limits.push("Delivery scope selects changed lines and changed-file findings; unlocated command failures and incomplete evidence remain blocking. This is not repository-wide approval.".into());
+        if snapshot.scope_evidence.empty_delivery {
+            report
+                .verification
+                .known_limits
+                .push("The selected delivery contains no unexcluded changed files.".into());
+        }
+    }
+    if !snapshot.scope_evidence.exclude.is_empty() {
+        report.verification.known_limits.push(format!("Policy exclusions removed {} paths from acquisition, execution inputs and verification; excluded resources are not verified.", snapshot.scope_evidence.excluded_paths.len()));
+    }
     tokio::fs::write(
         directory.join("report.json"),
         serde_json::to_vec_pretty(&report)?,
@@ -453,6 +491,11 @@ async fn check_prepared(
 }
 
 fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> Vec<String> {
+    // Repository-wide core evaluations cannot be replayed by the delivery-only CLI.
+    // Protected callers may supply their own replay command to check_prepared.
+    if options.snapshot_options.scope == check_scope::CheckScope::Repository {
+        return Vec::new();
+    }
     let mut argv = vec![
         "qualitygate".into(),
         "--root".into(),
@@ -480,6 +523,12 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
         base.into(),
         "--snapshot-max-mib".into(),
         (options.snapshot_options.max_bytes / (1024 * 1024)).to_string(),
+        "--snapshot-max-file-mib".into(),
+        options
+            .snapshot_options
+            .max_file_bytes
+            .div_ceil(1024 * 1024)
+            .to_string(),
         "--snapshot-jobs".into(),
         options.snapshot_options.jobs.to_string(),
         "--snapshot-timeout-secs".into(),

@@ -34,9 +34,36 @@ reports, and capability gaps. It may create a candidate `qualitygate.yaml`; it
 does not approve that candidate, infer exemptions, or declare a team policy.
 Review suggested commands and unsupported project shapes before adoption.
 
+Before initialization, `config --show` reports incomplete validation. Table and
+Markdown output include `Run: qualitygate init`; JSON retains `gate.blockers`.
+`init` also emits an advisory `snapshot_preflight` over HEAD and eligible
+worktree metadata, including tracked files ignored by discovery. It lists up to
+100 oversized/unsupported entries of each kind, counts all observed entries,
+and marks truncated details or incomplete inspection explicitly. This does not
+validate arbitrary diff/MR endpoints, staged bytes, total budgets or toolchains.
+
+For existing files above the default 2 MiB limit, follow the suggested
+`--snapshot-max-file-mib N` (1–8 MiB) on `check`. This is caller-controlled
+acquisition capacity, not a policy exemption. `--with-checks` adds reviewed
+command candidates; it neither installs their dependencies nor runs them.
+Review the candidate once within the authorized adoption scope; ordinary
+acquisition retries do not require editing repository rules.
+
 Discovery is bounded. Unreadable files, malformed manifests, unsupported
 ecosystems, and exhausted budgets remain explicit gaps rather than successful
 fallbacks.
+
+## Existing-repository trimming
+
+Run `init --with-checks --format json` and review suggested commands and preflight.
+Within the authorized adoption scope, add precise top-level `exclude` globs for
+historical resources tools do not need, for example `exclude: ["gitbook/images/**"]`.
+Do not automatically exempt every large file. Rerun `init --format json` and inspect
+`excluded_file_count`, `excluded_paths`, remaining large inputs and incomplete reasons.
+Put the configuration in the selected index/commit before staged/diff/MR checks.
+Run `check --profile full` on the final inputs. If tools need
+excluded resources, narrow the pattern and rerun. Retain scope and exclusions;
+a trimmed delivery pass is not repository-wide approval.
 
 ## Run the first check
 

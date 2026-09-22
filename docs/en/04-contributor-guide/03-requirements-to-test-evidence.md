@@ -12,6 +12,9 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | --- | --- |
 | Snapshot selectors, execution, reports, and exit semantics | `tests/cli.rs`, `tests/execution.rs`, `tests/policy.rs`, native domain tests |
 | Initialization and capability gaps | `tests/init.rs` |
+| Issue 33 review: large-file test overlays, protected capacity authorization, escaped human guidance | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`; `tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`; `interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |
+| Oversized acquisition stays incomplete and reports actual bytes plus the minimum retry budget | `fixtures/golden/stress.json`: `snapshot-oversized` pins the exact new Issue 33 message; the incomplete outcome and 2 MiB default are unchanged |
+| Issue 33 first-run formats, advisory HEAD/worktree preflight, explicit large-file capacity and unchanged policy semantics | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`, `init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content`, `init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget`; `tests/large_repository.rs::legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes`, `raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering`; `snapshot::git::tests::explicitly_permitted_large_blobs_use_nonempty_bounded_batches` |
 | Large-repository acquisition and performance bounds | `tests/large_repository.rs`, `tests/benchmarks.rs`, `tests/policy_performance.rs` |
 | Built-in and project rules | `tests/issue9_rules.rs` through `tests/issue20_rules.rs`, `tests/custom_rules.rs`, `tests/rule_authoring.rs` |
 | Rule categories, mutation, candidates, promotion, and lifecycle | `tests/rule_management.rs`, `tests/policy_categories.rs`, `tests/policy_candidates.rs`, `tests/policy_promotion.rs`, `tests/policy_lifecycle.rs` |
@@ -40,3 +43,26 @@ integration counterexample where appropriate. Record unsupported platforms,
 unavailable tools, performance environment, and all incomplete results. The
 current Git commit and gate report—not a historical prose status line—identify
 what was actually verified.
+
+Delivery scope and explicit exclusion evidence: `tests/delivery_scope.rs` covers
+selector-derived delivery versus reusable-core repository findings, immutable
+context, large tracked resources,
+selected policy provenance, protected exclusions, empty delivery and command failures.
+`tests/quality.rs` validates the packaged Skill links and architecture.
+`tests/coverage.rs` and live JaCoCo/ESLint acceptance compare delivery denominators
+and findings with explicit reusable-core repository contracts.
+The selector regression rejects the removed scope option and executes the emitted
+recheck argv, requiring an unchanged verification digest. `tests/policy_validation.rs`
+verifies differing exclusions bind both inputs within the two-tree memory budget,
+while equal exclusions retain the independently executed parallel checks.
+`tests/decision_envelope.rs` round-trips check/feedback scope bindings on every
+platform (repository comparisons use the core API) and rejects substituting the content digest for a verification digest.
+It also distinguishes repository-wide evidence from two different `--path`
+selections over identical captured bytes. Coverage regression verifies effective
+versus configured metadata for both scopes, including an empty denominator.
+`tests/test_effectiveness.rs` retains the no-production-change applicability
+contract using unexcluded context. SARIF and execution regressions distinguish
+historical findings from changed delivery findings without hiding producer errors.
+Report-gate unit tests and SARIF CLI regression preserve current multiplicity
+before delivery filtering in both producer orders. Feedback unit/envelope tests
+keep unavailable repository replays omitted while retaining delivery commands.

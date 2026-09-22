@@ -193,7 +193,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     for expected in [
         "--profile full",
         "profile: full",
-        "scope: repository",
+        "scope: delivery",
         "scope: task",
         "plan.pending_delivery_checks",
         "gate.complete: true",

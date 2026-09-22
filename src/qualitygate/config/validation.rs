@@ -8,6 +8,7 @@ pub(super) fn validate(config: &Config) -> Result<()> {
 }
 
 pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
+    super::exclusions::matcher(&config.exclude)?;
     super::categories::validate(config)?;
     if config.rule_lifecycle.len() > 512 {
         bail!("Rule lifecycle inventory exceeds 512 records");

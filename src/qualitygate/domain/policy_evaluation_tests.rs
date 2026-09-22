@@ -12,6 +12,7 @@ fn report() -> Report {
     check.metadata.insert("rule_definition".into(), json!({}));
     let checks = vec![check];
     Report {
+        selection: None,
         context: None,
         schema_version: 1,
         run_id: "test".into(),
@@ -20,6 +21,7 @@ fn report() -> Report {
         evaluator_digest: "evaluator".into(),
         environment_digest: "environment".into(),
         snapshot: SnapshotIdentity {
+            verification_digest: None,
             mode: "diff".into(),
             base: "base".into(),
             head: "head".into(),
@@ -203,6 +205,7 @@ fn effectiveness_separates_oracle_improvement_from_unknown_downstream_use_and_co
         environment_digest: "environment".into(),
         budget: EvaluationBudget {
             snapshot_max_mib: 16,
+            snapshot_max_file_mib: 2,
             snapshot_jobs: 2,
             snapshot_timeout_seconds: 10,
             max_live_snapshot_mib: 64,

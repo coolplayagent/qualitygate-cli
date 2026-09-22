@@ -8,6 +8,13 @@ compatibility, candidate generation and adoption.
 
 ## Author the requested contract
 
+The CLI selects per-file findings only for changed files in the chosen snapshot.
+A delivery pass does not establish that unchanged files meet per-file contracts.
+Unlocated inventory totals (`min_count`, `max_count`, `max_total_words`) remain
+aggregate constraints over the configured unexcluded inventory; a changed-line
+filter cannot establish those totals from changed files alone. Policy `exclude`
+removes resources before acquisition, so required build inputs must be retained.
+
 Inspect `rules list --source project --format json` and the actual normative
 section first. Take paths, budgets and severity from that requirement. The
 following candidate illustrates the fields; replace its source block with the

@@ -4,6 +4,170 @@ use qualitygate::snapshot::{self, CaptureOptions, Selection};
 use std::time::{Duration, Instant};
 
 #[test]
+fn legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes() {
+    let directory = fixture();
+    let root = directory.path();
+    report(&cli(root, &["init", "--format", "json"]), 0);
+    std::fs::write(root.join("legacy.bin"), vec![0; 5 * 1024 * 1024]).unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "legacy baseline"]);
+    std::fs::write(root.join("README.md"), "documentation change\n").unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "README only"]);
+    for selection in [
+        vec!["--worktree"],
+        vec!["--staged"],
+        vec!["--diff", "HEAD~1..HEAD"],
+    ] {
+        let mut args = vec!["check", "--profile", "full", "--format", "json"];
+        args.extend(selection);
+        let incomplete = report(&cli(root, &args), 2);
+        assert!(
+            incomplete["gate"]["blockers"]
+                .to_string()
+                .contains("--snapshot-max-file-mib 5")
+        );
+        args.extend(["--snapshot-max-file-mib", "5"]);
+        let passed = report(&cli(root, &args), 0);
+        assert_eq!(passed["gate"]["complete"], true);
+        assert_eq!(passed["scope"], "delivery");
+        assert!(
+            !passed["snapshot"]["content_digest"]
+                .as_str()
+                .unwrap()
+                .is_empty()
+        );
+    }
+    let insufficient = report(
+        &cli(
+            root,
+            &[
+                "check",
+                "--path",
+                "README.md",
+                "--snapshot-max-mib",
+                "1024",
+                "--format",
+                "json",
+            ],
+        ),
+        2,
+    );
+    assert!(
+        insufficient["gate"]["blockers"]
+            .to_string()
+            .contains("legacy.bin")
+    );
+    let total = report(
+        &cli(
+            root,
+            &[
+                "check",
+                "--snapshot-max-file-mib",
+                "5",
+                "--snapshot-max-mib",
+                "4",
+                "--format",
+                "json",
+            ],
+        ),
+        2,
+    );
+    assert!(
+        total["gate"]["blockers"]
+            .to_string()
+            .contains("Snapshot exceeds")
+    );
+    // A larger acquisition budget is not permission to weaken the selected policy.
+    std::fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrules:\n  line-ending: {enabled: false}\n",
+    )
+    .unwrap();
+    let changed = report(
+        &cli(
+            root,
+            &[
+                "check",
+                "--policy-ref",
+                "HEAD",
+                "--snapshot-max-file-mib",
+                "5",
+                "--format",
+                "json",
+            ],
+        ),
+        2,
+    );
+    assert_eq!(
+        changed["policy"]["changes"],
+        serde_json::json!(["qualitygate.yaml"])
+    );
+    git(root, &["restore", "qualitygate.yaml"]);
+    std::fs::write(root.join("bad.txt"), "bad\r\n").unwrap();
+    let failed = report(
+        &cli(
+            root,
+            &["check", "--snapshot-max-file-mib", "5", "--format", "json"],
+        ),
+        1,
+    );
+    assert_eq!(failed["gate"]["complete"], true);
+    let argv = failed["checks"][0]["diagnostics"][0]["recheck"]["argv"]
+        .as_array()
+        .unwrap();
+    let position = argv
+        .iter()
+        .position(|value| value == "--snapshot-max-file-mib")
+        .unwrap();
+    assert_eq!(argv[position + 1], "5");
+}
+
+#[test]
+fn raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering() {
+    let directory = fixture();
+    let root = directory.path();
+    let bytes = vec![b'x'; qualitygate::domain::snapshot_budget::MAX_FILE_BYTES];
+    std::fs::write(root.join("large.bin"), &bytes).unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "maximum size blob"]);
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let options = CaptureOptions {
+        max_file_bytes: bytes.len(),
+        path_filter: Some("hello.txt".into()),
+        ..CaptureOptions::default()
+    };
+    let captured = runtime
+        .block_on(snapshot::capture_with_options(
+            root,
+            &Selection::Staged,
+            &options,
+        ))
+        .unwrap();
+    assert_eq!(captured.files["large.bin"].bytes, bytes);
+    assert!(!captured.includes("large.bin"));
+    assert_eq!(
+        captured.identity.content_digest,
+        snapshot::content_digest(&captured.files)
+    );
+    std::fs::write(root.join("large.bin"), vec![b'x'; bytes.len() + 1]).unwrap();
+    let error = runtime
+        .block_on(snapshot::capture_with_options(
+            root,
+            &Selection::Worktree {
+                base: "HEAD".into(),
+            },
+            &options,
+        ))
+        .unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("supported single-file maximum is 8 MiB")
+    );
+}
+
+#[test]
 fn eighteen_thousand_files_with_small_diff_support_all_selectors_and_bounded_parallelism() {
     let directory = fixture();
     let root = directory.path();
@@ -146,6 +310,8 @@ fn path_combines_with_selectors_preserves_bytes_and_recheck_options() {
             "2",
             "--snapshot-max-mib",
             "32",
+            "--snapshot-max-file-mib",
+            "8",
             "--snapshot-timeout-secs",
             "60",
             "--format",
@@ -163,6 +329,7 @@ fn path_combines_with_selectors_preserves_bytes_and_recheck_options() {
                 ("--path", "hello.txt"),
                 ("--snapshot-jobs", "2"),
                 ("--snapshot-max-mib", "32"),
+                ("--snapshot-max-file-mib", "8"),
                 ("--snapshot-timeout-secs", "60"),
             ] {
                 assert_eq!(argv.iter().filter(|arg| *arg == flag).count(), 1);
@@ -175,6 +342,8 @@ fn path_combines_with_selectors_preserves_bytes_and_recheck_options() {
         vec!["--snapshot-jobs", "0"],
         vec!["--snapshot-jobs", "17"],
         vec!["--snapshot-max-mib", "1025"],
+        vec!["--snapshot-max-file-mib", "0"],
+        vec!["--snapshot-max-file-mib", "9"],
         vec!["--snapshot-timeout-secs", "0"],
         vec!["--staged", "--worktree"],
     ] {

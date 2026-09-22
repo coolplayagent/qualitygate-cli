@@ -18,7 +18,7 @@ use std::{
 pub(super) fn apply(
     result: &mut CheckResult,
     spec: &ReportSpec,
-    data: Data,
+    mut data: Data,
     baseline: Option<Data>,
     snapshot: &Snapshot,
     workspace: &Path,
@@ -63,8 +63,13 @@ pub(super) fn apply(
     } else if spec.minimum_tests.is_some() {
         bail!("Configured minimum_tests requires a test-count report");
     }
+    let mut effective_mode = spec.mode;
     if !data.coverage.is_empty() || !data.coverage_files.is_empty() {
-        super::coverage_gate::apply(result, spec, &data, snapshot, workspace)?;
+        effective_mode = super::coverage_gate::apply(result, spec, &data, snapshot, workspace)?;
+        result.metadata.insert(
+            format!("{}:configured_mode", spec.path),
+            serde_json::to_value(spec.mode)?,
+        );
     } else if spec.minimum_coverage.is_some() || !spec.coverage_paths.is_empty() {
         bail!("Configured coverage gate requires a source inventory and coverage records");
     }
@@ -82,12 +87,53 @@ pub(super) fn apply(
         }
         for mut issue in baseline.issues {
             normalize_issue(&mut issue, snapshot, workspace, true, &mut line_counts)?;
+            if snapshot.delivery() {
+                let selected = if is_ratchet {
+                    delivery_issue(&issue, snapshot, true)
+                } else if issue.locations.is_empty() {
+                    snapshot.selects_diagnostic(issue.file.as_deref(), None)
+                } else {
+                    issue
+                        .locations
+                        .iter()
+                        .any(|location| snapshot.selects_diagnostic(location.file.as_deref(), None))
+                };
+                if !selected {
+                    continue;
+                }
+            }
             if is_ratchet {
                 *baseline_counts.entry(count_key(&issue)).or_insert(0) += 1;
             } else {
                 *previous.entry(fingerprint(&issue)).or_insert(0usize) += 1;
             }
         }
+    }
+    if snapshot.delivery() {
+        for issue in &mut data.issues {
+            normalize_issue(issue, snapshot, workspace, false, &mut line_counts)?;
+        }
+        // Retained historical occurrences must consume baseline credit before
+        // filtering, regardless of producer order. Otherwise an identical new
+        // occurrence can consume that credit and disappear from the delivery.
+        if spec.mode == IncrementMode::NewDiagnostics {
+            for issue in data
+                .issues
+                .iter()
+                .filter(|issue| !delivery_issue(issue, snapshot, false))
+            {
+                if let Some(count) = previous.get_mut(&fingerprint(issue)) {
+                    *count = count.saturating_sub(1);
+                }
+            }
+        }
+        let before = data.issues.len();
+        data.issues
+            .retain(|issue| delivery_issue(issue, snapshot, false));
+        result.metadata.insert(
+            format!("{}:delivery_filtered", spec.path),
+            (before - data.issues.len()).into(),
+        );
     }
     if is_ratchet {
         for issue in &data.issues {
@@ -130,8 +176,23 @@ pub(super) fn apply(
         if let Some(first) = issue.locations.first() {
             displayed = first.clone();
         }
+        if snapshot.delivery() {
+            select_location(&issue, &mut displayed, |location| {
+                Ok(snapshot.selects_diagnostic(
+                    location.file.as_deref(),
+                    location
+                        .line
+                        .map(|line| Range {
+                            start_line: line,
+                            end_line: location.end_line.unwrap_or(line),
+                        })
+                        .as_ref(),
+                ))
+            })?;
+        }
         let include = match spec.mode {
             IncrementMode::Full => true,
+            IncrementMode::ChangedLines if snapshot.delivery() => true,
             IncrementMode::ChangedLines => select_location(&issue, &mut displayed, |location| {
                 let file = location
                     .file
@@ -192,12 +253,52 @@ pub(super) fn apply(
     }
     result.metadata.insert(
         format!("{}:mode", spec.path),
-        serde_json::to_value(spec.mode)?,
+        serde_json::to_value(effective_mode)?,
     );
     result
         .metadata
         .insert(format!("{}:filtered", spec.path), filtered.into());
     Ok(())
+}
+
+fn delivery_issue(issue: &Issue, snapshot: &Snapshot, baseline: bool) -> bool {
+    let selected = |file: Option<&str>, line: Option<usize>, end: Option<usize>| {
+        if baseline {
+            let Some(file) = file else {
+                return true;
+            };
+            if !snapshot.includes(file) {
+                return false;
+            }
+            let Some(change) = snapshot.changes.get(file) else {
+                return false;
+            };
+            line.is_none_or(|line| {
+                change
+                    .removed_lines
+                    .range(line..=end.unwrap_or(line))
+                    .next()
+                    .is_some()
+            })
+        } else {
+            snapshot.selects_diagnostic(
+                file,
+                line.map(|line| Range {
+                    start_line: line,
+                    end_line: end.unwrap_or(line),
+                })
+                .as_ref(),
+            )
+        }
+    };
+    if issue.locations.is_empty() {
+        selected(issue.file.as_deref(), issue.line, None)
+    } else {
+        issue
+            .locations
+            .iter()
+            .any(|location| selected(location.file.as_deref(), location.line, location.end_line))
+    }
 }
 
 fn count_key(issue: &Issue) -> ratchet::Key {

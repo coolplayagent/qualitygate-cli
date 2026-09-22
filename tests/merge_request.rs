@@ -4,7 +4,9 @@ mod http;
 
 use common::*;
 use http::{Server, json};
-use serde_json::{Value, json as value};
+#[cfg(unix)]
+use serde_json::Value;
+use serde_json::json as value;
 use std::{path::Path, process::Command};
 
 fn git_output(root: &Path, args: &[&str]) -> String {
@@ -355,4 +357,30 @@ fn missing_objects_are_fetched_without_moving_refs_index_or_fetch_head() {
         git_output(client.path(), &["rev-parse", "--verify", &remote.source]),
         remote.source
     );
+}
+#[test]
+fn mr_exclusions_come_from_source_policy_and_preserve_live_revalidation() {
+    let mut branches = branches();
+    let root = branches.root.path();
+    git(root, &["checkout", "-q", "topic"]);
+    std::fs::write(root.join("large-demo.bin"), vec![0; 9 * 1024 * 1024]).unwrap();
+    std::fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nexclude: ['large-demo.bin']\nrules: {line-ending: {}}\n",
+    )
+    .unwrap();
+    std::fs::write(root.join("hello.txt"), "clean source change\n").unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "reviewed source exclusions"]);
+    branches.source = git_output(root, &["rev-parse", "HEAD"]);
+    git(root, &["checkout", "-q", "target"]);
+    // The target worktree has no exclusion and must not supply the MR policy.
+    let server = Server::new(vec![github(&branches.source, &branches.target); 2]);
+    let result = report(&run(&branches, &server, "json"), 0);
+    assert_eq!(result["scope"], "delivery");
+    assert_eq!(
+        result["selection"]["excluded_paths"],
+        value!(["large-demo.bin"])
+    );
+    assert_eq!(result["snapshot"]["head"], branches.source);
 }

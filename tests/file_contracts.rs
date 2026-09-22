@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 #[path = "common/reviews.rs"]
 mod reviews;
 use common::*;
@@ -33,9 +35,7 @@ fn configure(root: &Path, assertions: Value) {
 }
 
 fn check(root: &Path, code: i32, args: &[&str]) -> Value {
-    let mut command = vec!["check", "--format", "json"];
-    command.extend_from_slice(args);
-    report(&cli(root, &command), code)
+    report(&repository::check(root, args), code)
 }
 
 #[test]

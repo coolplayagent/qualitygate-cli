@@ -263,6 +263,7 @@ pub fn validate_suite(suite: &ValidationSuite) -> Result<()> {
         bail!("Invalid validation suite schema, baseline, case count or contribution policy");
     }
     if !(1..=1024).contains(&b.snapshot_max_mib)
+        || !(1..=8).contains(&b.snapshot_max_file_mib)
         || !(1..=16).contains(&b.snapshot_jobs)
         || !(1..=3600).contains(&b.snapshot_timeout_seconds)
         || !(1..=8).contains(&b.max_parallel)

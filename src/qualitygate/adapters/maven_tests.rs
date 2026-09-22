@@ -8,8 +8,10 @@ use serde_json::{Value, json};
 
 fn inputs(root: &Path) -> (Snapshot, MavenProject, String, Value) {
     let snapshot = Snapshot {
+        scope_evidence: Default::default(),
         root: root.into(),
         identity: Identity {
+            verification_digest: None,
             mode: "worktree".into(),
             base: "base".into(),
             head: "head".into(),

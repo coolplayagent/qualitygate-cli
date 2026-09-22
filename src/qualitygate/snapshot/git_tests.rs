@@ -1,4 +1,5 @@
 use super::*;
+use crate::snapshot::MAX_FILE_BYTES;
 
 fn entry(size: usize) -> Entry {
     Entry {
@@ -19,6 +20,7 @@ fn preflight_bounds_bytes_and_file_counts_before_acquiring_content() {
         (0..5).map(|_| entry(0)).collect(),
         size_line(MAX_FILE_BYTES).repeat(5).as_bytes(),
         12 * 1024 * 1024,
+        MAX_FILE_BYTES,
     )
     .unwrap();
     assert_eq!(planned.iter().map(Vec::len).collect::<Vec<_>>(), [2, 2, 1]);
@@ -33,6 +35,7 @@ fn preflight_bounds_bytes_and_file_counts_before_acquiring_content() {
         (0..1025).map(|_| entry(0)).collect(),
         size_line(0).repeat(1025).as_bytes(),
         1,
+        MAX_FILE_BYTES,
     )
     .unwrap();
     assert_eq!(empty.iter().map(Vec::len).collect::<Vec<_>>(), [1024, 1]);
@@ -41,10 +44,15 @@ fn preflight_bounds_bytes_and_file_counts_before_acquiring_content() {
         (2, 1, "Snapshot exceeds"),
     ] {
         assert!(
-            batches(vec![entry(0)], size_line(size).as_bytes(), budget)
-                .unwrap_err()
-                .to_string()
-                .contains(reason)
+            batches(
+                vec![entry(0)],
+                size_line(size).as_bytes(),
+                budget,
+                MAX_FILE_BYTES
+            )
+            .unwrap_err()
+            .to_string()
+            .contains(reason)
         );
     }
 }
@@ -59,7 +67,7 @@ fn malformed_missing_and_mismatched_objects_never_produce_partial_snapshots() {
         "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb blob 1\n",
     ] {
         assert!(
-            batches(vec![entry(0)], bytes.as_bytes(), 100).is_err(),
+            batches(vec![entry(0)], bytes.as_bytes(), 100, MAX_FILE_BYTES).is_err(),
             "{bytes}"
         );
     }
@@ -67,7 +75,8 @@ fn malformed_missing_and_mismatched_objects_never_produce_partial_snapshots() {
         batches(
             vec![entry(0)],
             format!("{}trailing", size_line(0)).as_bytes(),
-            1
+            1,
+            MAX_FILE_BYTES
         )
         .is_err()
     );
@@ -83,20 +92,45 @@ fn malformed_missing_and_mismatched_objects_never_produce_partial_snapshots() {
         "120000 blob aaa\tfile\0",
         "100644 blob nope\tfile\0",
     ] {
-        assert!(entries(listing.as_bytes(), false).is_err());
+        assert!(entries(listing.as_bytes(), false, &Default::default()).is_err());
     }
     let conflict = format!("100644 {} 1\tfile\0", "a".repeat(40));
     assert!(
-        entries(conflict.as_bytes(), true)
+        entries(conflict.as_bytes(), true, &Default::default())
             .unwrap_err()
             .to_string()
             .contains("conflict")
     );
     let too_many = format!("100644 blob {}\tfile\0", "a".repeat(40)).repeat(MAX_FILES + 1);
     assert!(
-        entries(too_many.as_bytes(), false)
+        entries(too_many.as_bytes(), false, &Default::default())
             .unwrap_err()
             .to_string()
             .contains("files")
     );
+}
+
+#[test]
+fn explicitly_permitted_large_blobs_use_nonempty_bounded_batches() {
+    let limit = crate::domain::snapshot_budget::MAX_FILE_BYTES;
+    let sizes = [limit, 1, limit, 1];
+    let headers: String = sizes.iter().map(|size| size_line(*size)).collect();
+    let batches = batches(
+        (0..4).map(|_| entry(0)).collect(),
+        headers.as_bytes(),
+        limit * 3,
+        limit,
+    )
+    .unwrap();
+    assert_eq!(
+        batches.iter().map(Vec::len).collect::<Vec<_>>(),
+        [1, 1, 1, 1]
+    );
+    for batch in batches {
+        let wire_bytes: usize = batch
+            .iter()
+            .map(|entry| entry.size + entry.oid.len() + 32)
+            .sum();
+        assert!(wire_bytes < crate::runner::MAX_OUTPUT_BYTES);
+    }
 }

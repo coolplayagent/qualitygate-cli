@@ -1,6 +1,6 @@
 //! Bounded immutable old-code/new-test composition. Never edits a Git worktree.
 
-use super::{File, MAX_FILE_BYTES, MAX_FILES, Snapshot, content_digest_until};
+use super::{File, MAX_FILES, Snapshot, content_digest_until};
 use anyhow::{Result, bail};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -29,7 +29,11 @@ pub fn prepare(
     support_paths: &[String],
     protected_paths: &[String],
     max_bytes: usize,
+    max_file_bytes: usize,
 ) -> Result<Prepared> {
+    if !(1..=crate::domain::snapshot_budget::MAX_FILE_BYTES).contains(&max_file_bytes) {
+        bail!("Invalid bounded test overlay per-file budget");
+    }
     let deadline = Instant::now() + Duration::from_secs(30);
     let sources = globs(source_paths)?;
     let tests = globs(test_paths)?;
@@ -57,9 +61,9 @@ pub fn prepare(
             if is_overlay {
                 bail!("Production and test/support paths overlap: {path}");
             }
-            if snapshot.includes(path) {
+            if snapshot.feedback_includes(path) {
                 source_count += 1;
-                source_changed |= differs;
+                source_changed |= differs && snapshot.includes(path);
             }
         }
         if !is_overlay {
@@ -96,7 +100,7 @@ pub fn prepare(
         bail!("Test effectiveness source paths matched no captured files in scope");
     }
     let bytes = files.values().try_fold(0usize, |total, file: &File| {
-        if file.bytes.len() > MAX_FILE_BYTES {
+        if file.bytes.len() > max_file_bytes {
             bail!("Test overlay file exceeds size budget");
         }
         total
@@ -110,12 +114,13 @@ pub fn prepare(
     identity.mode = "test_overlay".into();
     identity.head = identity.base.clone();
     identity.merge_request = None;
-    identity.content_digest = content_digest_until(&files, Some(deadline))?;
+    super::bind_derived(&mut identity, content_digest_until(&files, Some(deadline))?);
     Ok(Prepared {
         source_changed,
         tests: selected,
         overlay,
         baseline: Snapshot {
+            scope_evidence: snapshot.scope_evidence.clone(),
             root: snapshot.root.clone(),
             identity,
             files,
@@ -170,6 +175,7 @@ fn build_input(path: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::super::MAX_FILE_BYTES;
     use super::*;
 
     fn file(text: &str) -> File {
@@ -192,8 +198,10 @@ mod tests {
         ]);
         files.get_mut("tests/changed").unwrap().executable = true;
         let input = Snapshot {
+            scope_evidence: Default::default(),
             root: "/repo".into(),
             identity: super::super::Identity {
+                verification_digest: None,
                 mode: "worktree".into(),
                 base: "base".into(),
                 head: "head".into(),
@@ -214,6 +222,7 @@ mod tests {
                 &["support/**".into()],
                 &[],
                 max,
+                MAX_FILE_BYTES,
             )
         };
         let ready = prepare(&input, 1024).unwrap();
@@ -237,6 +246,9 @@ mod tests {
             },
         );
         assert!(prepare(&oversized, usize::MAX).is_err());
+        for limit in [0, crate::domain::snapshot_budget::MAX_FILE_BYTES + 1] {
+            assert!(super::prepare(&input, &[], &[], &[], &[], usize::MAX, limit).is_err());
+        }
         let mut many = input.clone();
         for i in 0..MAX_FILES {
             many.base_files.insert(format!("keep/{i}"), file(""));

@@ -1,5 +1,7 @@
 //! Real coverage producers; fixture orchestration and assertions are Rust.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::{
@@ -120,8 +122,9 @@ fn configure(root: &Path, policy: &Value) {
     .unwrap();
 }
 
+// Full-report producer contracts need explicit repository coverage.
 fn run(root: &Path, code: i32) -> Value {
-    let output = cli(root, &["check", "--format", "json"]);
+    let output = repository::check(root, &[]);
     if output.status.code() != Some(code)
         && let Ok(value) = serde_json::from_slice::<Value>(&output.stdout)
         && let Some(artifacts) = value["checks"][0]["execution"]["artifacts"].as_array()
@@ -165,6 +168,12 @@ fn real_jacoco_standard_xml_changed_lines_branches_and_missing_debug_evidence() 
     configure(root, &policy);
     git(root, &["add", "."]);
     git(root, &["commit", "-qm", "baseline partial branch coverage"]);
+    let empty = report(&cli(root, &["check", "--format", "json"]), 0);
+    assert_eq!(empty["selection"]["empty_delivery"], true);
+    assert_eq!(
+        empty["checks"][0]["metadata"]["target/jacoco.xml:coverage"]["no_executable_lines_selected"],
+        true
+    );
     let partial = run(root, 1);
     assert_eq!(
         partial["checks"][0]["metadata"]["target/jacoco.xml:coverage"]["branch_percent"],
@@ -199,6 +208,11 @@ fn real_jacoco_standard_xml_changed_lines_branches_and_missing_debug_evidence() 
     policy["checks"][0]["reports"][0]["mode"] = json!("full");
     configure(root, &policy);
     run(root, 1);
+    let delivery = report(&cli(root, &["check", "--format", "json"]), 0);
+    assert_eq!(
+        delivery["checks"][0]["metadata"]["target/jacoco.xml:coverage"]["branch_percent"],
+        100.0
+    );
     java_tests(root, "assert api.sign(0) == -2; assert api.old() == 0;");
     run(root, 0);
     std::fs::write(root.join("src/Missing.java"), "class Missing {}\n").unwrap();

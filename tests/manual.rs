@@ -150,6 +150,27 @@ fn manual_acceptance_requires_authentication_then_runs_dependent_checks() {
 }
 
 #[test]
+fn manual_approval_cannot_omit_the_delivery_scope_binding() {
+    let fixture = Fixture::new();
+    let initial = fixture.run(2);
+    let mut approved = fixture.record(&initial, "approved");
+    assert!(approved["subject"]["snapshot"]["verification_digest"].is_string());
+    approved["subject"]["snapshot"]
+        .as_object_mut()
+        .unwrap()
+        .remove("verification_digest");
+    fixture.publish(&approved);
+    let rejected = fixture.run(2);
+    assert!(
+        fixture.manual(&rejected)["execution"]["reason"]
+            .to_string()
+            .contains("does not match")
+    );
+    fixture.publish(&fixture.record(&initial, "approved"));
+    fixture.run(0);
+}
+
+#[test]
 fn tampering_expiry_revocation_and_foreign_subjects_remain_incomplete() {
     let fixture = Fixture::new();
     let initial = fixture.run(2);

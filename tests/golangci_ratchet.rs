@@ -1,32 +1,15 @@
 //! Actual golangci-lint v2 JSON across paired Go snapshots.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 
 use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
 use std::{fs, path::Path, process::Command};
 
-fn run(root: &Path, cache: &Path, exit: i32) -> Value {
-    let output = Command::new(env!("CARGO_BIN_EXE_qualitygate"))
-        .env(
-            "QUALITYGATE_HOME",
-            root.join(".git/qualitygate-test-evidence"),
-        )
-        .env(
-            "QUALITYGATE_BUILTIN_RULES_DIR",
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/skills/qualitygate-cli/references/rules"
-            ),
-        )
-        .env("GOLANGCI_LINT_CACHE", cache.join("lint"))
-        .env("GOCACHE", cache.join("go-build"))
-        .env("GOPATH", cache.join("go-path"))
-        .env("GOTELEMETRY", "off")
-        .arg("--root")
-        .arg(root)
-        .args(["check", "--format", "json"])
-        .output()
-        .unwrap();
+// These cases measure historical repository debt; delivery intersection is tested separately.
+fn run(root: &Path, exit: i32) -> Value {
+    let output = repository::check(root, &[]);
     report(&output, exit)
 }
 
@@ -88,7 +71,10 @@ fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
     .unwrap();
     let policy = json!({"schema_version":1,"checks":[{
         "id":"golangci-lint-ratchet",
-        "argv":[binary,"run","--output.json.path=stdout","--output.text.path=stderr",
+        "argv":["env",format!("GOLANGCI_LINT_CACHE={}",cache.path().join("lint").display()),
+            format!("GOCACHE={}",cache.path().join("go-build").display()),
+            format!("GOPATH={}",cache.path().join("go-path").display()),"GOTELEMETRY=off",
+            binary,"run","--output.json.path=stdout","--output.text.path=stderr",
             "--show-stats=false","--max-issues-per-linter=0","--max-same-issues=0",
             "--uniq-by-line=false","--modules-download-mode=readonly","--timeout=90s","./..."],
         "timeout_seconds":120,"findings_exit_codes":[1],
@@ -104,14 +90,14 @@ fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
     git(root, &["add", "."]);
     git(root, &["commit", "-qm", "historical Go lint finding"]);
 
-    let initial = run(root, cache.path(), 0);
+    let initial = run(root, 0);
     assert_eq!(initial["checks"][0]["execution"]["exit_code"], 1);
     assert_eq!(
         initial["checks"][0]["metadata"]["target/golangci-lint.json:ratchet"][0]["baseline"],
         1
     );
     fs::write(root.join("main.go"), "package main\nimport \"fmt\"\nfunc main() { fmt.Printf(\"%d\", \"wrong\"); fmt.Printf(\"%d\", \"also wrong\") }\n").unwrap();
-    let growth = run(root, cache.path(), 1);
+    let growth = run(root, 1);
     assert_eq!(
         growth["checks"][0]["diagnostics"].as_array().unwrap().len(),
         2
@@ -121,13 +107,13 @@ fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
         "govet"
     );
     fs::write(root.join("main.go"), "package main\nfunc main() {}\n").unwrap();
-    assert_eq!(run(root, cache.path(), 0)["gate"]["decision"], "pass");
+    assert_eq!(run(root, 0)["gate"]["decision"], "pass");
     fs::write(
         root.join("main.go"),
         "package main\nfunc main() { missing }\n",
     )
     .unwrap();
-    let incomplete = run(root, cache.path(), 2);
+    let incomplete = run(root, 2);
     assert_eq!(incomplete["gate"]["decision"], "incomplete");
     assert_eq!(incomplete["checks"][0]["verdict"], Value::Null);
 }

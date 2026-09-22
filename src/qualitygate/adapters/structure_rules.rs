@@ -68,7 +68,7 @@ fn collect(
                                 .context("Previous syntax is unavailable")?,
                         );
                     }
-                    if super::markers::bound_declaration(
+                    let previous_declaration = super::markers::bound_declaration(
                         marker,
                         previous,
                         &previous_views[path],
@@ -76,8 +76,19 @@ fn collect(
                         snapshot,
                         true,
                         git,
-                    )?
-                    .is_some()
+                    )?;
+                    if previous_declaration.is_some()
+                        && (!snapshot.delivery()
+                            || previous_declaration
+                                != super::markers::bound_declaration(
+                                    marker,
+                                    &test.entity,
+                                    &file.view,
+                                    &file.path,
+                                    snapshot,
+                                    false,
+                                    git,
+                                )?)
                     {
                         // Retained declarations remain obligations even when the entity
                         // has no agent participation in the current comparison.
@@ -375,7 +386,7 @@ fn markers(
                 })
                 .collect();
             if declaration.is_none() || !missing.is_empty() {
-                result.diagnostics.push(diagnostic(&result.id, Some(&change.path), Some(test.range.clone()), format!("Test {} lacks the required {name} source declaration or fields", test.name), serde_json::json!({"symbol":test.symbol,"marker":name,"missing_fields":missing,"declaration_only":true}), "Record the actual source using the configured binding and required fields", &test.symbol));
+                result.diagnostics.push(diagnostic(&result.id, Some(&change.path), if snapshot.delivery() && retained { None } else { Some(test.range.clone()) }, format!("Test {} lacks the required {name} source declaration or fields", test.name), serde_json::json!({"symbol":test.symbol,"marker":name,"missing_fields":missing,"declaration_only":true}), "Record the actual source using the configured binding and required fields", &test.symbol));
             }
         }
     }

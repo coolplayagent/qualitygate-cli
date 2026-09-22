@@ -1,6 +1,6 @@
 //! Bounded parallel filesystem reads with cooperative cancellation.
 
-use super::{File, MAX_FILE_BYTES, MAX_FILES, limits::Acquisition, run_git};
+use super::{File, MAX_FILES, limits::Acquisition, run_git};
 use anyhow::{Result, bail};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -33,6 +33,7 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
         None,
     )
     .await?;
+    let selected = acquisition.options.selector()?;
     let names = tokio::task::spawn_blocking(move || -> Result<_> {
         let names: BTreeSet<_> = listing
             .split(|byte| *byte == 0)
@@ -42,7 +43,10 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
         if names.len() > MAX_FILES {
             bail!("Snapshot exceeds {MAX_FILES} files");
         }
-        Ok(names.into_iter().collect::<Vec<_>>())
+        Ok(names
+            .into_iter()
+            .filter(|path| selected(path))
+            .collect::<Vec<_>>())
     })
     .await??;
     let cancel = Cancel(Arc::new(AtomicBool::new(false)));
@@ -62,6 +66,7 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
                 acquisition.options.max_bytes,
             );
             let deadline = acquisition.deadline;
+            let file_budget = acquisition.options.max_file_bytes;
             tasks.spawn(async move {
                 let permit = permits.acquire_owned().await?;
                 tokio::task::spawn_blocking(move || {
@@ -72,7 +77,7 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
                         if stopped.load(Ordering::Relaxed) {
                             bail!("Snapshot acquisition cancelled");
                         }
-                        if let Some(file) = read_file(&root, &name, &total, budget)? {
+                        if let Some(file) = read_file(&root, &name, &total, budget, file_budget)? {
                             files.insert(name, file);
                         }
                     }
@@ -89,7 +94,13 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
     Ok(files)
 }
 
-fn read_file(root: &Path, name: &str, total: &AtomicUsize, budget: usize) -> Result<Option<File>> {
+fn read_file(
+    root: &Path,
+    name: &str,
+    total: &AtomicUsize,
+    budget: usize,
+    file_budget: usize,
+) -> Result<Option<File>> {
     let path = crate::paths::confined(root, Path::new(name))?;
     let metadata = match std::fs::metadata(&path) {
         Ok(value) => value,
@@ -99,8 +110,12 @@ fn read_file(root: &Path, name: &str, total: &AtomicUsize, budget: usize) -> Res
     if !metadata.is_file() {
         bail!("Unsupported snapshot entry (including submodule): {name}");
     }
-    if metadata.len() > MAX_FILE_BYTES as u64 {
-        bail!("File exceeds {MAX_FILE_BYTES} bytes: {name}");
+    if metadata.len() > file_budget as u64 {
+        bail!(crate::domain::snapshot_budget::file_limit_message(
+            name,
+            metadata.len(),
+            file_budget
+        ));
     }
     let size = metadata.len() as usize;
     if total.fetch_add(size, Ordering::Relaxed) + size > budget {

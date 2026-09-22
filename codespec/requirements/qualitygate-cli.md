@@ -52,6 +52,14 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 
 ## 3. 功能需求
 
+### 3.0 存量仓库接入（Issue 33）
+
+| 编号 | 要求 | 验收证据 |
+|---|---|---|
+| INIT-33 | 首次运行错误遵循 JSON/table/Markdown 格式；未初始化时给出下一步。init 提供 HEAD/工作区元数据预检，大文件、不支持条目、截断及预检失败明确可见；候选创建不代表检查通过 | `tests/init.rs`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+| SNAP-33 | 单文件采集容量默认 2 MiB，可显式调整至 1–8 MiB；Git/worktree 保留完整字节与摘要，总量、并发、超时和输出限制继续生效；diff/MR/path 不隐式排除历史文件；重检保留预算，策略变化与违规仍然阻塞 | `tests/large_repository.rs`、`snapshot::git::tests`、`snapshot::tests`；[快照语义](../../docs/zh/01-user-guide/02-snapshots-and-check-workflow.md) |
+| SNAP-33-REVIEW | 测试 overlay 沿用单文件预算；受保护套件的可选 `snapshot_max_file_mib` 默认 2、范围 1–8，预算变更需要匹配外部信任；人读引导转义控制字符，JSON 保留原路径 | `tests/test_effectiveness.rs`、`tests/policy_validation.rs`、`interfaces::render::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+
 ### 3.1 变更规范检查（diff 级，核心）
 
 | 检查项 | 检测逻辑 | 说明 |
@@ -687,3 +695,5 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | DEC-01 | 可导出版本化 decision、feedback 和 project-rule Schema；`check`、feedback、rule validation、selfcheck 及策略/试点摘要可选择带判别类型的 envelope，保留原始 payload、证据摘要、warning、gap、pending 与 omission；未完成不得表示为通过 | `tests/decision_envelope.rs`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[证据矩阵](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 | DEC-02 | 外置 provider 仅用固定命令、版本与输入摘要对 warning 做 shadow/advisory 评估；deterministic、probabilistic、abstained、execution-gap 类型闭合，非法输出或失效校准不改变原门禁并留下原始证据 | `tests/judgment_provider.rs`、`domain::judgment::tests`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
 | DEC-03 | warning 试点隔离校准与验证时间，使用独立标签计算校准与风险指标，对高优先级建议抽样审计；缺证据保持未完成，策略变更仍走外部批准流程 | `tests/judgment_provider.rs`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[策略演进](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
+
+| SNAP-33-DELIVERY | Selector-derived delivery-line checks without a separate CLI scope option, policy-bound pre-acquisition exclusions, preserved command failures and packaged Skill trimming/bootstrap workflows | `tests/delivery_scope.rs`, `tests/quality.rs`, `application::report_gate::tests` |

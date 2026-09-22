@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SnapshotIdentity {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_digest: Option<String>,
     pub mode: String,
     pub base: String,
     pub head: String,
@@ -72,6 +74,8 @@ pub struct PlanSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Report {
     pub schema_version: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selection: Option<super::check_scope::ScopeEvidence>,
     pub run_id: String,
     pub scope: String,
     pub profile: String,

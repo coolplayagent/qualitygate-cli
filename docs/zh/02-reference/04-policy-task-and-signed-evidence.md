@@ -11,6 +11,14 @@
 执行许可下完成独立成对验证。批准和回滚使用不同签名主题；active policy 历史可审计且只追加。
 本地分支名或摘要本身不代表批准。
 
+相同 base/head 指相同 Git 修订。各策略独立应用自己的 exclude；若执行输入不同，验证证据绑定
+两份快照身份，不能共享某一策略裁剪后的内容。
+相同 exclude 可以复用不可变树；不同 exclude 在单个用例内顺序执行，保持两棵树的内存预留上限。
+
+受保护套件的可选 `budget.snapshot_max_file_mib` 默认 2，允许整数 1–8；它共同约束基线/候选
+采集及测试 overlay。该字段受外部授权的套件摘要约束，因此容量变更需要更新外部授权，不能
+通过修改候选仓库策略覆盖。
+
 诊断趋势、oracle 审核、gate 执行、下游收益和维护成本属于不同观察。分母或数据缺失时保持 unknown。
 策略演进不能为了改善指标而把 warning 或未完成证据改写为通过。
 
@@ -27,6 +35,14 @@
 人工验收及试点授权/接受使用调用方控制、位于被测仓库外的 DSSE/Ed25519 信任输入。验证检查精确主题
 字节、key scope、角色、有效期、最大年龄、撤销，以及与快照/策略/任务的绑定。记录缺失、过期、
 来自错误主体、已撤销或格式错误时均为未完成。
+
+`snapshot.content_digest` 标识采集后的执行文件。存在 `snapshot.verification_digest` 时，它还绑定
+检查范围、exclude、变更行及路径过滤，签名快照绑定也必须包含该字段。文件内容相同不代表
+delivery 与 repository 范围的证据可以互换。
+可复用核心的 repository 评估带路径过滤时也必须绑定路径范围；只有没有 exclude 和路径过滤的
+repository 评估才可仅使用 content digest。CLI 只验证交付范围，因此核心全仓评估的同范围
+CLI 复查 argv 为空；独立的 delivery_recheck 明确用于交付范围验证。
+反馈将不可用或空的复查命令保留为 `argv: null`、`omitted: true`，同时保留可执行的 delivery_recheck。
 
 Agent provenance 认证所声明的输入、输出、变换和工具身份；Git trailer 把声明绑定到提交，并拒绝
 歧义或缺失关联。这些机制证明谱系，不证明语义正确或独立审核。

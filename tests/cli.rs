@@ -1,4 +1,7 @@
 mod common;
+#[path = "common/repository.rs"]
+#[cfg(unix)]
+mod repository;
 use common::*;
 
 #[cfg(unix)]
@@ -299,7 +302,7 @@ fn baseline_analysis_filters_old_diagnostics_even_when_their_line_moves() {
     git(root.path(), &["commit", "-qm", "baseline"]);
     std::fs::write(root.path().join("hello.txt"), "first\ninitial\nnew\n").unwrap();
     std::fs::write(root.path().join("findings.json"), r#"{"issues":[{"rule":"old","file":"hello.txt","line":2,"message":"old warning"},{"rule":"new","file":"hello.txt","line":3,"message":"new violation"}]}"#).unwrap();
-    let result = report(&cli(root.path(), &["check", "--format", "json"]), 1);
+    let result = report(&repository::check(root.path(), &[]), 1);
     assert_eq!(
         result["checks"][0]["diagnostics"].as_array().unwrap().len(),
         1
@@ -310,6 +313,15 @@ fn baseline_analysis_filters_old_diagnostics_even_when_their_line_moves() {
     );
     assert_eq!(result["checks"][0]["metadata"]["report.json:filtered"], 1);
     assert!(result["checks"][0]["metadata"]["baseline_execution"]["argv"].is_array());
+    let delivery = report(&cli(root.path(), &["check", "--format", "json"]), 1);
+    let mut expected = result["checks"][0]["diagnostics"].clone();
+    expected[0]["recheck"] = delivery["checks"][0]["diagnostics"][0]["recheck"].clone();
+    assert_eq!(delivery["checks"][0]["diagnostics"], expected);
+    assert_eq!(
+        delivery["checks"][0]["metadata"]["report.json:delivery_filtered"],
+        1
+    );
+    assert_eq!(delivery["checks"][0]["metadata"]["report.json:filtered"], 0);
 }
 
 #[cfg(unix)]

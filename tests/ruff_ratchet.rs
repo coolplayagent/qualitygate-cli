@@ -1,28 +1,15 @@
 //! Actual Ruff JSON across paired Python snapshots.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 
 use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
 use std::{fs, path::Path, process::Command};
 
+// These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
-    let output = Command::new(env!("CARGO_BIN_EXE_qualitygate"))
-        .env(
-            "QUALITYGATE_HOME",
-            root.join(".git/qualitygate-test-evidence"),
-        )
-        .env(
-            "QUALITYGATE_BUILTIN_RULES_DIR",
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/skills/qualitygate-cli/references/rules"
-            ),
-        )
-        .arg("--root")
-        .arg(root)
-        .args(["check", "--format", "json"])
-        .output()
-        .unwrap();
+    let output = repository::check(root, &[]);
     report(&output, exit)
 }
 

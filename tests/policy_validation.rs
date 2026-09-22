@@ -5,6 +5,149 @@ mod evolution;
 use evolution::*;
 use serde_json::json;
 
+#[test]
+fn different_policy_exclusions_have_independent_inputs_within_the_two_tree_budget() {
+    use qualitygate::config::{policy_candidates, policy_store::Store};
+    let mut fixture = Fixture::new();
+    fixture.enable();
+    // Publish an immutable candidate package with a different acquisition policy.
+    // The rule-edit CLI currently changes rules only, so construct this package
+    // through the same content-addressed archive API used by candidate creation.
+    Store::transaction(fixture.root.path(), |store| {
+        let (previous, mut revision) = policy_candidates::candidate(store, &fixture.id)?;
+        let (mut version, mut config, _) =
+            policy_candidates::load_version(store, &revision.policy_digest)?;
+        config.exclude = vec!["hello.txt".into()];
+        version.files.get_mut(&version.config_path).unwrap().digest =
+            store.put_blob(serde_norway::to_string(&config)?.as_bytes())?;
+        revision.policy_digest = store.put_record("policy", &version)?;
+        store.index.policies.push(revision.policy_digest.clone());
+        revision.previous_revision = Some(previous);
+        let reference = store.put_record("candidate", &revision)?;
+        store.index.candidates.insert(fixture.id.clone(), reference);
+        Ok(())
+    })
+    .unwrap();
+    fixture.suite.budget.max_live_snapshot_mib = fixture.suite.budget.snapshot_max_mib * 2;
+    fixture.write_inputs();
+    let result = fixture.validate("4", 0);
+    let store = Store::open(fixture.root.path()).unwrap();
+    for case in result["evaluation"]["cases"].as_array().unwrap() {
+        let baseline: qualitygate::domain::Report = store
+            .record(
+                case["baseline"]["report_ref"].as_str().unwrap(),
+                "check_report",
+            )
+            .unwrap();
+        let candidate: qualitygate::domain::Report = store
+            .record(
+                case["candidate"]["report_ref"].as_str().unwrap(),
+                "check_report",
+            )
+            .unwrap();
+        assert!(baseline.selection.unwrap().excluded_paths.is_empty());
+        assert_eq!(candidate.selection.unwrap().excluded_paths, ["hello.txt"]);
+        assert_ne!(
+            baseline.snapshot.content_digest,
+            candidate.snapshot.content_digest
+        );
+        assert_ne!(case["snapshot_digest"], baseline.snapshot.content_digest);
+        assert_ne!(case["snapshot_digest"], candidate.snapshot.content_digest);
+        let left = baseline
+            .checks
+            .iter()
+            .find(|check| check.id == "probe")
+            .unwrap();
+        let right = candidate
+            .checks
+            .iter()
+            .find(|check| check.id == "probe")
+            .unwrap();
+        assert!(left.execution.ended_at_ms.unwrap() <= right.execution.started_at_ms.unwrap());
+    }
+}
+
+#[test]
+fn protected_file_capacity_is_bounded_authorized_and_used_for_both_policies() {
+    use qualitygate::{
+        config::policy_acceptance::{ValidationSuite, validate_suite},
+        domain::policy_evaluation::CaseKind,
+    };
+    let mut fixture = Fixture::new();
+    let mut legacy = serde_json::to_value(&fixture.suite).unwrap();
+    legacy["budget"]
+        .as_object_mut()
+        .unwrap()
+        .remove("snapshot_max_file_mib");
+    let legacy: ValidationSuite = serde_json::from_value(legacy).unwrap();
+    assert_eq!(legacy.budget.snapshot_max_file_mib, 2);
+    for invalid in [0, 9] {
+        fixture.suite.budget.snapshot_max_file_mib = invalid;
+        assert!(validate_suite(&fixture.suite).is_err());
+    }
+    fixture.suite.budget.snapshot_max_file_mib = 2;
+    std::fs::write(
+        fixture.root.path().join("legacy.bin"),
+        vec![b'x'; 3 * 1024 * 1024],
+    )
+    .unwrap();
+    common::git(fixture.root.path(), &["add", "."]);
+    common::git(
+        fixture.root.path(),
+        &["commit", "-qm", "unchanged historical resource"],
+    );
+    for case in &mut fixture.suite.cases {
+        case.base = head(fixture.root.path());
+        let content = if case.kind == CaseKind::Replay {
+            "bad\r\n"
+        } else {
+            "good\n"
+        };
+        std::fs::write(
+            fixture
+                .root
+                .path()
+                .join(format!("capacity-{}.txt", case.id)),
+            content,
+        )
+        .unwrap();
+        common::git(fixture.root.path(), &["add", "."]);
+        common::git(
+            fixture.root.path(),
+            &["commit", "-qm", "independent capacity case"],
+        );
+        case.head = head(fixture.root.path());
+    }
+    fixture.write_inputs();
+    fixture.enable();
+    let blocked = fixture.validate("1", 2);
+    assert!(
+        blocked["evaluation"]["reasons"]
+            .to_string()
+            .contains("File exceeds")
+    );
+    fixture.suite.budget.snapshot_max_file_mib = 3;
+    // Changing the protected capacity without updating its external authorization is rejected.
+    std::fs::write(
+        fixture.external.path().join("suite.json"),
+        serde_json::to_vec(&fixture.suite).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(fixture.validate("1", 2)["gate"]["complete"], false);
+    fixture.write_inputs();
+    let passed = fixture.validate("1", 0);
+    assert_eq!(passed["evaluation"]["budget"]["snapshot_max_file_mib"], 3);
+    assert!(
+        passed["evaluation"]["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|case| {
+                case["baseline"]["complete"] == true && case["candidate"]["complete"] == true
+            })
+    );
+}
+
 fn probe(directory: &std::path::Path) -> String {
     let source = directory.join("probe.rs");
     std::fs::write(&source, include_str!("common/policy_probe.rs")).unwrap();

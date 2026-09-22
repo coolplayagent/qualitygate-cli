@@ -13,6 +13,7 @@ pub(super) async fn load(
     plan: &Plan,
     catalog: &Catalog,
     snapshot: &Arc<Snapshot>,
+    options: &snapshot::CaptureOptions,
 ) -> Option<Input> {
     if !plan
         .rules
@@ -21,7 +22,7 @@ pub(super) async fn load(
     {
         return None;
     }
-    let history = match snapshot::history::capture(snapshot).await {
+    let history = match snapshot::history::capture_with_options(snapshot, options).await {
         Ok(history) => history,
         Err(error) => return Some(Err(format!("{error:#}"))),
     };

@@ -47,6 +47,39 @@ Only write or adopt a rule when the user authorizes that policy mutation.
 
 ## Resolve the executable
 
+An intact release archive automatically resolves its own rule assets; setting
+`QUALITYGATE_BUILTIN_RULES_DIR` is an optional override. On Windows, after setting
+`$QualitygateSkillRoot` to the extracted Skill directory and `$RepositoryRoot` to
+the target repository, this single invocation
+selects x64/ARM64 and runs discovery without changing global configuration:
+
+```powershell
+& (Join-Path $QualitygateSkillRoot ("assets/windows-{0}/qualitygate.exe" -f @{X64='x86_64';Arm64='aarch64'}[[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()])) init --root $RepositoryRoot
+```
+
+On Linux, set `QUALITYGATE_SKILL_ROOT` and `REPOSITORY_ROOT` to those directories
+and run this Bash command; the subshell keeps helper variables local:
+
+```bash
+(
+  case "$(uname -m)" in
+    x86_64|amd64) qualitygate_asset=linux-x86_64 ;;
+    aarch64|arm64) qualitygate_asset=linux-aarch64 ;;
+    *) echo "Unsupported Linux architecture" >&2; exit 2 ;;
+  esac
+  "$QUALITYGATE_SKILL_ROOT/assets/$qualitygate_asset/qualitygate" init --root "$REPOSITORY_ROOT"
+)
+```
+
+Use `init --with-checks` only when candidate command adoption is authorized.
+Read its `snapshot_preflight` and follow the
+[existing-repository trimming workflow](references/operations.md#existing-repository-trimming)
+before checking an existing repository. Review explicit `exclude` patterns or
+the suggested per-file acquisition budget; neither is an automatic exemption.
+The longer resolution examples below support
+asset overrides and a verified PATH fallback; they are not mandatory glue for
+an intact archive.
+
 Release archives place a platform binary under this skill's `assets/` directory.
 Use its absolute path only when it matches the active operating system and
 `--version` succeeds. A lightweight registry installation may omit assets; in
@@ -126,11 +159,15 @@ change to checked inputs, run an unfiltered `check --profile full` against the
 final snapshot, passing a task contract and trusted policy/evidence inputs when
 the workflow requires them. Read [operations](references/operations.md) for
 snapshot, task, and trust handling. Mark the code task complete only when
-the final report has `profile: full`, `scope: repository` or `scope: task`
+the final report has `profile: full`, `scope: delivery` or `scope: task`
 (never `scope: path`), an empty `plan.pending_delivery_checks`,
 `gate.complete: true`, and `gate.decision: pass`, with exit code `0`, and all
 separately required repository checks pass. Retain its snapshot and policy
-digests, and rerun if the checked inputs change.
+digests, and rerun if the checked inputs change. Inspect `selection.mode`,
+`selection.exclude`, `selection.excluded_paths`, and `selection.empty_delivery`:
+the CLI derives delivery from the selected worktree, index, diff or MR. An empty
+delivery is not evidence that all repository code is clean. There is no separate
+scope selector; the profile only selects which checks run.
 
 Resolve violations or missing evidence within the user's authorized scope and
 recheck. Never weaken a required check or invent policy, task acceptance, or
@@ -145,6 +182,7 @@ Route the requested capability before editing policy:
 
 | Request | Reference and control surface |
 |---|---|
+| Adopt an existing repository, inspect historical resources, or trim acquisition inputs | [Existing-repository trimming](references/operations.md#existing-repository-trimming); `init`, reviewed `exclude` globs, then the intended snapshot check |
 | Bound instruction size or retain owner/test files, including unchanged files | [File contracts](references/file-contracts.md); project DSL `file` + `change: all`, validated through `rules validate` |
 | Require changed independent tests to expose assertion counterexamples on old code | [Test effectiveness](references/test-effectiveness.md); explicit command/task `test_effectiveness` |
 | Prevent existing analyzer debt from increasing | [Diagnostic ratchets](references/diagnostic-ratchets.md); command-check `reports[].mode: ratchet`, with a fresh base run |

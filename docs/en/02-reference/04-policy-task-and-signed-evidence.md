@@ -11,9 +11,18 @@ specific human or system declarations. None may silently weaken another.
 
 A candidate revision records its parent, source inputs, immutable artifacts,
 validation matrix, and observed differences. Independent paired validation uses
-the same base/head inputs and permits before the candidate can be promoted.
+the same base/head Git revisions and permits before the candidate can be promoted.
+Each policy captures its own exclusions; differing execution inputs bind both
+snapshot identities instead of sharing one policy's filtered content.
+Identical exclusion policies reuse immutable trees; differing exclusions execute
+sequentially within a case to retain its two-tree memory reservation.
 Approval and rollback are separate signed subjects. Active policy history is
 append-only and auditable; a local branch name or digest alone is not approval.
+
+The protected suite's optional `budget.snapshot_max_file_mib` defaults to 2 and
+accepts integers 1–8. It applies equally to baseline/candidate captures and test
+overlays. It is bound by the externally authorized suite digest, so capacity
+changes require updated external authorization, not a candidate-policy edit.
 
 Diagnostic trends, oracle review, gate execution, downstream benefit, and
 maintenance cost are separate observations. Missing denominators and absent
@@ -39,6 +48,17 @@ Ed25519 trust inputs outside the checked repository. Verification checks exact
 subject bytes, key scope, role, validity, maximum age, revocation, and binding
 to snapshot/policy/task. Missing, stale, foreign, expired, revoked, or malformed
 records are incomplete.
+
+`snapshot.content_digest` identifies captured execution files. When present,
+`snapshot.verification_digest` additionally binds scope, exclusions, changed
+ranges and the path filter, and is required in signed snapshot bindings. The
+same file contents do not make delivery and repository evidence interchangeable.
+Reusable-core repository evaluations with a path filter also require this binding;
+only repository evaluations without exclusions or a path filter may use the content
+digest alone. Their same-scope CLI recheck argv is empty: the CLI only verifies
+delivery. The separate delivery recheck explicitly requests delivery verification.
+Feedback leaves unavailable or empty replay commands at `argv: null` and
+`omitted: true`, while retaining an executable delivery recheck when available.
 
 Agent provenance authenticates declared inputs, outputs, transformations, and
 tool identity. Git trailers bind declarations to commits and reject ambiguous

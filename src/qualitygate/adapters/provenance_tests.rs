@@ -15,8 +15,10 @@ fn files(text: &str) -> BTreeMap<String, File> {
 
 fn snapshot(base: BTreeMap<String, File>, head: BTreeMap<String, File>) -> Snapshot {
     Snapshot {
+        scope_evidence: Default::default(),
         root: ".".into(),
         identity: SnapshotIdentity {
+            verification_digest: None,
             mode: "worktree".into(),
             base: "a".repeat(40),
             head: "b".repeat(40),

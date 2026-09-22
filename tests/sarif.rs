@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::{path::Path, process::Command};
@@ -109,7 +111,32 @@ impl Fixture {
         .unwrap();
     }
     fn run(&self, code: i32) -> Value {
-        report(&cli(self.root.path(), &["check", "--format", "json"]), code)
+        // Producer identity and baseline comparisons deliberately include history.
+        report(&repository::check(self.root.path(), &[]), code)
+    }
+}
+
+#[test]
+fn delivery_new_diagnostics_reports_a_duplicate_added_beside_retained_history() {
+    let fixture = Fixture::new();
+    fixture.config("new_diagnostics");
+    std::fs::write(
+        fixture.root.path().join("src/a one.rs"),
+        "old\nintroduced\nstable\n",
+    )
+    .unwrap();
+    for lines in [[1, 2], [2, 1]] {
+        fixture.input(&document(
+            lines
+                .into_iter()
+                .map(|line| finding("Historical issue", vec![location(0, line, line)]))
+                .collect(),
+        ));
+        let checked = report(&cli(fixture.root.path(), &["check", "--format", "json"]), 1);
+        let check = &checked["checks"][0];
+        assert_eq!(check["diagnostics"].as_array().unwrap().len(), 1);
+        assert_eq!(check["diagnostics"][0]["range"]["start_line"], 2);
+        assert_eq!(check["metadata"]["report.sarif:delivery_filtered"], 1);
     }
 }
 
@@ -133,6 +160,23 @@ fn indexed_absolute_paths_compare_fresh_baselines_and_multi_location_ranges() {
     assert_eq!(check["metadata"]["report.sarif:filtered"], 1);
     assert_eq!(check["diagnostics"].as_array().unwrap().len(), 1);
     let identity = check["diagnostics"][0]["fingerprint"].clone();
+    let delivery = common::report(&cli(fixture.root.path(), &["check", "--format", "json"]), 1);
+    assert_eq!(
+        delivery["checks"][0]["metadata"]["report.sarif:delivery_filtered"],
+        1
+    );
+    assert_eq!(
+        delivery["checks"][0]["metadata"]["report.sarif:filtered"],
+        0
+    );
+    assert_eq!(
+        delivery["checks"][0]["diagnostics"][0]["fingerprint"],
+        identity
+    );
+    assert_eq!(
+        delivery["checks"][0]["diagnostics"][0]["file"],
+        "src/a one.rs"
+    );
     assert_eq!(
         check["diagnostics"][0]["evidence"]["locations"]
             .as_array()

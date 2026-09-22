@@ -22,6 +22,7 @@ pub(super) async fn execute(
     snapshot: &Arc<Snapshot>,
     protected_paths: &[String],
     max_bytes: usize,
+    max_file_bytes: usize,
 ) -> CheckResult {
     let mut result = CheckResult::pending(&check.id, check.required, check.severity);
     if let Err(error) = run(
@@ -30,6 +31,7 @@ pub(super) async fn execute(
         snapshot,
         protected_paths,
         max_bytes,
+        max_file_bytes,
         &mut result,
     )
     .await
@@ -45,6 +47,7 @@ async fn run(
     snapshot: &Arc<Snapshot>,
     protected_paths: &[String],
     max_bytes: usize,
+    max_file_bytes: usize,
     result: &mut CheckResult,
 ) -> Result<()> {
     let spec = check
@@ -61,6 +64,7 @@ async fn run(
             &selectors.support_paths,
             &protected,
             max_bytes,
+            max_file_bytes,
         )?;
         let evidence = json!({
             "source_changed":prepared.source_changed, "selected_test_files":prepared.tests,

@@ -19,10 +19,13 @@ validation. Warning filters affect display, not the computed gate.
 
 The normal acquisition envelope supports up to 100,000 files, 256 MiB total
 contents per tree, 2 MiB per file, four content readers, and 120 seconds. Git
-objects are acquired in batches no larger than 4 MiB and 1,024 objects. Caller
+objects normally use batches no larger than 4 MiB and 1,024 objects; explicitly
+permitted larger files use singleton batches up to 8 MiB, below the unchanged
+16 MiB process output limit. Caller
 controls are:
 
 - `--snapshot-max-mib` from 1 to 1024;
+- `--snapshot-max-file-mib` from 1 to 8 (default 2), independent of the total budget;
 - `--snapshot-jobs` from 1 to 16;
 - `--snapshot-timeout-secs` from 1 to 3600.
 

@@ -30,10 +30,29 @@ qualitygate --root /path/to/repository init --with-checks --format json
 `qualitygate.yaml`，但不会批准候选策略、推断豁免或代表团队完成采用。启用前应审核建议命令、
 项目识别结果和不支持的形态。
 
+未初始化时，`config --show` 返回未完成；table/Markdown 输出独立的
+`Run: qualitygate init` 提示，JSON 保留 `gate.blockers`。`init` 还输出建议性的
+`snapshot_preflight`，检查 HEAD 与符合条件的工作区文件元数据，包括被 discovery 忽略但
+已跟踪的文件。过大文件和不支持条目各最多列出 100 项，并提供总数、截断状态与预检未完成原因。
+这不代表任意 diff/MR 端点、暂存内容、总预算或工具链已经通过检查。
+
+发现超过默认 2 MiB 的历史文件时，按建议给 `check` 添加
+`--snapshot-max-file-mib N`（1–8 MiB）。这是调用者的采集容量，不是策略豁免。
+`--with-checks` 只加入待审查的命令候选，不安装依赖或运行命令。用户授权接入后应审核候选；
+正常调整采集预算重试不需要修改仓库规则。
+
 发现过程有明确边界。文件不可读、清单格式错误、生态不支持或预算耗尽都保留为能力缺口，
 不会静默视为成功。
 
 ## 首次检查
+
+存量仓库先完成裁剪复核：运行 `init --with-checks --format json`，审核候选命令及预检；
+在已授权范围内为历史资源添加 YAML 顶层 `exclude`，例如 `exclude: ["gitbook/images/**"]`。
+再次运行 `init --format json`，检查 `excluded_file_count`、`excluded_paths`、剩余大文件及
+预检完整性。不要自动豁免所有大文件；排除会使工具无法读取对应资源。
+
+将配置纳入所选暂存区或提交后，执行对应 `check --profile full`。
+若构建依赖被排除，缩小模式并重检；保留范围与排除证据，不将裁剪后通过表述为全仓通过。
 
 ```bash
 qualitygate --root /path/to/repository \

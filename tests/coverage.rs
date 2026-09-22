@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::process::Command;
@@ -85,10 +87,68 @@ impl Fixture {
         std::fs::write(self.root.path().join("input.report"), text).unwrap();
     }
     fn run(&self, code: i32, args: &[&str]) -> Value {
-        let mut command = vec!["check", "--format", "json"];
-        command.extend_from_slice(args);
-        report(&cli(self.root.path(), &command), code)
+        report(&repository::check(self.root.path(), args), code)
     }
+}
+
+#[test]
+fn delivery_coverage_counts_only_changed_executable_lines_and_keeps_evidence_errors() {
+    let fixture = Fixture::new();
+    let delivery = |code| {
+        report(
+            &cli(fixture.root.path(), &["check", "--format", "json"]),
+            code,
+        )
+    };
+    let empty = delivery(0);
+    assert_eq!(
+        empty["checks"][0]["metadata"]["target/coverage:mode"],
+        "changed_lines"
+    );
+    assert_eq!(
+        empty["checks"][0]["metadata"]["target/coverage:configured_mode"],
+        "full"
+    );
+    let counts = &empty["checks"][0]["metadata"]["target/coverage:coverage"];
+    assert_eq!(counts["no_executable_lines_selected"], true);
+    assert!(counts["line_percent"].is_null());
+    std::fs::write(
+        fixture.root.path().join("src/a.py"),
+        "def renamed():\n    return 1\n",
+    )
+    .unwrap();
+    let changed = delivery(0);
+    assert_eq!(
+        changed["checks"][0]["metadata"]["target/coverage:mode"],
+        "changed_lines"
+    );
+    let counts = &changed["checks"][0]["metadata"]["target/coverage:coverage"];
+    assert_eq!(counts["lines"], 1);
+    assert_eq!(counts["line_percent"], 100.0);
+    let repository = fixture.run(1, &[]);
+    assert_eq!(
+        repository["checks"][0]["metadata"]["target/coverage:mode"],
+        "full"
+    );
+    assert_eq!(
+        repository["checks"][0]["metadata"]["target/coverage:configured_mode"],
+        "full"
+    );
+    assert_eq!(
+        repository["checks"][0]["metadata"]["target/coverage:coverage"]["line_percent"],
+        50.0
+    );
+    std::fs::write(
+        fixture.root.path().join("src/a.py"),
+        "def value():\n    return 2\n",
+    )
+    .unwrap();
+    assert_eq!(
+        delivery(1)["checks"][0]["metadata"]["target/coverage:coverage"]["line_percent"],
+        0.0
+    );
+    fixture.input("{}");
+    assert_eq!(delivery(2)["gate"]["complete"], false);
 }
 
 #[test]

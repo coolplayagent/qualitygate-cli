@@ -11,6 +11,7 @@ mod constraints;
 mod custom_validation;
 pub mod decision_schema;
 pub mod discovery;
+pub mod exclusions;
 mod initialization;
 pub mod judgment;
 mod model;

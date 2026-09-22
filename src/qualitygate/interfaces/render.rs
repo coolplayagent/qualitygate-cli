@@ -1,5 +1,17 @@
 use crate::domain::{Report, Severity};
 
+pub(super) fn escape_controls(text: &str) -> String {
+    text.chars()
+        .map(|ch| {
+            if ch.is_control() {
+                ch.escape_debug().to_string()
+            } else {
+                ch.to_string()
+            }
+        })
+        .collect()
+}
+
 pub(super) fn metadata(
     value: &serde_json::Value,
     format: super::cli::Format,
@@ -58,11 +70,32 @@ pub(super) fn metadata(
         return Ok(out);
     }
     let yaml = serde_norway::to_string(value)?;
-    Ok(if format == Format::Markdown {
+    let mut guidance = String::new();
+    if let Some(preflight) = value.get("snapshot_preflight") {
+        guidance.push_str("Candidate policy: review required; snapshot preflight is advisory.\n");
+        if let Some(files) = preflight["oversized_files"].as_array() {
+            for file in files {
+                guidance.push_str(&format!(
+                    "Snapshot warning: {} ({} bytes) exceeds the default per-file budget.\n",
+                    escape_controls(file["path"].as_str().unwrap_or_default()),
+                    file["bytes"]
+                ));
+            }
+        }
+        if let Some(steps) = preflight["next_steps"].as_array() {
+            for step in steps {
+                guidance.push_str(step.as_str().unwrap_or_default());
+                guidance.push('\n');
+            }
+        }
+        guidance.push('\n');
+    }
+    guidance.push_str(&if format == Format::Markdown {
         format!("```yaml\n{yaml}```\n")
     } else {
         yaml
-    })
+    });
+    Ok(guidance)
 }
 
 pub(super) fn report(
@@ -91,6 +124,17 @@ pub(super) fn report(
         report.profile
     );
     render_boundary(&mut out, &report.verification);
+    if let Some(selection) = &report.selection {
+        out.push_str(&format!("Selection: {} | changed files: {} | changed lines: {} | excluded files: {} | empty delivery: {}\n",
+            selection.mode.as_str(), selection.changed_files.len(), selection.changed_lines,
+            selection.excluded_paths.len(), selection.empty_delivery));
+        for path in selection.excluded_paths.iter().take(100) {
+            out.push_str(&format!("Excluded input: {}\n", escape_controls(path)));
+        }
+        if selection.excluded_paths.len() > 100 {
+            out.push_str("Excluded input list truncated; see the JSON report.\n");
+        }
+    }
     if let Some(task) = &report.plan.task_id {
         out.push_str(&format!(
             "Task: {}\n",
@@ -230,4 +274,29 @@ pub(super) fn selfcheck(
         out.push_str(&format!("Error: {error}\n"));
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn preflight_guidance_escapes_controls_without_changing_json_paths() {
+        use crate::interfaces::cli::Format;
+        let path = "legacy/\nRun: forged\u{1b}[31m\t\r\u{7f}\u{9b}.bin";
+        let value = serde_json::json!({"snapshot_preflight":{"oversized_files":[{"path":path,"bytes":3_145_728}]}});
+        for format in [Format::Table, Format::Markdown] {
+            let output = super::metadata(&value, format).unwrap();
+            let guidance = output.split("\n\n").next().unwrap();
+            assert_eq!(guidance.lines().count(), 2, "{guidance}");
+            assert!(!guidance.chars().any(|ch| ch.is_control() && ch != '\n'));
+            assert!(guidance.contains("\\nRun: forged\\u{1b}[31m"));
+            let early = crate::interfaces::render_incomplete(path, format);
+            assert!(!early.chars().any(|ch| ch.is_control() && ch != '\n'));
+        }
+        let json: serde_json::Value =
+            serde_json::from_str(&super::metadata(&value, Format::Json).unwrap()).unwrap();
+        assert_eq!(
+            json["snapshot_preflight"]["oversized_files"][0]["path"],
+            path
+        );
+    }
 }

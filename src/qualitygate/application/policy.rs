@@ -48,6 +48,7 @@ pub(super) async fn load(
                 .map(|(path, file)| (path.as_str(), file.bytes.as_slice())),
         )?;
         let config = catalog.resolve(&config)?;
+        super::acquisition::validate_config(&config, &catalog, &options, &candidate)?;
         let task_file = options
             .task
             .as_ref()
@@ -157,12 +158,7 @@ pub(super) fn protected_paths(
     configuration: &str,
     task: Option<&str>,
 ) -> Vec<String> {
-    let mut paths = config.verification_assets.clone();
-    paths.push(globset::escape(configuration));
-    paths.extend(task.map(globset::escape));
-    if let Some(directory) = config::catalog::project_rules_directory(config) {
-        paths.push(format!("{}/**", globset::escape(directory)));
-    }
+    let mut paths = config::exclusions::protected_paths(config, configuration, task);
     for source in config
         .rules
         .values()

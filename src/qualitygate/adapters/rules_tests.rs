@@ -7,8 +7,10 @@ fn snapshot(path: &str, base: &str, current: &str, added_lines: &[usize]) -> Sna
         executable: false,
     };
     Snapshot {
+        scope_evidence: Default::default(),
         root: ".".into(),
         identity: Identity {
+            verification_digest: None,
             merge_request: None,
             mode: "worktree".into(),
             base: "base".into(),
@@ -22,6 +24,7 @@ fn snapshot(path: &str, base: &str, current: &str, added_lines: &[usize]) -> Sna
             Change {
                 kind: "modified".into(),
                 old_path: Some(path.into()),
+                removed_lines: Default::default(),
                 added_lines: added_lines.iter().copied().collect(),
             },
         )]

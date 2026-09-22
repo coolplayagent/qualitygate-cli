@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod core_repository;
 
 use common::{cli, fixture, report};
 use qualitygate::domain::decision_envelope::{CommandKind, DecisionEnvelope};
@@ -12,6 +14,124 @@ use std::fs;
 
 fn exported(root: &std::path::Path, name: &str) -> Value {
     report(&cli(root, &["schema", name, "--format", "json"]), 0)
+}
+
+#[test]
+fn check_and_feedback_envelopes_bind_scope_on_every_platform() {
+    let repository = fixture();
+    let root = repository.path();
+    std::fs::write(root.join("hello.txt"), "changed\r\n").unwrap();
+    for exclude in [vec![], vec!["legacy/**"]] {
+        std::fs::write(
+            root.join("qualitygate.yaml"),
+            json!({"schema_version":1,"exclude":exclude,"rules":{"line-ending":{}}}).to_string(),
+        )
+        .unwrap();
+        for scope in ["delivery", "repository"] {
+            for feedback in [false, true] {
+                let mut args = vec!["--envelope"];
+                if feedback {
+                    args.push("--feedback");
+                }
+                let output = if scope == "repository" {
+                    core_repository::check(root, &args)
+                } else {
+                    let mut command = vec!["check", "--format", "json"];
+                    command.extend(args);
+                    cli(root, &command)
+                };
+                let value = report(&output, 1);
+                if feedback {
+                    assert_eq!(
+                        value["payload"]["recheck"]["omitted"],
+                        scope == "repository"
+                    );
+                    if scope == "repository" {
+                        assert!(value["payload"]["recheck"]["argv"].is_null());
+                    }
+                    assert_eq!(value["payload"]["delivery_recheck"]["omitted"], false);
+                    assert!(
+                        !value["payload"]["delivery_recheck"]["argv"]
+                            .as_array()
+                            .unwrap()
+                            .is_empty()
+                    );
+                }
+                let envelope =
+                    DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+                let snapshot = &value["payload"]["snapshot"];
+                let expected = snapshot["verification_digest"]
+                    .as_str()
+                    .or(snapshot["content_digest"].as_str())
+                    .unwrap();
+                assert_eq!(envelope.subject.snapshot_digest.as_deref(), Some(expected));
+                if snapshot["verification_digest"].is_string() {
+                    let mut rebound = envelope;
+                    rebound.subject.snapshot_digest =
+                        Some(snapshot["content_digest"].as_str().unwrap().into());
+                    rebound.decision_id.clear();
+                    rebound.decision_id =
+                        qualitygate::snapshot::digest(&serde_json::to_vec(&rebound).unwrap());
+                    assert!(
+                        DecisionEnvelope::parse(&serde_json::to_vec(&rebound).unwrap()).is_err()
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn repository_path_filters_bind_distinct_check_and_feedback_evidence() {
+    let repository = fixture();
+    let root = repository.path();
+    std::fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrules:\n  line-ending: {}\n",
+    )
+    .unwrap();
+    std::fs::write(root.join("hello.txt"), "changed\r\n").unwrap();
+    std::fs::write(root.join("other.txt"), "clean\n").unwrap();
+    for feedback in [false, true] {
+        let mut digests = Vec::new();
+        let mut contents = Vec::new();
+        for (path, code) in [(None, 1), (Some("hello.txt"), 1), (Some("other.txt"), 0)] {
+            let mut args = vec!["--envelope"];
+            if let Some(path) = path {
+                args.extend(["--path", path]);
+            }
+            if feedback {
+                args.push("--feedback");
+            }
+            let value = report(&core_repository::check(root, &args), code);
+            let envelope = DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+            let snapshot = &value["payload"]["snapshot"];
+            assert_eq!(snapshot["verification_digest"].is_string(), path.is_some());
+            if path.is_some() {
+                assert_eq!(
+                    value["subject"]["snapshot_digest"],
+                    snapshot["verification_digest"]
+                );
+                let mut rebound = envelope.clone();
+                rebound.subject.snapshot_digest =
+                    Some(snapshot["content_digest"].as_str().unwrap().into());
+                rebound.decision_id.clear();
+                rebound.decision_id =
+                    qualitygate::snapshot::digest(&serde_json::to_vec(&rebound).unwrap());
+                assert!(DecisionEnvelope::parse(&serde_json::to_vec(&rebound).unwrap()).is_err());
+            }
+            digests.push(envelope.subject.snapshot_digest.unwrap());
+            contents.push(snapshot["content_digest"].clone());
+        }
+        assert!(contents.windows(2).all(|pair| pair[0] == pair[1]));
+        assert_eq!(
+            digests
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            3
+        );
+    }
 }
 
 #[test]
@@ -122,7 +242,7 @@ fn check_and_rule_validation_envelopes_bind_outcomes_without_losing_warnings_or_
     assert_eq!(check["payload"]["gate"]["decision"], "fail");
     assert_eq!(
         check["subject"]["snapshot_digest"],
-        check["payload"]["snapshot"]["content_digest"]
+        check["payload"]["snapshot"]["verification_digest"]
     );
     DecisionEnvelope::parse(&serde_json::to_vec(&check).unwrap()).unwrap();
     let mut rebound: DecisionEnvelope = serde_json::from_value(check.clone()).unwrap();

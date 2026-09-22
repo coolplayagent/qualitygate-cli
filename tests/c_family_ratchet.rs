@@ -1,5 +1,7 @@
 //! Live GCC C/C++ analyzer SARIF across two immutable Git snapshots.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 
 use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
@@ -8,24 +10,9 @@ use std::{fs, path::Path, process::Command};
 const C_FIRST: &str = "#include <stdlib.h>\nint first(int bad) {\n  int *value = malloc(sizeof *value);\n  if (bad) return 1;\n  free(value);\n  return 0;\n}\n";
 const C_SECOND: &str = "int second(int bad) {\n  int *value = malloc(sizeof *value);\n  if (bad) return 1;\n  free(value);\n  return 0;\n}\n";
 
+// These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, expected: i32) -> Value {
-    let output = Command::new(env!("CARGO_BIN_EXE_qualitygate"))
-        .env(
-            "QUALITYGATE_HOME",
-            root.join(".git/qualitygate-test-evidence"),
-        )
-        .env(
-            "QUALITYGATE_BUILTIN_RULES_DIR",
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/skills/qualitygate-cli/references/rules"
-            ),
-        )
-        .arg("--root")
-        .arg(root)
-        .args(["check", "--format", "json"])
-        .output()
-        .unwrap();
+    let output = repository::check(root, &[]);
     report(&output, expected)
 }
 
