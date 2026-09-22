@@ -424,7 +424,13 @@ impl DecisionEnvelope {
                 if report.gate.decision != self.gate.outcome
                     || report.gate.complete != self.execution.complete
                     || self.subject.snapshot_digest.as_deref()
-                        != Some(&report.snapshot.content_digest)
+                        != Some(
+                            report
+                                .snapshot
+                                .verification_digest
+                                .as_deref()
+                                .unwrap_or(&report.snapshot.content_digest),
+                        )
                     || self.subject.task_digest != report.policy.task_contract_digest
                     || self.policy.reference.as_deref() != Some(&report.policy.source)
                     || self.policy.digest.as_deref() != Some(&report.policy.config_digest)
@@ -494,7 +500,12 @@ impl DecisionEnvelope {
                     || self.evidence_refs.len() != 1
                     || serde_json::to_value(&self.evidence_refs[0])? != self.payload["full_report"]
                     || self.subject.snapshot_digest.as_deref()
-                        != self.payload["snapshot"]["content_digest"].as_str()
+                        != metadata_string(&self.payload["snapshot"], "verification_digest")?
+                            .or(metadata_string(
+                                &self.payload["snapshot"],
+                                "content_digest",
+                            )?)
+                            .as_deref()
                 {
                     bail!("Feedback payload conflicts with envelope identity or outcome");
                 }

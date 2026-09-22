@@ -40,3 +40,4 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 `application::report_gate::tests` 验证报告范围与基线比较；`tests/quality.rs` 验证 Skill 包及架构。
 `tests/coverage.rs` 与真实 JaCoCo/ESLint 验收对比增量分母、诊断与显式全仓契约；
 `tests/policy_validation.rs` 验证不同 exclude 的输入独立绑定及两棵树预算，相同 exclude 保留独立并行检查。
+`tests/decision_envelope.rs` 跨平台验证 check/feedback 范围摘要往返，并拒绝用内容摘要替代验证摘要。

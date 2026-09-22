@@ -15,6 +15,48 @@ fn exported(root: &std::path::Path, name: &str) -> Value {
 }
 
 #[test]
+fn check_and_feedback_envelopes_bind_scope_on_every_platform() {
+    let repository = fixture();
+    let root = repository.path();
+    std::fs::write(root.join("hello.txt"), "changed\r\n").unwrap();
+    for exclude in [vec![], vec!["legacy/**"]] {
+        std::fs::write(
+            root.join("qualitygate.yaml"),
+            json!({"schema_version":1,"exclude":exclude,"rules":{"line-ending":{}}}).to_string(),
+        )
+        .unwrap();
+        for scope in ["delivery", "repository"] {
+            for feedback in [false, true] {
+                let mut args = vec!["check", "--scope", scope, "--envelope", "--format", "json"];
+                if feedback {
+                    args.push("--feedback");
+                }
+                let value = report(&cli(root, &args), 1);
+                let envelope =
+                    DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+                let snapshot = &value["payload"]["snapshot"];
+                let expected = snapshot["verification_digest"]
+                    .as_str()
+                    .or(snapshot["content_digest"].as_str())
+                    .unwrap();
+                assert_eq!(envelope.subject.snapshot_digest.as_deref(), Some(expected));
+                if snapshot["verification_digest"].is_string() {
+                    let mut rebound = envelope;
+                    rebound.subject.snapshot_digest =
+                        Some(snapshot["content_digest"].as_str().unwrap().into());
+                    rebound.decision_id.clear();
+                    rebound.decision_id =
+                        qualitygate::snapshot::digest(&serde_json::to_vec(&rebound).unwrap());
+                    assert!(
+                        DecisionEnvelope::parse(&serde_json::to_vec(&rebound).unwrap()).is_err()
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn metadata_envelopes_reject_malformed_evidence_and_identity_fields() {
     let transition = DecisionEnvelope::from_metadata(
         CommandKind::PolicyTransition,
