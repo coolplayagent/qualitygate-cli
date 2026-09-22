@@ -1,6 +1,6 @@
 module(
     name = "qualitygate_cli",
-    version = "0.5.4",
+    version = "0.5.5",
 )
 
 # Keep the toolchain aligned with rust-toolchain.toml. Cargo remains the
