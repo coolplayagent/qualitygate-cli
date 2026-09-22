@@ -94,7 +94,13 @@ fn rust_lcov_zero_counters_do_not_claim_branch_measurement() {
             serde_norway::to_string(policy).unwrap(),
         )
         .unwrap();
-        report(&cli(root.path(), &["check", "--format", "json"]), code)
+        report(
+            &cli(
+                root.path(),
+                &["check", "--scope", "repository", "--format", "json"],
+            ),
+            code,
+        )
     };
     let incomplete = run(&policy, 2);
     assert!(

@@ -38,3 +38,5 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 交付范围与排除机制：`tests/delivery_scope.rs` 覆盖默认变更行与显式全仓模式、历史大文件排除、
 依赖上下文保留、所选策略来源、受保护文件冲突、空交付及命令失败。
 `application::report_gate::tests` 验证报告范围与基线比较；`tests/quality.rs` 验证 Skill 包及架构。
+`tests/coverage.rs` 与真实 JaCoCo/ESLint 验收对比增量分母、诊断与显式全仓契约；
+`tests/policy_validation.rs` 验证不同 exclude 的输入独立绑定及两棵树预算，相同 exclude 保留独立并行检查。

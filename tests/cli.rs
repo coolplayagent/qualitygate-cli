@@ -317,10 +317,11 @@ fn baseline_analysis_filters_old_diagnostics_even_when_their_line_moves() {
     assert_eq!(result["checks"][0]["metadata"]["report.json:filtered"], 1);
     assert!(result["checks"][0]["metadata"]["baseline_execution"]["argv"].is_array());
     let delivery = report(&cli(root.path(), &["check", "--format", "json"]), 1);
-    assert_eq!(
-        delivery["checks"][0]["diagnostics"],
-        result["checks"][0]["diagnostics"]
-    );
+    let mut expected = result["checks"][0]["diagnostics"].clone();
+    let argv = expected[0]["recheck"]["argv"].as_array_mut().unwrap();
+    let scope = argv.iter().position(|arg| arg == "--scope").unwrap() + 1;
+    argv[scope] = serde_json::json!("delivery");
+    assert_eq!(delivery["checks"][0]["diagnostics"], expected);
     assert_eq!(
         delivery["checks"][0]["metadata"]["report.json:delivery_filtered"],
         1

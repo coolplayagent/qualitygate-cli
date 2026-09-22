@@ -6,6 +6,68 @@ use evolution::*;
 use serde_json::json;
 
 #[test]
+fn different_policy_exclusions_have_independent_inputs_within_the_two_tree_budget() {
+    use qualitygate::config::{policy_candidates, policy_store::Store};
+    let mut fixture = Fixture::new();
+    fixture.enable();
+    // Publish an immutable candidate package with a different acquisition policy.
+    // The rule-edit CLI currently changes rules only, so construct this package
+    // through the same content-addressed archive API used by candidate creation.
+    Store::transaction(fixture.root.path(), |store| {
+        let (previous, mut revision) = policy_candidates::candidate(store, &fixture.id)?;
+        let (mut version, mut config, _) =
+            policy_candidates::load_version(store, &revision.policy_digest)?;
+        config.exclude = vec!["hello.txt".into()];
+        version.files.get_mut(&version.config_path).unwrap().digest =
+            store.put_blob(serde_norway::to_string(&config)?.as_bytes())?;
+        revision.policy_digest = store.put_record("policy", &version)?;
+        store.index.policies.push(revision.policy_digest.clone());
+        revision.previous_revision = Some(previous);
+        let reference = store.put_record("candidate", &revision)?;
+        store.index.candidates.insert(fixture.id.clone(), reference);
+        Ok(())
+    })
+    .unwrap();
+    fixture.suite.budget.max_live_snapshot_mib = fixture.suite.budget.snapshot_max_mib * 2;
+    fixture.write_inputs();
+    let result = fixture.validate("4", 0);
+    let store = Store::open(fixture.root.path()).unwrap();
+    for case in result["evaluation"]["cases"].as_array().unwrap() {
+        let baseline: qualitygate::domain::Report = store
+            .record(
+                case["baseline"]["report_ref"].as_str().unwrap(),
+                "check_report",
+            )
+            .unwrap();
+        let candidate: qualitygate::domain::Report = store
+            .record(
+                case["candidate"]["report_ref"].as_str().unwrap(),
+                "check_report",
+            )
+            .unwrap();
+        assert!(baseline.selection.unwrap().excluded_paths.is_empty());
+        assert_eq!(candidate.selection.unwrap().excluded_paths, ["hello.txt"]);
+        assert_ne!(
+            baseline.snapshot.content_digest,
+            candidate.snapshot.content_digest
+        );
+        assert_ne!(case["snapshot_digest"], baseline.snapshot.content_digest);
+        assert_ne!(case["snapshot_digest"], candidate.snapshot.content_digest);
+        let left = baseline
+            .checks
+            .iter()
+            .find(|check| check.id == "probe")
+            .unwrap();
+        let right = candidate
+            .checks
+            .iter()
+            .find(|check| check.id == "probe")
+            .unwrap();
+        assert!(left.execution.ended_at_ms.unwrap() <= right.execution.started_at_ms.unwrap());
+    }
+}
+
+#[test]
 fn protected_file_capacity_is_bounded_authorized_and_used_for_both_policies() {
     use qualitygate::{
         config::policy_acceptance::{ValidationSuite, validate_suite},

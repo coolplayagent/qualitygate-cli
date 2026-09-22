@@ -14,6 +14,8 @@ validation matrix, and observed differences. Independent paired validation uses
 the same base/head Git revisions and permits before the candidate can be promoted.
 Each policy captures its own exclusions; differing execution inputs bind both
 snapshot identities instead of sharing one policy's filtered content.
+Identical exclusion policies reuse immutable trees; differing exclusions execute
+sequentially within a case to retain its two-tree memory reservation.
 Approval and rollback are separate signed subjects. Active policy history is
 append-only and auditable; a local branch name or digest alone is not approval.
 

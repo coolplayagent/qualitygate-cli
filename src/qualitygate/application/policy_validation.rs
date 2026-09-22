@@ -317,9 +317,29 @@ async fn run_case(
         path_filter: None,
         ..Default::default()
     };
+    // Equal acquisition policies can share both immutable trees. Different
+    // exclusions run sequentially so each case still reserves only two trees.
+    let shared = if prepared.baseline.config.exclude == prepared.candidate.config.exclude {
+        let mut shared_capture = capture.clone();
+        shared_capture.exclude = prepared.baseline.config.exclude.clone();
+        Some(Arc::new(
+            snapshot::capture_with_options(
+                &options.root,
+                &snapshot::Selection::Diff {
+                    base: case.base.clone(),
+                    head: case.head.clone(),
+                },
+                &shared_capture,
+            )
+            .await?,
+        ))
+    } else {
+        None
+    };
     let run = |policy: Arc<PreparedPolicy>, policy_digest: String| {
         let mut capture = capture.clone();
         capture.exclude = policy.config.exclude.clone();
+        let shared = shared.clone();
         async move {
             let _permit = semaphore
                 .acquire()
@@ -331,17 +351,21 @@ async fn run_case(
             let prepared =
                 tokio::task::spawn_blocking(move || prepare_check(&policy, &task, &digest))
                     .await??;
-            let snapshot = Arc::new(
-                snapshot::capture_with_options(
-                    &options.root,
-                    &snapshot::Selection::Diff {
-                        base: case.base.clone(),
-                        head: case.head.clone(),
-                    },
-                    &capture,
+            let snapshot = if let Some(shared) = shared {
+                shared
+            } else {
+                Arc::new(
+                    snapshot::capture_with_options(
+                        &options.root,
+                        &snapshot::Selection::Diff {
+                            base: case.base.clone(),
+                            head: case.head.clone(),
+                        },
+                        &capture,
+                    )
+                    .await?,
                 )
-                .await?,
-            );
+            };
             super::acquisition::validate_excluded(&snapshot, &prepared.protected_paths)?;
             let recheck = validation_recheck(options);
             let options = super::CheckOptions {
@@ -377,13 +401,16 @@ async fn run_case(
             Ok::<_, anyhow::Error>((observation, report))
         }
     };
-    let (baseline, candidate) = tokio::join!(
-        run(Arc::clone(&prepared.baseline), options.baseline.clone()),
-        run(
-            Arc::clone(&prepared.candidate),
-            prepared.revision.policy_digest.clone()
-        )
+    let baseline = run(Arc::clone(&prepared.baseline), options.baseline.clone());
+    let candidate = run(
+        Arc::clone(&prepared.candidate),
+        prepared.revision.policy_digest.clone(),
     );
+    let (baseline, candidate) = if shared.is_some() {
+        tokio::join!(baseline, candidate)
+    } else {
+        (baseline.await, candidate.await)
+    };
     let (baseline, baseline_report) = baseline?;
     let (candidate, candidate_report) = candidate?;
     if baseline_report.snapshot.base != candidate_report.snapshot.base

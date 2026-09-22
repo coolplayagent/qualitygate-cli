@@ -92,6 +92,45 @@ impl Fixture {
 }
 
 #[test]
+fn delivery_coverage_counts_only_changed_executable_lines_and_keeps_evidence_errors() {
+    let fixture = Fixture::new();
+    let delivery = |code| {
+        report(
+            &cli(fixture.root.path(), &["check", "--format", "json"]),
+            code,
+        )
+    };
+    let empty = delivery(0);
+    let counts = &empty["checks"][0]["metadata"]["target/coverage:coverage"];
+    assert_eq!(counts["no_executable_lines_selected"], true);
+    assert!(counts["line_percent"].is_null());
+    std::fs::write(
+        fixture.root.path().join("src/a.py"),
+        "def renamed():\n    return 1\n",
+    )
+    .unwrap();
+    let changed = delivery(0);
+    let counts = &changed["checks"][0]["metadata"]["target/coverage:coverage"];
+    assert_eq!(counts["lines"], 1);
+    assert_eq!(counts["line_percent"], 100.0);
+    assert_eq!(
+        fixture.run(1, &[])["checks"][0]["metadata"]["target/coverage:coverage"]["line_percent"],
+        50.0
+    );
+    std::fs::write(
+        fixture.root.path().join("src/a.py"),
+        "def value():\n    return 2\n",
+    )
+    .unwrap();
+    assert_eq!(
+        delivery(1)["checks"][0]["metadata"]["target/coverage:coverage"]["line_percent"],
+        0.0
+    );
+    fixture.input("{}");
+    assert_eq!(delivery(2)["gate"]["complete"], false);
+}
+
+#[test]
 fn native_coverage_repairs_preserve_raw_reports_and_reject_inconsistent_or_absent_evidence() {
     let mut fixture = Fixture::new();
     assert_eq!(

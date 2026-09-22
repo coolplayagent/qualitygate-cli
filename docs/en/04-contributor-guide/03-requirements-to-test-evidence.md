@@ -48,3 +48,7 @@ Delivery scope and explicit exclusion evidence: `tests/delivery_scope.rs` covers
 changed lines versus repository findings, immutable context, large tracked resources,
 selected policy provenance, protected exclusions, empty delivery and command failures.
 `tests/quality.rs` validates the packaged Skill links and architecture.
+`tests/coverage.rs` and live JaCoCo/ESLint acceptance compare delivery denominators
+and findings with explicit repository contracts. `tests/policy_validation.rs`
+verifies differing exclusions bind both inputs within the two-tree memory budget,
+while equal exclusions retain the independently executed parallel checks.

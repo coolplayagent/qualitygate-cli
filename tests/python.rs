@@ -57,8 +57,20 @@ fn configure(root: &Path, python: &str) {
     reviews::record(root).unwrap();
 }
 
+// Retained-test contracts include unchanged repository tests.
 fn run(root: &Path, code: i32) -> Value {
-    let output = cli(root, &["check", "--profile", "quick", "--format", "json"]);
+    let output = cli(
+        root,
+        &[
+            "check",
+            "--scope",
+            "repository",
+            "--profile",
+            "quick",
+            "--format",
+            "json",
+        ],
+    );
     if output.status.code() != Some(code)
         && let Ok(value) = serde_json::from_slice::<Value>(&output.stdout)
     {
