@@ -109,7 +109,14 @@ impl Fixture {
         .unwrap();
     }
     fn run(&self, code: i32) -> Value {
-        report(&cli(self.root.path(), &["check", "--format", "json"]), code)
+        // Producer identity and baseline comparisons deliberately include history.
+        report(
+            &cli(
+                self.root.path(),
+                &["check", "--scope", "repository", "--format", "json"],
+            ),
+            code,
+        )
     }
 }
 
@@ -133,6 +140,23 @@ fn indexed_absolute_paths_compare_fresh_baselines_and_multi_location_ranges() {
     assert_eq!(check["metadata"]["report.sarif:filtered"], 1);
     assert_eq!(check["diagnostics"].as_array().unwrap().len(), 1);
     let identity = check["diagnostics"][0]["fingerprint"].clone();
+    let delivery = common::report(&cli(fixture.root.path(), &["check", "--format", "json"]), 1);
+    assert_eq!(
+        delivery["checks"][0]["metadata"]["report.sarif:delivery_filtered"],
+        1
+    );
+    assert_eq!(
+        delivery["checks"][0]["metadata"]["report.sarif:filtered"],
+        0
+    );
+    assert_eq!(
+        delivery["checks"][0]["diagnostics"][0]["fingerprint"],
+        identity
+    );
+    assert_eq!(
+        delivery["checks"][0]["diagnostics"][0]["file"],
+        "src/a one.rs"
+    );
     assert_eq!(
         check["diagnostics"][0]["evidence"]["locations"]
             .as_array()

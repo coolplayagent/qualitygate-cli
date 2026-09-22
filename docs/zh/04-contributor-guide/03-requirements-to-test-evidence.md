@@ -41,3 +41,5 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 `tests/coverage.rs` 与真实 JaCoCo/ESLint 验收对比增量分母、诊断与显式全仓契约；
 `tests/policy_validation.rs` 验证不同 exclude 的输入独立绑定及两棵树预算，相同 exclude 保留独立并行检查。
 `tests/decision_envelope.rs` 跨平台验证 check/feedback 范围摘要往返，并拒绝用内容摘要替代验证摘要。
+`tests/test_effectiveness.rs` 利用未排除上下文保留“无生产代码变化”的适用性契约；SARIF 与 execution
+回归区分历史诊断和交付诊断，同时保留生产器错误。

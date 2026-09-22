@@ -54,3 +54,6 @@ verifies differing exclusions bind both inputs within the two-tree memory budget
 while equal exclusions retain the independently executed parallel checks.
 `tests/decision_envelope.rs` round-trips check/feedback scope bindings on every
 platform and rejects substituting the content digest for a verification digest.
+`tests/test_effectiveness.rs` retains the no-production-change applicability
+contract using unexcluded context. SARIF and execution regressions distinguish
+historical findings from changed delivery findings without hiding producer errors.

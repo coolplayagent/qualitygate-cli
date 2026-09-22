@@ -61,9 +61,9 @@ pub fn prepare(
             if is_overlay {
                 bail!("Production and test/support paths overlap: {path}");
             }
-            if snapshot.includes(path) {
+            if snapshot.feedback_includes(path) {
                 source_count += 1;
-                source_changed |= differs;
+                source_changed |= differs && snapshot.includes(path);
             }
         }
         if !is_overlay {

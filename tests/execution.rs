@@ -294,20 +294,31 @@ mod unix {
 
     #[test]
     fn analyzer_exit_codes_need_consistent_report_evidence() {
-        for (issues, exit, expected) in [
-            (json!([]), 1, 2),
+        for (issues, exit, expected, changed) in [
+            (json!([]), 1, 2, true),
             (
                 json!([{"rule":"issue","file":"hello.txt","line":1,"message":"violation"}]),
                 1,
                 1,
+                true,
+            ),
+            (
+                json!([{"rule":"issue","file":"hello.txt","line":1,"message":"historical"}]),
+                1,
+                0,
+                false,
             ),
             (
                 json!([{"rule":"issue","file":"hello.txt","line":1,"message":"violation"}]),
                 7,
                 2,
+                true,
             ),
         ] {
             let root = fixture();
+            if changed {
+                std::fs::write(root.path().join("hello.txt"), "changed delivery\n").unwrap();
+            }
             let data = json!({"issues":issues}).to_string();
             let script = format!("printf '%s' {} > report.json; exit {exit}", quote(&data));
             let mut check = command("analyze", &script);
@@ -318,6 +329,11 @@ mod unix {
             let value = report(&cli(root.path(), &["check", "--format", "json"]), expected);
             if expected == 2 {
                 assert_eq!(value["checks"][0]["execution"]["status"], "tool_error");
+            } else if !changed {
+                assert_eq!(
+                    value["checks"][0]["metadata"]["report.json:delivery_filtered"],
+                    1
+                );
             }
         }
     }
