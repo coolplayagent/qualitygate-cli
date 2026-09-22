@@ -82,9 +82,11 @@ Agents prefer the matching bundled asset only when it is executable and
 not POSIX shells. A registry distribution may omit the binaries to respect
 registry file limits; it then uses a verified published `qualitygate` executable
 on `PATH` rather than building an arbitrary checkout. In both distributions,
-the rule assets and selection guide stay with the skill. The Skill sets
-`QUALITYGATE_BUILTIN_RULES_DIR` before execution, and agents compare the loaded
-catalog with `rules list` before recommending a policy change.
+the rule assets and selection guide stay with the skill. Complete archives resolve
+their own rule assets. PATH fallback or custom layouts can set
+`QUALITYGATE_BUILTIN_RULES_DIR`; agents compare the loaded catalog with `rules list`
+before recommending a policy change. The Skill provides PowerShell and Linux Bash
+startup examples that select the matching bundled architecture.
 
 ## Release contract
 
@@ -109,6 +111,6 @@ evidence, downgrade a failure, or publish external results unless the user has
 separately authorized that action.
 
 Existing repositories: follow [the trimming workflow](references/operations.md#existing-repository-trimming).
-Checks default to `--scope delivery`; use reviewed top-level `exclude` globs to omit
-historical resources from acquisition and tool inputs. `--scope repository` explicitly
-selects repository checks. Preserve the report scope and exclusion evidence.
+Checks derive delivery from the chosen snapshot; use reviewed top-level `exclude`
+globs to omit historical resources from acquisition and tool inputs. Preserve the
+report selection and exclusion evidence. The profile selects checks, not scope.

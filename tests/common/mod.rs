@@ -34,6 +34,7 @@ pub fn fixture() -> tempfile::TempDir {
     root
 }
 
+#[allow(dead_code)] // Core-only integration targets share the fixture/report helpers.
 pub fn cli(root: &Path, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_qualitygate"))
         .env(

@@ -53,8 +53,10 @@ records are incomplete.
 `snapshot.verification_digest` additionally binds scope, exclusions, changed
 ranges and the path filter, and is required in signed snapshot bindings. The
 same file contents do not make delivery and repository evidence interchangeable.
-Repository scope with `--path` also requires this binding; only repository scope
-without exclusions or a path filter may use the content digest alone.
+Reusable-core repository evaluations with a path filter also require this binding;
+only repository evaluations without exclusions or a path filter may use the content
+digest alone. Their same-scope CLI recheck argv is empty: the CLI only verifies
+delivery. The separate delivery recheck explicitly requests delivery verification.
 
 Agent provenance authenticates declared inputs, outputs, transformations, and
 tool identity. Git trailers bind declarations to commits and reject ambiguous

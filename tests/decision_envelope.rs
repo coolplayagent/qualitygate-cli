@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod core_repository;
 
 use common::{cli, fixture, report};
 use qualitygate::domain::decision_envelope::{CommandKind, DecisionEnvelope};
@@ -27,11 +29,18 @@ fn check_and_feedback_envelopes_bind_scope_on_every_platform() {
         .unwrap();
         for scope in ["delivery", "repository"] {
             for feedback in [false, true] {
-                let mut args = vec!["check", "--scope", scope, "--envelope", "--format", "json"];
+                let mut args = vec!["--envelope"];
                 if feedback {
                     args.push("--feedback");
                 }
-                let value = report(&cli(root, &args), 1);
+                let output = if scope == "repository" {
+                    core_repository::check(root, &args)
+                } else {
+                    let mut command = vec!["check", "--format", "json"];
+                    command.extend(args);
+                    cli(root, &command)
+                };
+                let value = report(&output, 1);
                 let envelope =
                     DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
                 let snapshot = &value["payload"]["snapshot"];
@@ -71,21 +80,14 @@ fn repository_path_filters_bind_distinct_check_and_feedback_evidence() {
         let mut digests = Vec::new();
         let mut contents = Vec::new();
         for (path, code) in [(None, 1), (Some("hello.txt"), 1), (Some("other.txt"), 0)] {
-            let mut args = vec![
-                "check",
-                "--scope",
-                "repository",
-                "--envelope",
-                "--format",
-                "json",
-            ];
+            let mut args = vec!["--envelope"];
             if let Some(path) = path {
                 args.extend(["--path", path]);
             }
             if feedback {
                 args.push("--feedback");
             }
-            let value = report(&cli(root, &args), code);
+            let value = report(&core_repository::check(root, &args), code);
             let envelope = DecisionEnvelope::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
             let snapshot = &value["payload"]["snapshot"];
             assert_eq!(snapshot["verification_digest"].is_string(), path.is_some());

@@ -1,5 +1,7 @@
 //! Real Clippy -> clippy-sarif -> qualitygate acceptance, separate from parser fixtures.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::{path::Path, process::Command};
@@ -30,13 +32,7 @@ fn main() {
 
 // These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, code: i32) -> Value {
-    report(
-        &cli(
-            root,
-            &["check", "--scope", "repository", "--format", "json"],
-        ),
-        code,
-    )
+    report(&repository::check(root, &[]), code)
 }
 
 #[test]

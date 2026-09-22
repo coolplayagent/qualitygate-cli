@@ -105,7 +105,7 @@ async fn inspect_inner(
             .then(|| maximum.div_ceil(1024 * 1024));
         let mut next_steps = vec![
             "Review detected languages and suggested commands before adopting the candidate.".into(),
-            "Checks default to delivery lines, retaining unexcluded dependency context; --scope repository requests repository checks. --path alone does not exclude acquisition.".into(),
+            "Checks select delivery lines from the chosen worktree, index, diff or MR, retaining unexcluded dependency context. --path alone does not exclude acquisition.".into(),
             "To trim reviewed historical resources, add repository-relative globs to qualitygate.yaml exclude, for example exclude: ['legacy/demos/**']. Excluded files are not read or available to build/test commands. Rerun init, then check the intended snapshot; commit/stage this policy for diff/MR/staged checks.".into(),
             "This HEAD/worktree metadata preflight is advisory, not a gate: selected refs/index, total budgets, content readability and tools still require check.".into(),
         ];

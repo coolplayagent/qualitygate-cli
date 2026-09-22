@@ -51,7 +51,7 @@ qualitygate --root /path/to/repository init --with-checks --format json
 再次运行 `init --format json`，检查 `excluded_file_count`、`excluded_paths`、剩余大文件及
 预检完整性。不要自动豁免所有大文件；排除会使工具无法读取对应资源。
 
-将配置纳入所选暂存区或提交后，执行对应 `check --scope delivery --profile full`。
+将配置纳入所选暂存区或提交后，执行对应 `check --profile full`。
 若构建依赖被排除，缩小模式并重检；保留范围与排除证据，不将裁剪后通过表述为全仓通过。
 
 ```bash

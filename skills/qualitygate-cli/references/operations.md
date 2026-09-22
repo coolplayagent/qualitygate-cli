@@ -37,11 +37,12 @@ historical inputs. Protected candidate validation instead uses the external
 suite's `budget.snapshot_max_file_mib` (default 2, range 1–8), bound to the suite
 digest and its external authorization. Ordinary check flags do not override it.
 
-`--scope delivery` is the default for worktree, staged, diff and MR checks.
+Worktree, staged, diff and MR selectors determine the delivery automatically.
+With no selector, the CLI uses the worktree comparison.
 It selects findings on changed lines, with changed-file selection for findings
 without line positions. Build/test commands retain unexcluded dependency context;
 unlocated failures, timeouts and missing evidence still affect the gate.
-`--scope repository` retains repository checks. Scope is independent from profile.
+The profile selects checks, independently of the selected snapshot.
 `--diff` and `--mr` acquire unexcluded base/head inputs before computing changes.
 A per-file acquisition error is not a rule violation. Rule path filters and
 severity changes cannot fix it. Use reviewed policy `exclude` entries or the
@@ -69,7 +70,8 @@ replace a caller's selected reference with the current branch.
 
 Use this workflow for first-time adoption or explicitly requested exclusion of
 historical resources. Use the matching Skill/runtime; an old executable rejecting
-`exclude` or `--scope` is a compatibility gap, not permission to omit the field.
+`exclude` is a compatibility gap, not permission to omit it. Verify that reports
+contain delivery selection evidence before claiming the requested boundary.
 
 1. Identify the repository, selector, policy source and intended delivery. Start
    with `init --with-checks` when candidate creation and command adoption are
@@ -103,8 +105,8 @@ historical resources. Use the matching Skill/runtime; an old executable rejectin
 6. Run the intended final check, for example:
 
    ```bash
-   qualitygate check --worktree --scope delivery --profile full --format json
-   qualitygate check --mr https://github.com/owner/repo/pull/123 --scope delivery --profile full --format json
+   qualitygate check --worktree --profile full --format json
+   qualitygate check --mr https://github.com/owner/repo/pull/123 --profile full --format json
    ```
 
    For staged/diff/MR, place the configuration in the selected index/commit first.

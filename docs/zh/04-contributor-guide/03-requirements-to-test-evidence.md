@@ -38,10 +38,11 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 `tests/decision_envelope.rs` 还验证相同采集内容下全仓与两个不同 `--path` 的证据摘要不可互换；
 `tests/coverage.rs` 验证两种范围及空分母场景的实际/配置模式元数据。
 
-交付范围与排除机制：`tests/delivery_scope.rs` 覆盖默认变更行与显式全仓模式、历史大文件排除、
+交付范围与排除机制：`tests/delivery_scope.rs` 覆盖选择器自动确定交付范围与核心 API 全仓评估对照、历史大文件排除、
 依赖上下文保留、所选策略来源、受保护文件冲突、空交付及命令失败。
+选择器回归拒绝已移除的 scope 参数，并执行生成的复查 argv，验证 verification digest 保持一致。
 `application::report_gate::tests` 验证报告范围与基线比较；`tests/quality.rs` 验证 Skill 包及架构。
-`tests/coverage.rs` 与真实 JaCoCo/ESLint 验收对比增量分母、诊断与显式全仓契约；
+`tests/coverage.rs` 与真实 JaCoCo/ESLint 验收对比增量分母、诊断与可复用核心的全仓契约；
 `tests/policy_validation.rs` 验证不同 exclude 的输入独立绑定及两棵树预算，相同 exclude 保留独立并行检查。
 `tests/decision_envelope.rs` 跨平台验证 check/feedback 范围摘要往返，并拒绝用内容摘要替代验证摘要。
 `tests/test_effectiveness.rs` 利用未排除上下文保留“无生产代码变化”的适用性契约；SARIF 与 execution

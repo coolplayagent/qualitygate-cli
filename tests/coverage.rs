@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::process::Command;
@@ -85,9 +87,7 @@ impl Fixture {
         std::fs::write(self.root.path().join("input.report"), text).unwrap();
     }
     fn run(&self, code: i32, args: &[&str]) -> Value {
-        let mut command = vec!["check", "--scope", "repository", "--format", "json"];
-        command.extend_from_slice(args);
-        report(&cli(self.root.path(), &command), code)
+        report(&repository::check(self.root.path(), args), code)
     }
 }
 

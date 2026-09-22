@@ -259,9 +259,6 @@ struct CheckArgs {
     expect_base: Option<String>,
     #[arg(long, default_value = "full", value_parser = ["quick", "full"])]
     profile: String,
-    /// Verification target, independent of quick/full check selection.
-    #[arg(long, value_enum, default_value = "delivery")]
-    scope: crate::domain::check_scope::CheckScope,
     #[arg(long)]
     task: Option<String>,
     #[arg(long)]
@@ -568,7 +565,7 @@ impl Cli {
                     config: self.config,
                     selection,
                     snapshot_options: crate::snapshot::CaptureOptions {
-                        scope: args.scope,
+                        scope: crate::domain::check_scope::CheckScope::Delivery,
                         max_bytes: args.snapshot_max_mib as usize * 1024 * 1024,
                         max_file_bytes: args.snapshot_max_file_mib as usize * 1024 * 1024,
                         jobs: args.snapshot_jobs as usize,

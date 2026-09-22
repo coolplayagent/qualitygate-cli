@@ -57,5 +57,5 @@ incomplete unless trusted policy explicitly allows a disclosed full fallback.
 
 Coverage metadata `<report>:mode` records the effective measurement mode:
 delivery uses `changed_lines`, including when policy configures `full`.
-`<report>:configured_mode` retains the configured value. Repository scope keeps
+`<report>:configured_mode` retains the configured value. Reusable-core repository evaluations keep
 the configured coverage mode. Counts and thresholds follow the effective mode.

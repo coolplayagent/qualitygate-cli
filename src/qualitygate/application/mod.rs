@@ -413,6 +413,7 @@ async fn check_prepared(
     let summary = Summary::from_checks(&results);
     let gate = evaluate(&results, &plan.required, &invalid);
     let mut delivery_options = options.clone();
+    delivery_options.snapshot_options.scope = check_scope::CheckScope::Delivery;
     delivery_options.profile = "full".into();
     delivery_options.snapshot_options.path_filter = None;
     if let Selection::Path { base, .. } = &options.selection {
@@ -490,6 +491,11 @@ async fn check_prepared(
 }
 
 fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> Vec<String> {
+    // Repository-wide core evaluations cannot be replayed by the delivery-only CLI.
+    // Protected callers may supply their own replay command to check_prepared.
+    if options.snapshot_options.scope == check_scope::CheckScope::Repository {
+        return Vec::new();
+    }
     let mut argv = vec![
         "qualitygate".into(),
         "--root".into(),
@@ -513,8 +519,6 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
         }
     }
     argv.extend([
-        "--scope".into(),
-        options.snapshot_options.scope.as_str().into(),
         "--expect-base".into(),
         base.into(),
         "--snapshot-max-mib".into(),

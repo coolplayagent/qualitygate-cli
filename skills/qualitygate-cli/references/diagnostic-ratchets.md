@@ -123,9 +123,9 @@ Retain producer-scope limits and the CLI verification fields in the result;
 scoped checks and synthetic fixtures do not prove delivery readiness.
 
 Java analyzer starting policies: [Checkstyle](checkstyle-ratchet.yaml), [PMD](pmd-ratchet.yaml), and [SpotBugs](spotbugs-ratchet.yaml). Use each producer’s real XML format, pinned executable, tracked configuration and identical source/class scope in the immutable baseline and current snapshots. The the repository Java rule triage guide explains incomplete execution and semantic limits.
-The check scope is independent from the report mode. Default `--scope delivery`
+The check scope is independent from the report mode. The selected delivery
 first selects current findings on changed lines (or changed-file findings without
 line positions); `ratchet` compares their counts with findings on replaced/deleted
 baseline lines. `new_diagnostics` retains the changed files' baseline identities
-to avoid treating historical moved findings as new. Use `--scope repository`
-when the intended ratchet compares the complete configured analyzer inventory.
+to avoid treating historical moved findings as new. This does not establish
+that the complete historical analyzer inventory is clean.

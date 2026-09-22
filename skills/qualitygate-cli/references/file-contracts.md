@@ -8,8 +8,8 @@ compatibility, candidate generation and adoption.
 
 ## Author the requested contract
 
-Use `--scope repository` when the acceptance requires every historical per-file
-violation. Default delivery scope selects per-file findings only for changed files.
+The CLI selects per-file findings only for changed files in the chosen snapshot.
+A delivery pass does not establish that unchanged files meet per-file contracts.
 Unlocated inventory totals (`min_count`, `max_count`, `max_total_words`) remain
 aggregate constraints over the configured unexcluded inventory; a changed-line
 filter cannot establish those totals from changed files alone. Policy `exclude`

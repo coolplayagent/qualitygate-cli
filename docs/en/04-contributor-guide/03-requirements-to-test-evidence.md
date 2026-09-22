@@ -45,15 +45,18 @@ current Git commit and gate report—not a historical prose status line—identi
 what was actually verified.
 
 Delivery scope and explicit exclusion evidence: `tests/delivery_scope.rs` covers
-changed lines versus repository findings, immutable context, large tracked resources,
+selector-derived delivery versus reusable-core repository findings, immutable
+context, large tracked resources,
 selected policy provenance, protected exclusions, empty delivery and command failures.
 `tests/quality.rs` validates the packaged Skill links and architecture.
 `tests/coverage.rs` and live JaCoCo/ESLint acceptance compare delivery denominators
-and findings with explicit repository contracts. `tests/policy_validation.rs`
+and findings with explicit reusable-core repository contracts.
+The selector regression rejects the removed scope option and executes the emitted
+recheck argv, requiring an unchanged verification digest. `tests/policy_validation.rs`
 verifies differing exclusions bind both inputs within the two-tree memory budget,
 while equal exclusions retain the independently executed parallel checks.
 `tests/decision_envelope.rs` round-trips check/feedback scope bindings on every
-platform and rejects substituting the content digest for a verification digest.
+platform (repository comparisons use the core API) and rejects substituting the content digest for a verification digest.
 It also distinguishes repository-wide evidence from two different `--path`
 selections over identical captured bytes. Coverage regression verifies effective
 versus configured metadata for both scopes, including an empty denominator.

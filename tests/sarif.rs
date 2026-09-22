@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::{path::Path, process::Command};
@@ -110,13 +112,7 @@ impl Fixture {
     }
     fn run(&self, code: i32) -> Value {
         // Producer identity and baseline comparisons deliberately include history.
-        report(
-            &cli(
-                self.root.path(),
-                &["check", "--scope", "repository", "--format", "json"],
-            ),
-            code,
-        )
+        report(&repository::check(self.root.path(), &[]), code)
     }
 }
 

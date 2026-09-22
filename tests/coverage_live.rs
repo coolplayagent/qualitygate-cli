@@ -1,5 +1,7 @@
 //! Real coverage producers; fixture orchestration and assertions are Rust.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::{Value, json};
 use std::{
@@ -122,10 +124,7 @@ fn configure(root: &Path, policy: &Value) {
 
 // Full-report producer contracts need explicit repository coverage.
 fn run(root: &Path, code: i32) -> Value {
-    let output = cli(
-        root,
-        &["check", "--scope", "repository", "--format", "json"],
-    );
+    let output = repository::check(root, &[]);
     if output.status.code() != Some(code)
         && let Ok(value) = serde_json::from_slice::<Value>(&output.stdout)
         && let Some(artifacts) = value["checks"][0]["execution"]["artifacts"].as_array()

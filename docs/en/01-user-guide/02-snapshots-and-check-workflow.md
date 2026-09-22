@@ -30,17 +30,18 @@ materialization of that snapshot. Their stdout, stderr, status, duration,
 version, and report artifacts are captured within configured bounds.
 
 `quick` and `--path` deliberately omit work and list the omitted delivery
-checks. Only an unfiltered `full` report whose scope is `delivery`, `repository` or `task`,
+checks. Only an unfiltered `full` report whose scope is `delivery` or `task`,
 whose pending delivery list is empty, and whose gate is complete can establish
 the configured delivery decision.
 
 ## Large repositories
 
-All checks default to `--scope delivery`, independently of the quick/full profile.
+The worktree, staged, diff or MR selector determines the delivery automatically;
+without a selector the CLI compares the worktree. Quick/full selects checks.
 Line findings select changed lines; findings without line positions select changed
 files, including deletions, renames, binary and mode changes. Unlocated command/test
-failures, timeouts and missing evidence remain gate inputs. `--scope repository`
-explicitly selects repository checks. An empty delivery is not repository approval.
+failures, timeouts and missing evidence remain gate inputs. There is no separate
+scope option. An empty delivery is not repository approval.
 
 Builds and tests retain unexcluded dependency context. Diff/MR acquire both sides
 of that context; rule language/path filters alone do not omit content. Configure

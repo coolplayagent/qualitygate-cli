@@ -1,5 +1,7 @@
 //! Actual Cargo Clippy JSON Lines in paired snapshots, separate from parser fixtures.
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 
 use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
@@ -10,13 +12,7 @@ const NEW: &str = "pub fn other(values: &[u8]) -> bool { values.len() == 0 }\n";
 
 // These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
-    report(
-        &cli(
-            root,
-            &["check", "--scope", "repository", "--format", "json"],
-        ),
-        exit,
-    )
+    report(&repository::check(root, &[]), exit)
 }
 
 #[test]

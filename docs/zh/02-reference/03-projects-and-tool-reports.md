@@ -37,7 +37,7 @@ Bazel 是使用 Bzlmod 且与 Cargo 依赖对齐的额外可复现构建面，�
 lockfile 行为、平台和选中 target 都属于证据。
 
 覆盖率元数据 `<report>:mode` 记录实际测量模式：delivery 即使配置为 `full`，也记录
-`changed_lines`；`<report>:configured_mode` 保留配置值。repository 使用配置的模式，
+`changed_lines`；`<report>:configured_mode` 保留配置值。可复用核心的 repository 评估使用配置的模式，
 计数和阈值判定均遵循实际测量模式。
 
 增量模式必须声明含义：`new_diagnostics`、`changed_lines`、`affected_scope` 或 `full`。文件发生变更

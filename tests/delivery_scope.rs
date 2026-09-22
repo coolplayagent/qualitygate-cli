@@ -1,4 +1,6 @@
 mod common;
+#[path = "common/repository.rs"]
+mod repository;
 use common::*;
 use serde_json::json;
 use std::{path::Path, process::Command};
@@ -23,6 +25,59 @@ fn policy(root: &Path, exclude: &[&str]) {
 }
 
 #[test]
+fn cli_infers_delivery_from_selectors_and_rechecks_without_a_scope_option() {
+    let temp = fixture();
+    let root = temp.path();
+    policy(root, &[]);
+    commit(root);
+    write(root, "hello.txt", "changed\n");
+    git(root, &["add", "hello.txt"]);
+    for selector in [
+        vec![],
+        vec!["--worktree"],
+        vec!["--staged"],
+        vec!["--path", "hello.txt"],
+    ] {
+        let mut args = vec!["check", "--format", "json"];
+        args.extend(selector);
+        let checked = report(&cli(root, &args), 0);
+        assert_eq!(checked["selection"]["mode"], "delivery");
+        assert_eq!(checked["selection"]["changed_files"], json!(["hello.txt"]));
+        let argv = checked["context"]["recheck"]["argv"].as_array().unwrap();
+        assert!(!argv.contains(&json!("--scope")));
+        let replay: Vec<_> = argv[3..]
+            .iter()
+            .map(|value| value.as_str().unwrap())
+            .collect();
+        let rechecked = report(&cli(root, &replay), 0);
+        assert_eq!(
+            checked["snapshot"]["verification_digest"],
+            rechecked["snapshot"]["verification_digest"]
+        );
+    }
+    commit(root);
+    let diff = report(
+        &cli(
+            root,
+            &["check", "--diff", "HEAD~1..HEAD", "--format", "json"],
+        ),
+        0,
+    );
+    assert_eq!(diff["selection"]["mode"], "delivery");
+    assert_eq!(diff["selection"]["changed_files"], json!(["hello.txt"]));
+    for removed in ["delivery", "repository"] {
+        let rejected = cli(root, &["check", "--scope", removed]);
+        assert_eq!(rejected.status.code(), Some(2));
+        assert!(
+            String::from_utf8_lossy(&rejected.stderr).contains("unexpected argument '--scope'")
+        );
+    }
+    let help = cli(root, &["check", "--help"]);
+    assert!(help.status.success());
+    assert!(!String::from_utf8_lossy(&help.stdout).contains("--scope"));
+}
+
+#[test]
 fn exclusion_precedes_content_limits_and_binds_delivery_and_repository_inputs() {
     let temp = fixture();
     let root = temp.path();
@@ -44,13 +99,7 @@ fn exclusion_precedes_content_limits_and_binds_delivery_and_repository_inputs() 
         json!(["hello.txt"])
     );
     assert_eq!(delivered["selection"]["changed_lines"], 1);
-    let whole = report(
-        &cli(
-            root,
-            &["check", "--scope", "repository", "--format", "json"],
-        ),
-        0,
-    );
+    let whole = report(&repository::check(root, &[]), 0);
     assert_ne!(
         delivered["snapshot"]["verification_digest"],
         whole["snapshot"]["verification_digest"]
@@ -60,11 +109,17 @@ fn exclusion_precedes_content_limits_and_binds_delivery_and_repository_inputs() 
         whole["selection"]["execution_context_digest"]
     );
     assert!(
-        delivered["context"]["recheck"]["argv"]
+        !delivered["context"]["recheck"]["argv"]
             .as_array()
             .unwrap()
-            .windows(2)
-            .any(|a| a == [json!("--scope"), json!("delivery")])
+            .contains(&json!("--scope"))
+    );
+    assert_eq!(whole["context"]["recheck"]["argv"], json!([]));
+    assert!(
+        !whole["context"]["delivery_recheck"]["argv"]
+            .as_array()
+            .unwrap()
+            .is_empty()
     );
     policy(root, &[]);
     report(&cli(root, &["check", "--format", "json"]), 2);
@@ -193,13 +248,7 @@ fn delivery_filters_historical_lines_but_retains_context_and_command_failures() 
         selected["checks"][0]["metadata"]["stdout.json:delivery_filtered"],
         1
     );
-    report(
-        &cli(
-            root,
-            &["check", "--scope", "repository", "--format", "json"],
-        ),
-        1,
-    );
+    report(&repository::check(root, &[]), 1);
     write(
         root,
         "input.report",
