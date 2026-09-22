@@ -107,6 +107,7 @@ pub(super) fn prepare(
     invalid: &mut Vec<String>,
 ) -> Result<super::policy::Loaded> {
     let (config, catalog) = active.frozen.resolve(&active.config)?;
+    super::acquisition::validate_config(&config, &catalog, options, snapshot)?;
     if options
         .policy_ref
         .as_ref()

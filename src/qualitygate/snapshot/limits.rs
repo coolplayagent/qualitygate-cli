@@ -14,6 +14,10 @@ pub struct CaptureOptions {
     pub jobs: usize,
     pub timeout: Duration,
     pub path_filter: Option<String>,
+    pub scope: crate::domain::check_scope::CheckScope,
+    pub exclude: Vec<String>,
+    /// Internal bounded policy bootstrap; never used as a successful check input.
+    pub include: Option<Vec<String>>,
 }
 
 impl Default for CaptureOptions {
@@ -24,11 +28,32 @@ impl Default for CaptureOptions {
             jobs: 4,
             timeout: Duration::from_secs(120),
             path_filter: None,
+            scope: Default::default(),
+            exclude: Vec::new(),
+            include: None,
         }
     }
 }
 
 impl CaptureOptions {
+    pub fn selector(&self) -> Result<impl Fn(&str) -> bool + Send + 'static> {
+        let compile = |patterns: &[String]| -> Result<globset::GlobSet> {
+            let mut builder = globset::GlobSetBuilder::new();
+            for pattern in patterns {
+                builder.add(
+                    globset::GlobBuilder::new(pattern)
+                        .literal_separator(true)
+                        .build()?,
+                );
+            }
+            Ok(builder.build()?)
+        };
+        let include = self.include.as_deref().map(compile).transpose()?;
+        let exclude = compile(&self.exclude)?;
+        Ok(move |path: &str| {
+            include.as_ref().is_none_or(|set| set.is_match(path)) && !exclude.is_match(path)
+        })
+    }
     pub fn validate(&self) -> Result<()> {
         if !(1..=1024 * 1024 * 1024).contains(&self.max_bytes)
             || !(1..=crate::domain::snapshot_budget::MAX_FILE_BYTES).contains(&self.max_file_bytes)

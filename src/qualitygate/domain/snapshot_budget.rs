@@ -15,6 +15,8 @@ pub struct OversizedFile {
 
 #[derive(Debug, serde::Serialize)]
 pub struct Preflight {
+    pub excluded_file_count: usize,
+    pub excluded_paths: Vec<String>,
     pub scope: &'static str,
     pub head: String,
     pub complete: bool,
@@ -36,9 +38,9 @@ pub fn file_limit_message(path: &str, size: u64, limit: usize) -> String {
             size.div_ceil(1024 * 1024)
         )
     } else {
-        "the supported single-file maximum is 8 MiB; this snapshot cannot be acquired".into()
+        "the supported single-file maximum is 8 MiB; explicitly exclude this resource or acquisition remains incomplete".into()
     };
     format!(
-        "File exceeds {limit} bytes: {path} ({size} bytes); snapshot acquisition limit, not a rule violation; {next}. --diff and --path retain full snapshot inputs"
+        "File exceeds {limit} bytes: {path} ({size} bytes); snapshot acquisition limit, not a rule violation; {next}. --diff and --path retain unexcluded snapshot inputs; reviewed policy exclude entries can omit unrelated resources"
     )
 }

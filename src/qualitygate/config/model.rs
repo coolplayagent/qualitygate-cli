@@ -37,6 +37,8 @@ fn dot() -> String {
 pub struct Config {
     pub schema_version: u32,
     #[serde(default)]
+    pub exclude: Vec<String>,
+    #[serde(default)]
     pub languages: Vec<String>,
     #[serde(default)]
     pub rulesets: Vec<String>,
@@ -73,6 +75,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             schema_version: 1,
+            exclude: Vec::new(),
             languages: Vec::new(),
             rulesets: vec!["core".into()],
             rules: BTreeMap::new(),

@@ -10,6 +10,8 @@ pub struct Change {
     pub kind: String,
     pub old_path: Option<String>,
     pub added_lines: BTreeSet<usize>,
+    #[serde(default)]
+    pub removed_lines: BTreeSet<usize>,
 }
 
 pub fn compare(
@@ -68,7 +70,8 @@ pub(super) fn compare_until(
         let old_bytes = old.map(|file| file.bytes.as_slice()).unwrap_or_default();
         let old_text = String::from_utf8_lossy(old_bytes);
         let text = String::from_utf8_lossy(&file.bytes);
-        let added_lines = if moved.is_some() {
+        let mut removed_lines = BTreeSet::new();
+        let added_lines = if moved.is_some() || file.bytes.contains(&0) || old_bytes.contains(&0) {
             BTreeSet::new()
         } else {
             let mut config = TextDiff::configure();
@@ -79,6 +82,11 @@ pub(super) fn compare_until(
             // The diff library may return an approximation when its deadline
             // expires. Such partial mapping cannot become successful evidence.
             check_deadline(deadline)?;
+            removed_lines.extend(
+                diff.iter_all_changes()
+                    .filter(|change| change.tag() == ChangeTag::Delete)
+                    .filter_map(|change| change.old_index().map(|index| index + 1)),
+            );
             diff.iter_all_changes()
                 .filter(|change| change.tag() == ChangeTag::Insert)
                 .filter_map(|change| change.new_index().map(|index| index + 1))
@@ -99,6 +107,7 @@ pub(super) fn compare_until(
                     .map(|(name, _)| name.clone())
                     .or_else(|| old.map(|_| path.clone())),
                 added_lines,
+                removed_lines,
             },
         );
     }
@@ -112,6 +121,7 @@ pub(super) fn compare_until(
             Change {
                 kind: "deleted".into(),
                 old_path: Some(path.clone()),
+                removed_lines: Default::default(),
                 added_lines: BTreeSet::new(),
             },
         );

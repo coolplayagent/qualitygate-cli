@@ -138,7 +138,7 @@ async fn baseline(
     base.identity.head = snapshot.identity.base.clone();
     base.identity.mode = "baseline".into();
     base.identity.merge_request = None;
-    base.identity.content_digest = snapshot::content_digest(&base.files);
+    snapshot::bind_derived(&mut base.identity, snapshot::content_digest(&base.files));
     let workspace = snapshot::materialize(&base).await?;
     let inputs = snapshot::InputGuard::new(workspace.path(), base.files.clone()).await?;
     result

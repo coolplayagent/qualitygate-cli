@@ -11,8 +11,10 @@ fn snapshot() -> Snapshot {
         executable: false,
     };
     Snapshot {
+        scope_evidence: Default::default(),
         root: "/repo".into(),
         identity: Identity {
+            verification_digest: None,
             merge_request: None,
             mode: "worktree".into(),
             base: "base".into(),
@@ -26,6 +28,7 @@ fn snapshot() -> Snapshot {
             Change {
                 kind: "modified".into(),
                 old_path: Some("src/a.rs".into()),
+                removed_lines: Default::default(),
                 added_lines: [2].into(),
             },
         )]
@@ -595,4 +598,94 @@ fn producer_identity_without_locations_still_includes_primary_path_and_symbol() 
     finding.file = Some("src/a.rs".into());
     finding.tool = Some("different scan".into());
     assert_ne!(identity, fingerprint(&finding));
+}
+
+#[test]
+fn delivery_scope_keeps_changed_lines_file_findings_and_unlocated_failures() {
+    let mut snapshot = snapshot();
+    snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;
+    let mut file_finding = issue("src/a.rs", 1);
+    file_finding.line = None;
+    let mut global = file_finding.clone();
+    global.file = None;
+    let mut result = pending();
+    apply(
+        &mut result,
+        &spec("full"),
+        data(vec![
+            issue("src/a.rs", 1),
+            issue("src/a.rs", 2),
+            issue("src/b.rs", 2),
+            file_finding,
+            global,
+        ]),
+        None,
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics.len(), 3);
+    assert_eq!(result.metadata["report:delivery_filtered"], 2);
+    assert_eq!(result.diagnostics[0].range.as_ref().unwrap().start_line, 2);
+    assert!(result.diagnostics[2].file.is_none());
+}
+
+#[test]
+fn delivery_ratchet_compares_removed_and_added_lines_without_historical_count_credit() {
+    let mut snapshot = snapshot();
+    snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;
+    snapshot
+        .changes
+        .get_mut("src/a.rs")
+        .unwrap()
+        .removed_lines
+        .insert(2);
+    let baseline = data(vec![issue("src/a.rs", 1), issue("src/a.rs", 2)]);
+    let current = data(vec![issue("src/a.rs", 2), issue("src/a.rs", 2)]);
+    let mut result = pending();
+    apply(
+        &mut result,
+        &spec("ratchet"),
+        current,
+        Some(baseline),
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics.len(), 2);
+    assert_eq!(result.metadata["report:ratchet"][0]["baseline"], 1);
+    assert_eq!(result.metadata["report:ratchet"][0]["current"], 2);
+}
+
+#[test]
+fn delivery_multilocation_finding_displays_the_changed_location() {
+    let mut snapshot = snapshot();
+    snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;
+    let mut finding = issue("src/b.rs", 1);
+    finding.locations = vec![
+        IssueLocation {
+            file: Some("src/b.rs".into()),
+            line: Some(1),
+            end_line: None,
+            symbol: None,
+        },
+        IssueLocation {
+            file: Some("src/a.rs".into()),
+            line: Some(2),
+            end_line: None,
+            symbol: None,
+        },
+    ];
+    let mut result = pending();
+    apply(
+        &mut result,
+        &spec("full"),
+        data(vec![finding]),
+        None,
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics[0].file.as_deref(), Some("src/a.rs"));
+    assert_eq!(result.diagnostics[0].range.as_ref().unwrap().start_line, 2);
 }

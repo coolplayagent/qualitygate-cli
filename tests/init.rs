@@ -294,7 +294,7 @@ fn generated_rust_candidate_runs_real_tests_then_repairs_and_rejects_zero_tests(
         &failing.replace("a - b", "a + b"),
     );
     let passed = report(&cli(root.path(), &["check", "--format", "json"]), 0);
-    assert_eq!(passed["scope"], "repository");
+    assert_eq!(passed["scope"], "delivery");
     write(
         root.path(),
         "src/lib.rs",

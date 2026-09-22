@@ -261,8 +261,10 @@ fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
             }
             let digest = snapshot::content_digest(&files);
             let snapshot = Snapshot {
+                scope_evidence: Default::default(),
                 root: ".".into(),
                 identity: snapshot::Identity {
+                    verification_digest: None,
                     mode: "fixture".into(),
                     base: "fixture-base".into(),
                     head: "fixture-head".into(),

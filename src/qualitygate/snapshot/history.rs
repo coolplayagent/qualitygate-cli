@@ -1,6 +1,6 @@
 //! Capture immutable commit parents, trees and input-only parsed trailers.
 
-use super::{File, Snapshot, content_digest, digest, read_commit, run_git};
+use super::{File, Snapshot, content_digest, digest, read_commit_with_options, run_git};
 use anyhow::{Context, Result, bail};
 use std::{
     collections::BTreeMap,
@@ -67,6 +67,20 @@ fn intern(source: BTreeMap<String, File>, mut pool: BlobPool) -> Interned {
 }
 
 pub async fn capture(snapshot: &Snapshot) -> Result<History> {
+    capture_with_options(
+        snapshot,
+        &super::CaptureOptions {
+            exclude: snapshot.scope_evidence.exclude.clone(),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+pub async fn capture_with_options(
+    snapshot: &Snapshot,
+    options: &super::CaptureOptions,
+) -> Result<History> {
     let started = Instant::now();
     let root = &snapshot.root;
     let listing = run_git(
@@ -127,7 +141,7 @@ pub async fn capture(snapshot: &Snapshot) -> Result<History> {
                 .or_default()
                 .push(value.trim().into());
         }
-        let source = read_commit(root, oid).await?;
+        let source = read_commit_with_options(root, oid, options).await?;
         entries += source.len();
         bytes += raw.len() + parsed.len();
         let interned = tokio::task::spawn_blocking(move || intern(source, blobs)).await?;

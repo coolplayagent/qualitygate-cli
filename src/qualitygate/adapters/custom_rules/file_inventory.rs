@@ -38,10 +38,16 @@ fn collect(rule: &CustomRule, snapshot: &Snapshot, deadline: Instant) -> Result<
                 .filter_map(|(path, _)| snapshot.files.get(path).map(|file| (path, file))),
         )
     };
+    let aggregate = rule.then.min_count.is_some()
+        || rule.then.max_count.is_some()
+        || rule.then.max_total_words.is_some();
     for (path, file) in files {
         deadline_check(deadline)?;
-        if !snapshot.includes(path)
-            || (!filters.is_empty() && !filters.is_match(path))
+        if !(if aggregate {
+            snapshot.feedback_includes(path)
+        } else {
+            snapshot.includes(path)
+        }) || (!filters.is_empty() && !filters.is_match(path))
             || (!rule.language.is_empty()
                 && syntax::language(path)
                     .is_none_or(|language| !rule.language.iter().any(|value| value == language)))
@@ -182,8 +188,10 @@ mod tests {
             "then":{"min_count":1},"fix":"Restore the required files"
         })).unwrap();
         let mut snapshot = Snapshot {
+            scope_evidence: Default::default(),
             root: "/repo".into(),
             identity: Identity {
+                verification_digest: None,
                 mode: "worktree".into(),
                 base: "base".into(),
                 head: "head".into(),

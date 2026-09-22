@@ -136,7 +136,7 @@ async fn run(
         base.identity.head = base.identity.base.clone();
         base.identity.mode = "baseline".into();
         base.identity.merge_request = None;
-        base.identity.content_digest = snapshot::content_digest(&base.files);
+        snapshot::bind_derived(&mut base.identity, snapshot::content_digest(&base.files));
         base.changes.clear();
         base.commits.clear();
         base
@@ -181,7 +181,7 @@ async fn run(
     let comparison = tokio::task::spawn_blocking(move || {
         let mut comparison = source.as_ref().clone();
         comparison.identity.mode = "compatibility_inputs".into();
-        comparison.identity.content_digest = snapshot::content_digest(&files);
+        snapshot::bind_derived(&mut comparison.identity, snapshot::content_digest(&files));
         comparison.files = files;
         comparison.base_files.clear();
         comparison.changes.clear();

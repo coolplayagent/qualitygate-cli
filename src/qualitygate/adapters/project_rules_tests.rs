@@ -34,8 +34,10 @@ fn fixture() -> (Snapshot, Vec<ProjectFacts>) {
         dependency("transport"),
     ]);
     let snapshot = Snapshot {
+        scope_evidence: Default::default(),
         root: ".".into(),
         identity: Identity {
+            verification_digest: None,
             mode: "worktree".into(),
             base: "base".into(),
             head: "head".into(),

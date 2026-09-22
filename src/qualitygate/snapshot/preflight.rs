@@ -1,4 +1,4 @@
-//! Advisory metadata inspection; no source content is read or excluded from checks.
+//! Advisory metadata inspection with explicit policy exclusions; no content is read.
 
 use super::{MAX_FILES, resolve_commit, run_git};
 use crate::domain::snapshot_budget::{
@@ -12,12 +12,31 @@ use std::{
 };
 
 pub async fn inspect(root: &Path) -> Result<Preflight> {
-    tokio::time::timeout(Duration::from_secs(30), inspect_inner(root))
-        .await
-        .context("Snapshot preflight exceeded its 30-second budget")?
+    inspect_excluding(root, &[]).await
 }
 
-async fn inspect_inner(root: &Path) -> Result<Preflight> {
+pub async fn inspect_excluding(root: &Path, exclude: &[String]) -> Result<Preflight> {
+    inspect_policy(root, exclude, &[]).await
+}
+
+pub async fn inspect_policy(
+    root: &Path,
+    exclude: &[String],
+    protected: &[String],
+) -> Result<Preflight> {
+    tokio::time::timeout(
+        Duration::from_secs(30),
+        inspect_inner(root, exclude.to_vec(), protected.to_vec()),
+    )
+    .await
+    .context("Snapshot preflight exceeded its 30-second budget")?
+}
+
+async fn inspect_inner(
+    root: &Path,
+    exclude: Vec<String>,
+    protected: Vec<String>,
+) -> Result<Preflight> {
     let deadline = Instant::now() + Duration::from_secs(30);
     let root = run_git(root, &["rev-parse", "--show-toplevel"], None).await?;
     let root = std::path::PathBuf::from(std::str::from_utf8(&root)?.trim());
@@ -36,11 +55,18 @@ async fn inspect_inner(root: &Path) -> Result<Preflight> {
     )
     .await?;
     tokio::task::spawn_blocking(move || {
+        let options = super::CaptureOptions { exclude, ..Default::default() };
+        let selected = options.selector()?;
+        let mut protection = globset::GlobSetBuilder::new();
+        for pattern in protected { protection.add(globset::Glob::new(&pattern)?); }
+        let protection = protection.build()?;
+        let mut excluded = BTreeSet::new();
         let mut sizes = BTreeMap::<String, u64>::new();
         let mut unsupported = BTreeSet::new();
         for (index, entry) in tree.split(|byte| *byte == 0).filter(|entry| !entry.is_empty()).enumerate() {
             check_budget(index, deadline)?;
             let (metadata, path) = std::str::from_utf8(entry)?.split_once('\t').context("Malformed preflight Git entry")?;
+            if !selected(path) { excluded.insert(path.to_owned()); continue; }
             let fields: Vec<_> = metadata.split_whitespace().collect();
             if fields.len() != 4 { bail!("Malformed preflight Git metadata"); }
             if ["100644", "100755"].contains(&fields[0]) {
@@ -52,6 +78,7 @@ async fn inspect_inner(root: &Path) -> Result<Preflight> {
         for (index, name) in names.split(|byte| *byte == 0).filter(|name| !name.is_empty()).enumerate() {
             check_budget(index, deadline)?;
             let name = std::str::from_utf8(name)?;
+            if !selected(name) { excluded.insert(name.to_owned()); continue; }
             let path = match crate::paths::confined(&root, Path::new(name)) {
                 Ok(path) => path,
                 Err(error) => { unsupported.insert(format!("{name} ({error})")); continue; }
@@ -68,6 +95,9 @@ async fn inspect_inner(root: &Path) -> Result<Preflight> {
                 *size = (*size).max(metadata.len());
             }
         }
+        for path in &excluded {
+            anyhow::ensure!(!protection.is_match(path), "exclude matches a protected verification input: {path}");
+        }
         let oversized: Vec<_> = sizes.into_iter().filter(|(_, size)| *size > DEFAULT_FILE_BYTES as u64)
             .map(|(path, bytes)| OversizedFile { path, bytes }).collect();
         let maximum = oversized.iter().map(|file| file.bytes).max().unwrap_or_default();
@@ -75,22 +105,24 @@ async fn inspect_inner(root: &Path) -> Result<Preflight> {
             .then(|| maximum.div_ceil(1024 * 1024));
         let mut next_steps = vec![
             "Review detected languages and suggested commands before adopting the candidate.".into(),
-            "--diff/--mr compare complete snapshots; --path filters feedback, not acquisition. Rule path/language filters do not exclude snapshot bytes.".into(),
+            "Checks default to delivery lines, retaining unexcluded dependency context; --scope repository requests repository checks. --path alone does not exclude acquisition.".into(),
+            "To trim reviewed historical resources, add repository-relative globs to qualitygate.yaml exclude, for example exclude: ['legacy/demos/**']. Excluded files are not read or available to build/test commands. Rerun init, then check the intended snapshot; commit/stage this policy for diff/MR/staged checks.".into(),
             "This HEAD/worktree metadata preflight is advisory, not a gate: selected refs/index, total budgets, content readability and tools still require check.".into(),
         ];
         if let Some(mib) = recommended {
             next_steps.insert(0, format!("Run: qualitygate check --profile full --snapshot-max-file-mib {mib} (use the same --root and --config); this changes acquisition capacity, not repository policy."));
         } else if maximum > MAX_FILE_BYTES as u64 {
-            next_steps.insert(0, "Snapshot contains files above the supported 8 MiB single-file limit; acquisition remains incomplete. No ignore or severity setting can make this a complete check.".into());
+            next_steps.insert(0, "Snapshot contains files above the supported 8 MiB single-file limit; acquisition remains incomplete unless those resources are explicitly excluded by the selected policy.".into());
         }
         if !unsupported.is_empty() {
             next_steps.insert(0, "Unsupported Git/worktree entries prevent capture; review the listed paths before checking.".into());
         }
         Ok(Preflight {
+            excluded_file_count: excluded.len(), excluded_paths: excluded.iter().take(100).cloned().collect(),
             scope: "HEAD and eligible worktree metadata", head, complete: true,
             default_max_file_bytes: DEFAULT_FILE_BYTES, maximum_max_file_bytes: MAX_FILE_BYTES,
             oversized_file_count: oversized.len(), unsupported_entry_count: unsupported.len(),
-            details_truncated: oversized.len() > 100 || unsupported.len() > 100,
+            details_truncated: oversized.len() > 100 || unsupported.len() > 100 || excluded.len() > 100,
             oversized_files: oversized.into_iter().take(100).collect(),
             unsupported_entries: unsupported.into_iter().take(100).collect(),
             recommended_max_file_mib: recommended, next_steps,

@@ -122,7 +122,7 @@ fn check_and_rule_validation_envelopes_bind_outcomes_without_losing_warnings_or_
     assert_eq!(check["payload"]["gate"]["decision"], "fail");
     assert_eq!(
         check["subject"]["snapshot_digest"],
-        check["payload"]["snapshot"]["content_digest"]
+        check["payload"]["snapshot"]["verification_digest"]
     );
     DecisionEnvelope::parse(&serde_json::to_vec(&check).unwrap()).unwrap();
     let mut rebound: DecisionEnvelope = serde_json::from_value(check.clone()).unwrap();

@@ -56,6 +56,7 @@ pub(super) fn actor(id: &str) -> Actor {
 
 fn report(input: &ReportInput) -> Report {
     Report {
+        selection: None,
         context: None,
         schema_version: 1,
         run_id: "fixture".into(),
@@ -64,6 +65,7 @@ fn report(input: &ReportInput) -> Report {
         evaluator_digest: digest(b"fixture evaluator"),
         environment_digest: digest(b"fixture environment"),
         snapshot: SnapshotIdentity {
+            verification_digest: None,
             mode: "diff".into(),
             base: "base".into(),
             head: "head".into(),

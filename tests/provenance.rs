@@ -27,10 +27,14 @@ fn capture(root: &Path) -> Snapshot {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(snapshot::capture(
+        .block_on(snapshot::capture_with_options(
             root,
             &Selection::Worktree {
                 base: "HEAD".into(),
+            },
+            &snapshot::CaptureOptions {
+                scope: qualitygate::domain::check_scope::CheckScope::Delivery,
+                ..Default::default()
             },
         ))
         .unwrap()

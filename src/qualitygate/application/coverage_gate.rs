@@ -19,6 +19,10 @@ pub(super) fn apply(
     snapshot: &Snapshot,
     workspace: &Path,
 ) -> Result<()> {
+    let mut spec = spec.clone();
+    if snapshot.delivery() {
+        spec.mode = IncrementMode::ChangedLines;
+    }
     if spec.coverage_paths.is_empty() {
         bail!("Coverage requires explicit coverage_paths");
     }

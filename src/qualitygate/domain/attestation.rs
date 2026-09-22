@@ -16,6 +16,8 @@ pub struct ManualSubject {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SnapshotBinding {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_digest: Option<String>,
     pub mode: String,
     pub base: String,
     pub head: String,
@@ -41,6 +43,7 @@ impl SnapshotBinding {
     pub fn new(snapshot: &SnapshotIdentity, path_filter: Option<String>) -> Self {
         Self {
             mode: snapshot.mode.clone(),
+            verification_digest: snapshot.verification_digest.clone(),
             base: snapshot.base.clone(),
             head: snapshot.head.clone(),
             content_digest: snapshot.content_digest.clone(),

@@ -214,7 +214,14 @@ impl DecisionEnvelope {
             decision_id: String::new(),
             command_kind: CommandKind::Check,
             subject: DecisionSubject {
-                snapshot_digest: Some(report.snapshot.content_digest.clone()),
+                snapshot_digest: Some(
+                    report
+                        .snapshot
+                        .verification_digest
+                        .as_ref()
+                        .unwrap_or(&report.snapshot.content_digest)
+                        .clone(),
+                ),
                 task_digest: report.policy.task_contract_digest.clone(),
                 source_digest: None,
             },

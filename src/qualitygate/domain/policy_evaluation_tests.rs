@@ -12,6 +12,7 @@ fn report() -> Report {
     check.metadata.insert("rule_definition".into(), json!({}));
     let checks = vec![check];
     Report {
+        selection: None,
         context: None,
         schema_version: 1,
         run_id: "test".into(),
@@ -20,6 +21,7 @@ fn report() -> Report {
         evaluator_digest: "evaluator".into(),
         environment_digest: "environment".into(),
         snapshot: SnapshotIdentity {
+            verification_digest: None,
             mode: "diff".into(),
             base: "base".into(),
             head: "head".into(),

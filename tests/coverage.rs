@@ -85,7 +85,7 @@ impl Fixture {
         std::fs::write(self.root.path().join("input.report"), text).unwrap();
     }
     fn run(&self, code: i32, args: &[&str]) -> Value {
-        let mut command = vec!["check", "--format", "json"];
+        let mut command = vec!["check", "--scope", "repository", "--format", "json"];
         command.extend_from_slice(args);
         report(&cli(self.root.path(), &command), code)
     }

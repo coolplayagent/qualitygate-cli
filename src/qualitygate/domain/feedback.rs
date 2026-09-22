@@ -81,7 +81,7 @@ pub fn render(
         "gate":{"complete":report.gate.complete,"decision":report.gate.decision},
         "scope":report.scope,"profile":report.profile,
         "snapshot":{"mode":report.snapshot.mode,"base":report.snapshot.base,"head":report.snapshot.head,
-            "content_digest":report.snapshot.content_digest,"report_pointer":"/snapshot"},
+            "content_digest":report.snapshot.content_digest,"verification_digest":report.snapshot.verification_digest,"report_pointer":"/snapshot"},
         "policy":{"resolved_commit":report.policy.resolved_commit,"trust":report.policy.trust,
             "config_digest":report.policy.config_digest,"rules_digest":report.policy.rules_digest,
             "task_contract_digest":report.policy.task_contract_digest,"changes":report.policy.changes.len(),

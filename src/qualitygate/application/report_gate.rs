@@ -18,7 +18,7 @@ use std::{
 pub(super) fn apply(
     result: &mut CheckResult,
     spec: &ReportSpec,
-    data: Data,
+    mut data: Data,
     baseline: Option<Data>,
     snapshot: &Snapshot,
     workspace: &Path,
@@ -74,6 +74,18 @@ pub(super) fn apply(
     let mut current_counts = BTreeMap::new();
     let mut increased = BTreeSet::new();
     let is_ratchet = spec.mode == IncrementMode::Ratchet;
+    if snapshot.delivery() {
+        for issue in &mut data.issues {
+            normalize_issue(issue, snapshot, workspace, false, &mut line_counts)?;
+        }
+        let before = data.issues.len();
+        data.issues
+            .retain(|issue| delivery_issue(issue, snapshot, false));
+        result.metadata.insert(
+            format!("{}:delivery_filtered", spec.path),
+            (before - data.issues.len()).into(),
+        );
+    }
     if spec.mode.needs_baseline() {
         let baseline = baseline.context("Missing baseline analysis")?;
         if is_ratchet {
@@ -82,6 +94,21 @@ pub(super) fn apply(
         }
         for mut issue in baseline.issues {
             normalize_issue(&mut issue, snapshot, workspace, true, &mut line_counts)?;
+            if snapshot.delivery() {
+                let selected = if is_ratchet {
+                    delivery_issue(&issue, snapshot, true)
+                } else if issue.locations.is_empty() {
+                    snapshot.selects_diagnostic(issue.file.as_deref(), None)
+                } else {
+                    issue
+                        .locations
+                        .iter()
+                        .any(|location| snapshot.selects_diagnostic(location.file.as_deref(), None))
+                };
+                if !selected {
+                    continue;
+                }
+            }
             if is_ratchet {
                 *baseline_counts.entry(count_key(&issue)).or_insert(0) += 1;
             } else {
@@ -130,8 +157,23 @@ pub(super) fn apply(
         if let Some(first) = issue.locations.first() {
             displayed = first.clone();
         }
+        if snapshot.delivery() {
+            select_location(&issue, &mut displayed, |location| {
+                Ok(snapshot.selects_diagnostic(
+                    location.file.as_deref(),
+                    location
+                        .line
+                        .map(|line| Range {
+                            start_line: line,
+                            end_line: location.end_line.unwrap_or(line),
+                        })
+                        .as_ref(),
+                ))
+            })?;
+        }
         let include = match spec.mode {
             IncrementMode::Full => true,
+            IncrementMode::ChangedLines if snapshot.delivery() => true,
             IncrementMode::ChangedLines => select_location(&issue, &mut displayed, |location| {
                 let file = location
                     .file
@@ -198,6 +240,46 @@ pub(super) fn apply(
         .metadata
         .insert(format!("{}:filtered", spec.path), filtered.into());
     Ok(())
+}
+
+fn delivery_issue(issue: &Issue, snapshot: &Snapshot, baseline: bool) -> bool {
+    let selected = |file: Option<&str>, line: Option<usize>, end: Option<usize>| {
+        if baseline {
+            let Some(file) = file else {
+                return true;
+            };
+            if !snapshot.includes(file) {
+                return false;
+            }
+            let Some(change) = snapshot.changes.get(file) else {
+                return false;
+            };
+            line.is_none_or(|line| {
+                change
+                    .removed_lines
+                    .range(line..=end.unwrap_or(line))
+                    .next()
+                    .is_some()
+            })
+        } else {
+            snapshot.selects_diagnostic(
+                file,
+                line.map(|line| Range {
+                    start_line: line,
+                    end_line: end.unwrap_or(line),
+                })
+                .as_ref(),
+            )
+        }
+    };
+    if issue.locations.is_empty() {
+        selected(issue.file.as_deref(), issue.line, None)
+    } else {
+        issue
+            .locations
+            .iter()
+            .any(|location| selected(location.file.as_deref(), location.line, location.end_line))
+    }
 }
 
 fn count_key(issue: &Issue) -> ratchet::Key {

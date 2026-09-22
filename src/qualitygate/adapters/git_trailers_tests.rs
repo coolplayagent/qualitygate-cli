@@ -37,8 +37,10 @@ fn setup() -> (Snapshot, History, Marker) {
     let before = files(&base);
     let after = files(&merge);
     let snapshot = Snapshot {
+        scope_evidence: Default::default(),
         root: ".".into(),
         identity: snapshot::Identity {
+            verification_digest: None,
             mode: "diff".into(),
             base: "base".into(),
             head: "merge".into(),

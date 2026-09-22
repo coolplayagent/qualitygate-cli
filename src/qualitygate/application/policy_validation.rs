@@ -315,20 +315,11 @@ async fn run_case(
         jobs: b.snapshot_jobs.into(),
         timeout: Duration::from_secs(b.snapshot_timeout_seconds.into()),
         path_filter: None,
+        ..Default::default()
     };
-    let snapshot = Arc::new(
-        snapshot::capture_with_options(
-            &options.root,
-            &snapshot::Selection::Diff {
-                base: case.base.clone(),
-                head: case.head.clone(),
-            },
-            &capture,
-        )
-        .await?,
-    );
     let run = |policy: Arc<PreparedPolicy>, policy_digest: String| {
-        let (snapshot, capture) = (Arc::clone(&snapshot), capture.clone());
+        let mut capture = capture.clone();
+        capture.exclude = policy.config.exclude.clone();
         async move {
             let _permit = semaphore
                 .acquire()
@@ -340,6 +331,18 @@ async fn run_case(
             let prepared =
                 tokio::task::spawn_blocking(move || prepare_check(&policy, &task, &digest))
                     .await??;
+            let snapshot = Arc::new(
+                snapshot::capture_with_options(
+                    &options.root,
+                    &snapshot::Selection::Diff {
+                        base: case.base.clone(),
+                        head: case.head.clone(),
+                    },
+                    &capture,
+                )
+                .await?,
+            );
+            super::acquisition::validate_excluded(&snapshot, &prepared.protected_paths)?;
             let recheck = validation_recheck(options);
             let options = super::CheckOptions {
                 root: options.root.clone(),
@@ -383,7 +386,8 @@ async fn run_case(
     );
     let (baseline, baseline_report) = baseline?;
     let (candidate, candidate_report) = candidate?;
-    if baseline_report.snapshot.content_digest != candidate_report.snapshot.content_digest
+    if baseline_report.snapshot.base != candidate_report.snapshot.base
+        || baseline_report.snapshot.head != candidate_report.snapshot.head
         || baseline_report.policy.task_contract_digest
             != candidate_report.policy.task_contract_digest
         || baseline_report.evaluator_digest != candidate_report.evaluator_digest
@@ -401,7 +405,18 @@ async fn run_case(
             kind: case.kind,
             base: case.base.clone(),
             head: case.head.clone(),
-            snapshot_digest: Some(snapshot.identity.content_digest.clone()),
+            snapshot_digest: Some(
+                if baseline_report.snapshot.content_digest
+                    == candidate_report.snapshot.content_digest
+                {
+                    baseline_report.snapshot.content_digest.clone()
+                } else {
+                    digest(&serde_json::to_vec(&(
+                        &baseline_report.snapshot,
+                        &candidate_report.snapshot,
+                    ))?)
+                },
+            ),
             task_digest: digest(&serde_json::to_vec(&case.task)?),
             baseline,
             candidate,

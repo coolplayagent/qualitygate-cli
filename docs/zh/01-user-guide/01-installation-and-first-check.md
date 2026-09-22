@@ -46,6 +46,14 @@ qualitygate --root /path/to/repository init --with-checks --format json
 
 ## 首次检查
 
+存量仓库先完成裁剪复核：运行 `init --with-checks --format json`，审核候选命令及预检；
+在已授权范围内为历史资源添加 YAML 顶层 `exclude`，例如 `exclude: ["gitbook/images/**"]`。
+再次运行 `init --format json`，检查 `excluded_file_count`、`excluded_paths`、剩余大文件及
+预检完整性。不要自动豁免所有大文件；排除会使工具无法读取对应资源。
+
+将配置纳入所选暂存区或提交后，执行对应 `check --scope delivery --profile full`。
+若构建依赖被排除，缩小模式并重检；保留范围与排除证据，不将裁剪后通过表述为全仓通过。
+
 ```bash
 qualitygate --root /path/to/repository \
   check --worktree --profile quick --format json

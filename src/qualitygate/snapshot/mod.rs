@@ -53,6 +53,7 @@ pub struct File {
 
 #[derive(Debug, Clone)]
 pub struct Snapshot {
+    pub scope_evidence: crate::domain::check_scope::ScopeEvidence,
     pub root: PathBuf,
     pub identity: Identity,
     pub files: BTreeMap<String, File>,
@@ -69,6 +70,16 @@ pub fn digest(bytes: &[u8]) -> String {
 /// Includes path, executable bit and length framing, not only concatenated bytes.
 pub fn content_digest(files: &BTreeMap<String, File>) -> String {
     content_digest_until(files, None).expect("hashing without a deadline cannot time out")
+}
+
+/// Derived execution inputs retain their parent's scope binding as well as bytes.
+pub fn bind_derived(identity: &mut Identity, context_digest: String) {
+    if let Some(parent) = &identity.verification_digest {
+        identity.verification_digest = Some(digest(&serde_json::to_vec(&serde_json::json!({
+            "parent":parent,"mode":identity.mode,"base":identity.base,"head":identity.head,"context":context_digest
+        })).expect("serializable derived identity")));
+    }
+    identity.content_digest = context_digest;
 }
 
 fn content_digest_until(
@@ -98,10 +109,19 @@ pub async fn capture_with_options(
     selection: &Selection,
     options: &CaptureOptions,
 ) -> Result<Snapshot> {
+    capture_resolved(root, selection, options, None).await
+}
+
+pub async fn capture_resolved(
+    root: &Path,
+    selection: &Selection,
+    options: &CaptureOptions,
+    comparison: Option<crate::domain::MergeRequest>,
+) -> Result<Snapshot> {
     let acquisition = limits::Acquisition::new(options)?;
     tokio::time::timeout(
         options.timeout,
-        capture_inner(root, selection, &acquisition),
+        capture_inner(root, selection, &acquisition, comparison),
     )
     .await
     .context("Snapshot acquisition timed out")?
@@ -111,12 +131,16 @@ async fn capture_inner(
     root: &Path,
     selection: &Selection,
     acquisition: &limits::Acquisition,
+    comparison: Option<crate::domain::MergeRequest>,
 ) -> Result<Snapshot> {
     let root_text = run_git(root, &["rev-parse", "--show-toplevel"], None).await?;
     let root = PathBuf::from(std::str::from_utf8(&root_text)?.trim());
     let head = resolve_commit(&root, "HEAD").await?;
     let merge_request = if let Selection::MergeRequest { url, api_base } = selection {
-        Some(merge_request::resolve(&root, url, api_base.as_deref()).await?)
+        Some(match comparison {
+            Some(comparison) => comparison,
+            None => merge_request::resolve(&root, url, api_base.as_deref()).await?,
+        })
     } else {
         None
     };
@@ -163,17 +187,81 @@ async fn capture_inner(
         read_target,
         git::messages(&root, &base, &target)
     )?;
+    let scope = acquisition.options.scope;
+    let exclude = acquisition.options.exclude.clone();
+    let excluded_paths = if exclude.is_empty() {
+        Vec::new()
+    } else {
+        let selected = acquisition.options.selector()?;
+        let mut paths = std::collections::BTreeSet::new();
+        for reference in [&base, &target] {
+            let names = run_git(
+                &root,
+                &["ls-tree", "-r", "--name-only", "-z", reference],
+                None,
+            )
+            .await?;
+            for name in names.split(|b| *b == 0).filter(|p| !p.is_empty()) {
+                let path = std::str::from_utf8(name)?;
+                if !selected(path) {
+                    paths.insert(path.to_owned());
+                }
+            }
+        }
+        if matches!(
+            selection,
+            Selection::Worktree { .. } | Selection::Path { .. } | Selection::Staged
+        ) {
+            let args: &[&str] = if matches!(selection, Selection::Staged) {
+                &["ls-files", "--cached", "-z"]
+            } else {
+                &[
+                    "ls-files",
+                    "--cached",
+                    "--others",
+                    "--exclude-standard",
+                    "-z",
+                ]
+            };
+            let names = run_git(&root, args, None).await?;
+            for name in names.split(|b| *b == 0).filter(|p| !p.is_empty()) {
+                let path = std::str::from_utf8(name)?;
+                if !selected(path) {
+                    paths.insert(path.to_owned());
+                }
+            }
+        }
+        anyhow::ensure!(
+            paths.len() <= MAX_FILES,
+            "Excluded inventory exceeds file budget"
+        );
+        paths.into_iter().collect()
+    };
     // Diffing and hashing scale with snapshot contents and must not occupy an async worker.
     let deadline = Some(acquisition.deadline);
     tokio::task::spawn_blocking(move || {
         let changes = changes::compare_until(&base_files, &files, deadline)?;
+        let context_digest = content_digest_until(&files, deadline)?;
+        let scope_evidence = crate::domain::check_scope::ScopeEvidence {
+            mode: scope, exclude, excluded_paths,
+            changed_files: changes.keys().cloned().collect(),
+            changed_lines: changes.values().map(|change| change.added_lines.len()).sum(),
+            execution_context_digest: context_digest.clone(), empty_delivery: changes.is_empty(),
+        };
+        let verification_digest = if scope == crate::domain::check_scope::CheckScope::Repository && scope_evidence.exclude.is_empty() {
+            None
+        } else {
+            Some(digest(&serde_json::to_vec(&serde_json::json!({"context":context_digest,"base_context":content_digest_until(&base_files, deadline)?,"scope":scope_evidence,"path_filter":path_filter,"changes":changes}))?))
+        };
         Ok(Snapshot {
+            scope_evidence,
             root,
             identity: Identity {
                 mode: mode.into(),
                 base,
                 head: target,
-                content_digest: content_digest_until(&files, deadline)?,
+                content_digest: context_digest,
+                verification_digest,
                 merge_request,
             },
             files,
@@ -264,7 +352,54 @@ fn materialize_files(files: &BTreeMap<String, File>) -> Result<Materialized> {
 }
 
 impl Snapshot {
+    pub fn delivery(&self) -> bool {
+        self.scope_evidence.mode == crate::domain::check_scope::CheckScope::Delivery
+    }
+
+    pub fn selects_diagnostic(
+        &self,
+        file: Option<&str>,
+        range: Option<&crate::domain::Range>,
+    ) -> bool {
+        let Some(file) = file else {
+            return true;
+        };
+        if !self.includes(file) {
+            return false;
+        }
+        if !self.delivery() {
+            return true;
+        }
+        let Some(change) = self.changes.get(file).or_else(|| {
+            self.changes
+                .values()
+                .find(|c| c.old_path.as_deref() == Some(file))
+        }) else {
+            return false;
+        };
+        range.is_none_or(|range| {
+            change
+                .added_lines
+                .range(range.start_line..=range.end_line)
+                .next()
+                .is_some()
+        })
+    }
+
     pub fn includes(&self, file: &str) -> bool {
+        if self.delivery()
+            && !self.changes.contains_key(file)
+            && !self
+                .changes
+                .values()
+                .any(|change| change.old_path.as_deref() == Some(file))
+        {
+            return false;
+        }
+        self.feedback_includes(file)
+    }
+
+    pub fn feedback_includes(&self, file: &str) -> bool {
         self.path_filter.as_ref().is_none_or(|filter| {
             file == filter
                 || file

@@ -143,8 +143,10 @@ mod tests {
 
     fn snapshot() -> Snapshot {
         Snapshot {
+            scope_evidence: Default::default(),
             root: "/fixture".into(),
             identity: Identity {
+                verification_digest: None,
                 mode: "worktree".into(),
                 base: "base".into(),
                 head: "head".into(),

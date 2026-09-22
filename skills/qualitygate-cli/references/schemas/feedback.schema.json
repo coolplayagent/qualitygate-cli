@@ -42,7 +42,12 @@
     "max_bytes": {"type": "integer", "minimum": 4096, "maximum": 262144},
     "scope": {"type": "string"},
     "profile": {"type": "string"},
-    "snapshot": {"type": "object"},
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "verification_digest": {"type": ["string", "null"]}
+      }
+    },
     "policy": {"type": "object"},
     "task": {"type": "object"},
     "delivery_ready": {"type": "boolean"},

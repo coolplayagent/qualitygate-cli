@@ -43,3 +43,8 @@ integration counterexample where appropriate. Record unsupported platforms,
 unavailable tools, performance environment, and all incomplete results. The
 current Git commit and gate report—not a historical prose status line—identify
 what was actually verified.
+
+Delivery scope and explicit exclusion evidence: `tests/delivery_scope.rs` covers
+changed lines versus repository findings, immutable context, large tracked resources,
+selected policy provenance, protected exclusions, empty delivery and command failures.
+`tests/quality.rs` validates the packaged Skill links and architecture.

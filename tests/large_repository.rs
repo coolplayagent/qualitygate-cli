@@ -30,7 +30,7 @@ fn legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_ch
         args.extend(["--snapshot-max-file-mib", "5"]);
         let passed = report(&cli(root, &args), 0);
         assert_eq!(passed["gate"]["complete"], true);
-        assert_eq!(passed["scope"], "repository");
+        assert_eq!(passed["scope"], "delivery");
         assert!(
             !passed["snapshot"]["content_digest"]
                 .as_str()

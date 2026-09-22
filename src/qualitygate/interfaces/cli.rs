@@ -259,6 +259,9 @@ struct CheckArgs {
     expect_base: Option<String>,
     #[arg(long, default_value = "full", value_parser = ["quick", "full"])]
     profile: String,
+    /// Verification target, independent of quick/full check selection.
+    #[arg(long, value_enum, default_value = "delivery")]
+    scope: crate::domain::check_scope::CheckScope,
     #[arg(long)]
     task: Option<String>,
     #[arg(long)]
@@ -344,7 +347,18 @@ impl Cli {
             }
             Command::Init { with_checks } => {
                 let path = self.config.clone();
-                let snapshot_preflight = match crate::snapshot::preflight::inspect(&root).await {
+                let initialize_root = root.clone();
+                let initialized = tokio::task::spawn_blocking(move || {
+                    config::initialize_at(&initialize_root, path.as_ref(), with_checks)
+                })
+                .await??;
+                let snapshot_preflight = match crate::snapshot::preflight::inspect_policy(
+                    &root,
+                    &initialized.config.exclude,
+                    &config::exclusions::protected_paths(&initialized.config, &self.config, None),
+                )
+                .await
+                {
                     Ok(preflight) => serde_json::to_value(preflight)?,
                     Err(error) => serde_json::json!({
                         "complete": false,
@@ -352,10 +366,6 @@ impl Cli {
                         "next_steps": ["Snapshot preflight is incomplete; candidate creation does not establish check readiness. Run check after reviewing the acquisition error."]
                     }),
                 };
-                let initialized = tokio::task::spawn_blocking(move || {
-                    config::initialize_at(&root, path.as_ref(), with_checks)
-                })
-                .await??;
                 Ok((
                     super::render::metadata(
                         &serde_json::json!({"schema_version":1,"source":self.config,"config":initialized.config,"discovery":initialized.discovery,"snapshot_preflight":snapshot_preflight,"created":initialized.created,"with_checks_applied":initialized.with_checks_applied,"status":"candidate","message":"Review candidate checks, report requirements and capability gaps before enforcing this policy"}),
@@ -558,11 +568,13 @@ impl Cli {
                     config: self.config,
                     selection,
                     snapshot_options: crate::snapshot::CaptureOptions {
+                        scope: args.scope,
                         max_bytes: args.snapshot_max_mib as usize * 1024 * 1024,
                         max_file_bytes: args.snapshot_max_file_mib as usize * 1024 * 1024,
                         jobs: args.snapshot_jobs as usize,
                         timeout: std::time::Duration::from_secs(args.snapshot_timeout_secs.into()),
                         path_filter,
+                        ..Default::default()
                     },
                     profile: args.profile,
                     task: args.task,

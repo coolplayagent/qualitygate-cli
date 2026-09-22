@@ -114,12 +114,13 @@ pub fn prepare(
     identity.mode = "test_overlay".into();
     identity.head = identity.base.clone();
     identity.merge_request = None;
-    identity.content_digest = content_digest_until(&files, Some(deadline))?;
+    super::bind_derived(&mut identity, content_digest_until(&files, Some(deadline))?);
     Ok(Prepared {
         source_changed,
         tests: selected,
         overlay,
         baseline: Snapshot {
+            scope_evidence: snapshot.scope_evidence.clone(),
             root: snapshot.root.clone(),
             identity,
             files,
@@ -197,8 +198,10 @@ mod tests {
         ]);
         files.get_mut("tests/changed").unwrap().executable = true;
         let input = Snapshot {
+            scope_evidence: Default::default(),
             root: "/repo".into(),
             identity: super::super::Identity {
+                verification_digest: None,
                 mode: "worktree".into(),
                 base: "base".into(),
                 head: "head".into(),

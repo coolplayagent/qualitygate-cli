@@ -92,18 +92,18 @@ fn malformed_missing_and_mismatched_objects_never_produce_partial_snapshots() {
         "120000 blob aaa\tfile\0",
         "100644 blob nope\tfile\0",
     ] {
-        assert!(entries(listing.as_bytes(), false).is_err());
+        assert!(entries(listing.as_bytes(), false, &Default::default()).is_err());
     }
     let conflict = format!("100644 {} 1\tfile\0", "a".repeat(40));
     assert!(
-        entries(conflict.as_bytes(), true)
+        entries(conflict.as_bytes(), true, &Default::default())
             .unwrap_err()
             .to_string()
             .contains("conflict")
     );
     let too_many = format!("100644 blob {}\tfile\0", "a".repeat(40)).repeat(MAX_FILES + 1);
     assert!(
-        entries(too_many.as_bytes(), false)
+        entries(too_many.as_bytes(), false, &Default::default())
             .unwrap_err()
             .to_string()
             .contains("files")

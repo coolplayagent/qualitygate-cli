@@ -36,4 +36,5 @@ pub use rule_validation::*;
 pub use source_review::*;
 pub use verification::*;
 
+pub mod check_scope;
 pub mod test_effectiveness;

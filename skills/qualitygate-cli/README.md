@@ -107,3 +107,8 @@ Use [SKILL.md](SKILL.md) for normal agent operation. In particular, do not use
 the skill to write a policy, choose a trusted reference, manufacture manual
 evidence, downgrade a failure, or publish external results unless the user has
 separately authorized that action.
+
+Existing repositories: follow [the trimming workflow](references/operations.md#existing-repository-trimming).
+Checks default to `--scope delivery`; use reviewed top-level `exclude` globs to omit
+historical resources from acquisition and tool inputs. `--scope repository` explicitly
+selects repository checks. Preserve the report scope and exclusion evidence.

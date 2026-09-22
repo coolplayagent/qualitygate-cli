@@ -124,6 +124,17 @@ pub(super) fn report(
         report.profile
     );
     render_boundary(&mut out, &report.verification);
+    if let Some(selection) = &report.selection {
+        out.push_str(&format!("Selection: {} | changed files: {} | changed lines: {} | excluded files: {} | empty delivery: {}\n",
+            selection.mode.as_str(), selection.changed_files.len(), selection.changed_lines,
+            selection.excluded_paths.len(), selection.empty_delivery));
+        for path in selection.excluded_paths.iter().take(100) {
+            out.push_str(&format!("Excluded input: {}\n", escape_controls(path)));
+        }
+        if selection.excluded_paths.len() > 100 {
+            out.push_str("Excluded input list truncated; see the JSON report.\n");
+        }
+    }
     if let Some(task) = &report.plan.task_id {
         out.push_str(&format!(
             "Task: {}\n",

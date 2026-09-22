@@ -75,7 +75,10 @@ impl InputGuard {
     }
 
     pub async fn for_snapshot(root: &Path, snapshot: Arc<super::Snapshot>) -> Result<Self> {
-        Self::create(root, ExpectedFiles::Snapshot(snapshot)).await
+        let digest = snapshot.identity.content_digest.clone();
+        let mut guard = Self::create(root, ExpectedFiles::Snapshot(snapshot)).await?;
+        guard.digest = digest;
+        Ok(guard)
     }
 
     async fn create(root: &Path, files: ExpectedFiles) -> Result<Self> {

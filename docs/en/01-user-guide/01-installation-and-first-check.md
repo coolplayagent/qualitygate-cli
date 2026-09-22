@@ -53,6 +53,18 @@ Discovery is bounded. Unreadable files, malformed manifests, unsupported
 ecosystems, and exhausted budgets remain explicit gaps rather than successful
 fallbacks.
 
+## Existing-repository trimming
+
+Run `init --with-checks --format json` and review suggested commands and preflight.
+Within the authorized adoption scope, add precise top-level `exclude` globs for
+historical resources tools do not need, for example `exclude: ["gitbook/images/**"]`.
+Do not automatically exempt every large file. Rerun `init --format json` and inspect
+`excluded_file_count`, `excluded_paths`, remaining large inputs and incomplete reasons.
+Put the configuration in the selected index/commit before staged/diff/MR checks.
+Run `check --scope delivery --profile full` on the final inputs. If tools need
+excluded resources, narrow the pattern and rerun. Retain scope and exclusions;
+a trimmed delivery pass is not repository-wide approval.
+
 ## Run the first check
 
 ```bash

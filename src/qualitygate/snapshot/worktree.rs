@@ -33,6 +33,7 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
         None,
     )
     .await?;
+    let selected = acquisition.options.selector()?;
     let names = tokio::task::spawn_blocking(move || -> Result<_> {
         let names: BTreeSet<_> = listing
             .split(|byte| *byte == 0)
@@ -42,7 +43,10 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
         if names.len() > MAX_FILES {
             bail!("Snapshot exceeds {MAX_FILES} files");
         }
-        Ok(names.into_iter().collect::<Vec<_>>())
+        Ok(names
+            .into_iter()
+            .filter(|path| selected(path))
+            .collect::<Vec<_>>())
     })
     .await??;
     let cancel = Cancel(Arc::new(AtomicBool::new(false)));

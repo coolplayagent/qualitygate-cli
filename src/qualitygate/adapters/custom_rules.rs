@@ -469,7 +469,7 @@ fn subjects(
                         || provenance
                             .is_some_and(|facts| facts.participated(&file.path, &test.entity));
                     let triggered = (change == "any" || test.kind == change) && in_scope;
-                    let retained = if let (Some(binding), Some(previous), Some(path)) =
+                    let previous_declaration = if let (Some(binding), Some(previous), Some(path)) =
                         (&rule.binding, &test.previous, &test.previous_path)
                     {
                         if !previous_views.contains_key(path) {
@@ -488,10 +488,10 @@ fn subjects(
                             true,
                             facts.git_trailers,
                         )?
-                        .is_some()
                     } else {
-                        false
+                        None
                     };
+                    let retained = previous_declaration.is_some();
                     let declaration = rule
                         .binding
                         .as_ref()
@@ -515,7 +515,14 @@ fn subjects(
                     subjects.push(Subject {
                         triggered,
                         file: Some(file.path.clone()),
-                        range: Some(entity.range.clone()),
+                        range: if snapshot.delivery()
+                            && retained
+                            && previous_declaration != declaration
+                        {
+                            None
+                        } else {
+                            Some(entity.range.clone())
+                        },
                         identity: entity.symbol.clone(),
                         name: entity.name.clone(),
                         text: std::str::from_utf8(&bytes[entity.byte_range.clone()])?.into(),

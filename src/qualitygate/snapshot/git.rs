@@ -96,14 +96,24 @@ struct Entry {
     size: usize,
 }
 
-fn entries(listing: &[u8], index: bool) -> Result<Vec<Entry>> {
+fn entries(listing: &[u8], index: bool, options: &super::CaptureOptions) -> Result<Vec<Entry>> {
+    let selected = options.selector()?;
     let mut entries = Vec::new();
+    let mut visited = 0;
     for entry in listing
         .split(|byte| *byte == 0)
         .filter(|entry| !entry.is_empty())
     {
+        visited += 1;
+        if visited > MAX_FILES {
+            bail!("Snapshot exceeds {MAX_FILES} files");
+        }
         let entry = std::str::from_utf8(entry)?;
         let (metadata, path) = entry.split_once('\t').context("Malformed Git entry")?;
+        let path = crate::paths::relative(Path::new(path))?;
+        if !selected(&path) {
+            continue;
+        }
         let fields: Vec<&str> = metadata.split_whitespace().collect();
         if fields.len() != 3 {
             bail!("Malformed Git entry metadata");
@@ -118,7 +128,6 @@ fn entries(listing: &[u8], index: bool) -> Result<Vec<Entry>> {
         if ![40, 64].contains(&oid.len()) || !oid.bytes().all(|byte| byte.is_ascii_hexdigit()) {
             bail!("Invalid Git object identity at {path}");
         }
-        let path = crate::paths::relative(Path::new(path))?;
         entries.push(Entry {
             path,
             executable: fields[0] == "100755",
@@ -237,7 +246,8 @@ async fn read_entries(
     index: bool,
     acquisition: &Acquisition,
 ) -> Result<BTreeMap<String, File>> {
-    let entries = tokio::task::spawn_blocking(move || entries(&listing, index)).await??;
+    let options = acquisition.options.clone();
+    let entries = tokio::task::spawn_blocking(move || entries(&listing, index, &options)).await??;
     if entries.is_empty() {
         return Ok(BTreeMap::new());
     }
