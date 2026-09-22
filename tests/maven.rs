@@ -44,8 +44,20 @@ fn configure(root: &Path, maven: &str, cache: &Path) {
     .unwrap();
 }
 
+// Retained-test dependency contracts deliberately include unchanged repository tests.
 fn run(root: &Path, code: i32) -> Value {
-    let output = cli(root, &["check", "--profile", "quick", "--format", "json"]);
+    let output = cli(
+        root,
+        &[
+            "check",
+            "--scope",
+            "repository",
+            "--profile",
+            "quick",
+            "--format",
+            "json",
+        ],
+    );
     if output.status.code() != Some(code)
         && let Ok(value) = serde_json::from_slice::<Value>(&output.stdout)
         && let Some(checks) = value["checks"].as_array()

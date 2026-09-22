@@ -5,6 +5,7 @@ use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
 use std::{fs, path::Path, process::Command};
 
+// These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
     let output = Command::new(env!("CARGO_BIN_EXE_qualitygate"))
         .env(
@@ -20,7 +21,7 @@ fn run(root: &Path, exit: i32) -> Value {
         )
         .arg("--root")
         .arg(root)
-        .args(["check", "--format", "json"])
+        .args(["check", "--scope", "repository", "--format", "json"])
         .output()
         .unwrap();
     report(&output, exit)

@@ -8,8 +8,15 @@ use std::{fs, path::Path, process::Command};
 const OLD: &str = "pub fn empty(values: &[u8]) -> bool { values.len() == 0 }\n";
 const NEW: &str = "pub fn other(values: &[u8]) -> bool { values.len() == 0 }\n";
 
+// These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
-    report(&cli(root, &["check", "--format", "json"]), exit)
+    report(
+        &cli(
+            root,
+            &["check", "--scope", "repository", "--format", "json"],
+        ),
+        exit,
+    )
 }
 
 #[test]

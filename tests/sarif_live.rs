@@ -28,8 +28,15 @@ fn main() {
 }
 "#;
 
+// These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, code: i32) -> Value {
-    report(&cli(root, &["check", "--format", "json"]), code)
+    report(
+        &cli(
+            root,
+            &["check", "--scope", "repository", "--format", "json"],
+        ),
+        code,
+    )
 }
 
 #[test]

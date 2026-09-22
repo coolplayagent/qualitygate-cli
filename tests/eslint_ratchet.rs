@@ -5,8 +5,15 @@ use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
 use std::{fs, path::Path, process::Command};
 
+// These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
-    report(&cli(root, &["check", "--format", "json"]), exit)
+    report(
+        &cli(
+            root,
+            &["check", "--scope", "repository", "--format", "json"],
+        ),
+        exit,
+    )
 }
 
 #[test]
@@ -89,6 +96,12 @@ fn real_eslint_stdout_ratchet_growth_repair_and_fatal_parse() {
     git(root, &["add", "."]);
     git(root, &["commit", "-qm", "historical ESLint finding"]);
 
+    let empty = report(&cli(root, &["check", "--format", "json"]), 0);
+    assert_eq!(empty["selection"]["empty_delivery"], true);
+    assert_eq!(
+        empty["checks"][0]["metadata"]["target/eslint.json:delivery_filtered"],
+        1
+    );
     let initial = run(root, 0);
     assert_eq!(
         initial["checks"][0]["metadata"]["target/eslint.json:ratchet"][0]["baseline"],
@@ -96,6 +109,14 @@ fn real_eslint_stdout_ratchet_growth_repair_and_fatal_parse() {
     );
     assert_eq!(initial["checks"][0]["execution"]["exit_code"], 1);
     fs::write(root.join("src/app.js"), "eval('one');\neval('two');\n").unwrap();
+    let incremental = report(&cli(root, &["check", "--format", "json"]), 1);
+    assert_eq!(
+        incremental["checks"][0]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
     let growth = run(root, 1);
     assert_eq!(
         growth["checks"][0]["diagnostics"].as_array().unwrap().len(),
