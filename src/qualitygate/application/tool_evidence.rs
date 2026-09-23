@@ -6,7 +6,7 @@ use crate::{
     paths, runner,
     snapshot::{self, Snapshot},
 };
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path, time::Duration};
 
@@ -52,15 +52,47 @@ pub(super) async fn collect_until(
     baseline: bool,
     deadline: Option<std::time::Instant>,
 ) -> Result<Vec<ToolEvidence>> {
+    collect_checked(
+        check, workspace, directory, snapshot, result, baseline, deadline,
+    )
+    .await
+    .map_err(|error| {
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::ToolProbeFailed,
+            crate::domain::prerequisites::Phase::Prepare,
+            "Configured tool version probe did not complete",
+        )
+        .resource(check.id.clone())
+        .instruction(
+            "Inspect the version-probe logs and repair the tool environment or configured probe.",
+        )
+        .wrap(error)
+    })
+}
+
+async fn collect_checked(
+    check: &CommandCheck,
+    workspace: &Path,
+    directory: &Path,
+    snapshot: &Snapshot,
+    result: &mut CheckResult,
+    baseline: bool,
+    deadline: Option<std::time::Instant>,
+) -> Result<Vec<ToolEvidence>> {
     let cwd = paths::confined(workspace, Path::new(&check.cwd))?;
     let mut evidence = Vec::new();
     for (index, tool) in check.tools.iter().enumerate() {
         let mut inputs = BTreeMap::new();
         for path in &tool.inputs {
-            let file = snapshot
-                .files
-                .get(path)
-                .with_context(|| format!("Tool input missing from checked snapshot: {path}"))?;
+            let file = snapshot.files.get(path).ok_or_else(|| {
+                crate::domain::prerequisites::PrerequisiteIssue::new(
+                    crate::domain::prerequisites::FailureCode::InputMissing,
+                    crate::domain::prerequisites::Phase::Prepare,
+                    format!("Tool input missing from checked snapshot: {path}"),
+                )
+                .resource(path.clone())
+                .instruction("Include the declared tool input in the selected snapshot and rerun.")
+            })?;
             inputs.insert(path.clone(), snapshot::digest(&file.bytes));
         }
         let executable = runner::identity::executable(&tool.argv[0], &cwd).await?;
@@ -139,10 +171,10 @@ pub(super) async fn collect_until(
         if after.digest != evidence.last().unwrap().executable.digest
             || after.path != evidence.last().unwrap().executable.path
         {
-            bail!(
+            return Err(super::prerequisites::identity_changed(format!(
                 "Tool executable changed during version probing: {}",
                 tool.id
-            );
+            )));
         }
     }
     Ok(evidence)
@@ -157,10 +189,10 @@ pub(super) async fn verify(
     for tool in evidence {
         let current = runner::identity::executable(&tool.argv[0], &cwd).await?;
         if current.path != tool.executable.path || current.digest != tool.executable.digest {
-            bail!(
+            return Err(super::prerequisites::identity_changed(format!(
                 "Tool executable changed during command execution: {}",
                 tool.id
-            );
+            )));
         }
     }
     Ok(())

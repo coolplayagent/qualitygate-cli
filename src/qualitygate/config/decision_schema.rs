@@ -8,11 +8,31 @@ const DECISION: &str =
     include_str!("../../../skills/qualitygate-cli/references/schemas/decision.schema.json");
 const FEEDBACK: &str =
     include_str!("../../../skills/qualitygate-cli/references/schemas/feedback.schema.json");
+const COMMAND_ERROR: &str =
+    include_str!("../../../skills/qualitygate-cli/references/schemas/command-error.schema.json");
 
 static DECISION_VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> =
     LazyLock::new(|| compile(DECISION));
 static FEEDBACK_VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> =
     LazyLock::new(|| compile(FEEDBACK));
+static COMMAND_ERROR_VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> =
+    LazyLock::new(|| compile(COMMAND_ERROR));
+
+pub fn command_error_document() -> Result<Value> {
+    COMMAND_ERROR_VALIDATOR
+        .as_ref()
+        .map_err(|error| anyhow!("Bundled command error schema is invalid: {error}"))?;
+    Ok(serde_json::from_str(COMMAND_ERROR)?)
+}
+
+pub fn validate_command_error(value: &Value) -> Result<()> {
+    let validator = COMMAND_ERROR_VALIDATOR
+        .as_ref()
+        .map_err(|error| anyhow!("Bundled command error schema is invalid: {error}"))?;
+    validator
+        .validate(value)
+        .map_err(|error| anyhow!("Command error violates schema: {error}"))
+}
 
 fn compile(source: &str) -> Result<jsonschema::Validator, String> {
     let schema: Value = serde_json::from_str(source).map_err(|error| error.to_string())?;

@@ -15,6 +15,18 @@ pub struct Plan {
 }
 
 pub fn parse_task(bytes: &[u8]) -> Result<TaskContract> {
+    parse_task_checked(bytes).map_err(|error| {
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::PlanInvalid,
+            crate::domain::prerequisites::Phase::Inputs,
+            "Task contract is invalid",
+        )
+        .instruction("Repair the selected task YAML and acceptance requirements.")
+        .wrap(error)
+    })
+}
+
+fn parse_task_checked(bytes: &[u8]) -> Result<TaskContract> {
     if bytes.len() > MAX_CONFIG_BYTES {
         bail!("Task contract exceeds configuration budget");
     }
@@ -39,6 +51,22 @@ fn validate_task(task: &TaskContract) -> Result<()> {
 
 impl Plan {
     pub fn build(config: &Config, task: Option<&TaskContract>, profile: &str) -> Result<Self> {
+        Self::build_validated(config, task, profile).map_err(|error| {
+            crate::domain::prerequisites::PrerequisiteIssue::new(
+                crate::domain::prerequisites::FailureCode::PlanInvalid,
+                crate::domain::prerequisites::Phase::Prepare,
+                "Cannot build the selected execution plan",
+            )
+            .instruction("Repair the selected profile, check dependencies or task contract.")
+            .wrap(error)
+        })
+    }
+
+    fn build_validated(
+        config: &Config,
+        task: Option<&TaskContract>,
+        profile: &str,
+    ) -> Result<Self> {
         if !["quick", "full"].contains(&profile) {
             bail!("Unknown profile: {profile}");
         }

@@ -228,6 +228,7 @@ jobs:
           test -s "dist/$package/references/schemas/project-rule.schema.json"
           test -s "dist/$package/references/schemas/decision.schema.json"
           test -s "dist/$package/references/schemas/feedback.schema.json"
+          test -s "dist/$package/references/schemas/command-error.schema.json"
           "dist/$package/assets/linux-x86_64/qualitygate" rules schema > "dist/project-rule.schema.json"
           grep -F 'urn:qualitygate:project-rule:1' "dist/project-rule.schema.json"
           test -f "dist/$package/references/rules/core/line-ending.yaml"
@@ -272,6 +273,7 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/schemas/project-rule.schema.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/schemas/decision.schema.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/schemas/feedback.schema.json" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/schemas/command-error.schema.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/security-sensitive-api.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/todo-marker.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/import-boundary.yaml" >/dev/null

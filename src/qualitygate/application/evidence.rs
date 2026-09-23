@@ -15,7 +15,16 @@ pub(super) async fn persist(
         "check-{}-{part}",
         identity.trim_start_matches("sha256:")
     ));
-    tokio::fs::write(&path, bytes).await?;
+    tokio::fs::write(&path, bytes).await.map_err(|error| {
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::StorageUnavailable,
+            crate::domain::prerequisites::Phase::Evidence,
+            "Cannot persist command evidence",
+        )
+        .resource(path.display().to_string())
+        .instruction("Check evidence-directory access and available storage.")
+        .wrap(error.into())
+    })?;
     Ok(Artifact {
         path: path.display().to_string(),
         digest: snapshot::digest(bytes),

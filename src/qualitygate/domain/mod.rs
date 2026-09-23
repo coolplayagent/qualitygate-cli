@@ -15,6 +15,7 @@ pub mod policy_approval;
 pub mod policy_effectiveness;
 pub mod policy_evaluation;
 pub mod policy_rollback;
+pub mod prerequisites;
 mod project;
 mod provenance;
 pub mod ratchet;

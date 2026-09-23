@@ -8,6 +8,11 @@ pub(super) async fn resolve(
     url: &str,
     api_base: Option<&str>,
 ) -> Result<MergeRequest> {
+    resolve_checked(root, url, api_base).await.map_err(|error| super::snapshot_issue()
+        .instruction("Check the MR URL, matching origin and complete Git ancestry; obtain the required history before retrying.").wrap(error))
+}
+
+async fn resolve_checked(root: &Path, url: &str, api_base: Option<&str>) -> Result<MergeRequest> {
     let request = Request::parse(url, api_base)?;
     let origin = run_git(root, &["remote", "get-url", "origin"], None).await?;
     if !request.matches_remote(std::str::from_utf8(&origin)?.trim())? {

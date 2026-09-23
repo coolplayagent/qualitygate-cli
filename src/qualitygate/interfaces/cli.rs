@@ -4,9 +4,10 @@ use crate::{
     domain::Severity,
     snapshot::Selection,
 };
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
+mod prerequisites;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum)]
 pub enum Format {
@@ -123,6 +124,7 @@ enum SchemaKind {
     Decision,
     Feedback,
     ProjectRule,
+    CommandError,
 }
 
 #[derive(Debug, Subcommand)]
@@ -288,6 +290,20 @@ struct CheckArgs {
 }
 
 impl Cli {
+    pub fn error_context(&self) -> super::errors::ErrorContext {
+        super::errors::ErrorContext {
+            root: self.root.display().to_string(),
+            config: self.config.clone(),
+            format: self.output_format(),
+            max_bytes: match &self.command {
+                Command::Check(args) if args.feedback => {
+                    args.feedback_max_bytes.unwrap_or(32768) as usize
+                }
+                _ => 65_536,
+            },
+        }
+    }
+
     pub fn output_format(&self) -> Format {
         if matches!(&self.command, Command::Check(args) if args.feedback) {
             // Feedback is a JSON protocol even when no --format was supplied.
@@ -298,8 +314,15 @@ impl Cli {
     }
 
     pub async fn run(self) -> Result<(String, u8)> {
+        let requirements = prerequisites::requirements(&self.command);
         if self.envelope && self.format != Format::Json {
-            bail!("--envelope requires --format json");
+            return Err(crate::domain::prerequisites::PrerequisiteIssue::new(
+                crate::domain::prerequisites::FailureCode::InvalidArguments,
+                crate::domain::prerequisites::Phase::Entry,
+                "--envelope requires --format json",
+            )
+            .instruction("Use --format json with --envelope.")
+            .into());
         }
         if let Command::SelfcheckProbe { mode } = self.command {
             return Ok(application::selfcheck::probe(&mode).await);
@@ -319,6 +342,7 @@ impl Cli {
                 SchemaKind::Decision => config::decision_schema::document(),
                 SchemaKind::Feedback => config::decision_schema::feedback_document(),
                 SchemaKind::ProjectRule => config::rule_schema::document(),
+                SchemaKind::CommandError => config::decision_schema::command_error_document(),
             })
             .await??;
             return Ok((serde_json::to_string_pretty(&document)?, 0));
@@ -330,10 +354,26 @@ impl Cli {
             let schema = tokio::task::spawn_blocking(config::rule_schema::document).await??;
             return Ok((serde_json::to_string_pretty(&schema)?, 0));
         }
-        let root = self
-            .root
-            .canonicalize()
-            .context("Repository root does not exist")?;
+        if matches!(
+            self.command,
+            Command::Policy {
+                command: super::policy::Policy::Evaluator
+            }
+        ) {
+            if self.envelope {
+                return Err(super::errors::invalid_arguments(
+                    "--envelope is available for policy transitions only",
+                ));
+            }
+            let value = application::policy_validation::evaluator().await?;
+            return Ok((super::render::metadata(&value, self.format)?, 0));
+        }
+        let root = application::prerequisites::root(self.root).await?;
+        if requirements == prerequisites::Requirements::LocalPolicy {
+            let (root, path) = (root.clone(), self.config.clone());
+            tokio::task::spawn_blocking(move || config::read_candidate_bytes(&root, path.as_ref()))
+                .await??;
+        }
         match self.command {
             Command::Schema { .. } => unreachable!("schema export does not require a repository"),
             Command::SelfcheckProbe { .. } => {
@@ -381,7 +421,9 @@ impl Cli {
             }
             Command::Judgment { command } => {
                 if self.envelope && !matches!(&command, Judgment::Pilot { .. }) {
-                    bail!("Judgment run already emits its typed assessment report");
+                    return Err(super::errors::invalid_arguments(
+                        "Judgment run already emits its typed assessment report",
+                    ));
                 }
                 let resolve = |path: PathBuf| {
                     if path.is_absolute() {
@@ -436,7 +478,9 @@ impl Cli {
             }
             Command::Pilot { command } => {
                 if self.envelope && !matches!(&command, super::pilot::Pilot::Summarize { .. }) {
-                    bail!("--envelope is available for pilot summarize only");
+                    return Err(super::errors::invalid_arguments(
+                        "--envelope is available for pilot summarize only",
+                    ));
                 }
                 let resolve = |input: PathBuf| {
                     if input.is_absolute() {
@@ -508,7 +552,9 @@ impl Cli {
                             }
                     )
                 {
-                    bail!("--envelope is available for policy transitions only");
+                    return Err(super::errors::invalid_arguments(
+                        "--envelope is available for policy transitions only",
+                    ));
                 }
                 let (value, code) = super::policy::run(root, self.config, command).await?;
                 if self.envelope {
@@ -529,11 +575,13 @@ impl Cli {
                         api_base: args.mr_api_base,
                     }
                 } else if let Some(diff) = args.diff {
-                    let (base, head) = diff
-                        .split_once("..")
-                        .context("--diff requires <base>..<head>")?;
+                    let (base, head) = diff.split_once("..").ok_or_else(|| {
+                        super::errors::invalid_arguments("--diff requires <base>..<head>")
+                    })?;
                     if base.is_empty() || head.is_empty() || head.starts_with('.') {
-                        bail!("--diff requires two explicit commit endpoints");
+                        return Err(super::errors::invalid_arguments(
+                            "--diff requires two explicit commit endpoints",
+                        ));
                     }
                     Selection::Diff {
                         base: base.into(),
@@ -636,7 +684,9 @@ async fn run_rules(
     envelope: bool,
 ) -> Result<(String, u8)> {
     if envelope && !matches!(command, Rules::Validate { .. }) {
-        bail!("--envelope is available for rules validate only");
+        return Err(super::errors::invalid_arguments(
+            "--envelope is available for rules validate only",
+        ));
     }
     use crate::domain::rule_lifecycle::RuleState;
     let lifecycle = match &command {

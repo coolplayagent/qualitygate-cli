@@ -47,6 +47,13 @@ impl Http {
     }
 
     pub async fn get(&self, url: Url, credential: Option<String>) -> Result<JsonResponse> {
+        self.get_checked(url, credential).await.map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::RemoteUnavailable,
+            crate::domain::prerequisites::Phase::Inputs, "Provider request could not complete")
+            .instruction("Check the selected provider endpoint, network access and host-bound credentials; public endpoints need no token unless access requires one.").wrap(error))
+    }
+
+    async fn get_checked(&self, url: Url, credential: Option<String>) -> Result<JsonResponse> {
         validate_url(&url)?;
         let mut request = self
             .client

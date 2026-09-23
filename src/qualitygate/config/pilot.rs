@@ -4,6 +4,26 @@ use anyhow::{Context, Result, bail};
 use std::{io::Read, path::Path};
 
 fn read(path: &Path, max: u64) -> Result<Vec<u8>> {
+    read_checked(path, max).map_err(|error| {
+        let missing = error
+            .downcast_ref::<std::io::Error>()
+            .is_some_and(|cause| cause.kind() == std::io::ErrorKind::NotFound);
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            if missing {
+                crate::domain::prerequisites::FailureCode::InputMissing
+            } else {
+                crate::domain::prerequisites::FailureCode::InputUnreadable
+            },
+            crate::domain::prerequisites::Phase::Inputs,
+            "Cannot read pilot input",
+        )
+        .resource(path.display().to_string())
+        .instruction("Supply the selected pilot input and readable bounded report artifacts.")
+        .wrap(error)
+    })
+}
+
+fn read_checked(path: &Path, max: u64) -> Result<Vec<u8>> {
     if !std::fs::symlink_metadata(path)?.is_file() {
         bail!("Pilot input must be a regular non-symlink file");
     }

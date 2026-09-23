@@ -3,7 +3,14 @@
 Use `--envelope --format json` on `check`, `check --feedback`, `rules validate`,
 `selfcheck`, policy transitions or pilot summaries to receive a versioned
 decision envelope. Export the pinned JSON Schemas with `qualitygate schema
-decision`, `qualitygate schema feedback`, or `qualitygate schema project-rule`.
+decision`, `qualitygate schema feedback`, `qualitygate schema command-error`,
+or `qualitygate schema project-rule`.
+
+Handle `kind: command_error` before reading `command_kind`: a prerequisite
+failure before report creation has no decision envelope or execution evidence,
+even when an envelope was requested. Use typed `issues` and their complete
+recovery actions; do not classify failures by matching message text.
+
 Check `command_kind` and validate the selected payload. An incomplete outcome
 always has exit 2 and route `inspect_gap`; review warnings, pending checks and
 preview omissions even when a complete gate passes. The `decision_id` binds

@@ -1,5 +1,6 @@
 use super::limits::Acquisition;
 use super::{File, MAX_FILES};
+use crate::domain::prerequisites::{FailureCode, Phase, PrerequisiteIssue};
 use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, time::Duration};
 
@@ -16,7 +17,14 @@ pub async fn run_git(root: &Path, args: &[&str], input: Option<Vec<u8>>) -> Resu
     .chain(args)
     .map(|arg| (*arg).into())
     .collect();
-    let output = crate::runner::capture(&argv, root, input, Duration::from_secs(30)).await?;
+    let output = crate::runner::capture(&argv, root, input, Duration::from_secs(30)).await
+        .map_err(|error| {
+            let missing = error.downcast_ref::<std::io::Error>()
+                .is_some_and(|cause| cause.kind() == std::io::ErrorKind::NotFound);
+            PrerequisiteIssue::new(if missing { FailureCode::GitUnavailable } else { FailureCode::SnapshotUnavailable },
+                Phase::Inputs, "Cannot execute Git")
+                .resource("git").instruction("Ensure Git is installed and available on PATH and the selected repository is accessible.").wrap(error)
+        })?;
     if output.timed_out {
         bail!("Git operation timed out: {}", args.first().unwrap_or(&""));
     }
@@ -27,11 +35,37 @@ pub async fn run_git(root: &Path, args: &[&str], input: Option<Vec<u8>>) -> Resu
         );
     }
     if output.exit_code != Some(0) {
-        bail!(
-            "Git {} failed: {}",
-            args.first().unwrap_or(&""),
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+        let (code, action) = if args.contains(&"--show-toplevel") {
+            (
+                FailureCode::GitRepositoryInvalid,
+                "Select an existing Git working tree with --root.",
+            )
+        } else if args.contains(&"--verify") {
+            (
+                FailureCode::GitRefUnavailable,
+                "Ensure the selected commit/ref exists locally. A new repository needs a commit before snapshot checks.",
+            )
+        } else if args.first() == Some(&"fetch") {
+            (
+                FailureCode::RemoteUnavailable,
+                "Check origin access and fetch the required Git objects.",
+            )
+        } else {
+            (
+                FailureCode::SnapshotUnavailable,
+                "Repair the reported Git input and retry the same snapshot selection.",
+            )
+        };
+        return Err(PrerequisiteIssue::new(
+            code,
+            Phase::Inputs,
+            format!("Git {} failed", args.first().unwrap_or(&"")),
+        )
+        .resource(root.display().to_string())
+        .instruction(action)
+        .wrap(anyhow::anyhow!(
+            String::from_utf8_lossy(&output.stderr).trim().to_owned()
+        )));
     }
     Ok(output.stdout)
 }
@@ -39,7 +73,13 @@ pub async fn run_git(root: &Path, args: &[&str], input: Option<Vec<u8>>) -> Resu
 pub async fn resolve_commit(root: &Path, reference: &str) -> Result<String> {
     if reference.is_empty() || reference.starts_with('-') || reference.contains(['\0', '\n', '\r'])
     {
-        bail!("Invalid Git reference");
+        return Err(PrerequisiteIssue::new(
+            FailureCode::GitRefUnavailable,
+            Phase::Inputs,
+            "Invalid Git reference",
+        )
+        .instruction("Use a valid Git commit or reference.")
+        .into());
     }
     let query = format!("{reference}^{{commit}}");
     let output = run_git(
@@ -67,7 +107,9 @@ pub async fn read_commit_with_options(
     let acquisition = Acquisition::new(options)?;
     tokio::time::timeout(options.timeout, commit(root, reference, &acquisition))
         .await
-        .context("Snapshot acquisition timed out")?
+        .context("Snapshot acquisition timed out")
+        .and_then(|result| result)
+        .map_err(|error| super::acquisition_error(error, reference.into()))
 }
 
 pub(super) async fn commit(

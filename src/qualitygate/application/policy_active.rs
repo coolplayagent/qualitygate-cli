@@ -82,6 +82,10 @@ fn authenticate(root: &Path) -> Result<Option<Authenticated>> {
 
 pub async fn load(root: PathBuf) -> Result<Option<Authenticated>> {
     tokio::task::spawn_blocking(move || authenticate(&root)).await?
+        .map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::PolicyAuthenticationFailed,
+            crate::domain::prerequisites::Phase::Policy, "Active policy authentication failed")
+            .instruction("Restore valid policy authorization and its external trust inputs; local initialization cannot replace active authorization.").wrap(error))
 }
 
 pub async fn revalidate(root: PathBuf, initial: Authenticated) -> Result<()> {

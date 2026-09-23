@@ -21,8 +21,14 @@ pub(super) struct PackagedRule {
 }
 
 pub(super) fn packaged_rules() -> Result<Vec<PackagedRule>> {
-    let root = builtin_rules_directory()?;
-    packaged_rules_from(&root)
+    (|| {
+        let root = builtin_rules_directory()?;
+        packaged_rules_from(&root)
+    })().map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+        crate::domain::prerequisites::FailureCode::RuleAssetsUnavailable,
+        crate::domain::prerequisites::Phase::Policy, "Built-in rule assets are unavailable or invalid")
+        .instruction("Install the matching Qualitygate skill assets or correct QUALITYGATE_BUILTIN_RULES_DIR.")
+        .wrap(error))
 }
 
 fn builtin_rules_directory() -> Result<PathBuf> {

@@ -6,6 +6,8 @@
 
 ## 仓库初始化与查看
 
+初始化要求及结构化早期错误见[命令前置条件与恢复](06-command-prerequisites.md)。
+
 ```bash
 qualitygate --root . init [--with-checks] --format json
 qualitygate --root . config --show --format json
@@ -13,6 +15,7 @@ qualitygate --root . rules categories --format json
 qualitygate --root . rules list [--language rust] [--source all] --format json
 qualitygate --root . rules describe RULE_ID --format json
 qualitygate --root . rules schema
+qualitygate schema command-error
 qualitygate --root . rules validate candidate.yaml
 qualitygate --root . rules generate --input reviewed-source.md
 ```

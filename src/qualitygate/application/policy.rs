@@ -39,7 +39,10 @@ pub(super) async fn load(
         let selected = trusted.as_ref().unwrap_or(files);
         let file = selected
             .get(&options.config)
-            .context("Selected policy snapshot has no qualitygate configuration; run init and stage/commit it as appropriate")?;
+            .ok_or_else(|| crate::domain::prerequisites::PrerequisiteIssue::new(
+                crate::domain::prerequisites::FailureCode::PolicySnapshotMissing,
+                crate::domain::prerequisites::Phase::Policy, "Selected policy snapshot has no qualitygate configuration")
+                .resource(options.config.clone()).instruction("Select a snapshot containing the reviewed configuration."))?;
         let config = config::parse(&file.bytes)?;
         let catalog = Catalog::load(
             &config,
@@ -52,10 +55,12 @@ pub(super) async fn load(
         let task_file = options
             .task
             .as_ref()
-            .map(|path| {
-                selected.get(path).with_context(|| {
-                    format!("Task contract missing from selected policy snapshot: {path}")
-                })
+            .map(|path| -> Result<_> {
+                selected.get(path).ok_or_else(|| crate::domain::prerequisites::PrerequisiteIssue::new(
+                    crate::domain::prerequisites::FailureCode::InputMissing,
+                    crate::domain::prerequisites::Phase::Inputs,
+                    format!("Task contract missing from selected policy snapshot: {path}"))
+                    .resource(path).instruction("Include the task contract in the selected policy snapshot or correct --task.").into())
             })
             .transpose()?;
         let task = task_file

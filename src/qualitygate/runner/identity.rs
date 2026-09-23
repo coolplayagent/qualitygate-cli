@@ -1,6 +1,7 @@
 //! Identify the executable selected from the command's actual working directory.
 
 use crate::domain::Artifact;
+use crate::domain::prerequisites::{FailureCode, Phase, PrerequisiteIssue};
 use anyhow::{Result, bail};
 use sha2::{Digest, Sha256};
 use std::{io::Read, path::Path};
@@ -11,8 +12,36 @@ pub async fn executable(program: &str, cwd: &Path) -> Result<Artifact> {
     let program = program.to_owned();
     let cwd = cwd.to_owned();
     tokio::task::spawn_blocking(move || {
-        let path = crate::env::executable(&program, &cwd)?;
-        identify(&path, MAX_EXECUTABLE_BYTES)
+        let workspace_issue = || {
+            PrerequisiteIssue::new(
+                FailureCode::WorkspaceUnavailable,
+                Phase::Prepare,
+                "Command working directory is unavailable",
+            )
+            .resource(cwd.display().to_string())
+            .instruction(
+                "Correct the configured cwd or ensure its prerequisite creates the directory.",
+            )
+        };
+        if !std::fs::metadata(&cwd)
+            .map_err(|error| workspace_issue().wrap(error.into()))?
+            .is_dir()
+        {
+            return Err(workspace_issue().into());
+        }
+        let issue = || {
+            PrerequisiteIssue::new(
+                FailureCode::ToolUnavailable,
+                Phase::Prepare,
+                format!("Cannot resolve or identify executable {program}"),
+            )
+            .resource(program.clone())
+            .instruction(
+                "Install the configured tool or correct its executable path/PATH for this check.",
+            )
+        };
+        let path = crate::env::executable(&program, &cwd).map_err(|error| issue().wrap(error))?;
+        identify(&path, MAX_EXECUTABLE_BYTES).map_err(|error| issue().wrap(error))
     })
     .await?
 }

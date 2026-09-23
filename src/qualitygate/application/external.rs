@@ -82,6 +82,18 @@ pub(super) fn load(
     evidence_directory: &Path,
     requests: &BTreeMap<String, usize>,
 ) -> Result<Inputs> {
+    load_checked(root, store_path, evidence_directory, requests).map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+        crate::domain::prerequisites::FailureCode::EvidenceInvalid,
+        crate::domain::prerequisites::Phase::Evidence, "External acceptance inputs are invalid")
+        .instruction("Provide valid external trust and signed evidence using the selected --trust-store and --evidence-dir.").wrap(error))
+}
+
+fn load_checked(
+    root: &Path,
+    store_path: &Path,
+    evidence_directory: &Path,
+    requests: &BTreeMap<String, usize>,
+) -> Result<Inputs> {
     let started = Instant::now();
     let root = dunce::canonicalize(root)?;
     let canonical_store = dunce::canonicalize(store_path)?;

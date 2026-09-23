@@ -98,12 +98,14 @@ pub fn context_from_files<'a>(
     files: impl IntoIterator<Item = (&'a str, &'a [u8])>,
     category: Option<&str>,
 ) -> Result<Value> {
-    use anyhow::Context;
     use sha2::{Digest, Sha256};
     let files: std::collections::BTreeMap<_, _> = files.into_iter().collect();
     let bytes = files
         .get(path)
-        .context("Selected policy snapshot has no configuration")?;
+        .ok_or_else(|| crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::PolicySnapshotMissing,
+            crate::domain::prerequisites::Phase::Policy, "Selected policy snapshot has no configuration")
+            .resource(path).instruction("Select a policy reference containing the configuration; initializing the worktree does not alter historical commits."))?;
     let config = super::parse(bytes)?;
     let all = Config {
         rulesets: RULESETS.iter().map(|name| (*name).into()).collect(),
@@ -232,11 +234,23 @@ impl Inventory {
         let mut policy_digest = None;
         let policy = match std::fs::metadata(policy_path) {
             Ok(_) => {
-                let bytes = super::rule_authoring::read_file(root, path)?;
+                let bytes = super::read_candidate_bytes(root, path.as_ref())?;
                 use sha2::{Digest, Sha256};
                 policy_digest = Some(format!("sha256:{:x}", Sha256::digest(&bytes)));
-                let config: Config = super::parse_yaml(&bytes)?;
-                super::validation::layout(&config, false)?;
+                let config: Config = super::parse_yaml(&bytes)
+                    .and_then(|config| {
+                        super::validation::layout(&config, false)?;
+                        Ok(config)
+                    })
+                    .map_err(|error| {
+                        crate::domain::prerequisites::PrerequisiteIssue::new(
+                            crate::domain::prerequisites::FailureCode::ConfigInvalid,
+                            crate::domain::prerequisites::Phase::Policy,
+                            "Qualitygate configuration is invalid",
+                        )
+                        .resource(path)
+                        .wrap(error)
+                    })?;
                 Some(config)
             }
             Err(error)
@@ -244,7 +258,25 @@ impl Inventory {
             {
                 None
             }
-            Err(error) => return Err(error.into()),
+            Err(error) => {
+                let missing = error.kind() == std::io::ErrorKind::NotFound;
+                return Err(crate::domain::prerequisites::PrerequisiteIssue::new(
+                    if missing {
+                        crate::domain::prerequisites::FailureCode::RepositoryNotInitialized
+                    } else {
+                        crate::domain::prerequisites::FailureCode::InputUnreadable
+                    },
+                    crate::domain::prerequisites::Phase::Policy,
+                    format!("Cannot read configuration: {path}"),
+                )
+                .resource(path)
+                .instruction(if missing {
+                    "Run qualitygate init using the selected --config."
+                } else {
+                    "Check configuration access permissions."
+                })
+                .wrap(error.into()));
+            }
         };
         let mut inventory = Self::for_policy(root, policy, discover_projects)?;
         inventory.policy_digest = policy_digest;

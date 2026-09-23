@@ -44,6 +44,7 @@ pub use initialization::{Initialization, initialize_at};
 pub use model::*;
 pub use plan::{Plan, parse_task};
 
+use crate::domain::prerequisites::{FailureCode, Phase, PrerequisiteIssue};
 use anyhow::{Context, Result, bail};
 use std::path::Path;
 
@@ -58,6 +59,18 @@ pub(super) fn parse_yaml<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result
 }
 
 pub fn parse(bytes: &[u8]) -> Result<Config> {
+    parse_config(bytes).map_err(|error| {
+        PrerequisiteIssue::new(
+            FailureCode::ConfigInvalid,
+            Phase::Policy,
+            "Qualitygate configuration is invalid",
+        )
+        .instruction("Repair the reported YAML/schema error in the selected configuration.")
+        .wrap(error)
+    })
+}
+
+fn parse_config(bytes: &[u8]) -> Result<Config> {
     if bytes.len() > MAX_CONFIG_BYTES {
         bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
     }
@@ -70,13 +83,83 @@ pub fn parse(bytes: &[u8]) -> Result<Config> {
 }
 
 pub fn read(root: &Path, file: &Path) -> Result<Config> {
-    let file = crate::paths::confined(root, file)?;
-    let metadata = std::fs::metadata(&file)
-        .with_context(|| format!("Cannot read {}; run qualitygate init first", file.display()))?;
-    if metadata.len() > MAX_CONFIG_BYTES as u64 {
-        bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
+    parse(&read_candidate_bytes(root, file)?)
+}
+
+pub fn read_candidate_bytes(root: &Path, file: &Path) -> Result<Vec<u8>> {
+    use std::io::Read;
+    let file = crate::paths::confined(root, file).map_err(|error| {
+        PrerequisiteIssue::new(
+            FailureCode::ConfigInvalid,
+            Phase::Policy,
+            "Configuration path is invalid",
+        )
+        .resource(file.display().to_string())
+        .instruction("Choose a confined repository-relative --config path.")
+        .wrap(error)
+    })?;
+    let resource = file.display().to_string();
+    let classify = |error: std::io::Error| {
+        let missing = error.kind() == std::io::ErrorKind::NotFound;
+        PrerequisiteIssue::new(
+            if missing {
+                FailureCode::RepositoryNotInitialized
+            } else {
+                FailureCode::InputUnreadable
+            },
+            Phase::Policy,
+            if missing {
+                "Repository configuration is missing; run qualitygate init first"
+            } else {
+                "Cannot read repository configuration"
+            },
+        )
+        .resource(resource.clone())
+        .instruction(if missing {
+            "Run qualitygate init with the same --root and --config, then review the candidate."
+        } else {
+            "Check access permissions for the selected configuration."
+        })
+        .wrap(error.into())
+    };
+    let metadata = std::fs::metadata(&file).map_err(classify)?;
+    if !metadata.is_file() {
+        return Err(PrerequisiteIssue::new(
+            FailureCode::ConfigInvalid,
+            Phase::Policy,
+            "Repository configuration must be a regular file",
+        )
+        .resource(resource)
+        .instruction("Select a regular configuration file with --config; do not replace a directory with init.")
+        .into());
     }
-    parse(&std::fs::read(file)?)
+    if metadata.len() > MAX_CONFIG_BYTES as u64 {
+        return Err(PrerequisiteIssue::new(
+            FailureCode::ConfigInvalid,
+            Phase::Policy,
+            format!("Configuration exceeds {MAX_CONFIG_BYTES} bytes"),
+        )
+        .resource(resource)
+        .instruction("Reduce the selected configuration to the supported byte budget.")
+        .into());
+    }
+    let mut bytes = Vec::new();
+    std::fs::File::open(&file)
+        .map_err(classify)?
+        .take((MAX_CONFIG_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(classify)?;
+    if bytes.len() > MAX_CONFIG_BYTES {
+        return Err(PrerequisiteIssue::new(
+            FailureCode::ConfigInvalid,
+            Phase::Policy,
+            format!("Configuration exceeds {MAX_CONFIG_BYTES} bytes"),
+        )
+        .resource(resource)
+        .instruction("Reduce the selected configuration to the supported byte budget.")
+        .into());
+    }
+    Ok(bytes)
 }
 
 /// Initializes a candidate policy without overwriting any existing configuration.

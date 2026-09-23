@@ -19,6 +19,7 @@ pub mod policy_candidates;
 pub mod policy_promotion;
 pub mod policy_rollback;
 pub mod policy_validation;
+pub mod prerequisites;
 mod project_reports;
 mod provenance;
 mod python_install;
@@ -137,6 +138,7 @@ async fn check_prepared(
         protected_paths,
     } = loaded;
     let git_facts = git_trailers::load(&plan, &catalog, &snapshot, &options.snapshot_options).await;
+    let mut preparation_issues = Vec::new();
     let external = match (&options.trust_store, &options.evidence_dir) {
         (Some(store), Some(directory)) => {
             let (root, store, directory, requests) = (
@@ -152,6 +154,9 @@ async fn check_prepared(
             {
                 Ok(inputs) => Some(Arc::new(inputs)),
                 Err(error) => {
+                    preparation_issues.push(
+                        crate::domain::prerequisites::PrerequisiteIssue::from_error(&error),
+                    );
                     invalid.push(format!("External acceptance inputs are invalid: {error:#}"));
                     None
                 }
@@ -163,7 +168,7 @@ async fn check_prepared(
             None
         }
     };
-    let directory = crate::paths::run_directory(options.output_dir.as_deref())?;
+    let directory = prerequisites::evidence_directory(options.output_dir.clone()).await?;
     let run_id = directory
         .file_name()
         .context("Missing run directory name")?
@@ -289,6 +294,12 @@ async fn check_prepared(
         result
             .metadata
             .insert("depends_on".into(), serde_json::json!(dependencies));
+        if !preparation_issues.is_empty() {
+            result
+                .metadata
+                .entry("prerequisites".into())
+                .or_insert_with(|| serde_json::json!(preparation_issues));
+        }
         if let Some(command) = command {
             result
                 .metadata

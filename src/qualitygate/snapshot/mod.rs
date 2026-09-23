@@ -124,7 +124,28 @@ pub async fn capture_resolved(
         capture_inner(root, selection, &acquisition, comparison),
     )
     .await
-    .context("Snapshot acquisition timed out")?
+    .context("Snapshot acquisition timed out")
+    .and_then(|result| result)
+    .map_err(|error| acquisition_error(error, root.display().to_string()))
+}
+
+fn acquisition_error(error: anyhow::Error, resource: String) -> anyhow::Error {
+    if error
+        .downcast_ref::<crate::domain::prerequisites::PrerequisiteIssue>()
+        .is_some()
+    {
+        return error;
+    }
+    let mut issue = snapshot_issue().resource(resource);
+    issue.message = format!("{error:#}");
+    issue.into()
+}
+
+fn snapshot_issue() -> crate::domain::prerequisites::PrerequisiteIssue {
+    crate::domain::prerequisites::PrerequisiteIssue::new(
+        crate::domain::prerequisites::FailureCode::SnapshotUnavailable,
+        crate::domain::prerequisites::Phase::Inputs, "Cannot acquire the selected snapshot")
+        .instruction("Inspect the reported paths, conflicts and acquisition budgets; repair the selected inputs or adjust supported caller budgets.")
 }
 
 async fn capture_inner(
@@ -297,12 +318,26 @@ impl Materialized {
 /// Materializes checked bytes without exposing the user's working tree to tools.
 pub async fn materialize(snapshot: &Snapshot) -> Result<Materialized> {
     let files = snapshot.files.clone();
-    tokio::task::spawn_blocking(move || materialize_files(&files)).await?
+    tokio::task::spawn_blocking(move || materialize_files(&files))
+        .await?
+        .map_err(workspace_error)
 }
 
 /// Concurrent evaluators share immutable bytes instead of cloning the entire source tree.
 pub async fn materialize_shared(snapshot: std::sync::Arc<Snapshot>) -> Result<Materialized> {
-    tokio::task::spawn_blocking(move || materialize_files(&snapshot.files)).await?
+    tokio::task::spawn_blocking(move || materialize_files(&snapshot.files))
+        .await?
+        .map_err(workspace_error)
+}
+
+fn workspace_error(error: anyhow::Error) -> anyhow::Error {
+    crate::domain::prerequisites::PrerequisiteIssue::new(
+        crate::domain::prerequisites::FailureCode::WorkspaceUnavailable,
+        crate::domain::prerequisites::Phase::Prepare,
+        "Cannot materialize the execution workspace",
+    )
+    .instruction("Check temporary storage access and capacity, then retry.")
+    .wrap(error)
 }
 
 fn materialize_files(files: &BTreeMap<String, File>) -> Result<Materialized> {

@@ -66,6 +66,18 @@ pub(super) struct JudgmentRun {
 }
 
 async fn bounded_file(path: &Path, limit: usize) -> Result<Vec<u8>> {
+    read_bounded_file(path, limit).await.map_err(|error| {
+        let missing = error.downcast_ref::<std::io::Error>()
+            .is_some_and(|cause| cause.kind() == std::io::ErrorKind::NotFound);
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            if missing { crate::domain::prerequisites::FailureCode::InputMissing }
+            else { crate::domain::prerequisites::FailureCode::InputUnreadable },
+            crate::domain::prerequisites::Phase::Inputs, "Cannot read judgment input")
+            .resource(path.display().to_string()).instruction("Supply the selected report/policy input and check its path, permissions and byte budget.").wrap(error)
+    })
+}
+
+async fn read_bounded_file(path: &Path, limit: usize) -> Result<Vec<u8>> {
     let metadata = tokio::fs::symlink_metadata(path).await?;
     if !metadata.is_file() || metadata.len() > limit as u64 {
         bail!(

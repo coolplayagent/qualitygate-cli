@@ -28,6 +28,7 @@ pub(super) async fn execute_until(
             format!("Command was not executed: {error:#}"),
         );
         result.metadata.insert("input_integrity".into(), serde_json::json!({"snapshot_digest":inputs.digest,"before":"invalid","reason":format!("{error:#}")}));
+        super::prerequisites::record_evidence(&mut result, error);
         return result;
     }
     let mut result = execute_checked(check, workspace, artifacts, snapshot, inputs, deadline).await;
@@ -47,6 +48,7 @@ pub(super) async fn execute_until(
                 ExecutionStatus::Blocked,
                 format!("Command evidence is invalid: {error:#}{previous}"),
             );
+            super::prerequisites::record_evidence(&mut result, error);
         }
     }
     result
@@ -101,6 +103,7 @@ async fn execute_checked(
     let executable = match runner::identity::executable(&check.argv[0], &cwd).await {
         Ok(identity) => identity,
         Err(error) => {
+            super::prerequisites::record(&mut result, &error);
             result.block(ExecutionStatus::ToolError, format!("{error:#}"));
             return result;
         }
@@ -160,6 +163,7 @@ async fn execute_checked(
     {
         Ok(tools) => tools,
         Err(error) => {
+            super::prerequisites::record(&mut result, &error);
             result.block(ExecutionStatus::ToolError, format!("{error:#}"));
             return result;
         }
@@ -169,22 +173,27 @@ async fn execute_checked(
             ExecutionStatus::Blocked,
             format!("Tool version probes changed checked inputs: {error:#}"),
         );
+        super::prerequisites::record_evidence(&mut result, error);
         return result;
     }
     if let Err(error) = async {
         let current = runner::identity::executable(&check.argv[0], &cwd).await?;
         if current.path != executable.path || current.digest != executable.digest {
-            anyhow::bail!("Command executable changed during version probing");
+            return Err(super::prerequisites::identity_changed(
+                "Command executable changed during version probing",
+            ));
         }
         super::tool_evidence::verify(check, workspace, &tools).await
     }
     .await
     {
+        super::prerequisites::record(&mut result, &error);
         result.block(ExecutionStatus::ToolError, format!("{error:#}"));
         return result;
     }
     if let Err(error) = super::generated_reports::prepare(check, workspace, false).await {
         result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+        super::prerequisites::record_evidence(&mut result, error);
         return result;
     }
     let remaining = deadline
@@ -222,6 +231,7 @@ async fn execute_checked(
                 {
                     Ok(artifact) => result.execution.artifacts.push(artifact),
                     Err(error) => {
+                        super::prerequisites::record(&mut result, &error);
                         result.block(
                             ExecutionStatus::ToolError,
                             format!("Cannot persist process evidence: {error}"),
@@ -233,12 +243,15 @@ async fn execute_checked(
             if let Err(error) = async {
                 let after = runner::identity::executable(&check.argv[0], &cwd).await?;
                 if after.path != executable.path || after.digest != executable.digest {
-                    anyhow::bail!("Command executable changed during execution");
+                    return Err(super::prerequisites::identity_changed(
+                        "Command executable changed during execution",
+                    ));
                 }
                 super::tool_evidence::verify(check, workspace, &tools).await
             }
             .await
             {
+                super::prerequisites::record(&mut result, &error);
                 result.block(ExecutionStatus::ToolError, format!("{error:#}"));
                 return result;
             }
@@ -314,6 +327,7 @@ async fn execute_checked(
                 Ok(findings) => findings,
                 Err(error) => {
                     result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+                    super::prerequisites::record_evidence(&mut result, error);
                     return result;
                 }
             };
@@ -356,12 +370,16 @@ async fn execute_checked(
                 .await
                 {
                     result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+                    super::prerequisites::record_evidence(&mut result, error);
                     return result;
                 }
             }
             result.complete();
         }
-        Err(error) => result.block(ExecutionStatus::ToolError, format!("{error:#}")),
+        Err(error) => {
+            super::prerequisites::record(&mut result, &error);
+            result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+        }
     }
     result
 }

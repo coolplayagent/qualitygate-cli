@@ -61,7 +61,13 @@ fn lock(root: &Path, path: &Path) -> Result<Lock> {
     let name = crate::paths::from_native(path)?;
     let path = crate::paths::confined(root, Path::new(&format!("{name}.lock")))?;
     let file = std::fs::OpenOptions::new().write(true).create_new(true).open(&path)
-        .context("Cannot acquire candidate configuration lock; another writer may be active (a crashed writer leaves its .lock for explicit recovery)")?;
+        .map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::LockUnavailable,
+            crate::domain::prerequisites::Phase::Prepare,
+            "Cannot acquire candidate configuration lock; another writer may be active (a crashed writer leaves its .lock for explicit recovery)")
+            .resource(path.display().to_string())
+            .instruction("Check the writer and directory permissions; recover a stale lock only after confirming no writer is active.")
+            .wrap(error.into()))?;
     let mut lock = Lock { path, _file: file };
     lock._file
         .write_all(b"qualitygate candidate configuration transaction\n")?;
@@ -74,10 +80,29 @@ fn typed(value: &Value) -> Result<Config> {
     Ok(config)
 }
 
+fn candidate(bytes: &[u8]) -> Result<(Value, Config)> {
+    (|| {
+        let yaml: serde_norway::Value = super::parse_yaml(bytes)?;
+        let value = serde_json::to_value(yaml)?;
+        let config = typed(&value)?;
+        Ok((value, config))
+    })()
+    .map_err(|error| {
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::ConfigInvalid,
+            crate::domain::prerequisites::Phase::Policy,
+            "Candidate configuration is invalid",
+        )
+        .instruction("Repair the selected configuration; init does not overwrite existing policy.")
+        .wrap(error)
+    })
+}
+
 /// The returned before/after hashes and operation describe this one candidate edit.
 /// No source review or trusted-policy approval is manufactured by this operation.
 pub fn update(root: &Path, path: &Path, mutation: Mutation) -> Result<Value> {
     let root = dunce::canonicalize(root)?;
+    candidate(&super::read_candidate_bytes(&root, path)?)?;
     if matches!(
         mutation,
         Mutation::Enable(_)
@@ -92,10 +117,8 @@ pub fn update(root: &Path, path: &Path, mutation: Mutation) -> Result<Value> {
     }
     let target = crate::paths::confined(&root, path)?;
     let _lock = lock(&root, path)?;
-    let original = super::rule_authoring::read_file(&root, &crate::paths::from_native(path)?)?;
-    let yaml: serde_norway::Value = super::parse_yaml(&original)?;
-    let mut value = serde_json::to_value(yaml)?;
-    let config = typed(&value)?;
+    let original = super::read_candidate_bytes(&root, path)?;
+    let (mut value, config) = candidate(&original)?;
     // Load every package once so a discovered, unselected built-in can be managed.
     // Project definitions remain explicitly selected through custom_rules.
     let inventory = Inventory::for_policy(&root, Some(config.clone()), true)?;

@@ -14,6 +14,26 @@ use std::{
 };
 
 pub(super) fn read_file(root: &Path, name: &str) -> Result<Vec<u8>> {
+    read_input(root, name).map_err(|error| {
+        let missing = error
+            .downcast_ref::<std::io::Error>()
+            .is_some_and(|cause| cause.kind() == std::io::ErrorKind::NotFound);
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            if missing {
+                crate::domain::prerequisites::FailureCode::InputMissing
+            } else {
+                crate::domain::prerequisites::FailureCode::InputUnreadable
+            },
+            crate::domain::prerequisites::Phase::Inputs,
+            format!("Cannot read {name}"),
+        )
+        .resource(name)
+        .instruction("Restore the selected input or correct its path and access permissions.")
+        .wrap(error)
+    })
+}
+
+fn read_input(root: &Path, name: &str) -> Result<Vec<u8>> {
     let path = paths::confined(root, name.as_ref())?;
     if !std::fs::metadata(&path)
         .with_context(|| format!("Cannot read {name}"))?

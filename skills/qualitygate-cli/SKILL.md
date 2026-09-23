@@ -309,6 +309,15 @@ under `qualitygate/rules`; it does not enable the rule or issue approval.
 
 ## Interpret results
 
+Before a report exists, JSON failures use `kind: command_error` even with
+`--feedback` or `--envelope`. Validate against the
+[command-error schema](references/schemas/command-error.schema.json); inspect
+`issues[].code`, `phase` and `next_actions`, not localized error text. Follow
+complete recovery `argv` only within the caller's authorization. Missing local
+configuration recommends `init` with the selected root/config; missing snapshot
+policy, tools or evidence requires its own repair, not another init. Never
+invent a run ID or evidence when handling this early-error branch.
+
 Exit code `0` means a complete passing gate, `1` means a blocking violation,
 and `2` means incomplete validation. Preserve the report and its evidence; do
 not convert an incomplete result to pass or claim that a warning filter changes

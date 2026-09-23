@@ -105,8 +105,24 @@ impl Store {
         let root = dunce::canonicalize(root)?;
         let head = paths::confined(&root, Path::new(&format!("{DIRECTORY}/HEAD")))?;
         let bytes = bounded(&head)
-            .context("No readable policy archive; retain evidence or create a candidate first")?;
-        Self::from_head(root, Some(bytes))
+            .map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+                crate::domain::prerequisites::FailureCode::ArchiveUnavailable,
+                crate::domain::prerequisites::Phase::Inputs,
+                "No readable policy archive; retain evidence or create a candidate first")
+                .resource(head.display().to_string())
+                .instruction("Retain source evidence with policy evidence add, or select the repository containing the required archive.").wrap(error))?;
+        Self::from_head(root, Some(bytes)).map_err(|error| {
+            crate::domain::prerequisites::PrerequisiteIssue::new(
+                crate::domain::prerequisites::FailureCode::ArchiveUnavailable,
+                crate::domain::prerequisites::Phase::Inputs,
+                "Policy archive is invalid",
+            )
+            .resource(head.display().to_string())
+            .instruction(
+                "Restore the archive and its referenced objects from valid retained evidence.",
+            )
+            .wrap(error)
+        })
     }
 
     fn from_head(root: PathBuf, head: Option<Vec<u8>>) -> Result<Self> {
@@ -187,6 +203,13 @@ impl Store {
     }
 
     pub fn blob(&self, reference: &str) -> Result<Vec<u8>> {
+        self.read_blob(reference).map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::ArchiveUnavailable,
+            crate::domain::prerequisites::Phase::Inputs, "Policy archive object is unavailable or invalid")
+            .resource(reference).instruction("Check the selected object reference and restore its digest-verified archive content.").wrap(error))
+    }
+
+    fn read_blob(&self, reference: &str) -> Result<Vec<u8>> {
         let bytes = bounded(&self.object_path(reference)?)?;
         if digest(&bytes) != reference {
             bail!("Policy object digest mismatch: {reference}");

@@ -1,6 +1,8 @@
 mod common;
 use common::*;
 use std::path::Path;
+#[path = "init/prerequisites.rs"]
+mod prerequisites;
 
 #[test]
 fn first_run_errors_honor_formats_and_show_an_action() {

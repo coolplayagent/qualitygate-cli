@@ -116,6 +116,13 @@ impl ProtectedFile {
     }
 
     pub(crate) fn read_limited(root: &Path, path: &Path, limit: usize) -> Result<Self> {
+        Self::read_checked(root, path, limit).map_err(|error| crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::EvidenceInvalid,
+            crate::domain::prerequisites::Phase::Evidence, "Protected acceptance input is unavailable or invalid")
+            .resource(path.display().to_string()).instruction("Provide the required bounded, readable trust/evidence file outside the checked repository.").wrap(error))
+    }
+
+    fn read_checked(root: &Path, path: &Path, limit: usize) -> Result<Self> {
         let root = dunce::canonicalize(root)?;
         let path = if path.is_absolute() {
             path.to_owned()

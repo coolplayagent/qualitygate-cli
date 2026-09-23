@@ -19,10 +19,19 @@ pub fn initialize_at(
 ) -> Result<Initialization> {
     let root = dunce::canonicalize(root).context("Repository root does not exist")?;
     let path = crate::paths::confined(&root, configuration)?;
-    let existing = if path.exists() {
-        Some(super::read(&root, configuration)?)
-    } else {
-        None
+    let existing = match std::fs::metadata(&path) {
+        Ok(_) => Some(super::read(&root, configuration)?),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            return Err(crate::domain::prerequisites::PrerequisiteIssue::new(
+                crate::domain::prerequisites::FailureCode::InputUnreadable,
+                crate::domain::prerequisites::Phase::Policy,
+                "Cannot inspect existing repository configuration",
+            )
+            .resource(path.display().to_string())
+            .instruction("Check configuration access permissions.")
+            .wrap(error.into()));
+        }
     };
     let discovery = discovery::discover(&root)?;
     if let Some(config) = existing {
@@ -67,14 +76,28 @@ pub fn initialize_at(
     let bytes = serde_norway::to_string(&config)?;
     super::parse(bytes.as_bytes())?;
     let parent = path.parent().context("Configuration has no parent")?;
-    std::fs::create_dir_all(parent)?;
-    let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
-    temporary.write_all(bytes.as_bytes())?;
-    temporary.as_file().sync_all()?;
-    // Atomic no-clobber publication also protects a concurrently created policy.
-    temporary
-        .persist_noclobber(&path)
-        .context("Cannot publish candidate without replacing an existing file")?;
+    (|| -> Result<()> {
+        std::fs::create_dir_all(parent)?;
+        let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
+        temporary.write_all(bytes.as_bytes())?;
+        temporary.as_file().sync_all()?;
+        temporary
+            .persist_noclobber(&path)
+            .context("Cannot publish candidate without replacing an existing file")?;
+        Ok(())
+    })()
+    .map_err(|error| {
+        crate::domain::prerequisites::PrerequisiteIssue::new(
+            crate::domain::prerequisites::FailureCode::StorageUnavailable,
+            crate::domain::prerequisites::Phase::Prepare,
+            "Cannot publish candidate configuration",
+        )
+        .resource(path.display().to_string())
+        .instruction(
+            "Check configuration directory permissions and conflicting files before retrying init.",
+        )
+        .wrap(error)
+    })?;
     let with_checks_applied = with_checks && !config.checks.is_empty();
     Ok(Initialization {
         config,

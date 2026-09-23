@@ -4,6 +4,9 @@
 
 ## Exit codes
 
+Before a report exists, prerequisite failures use `kind: command_error`,
+including with feedback/envelope options. See [prerequisite recovery](06-command-prerequisites.md).
+
 | Code | Meaning | Required interpretation |
 | --- | --- | --- |
 | `0` | Complete pass for the selected scope | Retain scope, snapshot, policy, warnings, and evidence limits. |

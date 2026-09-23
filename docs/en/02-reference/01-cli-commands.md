@@ -14,6 +14,7 @@ qualitygate --root . rules categories --format json
 qualitygate --root . rules list [--language rust] [--source all] --format json
 qualitygate --root . rules describe RULE_ID --format json
 qualitygate --root . rules schema
+qualitygate schema command-error
 qualitygate --root . rules validate candidate.yaml
 qualitygate --root . rules generate --input reviewed-source.md
 ```
@@ -23,6 +24,9 @@ repository configuration. Listing, describing, schema export, and effective
 configuration inspection are read-only.
 
 ## Checks
+
+See [command prerequisites and recovery](06-command-prerequisites.md) for
+initialization requirements and structured early errors.
 
 ```bash
 qualitygate --root . check --staged --profile full --format json

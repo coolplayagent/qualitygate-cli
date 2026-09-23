@@ -29,6 +29,7 @@ pub(super) async fn execute(
                 status,
                 format!("Compatibility verification did not complete: {error:#}"),
             );
+            super::prerequisites::record_evidence(&mut result, error);
         }
     }
     result

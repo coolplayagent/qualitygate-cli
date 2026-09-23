@@ -37,6 +37,7 @@ pub(super) async fn execute(
     .await
     {
         result.block(ExecutionStatus::Blocked, format!("{error:#}"));
+        super::prerequisites::record_evidence(&mut result, error);
     }
     result
 }
