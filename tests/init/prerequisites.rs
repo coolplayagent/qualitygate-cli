@@ -352,12 +352,38 @@ fn dependent_working_directories_are_checked_after_their_producer() {
 #[test]
 fn failed_and_timed_out_tool_probes_produce_actionable_incomplete_checks() {
     let root = fixture();
-    let executable = env!("CARGO_BIN_EXE_qualitygate");
-    for mode in ["failure", "timeout-long"] {
+    let tools = tempfile::tempdir().unwrap();
+    let source = tools.path().join("probe.rs");
+    fs::write(&source, include_str!("../common/policy_probe.rs")).unwrap();
+    let executable = tools
+        .path()
+        .join(if cfg!(windows) { "probe.exe" } else { "probe" });
+    let compiled = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(qualitygate::runner::capture(
+            &[
+                "rustc".into(),
+                "--edition=2024".into(),
+                source.to_str().unwrap().into(),
+                "-o".into(),
+                executable.to_str().unwrap().into(),
+            ],
+            tools.path(),
+            None,
+            std::time::Duration::from_secs(30),
+        ))
+        .unwrap();
+    assert_eq!(
+        compiled.exit_code,
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    for mode in ["failure", "sleep"] {
         policy(
             root.path(),
             json!([{"id":"probe","argv":["git","--version"],
-            "tools":[{"id":"version","argv":[executable,"selfcheck-probe",mode],"timeout_seconds":1}]}]),
+            "tools":[{"id":"version","argv":[executable,mode,"30000"],"timeout_seconds":1}]}]),
         );
         let value = report(&cli(root.path(), &["check", "--format", "json"]), 2);
         let check = value["checks"]
