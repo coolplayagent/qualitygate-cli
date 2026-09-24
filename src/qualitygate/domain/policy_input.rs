@@ -32,6 +32,7 @@ impl std::error::Error for PolicyInputError {}
 pub struct NextStep {
     pub action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub command: Option<String>,
+    /// Executable and literal arguments; callers must not parse these through a shell.
+    pub command: Option<Vec<String>>,
     pub message: String,
 }

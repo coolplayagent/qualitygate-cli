@@ -59,7 +59,11 @@ pub fn render_incomplete_with_steps(
     );
     for step in steps {
         if let Some(command) = &step.command {
-            output.push_str(&format!("Run: {}\n", render::escape_controls(command)));
+            let (shell, command) = guidance_command(command);
+            output.push_str(&format!(
+                "Run ({shell}): {}\n",
+                render::escape_controls(&command)
+            ));
         }
         output.push_str(&format!(
             "Next step: {}\n",
@@ -70,4 +74,17 @@ pub fn render_incomplete_with_steps(
         output.push_str(&format!("{key}: {}\n", verification[key]));
     }
     output
+}
+
+fn guidance_command(argv: &[String]) -> (&'static str, String) {
+    #[cfg(windows)]
+    let (shell, prefix, escaped_quote) = ("PowerShell", "& ", "''");
+    #[cfg(not(windows))]
+    let (shell, prefix, escaped_quote) = ("POSIX shell", "", "'\\''");
+    let command = argv
+        .iter()
+        .map(|arg| format!("'{}'", arg.replace('\'', escaped_quote)))
+        .collect::<Vec<_>>()
+        .join(" ");
+    (shell, format!("{prefix}{command}"))
 }

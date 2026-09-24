@@ -38,9 +38,14 @@ Before initialization, `config --show` reports incomplete validation with exit
 code 2. JSON retains `schema_version`, `gate`, and `verification`, and adds
 `next_steps` only when a reliable action is known. A missing local policy gives
 an `init` command with the selected `--root` and any custom `--config`; review
-the generated candidate before retrying. Table and Markdown show the same
-command. A policy missing from a selected snapshot instead guides you to include
-the reviewed file in that snapshot or choose a policy reference containing it.
+the generated candidate before retrying. `next_steps[].command` is an array
+containing the executable and literal arguments, for direct process execution
+without shell parsing. Table and Markdown render it with an explicit shell label
+(PowerShell on Windows, POSIX shell elsewhere); `cmd.exe` callers should use the
+structured arguments instead of copying the PowerShell rendering.
+A policy missing from a selected snapshot instead guides you to include the
+reviewed file in that snapshot. With an explicit `--policy-ref`, only selecting
+a reference containing the policy is suggested, even if no local policy exists.
 Other read, path, and parse errors do not suggest `init`. On Windows, ordinary
 paths are shown without the internal `\\?\` prefix when that conversion is safe.
 `init` also emits an advisory `snapshot_preflight` over HEAD and eligible
