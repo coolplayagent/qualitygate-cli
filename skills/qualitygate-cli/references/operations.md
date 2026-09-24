@@ -76,6 +76,9 @@ contain delivery selection evidence before claiming the requested boundary.
 1. Identify the repository, selector, policy source and intended delivery. Start
    with `init --with-checks` when candidate creation and command adoption are
    authorized; existing configurations are preserved, not augmented automatically.
+   If initialization is required without existing authorization, ask whether to
+   run `init` and pause here until authorized initialization succeeds. Follow the
+   [initialization prerequisite](../SKILL.md#initialization-prerequisite).
 2. Read `snapshot_preflight`: large/unsupported entries, excluded paths, truncation
    and incomplete reasons. This is HEAD/worktree metadata, not proof that a chosen
    MR, index, arbitrary refs or the build tools are ready.
@@ -127,11 +130,24 @@ pattern; editing local YAML without committing it does not fix an MR capture.
 
 ## Commands and mutations
 
-These commands do not modify a repository policy:
+For repository verification, inspect configuration first; do not batch this
+prerequisite with later CLI commands:
+
+```bash
+qualitygate --root "$REPOSITORY_ROOT" config --show --format json
+```
+
+If `init` is required, ask the user whether to run it, showing the exact command,
+repository and candidate configuration path. Until authorized initialization
+succeeds, stop subsequent Qualitygate workflow actions, including rule discovery,
+planning and checks. Do not substitute repository tests or another review unless
+separately requested. Honor existing initialization authorization without asking
+again. See the [initialization prerequisite](../SKILL.md#initialization-prerequisite)
+for selected-snapshot requirements. Once the prerequisite is satisfied, read-only
+rule discovery can continue:
 
 ```bash
 qualitygate --root "$REPOSITORY_ROOT" rules list --format json
-qualitygate --root "$REPOSITORY_ROOT" config --show --format json
 ```
 
 `qualitygate init` may create a new candidate config, and `qualitygate rules

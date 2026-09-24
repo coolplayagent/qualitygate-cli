@@ -1,6 +1,6 @@
 ---
 name: qualitygate-cli
-description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
+description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. When initialization is required, ask the user whether to run init and pause subsequent workflow actions until authorized initialization succeeds. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
 metadata:
   version: "0.5.5"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
@@ -45,16 +45,40 @@ obligations as explicit gaps, and route graph/type/data-flow/runtime semantics
 to existing lints, project adapters, bounded command checks, or manual review.
 Only write or adopt a rule when the user authorizes that policy mutation.
 
+## Initialization prerequisite
+
+Before repository verification, establish whether the required policy exists
+for the repository and selected snapshot. Use file/Git inspection or a read-only
+`config --show` for this decision. Run this prerequisite separately; do not batch
+it with subsequent rule discovery or checks.
+
+When `init` is required, ask the user whether to execute it. Explain that it
+creates a candidate policy, and show the repository, exact command and intended
+configuration path. Honor existing authorization to initialize without asking
+again. Approval of `init` alone does not authorize `--with-checks` or policy
+adoption.
+
+Until authorized `init` has run successfully, stop this Qualitygate workflow:
+do not continue with rule discovery, planning, checks or policy mutations. Do not
+substitute repository tests or another review workflow while waiting unless the
+user separately requests them. If the user declines, has not answered, or `init`
+fails, report the initialization prerequisite and leave verification pending.
+
+An existing policy does not require another `init`. For staged/diff/MR checks,
+a newly initialized worktree policy must also be present in the selected
+index/commit before checking. Do not silently stage, commit or change the
+snapshot selector to satisfy this prerequisite.
+
 ## Resolve the executable
 
 An intact release archive automatically resolves its own rule assets; setting
 `QUALITYGATE_BUILTIN_RULES_DIR` is an optional override. On Windows, after setting
 `$QualitygateSkillRoot` to the extracted Skill directory and `$RepositoryRoot` to
 the target repository, this single invocation
-selects x64/ARM64 and runs discovery without changing global configuration:
+selects x64/ARM64 and inspects configuration without modifying it:
 
 ```powershell
-& (Join-Path $QualitygateSkillRoot ("assets/windows-{0}/qualitygate.exe" -f @{X64='x86_64';Arm64='aarch64'}[[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()])) init --root $RepositoryRoot
+& (Join-Path $QualitygateSkillRoot ("assets/windows-{0}/qualitygate.exe" -f @{X64='x86_64';Arm64='aarch64'}[[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()])) config --show --root $RepositoryRoot --format json
 ```
 
 On Linux, set `QUALITYGATE_SKILL_ROOT` and `REPOSITORY_ROOT` to those directories
@@ -67,7 +91,7 @@ and run this Bash command; the subshell keeps helper variables local:
     aarch64|arm64) qualitygate_asset=linux-aarch64 ;;
     *) echo "Unsupported Linux architecture" >&2; exit 2 ;;
   esac
-  "$QUALITYGATE_SKILL_ROOT/assets/$qualitygate_asset/qualitygate" init --root "$REPOSITORY_ROOT"
+  "$QUALITYGATE_SKILL_ROOT/assets/$qualitygate_asset/qualitygate" config --show --root "$REPOSITORY_ROOT" --format json
 )
 ```
 
@@ -211,15 +235,23 @@ the installed skill/runtime. An explicitly requested local development update
 may install that verified build; identify it as a development build rather
 than a published release.
 
-Start with read-only discovery when the user has not asked to change policy:
+Start with the read-only configuration prerequisite when the user has not asked
+to change policy:
 
 ```bash
-"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" rules list --format json
 "$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" config --show --format json
 ```
 
+If initialization is required, follow the initialization prerequisite above
+and stop here. Otherwise continue with read-only rule discovery:
+
+```bash
+"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" rules list --format json
+```
+
 `init` creates a candidate configuration and `rules enable` updates a candidate
-configuration. Run either only after the user asks for that mutation. Do not
+configuration. Run either only with the user's authorization; ask when required
+initialization has not yet been authorized. Do not
 invent a trusted policy reference, task contract, trust store, evidence
 directory, severity, or rule selection to make a result pass.
 
