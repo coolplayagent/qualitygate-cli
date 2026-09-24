@@ -1,6 +1,6 @@
 ---
 name: qualitygate-cli
-description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. When initialization is required, ask the user whether to run init and pause subsequent workflow actions until authorized initialization succeeds. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
+description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. When configuration is missing, run init automatically without asking and stop subsequent workflow actions until initialization succeeds. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
 metadata:
   version: "0.5.5"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
@@ -52,22 +52,26 @@ for the repository and selected snapshot. Use file/Git inspection or a read-only
 `config --show` for this decision. Run this prerequisite separately; do not batch
 it with subsequent rule discovery or checks.
 
-When `init` is required, ask the user whether to execute it. Explain that it
-creates a candidate policy, and show the repository, exact command and intended
-configuration path. Honor existing authorization to initialize without asking
-again. Approval of `init` alone does not authorize `--with-checks` or policy
-adoption.
+When the required repository configuration is missing, run ordinary `init`
+automatically without asking the user. Report the repository, exact command and
+candidate configuration path, preserving any explicitly selected configuration
+path. Automatic initialization does not authorize `--with-checks`, rule enabling
+or policy adoption.
 
-Until authorized `init` has run successfully, stop this Qualitygate workflow:
-do not continue with rule discovery, planning, checks or policy mutations. Do not
-substitute repository tests or another review workflow while waiting unless the
-user separately requests them. If the user declines, has not answered, or `init`
-fails, report the initialization prerequisite and leave verification pending.
+Until required `init` has run successfully and the required policy is available,
+stop this Qualitygate workflow: do not continue with rule discovery, planning,
+checks or policy mutations. Do not substitute repository tests or another review
+workflow unless the user separately requests them. If `init` cannot run, fails,
+or leaves the required configuration unavailable, report the initialization
+prerequisite and leave verification pending. Recheck configuration availability
+after initialization before proceeding.
 
-An existing policy does not require another `init`. For staged/diff/MR checks,
-a newly initialized worktree policy must also be present in the selected
-index/commit before checking. Do not silently stage, commit or change the
-snapshot selector to satisfy this prerequisite.
+An existing valid policy does not require another `init`. Report malformed or
+unreadable configuration as an error; do not overwrite it or treat any failed
+configuration inspection as proof that initialization is needed.
+For staged/diff/MR checks, a newly initialized worktree policy must also be
+present in the selected index/commit before checking. Do not silently stage,
+commit or change the snapshot selector to satisfy this prerequisite.
 
 ## Resolve the executable
 
@@ -235,24 +239,24 @@ the installed skill/runtime. An explicitly requested local development update
 may install that verified build; identify it as a development build rather
 than a published release.
 
-Start with the read-only configuration prerequisite when the user has not asked
-to change policy:
+Start repository verification with the read-only configuration prerequisite:
 
 ```bash
 "$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" config --show --format json
 ```
 
-If initialization is required, follow the initialization prerequisite above
-and stop here. Otherwise continue with read-only rule discovery:
+If configuration is missing, automatically run `init` as described above and
+verify that the initialization prerequisite is satisfied. Continue with read-only
+rule discovery only when the required policy is available:
 
 ```bash
 "$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" rules list --format json
 ```
 
-`init` creates a candidate configuration and `rules enable` updates a candidate
-configuration. Run either only with the user's authorization; ask when required
-initialization has not yet been authorized. Do not
-invent a trusted policy reference, task contract, trust store, evidence
+Ordinary `init` automatically creates a missing candidate configuration.
+`rules enable` updates a candidate configuration and still requires the user's
+authorization, as do command adoption with `--with-checks` and policy adoption.
+Do not invent a trusted policy reference, task contract, trust store, evidence
 directory, severity, or rule selection to make a result pass.
 
 ## Select bundled rules deliberately

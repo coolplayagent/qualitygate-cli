@@ -73,11 +73,12 @@ historical resources. Use the matching Skill/runtime; an old executable rejectin
 `exclude` is a compatibility gap, not permission to omit it. Verify that reports
 contain delivery selection evidence before claiming the requested boundary.
 
-1. Identify the repository, selector, policy source and intended delivery. Start
-   with `init --with-checks` when candidate creation and command adoption are
-   authorized; existing configurations are preserved, not augmented automatically.
-   If initialization is required without existing authorization, ask whether to
-   run `init` and pause here until authorized initialization succeeds. Follow the
+1. Identify the repository, selector, policy source and intended delivery. Use
+   `init --with-checks` only when candidate command adoption is authorized;
+   existing configurations are preserved, not augmented automatically.
+   Otherwise, when configuration is missing, run ordinary `init` automatically
+   without asking. When initialization is required, stop here until it succeeds
+   and the required policy is available. Follow the
    [initialization prerequisite](../SKILL.md#initialization-prerequisite).
 2. Read `snapshot_preflight`: large/unsupported entries, excluded paths, truncation
    and incomplete reasons. This is HEAD/worktree metadata, not proof that a chosen
@@ -137,23 +138,28 @@ prerequisite with later CLI commands:
 qualitygate --root "$REPOSITORY_ROOT" config --show --format json
 ```
 
-If `init` is required, ask the user whether to run it, showing the exact command,
-repository and candidate configuration path. Until authorized initialization
-succeeds, stop subsequent Qualitygate workflow actions, including rule discovery,
-planning and checks. Do not substitute repository tests or another review unless
-separately requested. Honor existing initialization authorization without asking
-again. See the [initialization prerequisite](../SKILL.md#initialization-prerequisite)
-for selected-snapshot requirements. Once the prerequisite is satisfied, read-only
-rule discovery can continue:
+If configuration is missing, run ordinary `init` automatically without asking,
+reporting the exact command, repository and candidate configuration path. Preserve
+any explicitly selected configuration path. Until initialization succeeds and the
+required policy is available, stop subsequent Qualitygate workflow actions,
+including rule discovery, planning and checks. If initialization cannot run,
+fails, or leaves configuration unavailable, report the prerequisite and stop.
+Report malformed or unreadable configuration as an error instead of overwriting
+it. Do not substitute repository tests or another review unless separately
+requested. See the [initialization prerequisite](../SKILL.md#initialization-prerequisite)
+for selected-snapshot requirements. Recheck configuration availability after
+initialization; once the prerequisite is satisfied, read-only rule discovery
+can continue:
 
 ```bash
 qualitygate --root "$REPOSITORY_ROOT" rules list --format json
 ```
 
-`qualitygate init` may create a new candidate config, and `qualitygate rules
-enable <id>` changes a candidate config. Use them only after explicit user
-authorization. Both are candidate-policy operations; neither establishes team
-adoption or releases a change.
+Ordinary `qualitygate init` creates a missing candidate config automatically.
+`qualitygate rules enable <id>` changes a candidate config and still requires
+explicit user authorization, as do command adoption with `init --with-checks`
+and policy adoption. Creating or editing a candidate does not establish team
+adoption or release a change.
 
 `qualitygate check` materializes a selected Git snapshot and may run configured
 project tools. Before running it, report the repository root, selector, profile,
