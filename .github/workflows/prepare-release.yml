@@ -1,0 +1,28 @@
+name: Prepare release lockfile
+
+on:
+  push:
+    branches: [release/prepare-v0.5.6]
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+      - name: Regenerate the release lockfile
+        run: bazel mod deps --lockfile_mode=update
+      - name: Validate the regenerated lockfile
+        run: bazel mod deps --lockfile_mode=error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bazel-lockfile
+          path: MODULE.bazel.lock
+          if-no-files-found: error
