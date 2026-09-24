@@ -297,6 +297,33 @@ impl Cli {
         }
     }
 
+    pub fn failure_context(&self) -> application::policy_guidance::Context {
+        use application::policy_guidance::{Context, SelectionKind};
+        let (selection, policy_ref) = match &self.command {
+            Command::Check(args) => {
+                let selection = if args.mr.is_some() {
+                    SelectionKind::MergeRequest
+                } else if args.diff.is_some() {
+                    SelectionKind::Diff
+                } else if args.staged {
+                    SelectionKind::Staged
+                } else if args.path.is_some() && !args.worktree {
+                    SelectionKind::Path
+                } else {
+                    SelectionKind::Worktree
+                };
+                (Some(selection), args.policy_ref.is_some())
+            }
+            _ => (None, false),
+        };
+        Context {
+            root: self.root.clone(),
+            config: self.config.clone(),
+            selection,
+            policy_ref,
+        }
+    }
+
     pub async fn run(self) -> Result<(String, u8)> {
         if self.envelope && self.format != Format::Json {
             bail!("--envelope requires --format json");

@@ -57,6 +57,7 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 | 编号 | 要求 | 验收证据 |
 |---|---|---|
 | INIT-33 | 首次运行错误遵循 JSON/table/Markdown 格式；未初始化时给出下一步。init 提供 HEAD/工作区元数据预检，大文件、不支持条目、截断及预检失败明确可见；候选创建不代表检查通过 | `tests/init.rs`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+| INIT-35 | 缺少本地配置或所选策略快照缺少配置时，保留原有完整错误报告字段；仅在能确定安全后续操作时输出 `next_steps`，不增加重复的 `error` 对象。Windows 普通扩展路径在展示时还原为常用形式，特殊路径保留原形式 | `tests/init.rs`、`paths::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 | SNAP-33 | 单文件采集容量默认 2 MiB，可显式调整至 1–8 MiB；Git/worktree 保留完整字节与摘要，总量、并发、超时和输出限制继续生效；diff/MR/path 不隐式排除历史文件；重检保留预算，策略变化与违规仍然阻塞 | `tests/large_repository.rs`、`snapshot::git::tests`、`snapshot::tests`；[快照语义](../../docs/zh/01-user-guide/02-snapshots-and-check-workflow.md) |
 | SNAP-33-REVIEW | 测试 overlay 沿用单文件预算；受保护套件的可选 `snapshot_max_file_mib` 默认 2、范围 1–8，预算变更需要匹配外部信任；人读引导转义控制字符，JSON 保留原路径 | `tests/test_effectiveness.rs`、`tests/policy_validation.rs`、`interfaces::render::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 

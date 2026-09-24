@@ -10,19 +10,156 @@ fn first_run_errors_honor_formats_and_show_an_action() {
         assert_eq!(output.status.code(), Some(2));
         let text = String::from_utf8(output.stdout).unwrap();
         assert!(text.contains("Gate code: 2 | complete: false"), "{text}");
-        assert!(text.contains("Run: qualitygate init"), "{text}");
+        assert!(text.contains("Run: qualitygate --root '"), "{text}");
+        assert!(text.contains("init --format json"), "{text}");
+        assert!(
+            text.contains("Next step: Review the generated candidate policy"),
+            "{text}"
+        );
         assert!(text.contains("known_limits:"));
         assert!(!text.starts_with('{'));
+        #[cfg(windows)]
+        assert!(!text.contains(r"\\?\"), "{text}");
     }
     let json = report(
         &cli(root.path(), &["config", "--show", "--format", "json"]),
         2,
     );
     assert_eq!(json["gate"]["decision"], "incomplete");
+    assert_eq!(json["schema_version"], 1);
+    assert_eq!(json["gate"]["complete"], false);
+    assert_eq!(json["gate"]["blockers"].as_array().unwrap().len(), 1);
+    assert!(
+        json["gate"]["blockers"][0]
+            .as_str()
+            .unwrap()
+            .contains("qualitygate.yaml")
+    );
+    assert!(json.get("error").is_none());
+    assert_eq!(
+        json["next_steps"][0]["action"],
+        "initialize_candidate_policy"
+    );
+    assert!(
+        json["next_steps"][0]["command"]
+            .as_str()
+            .unwrap()
+            .contains("init --format json")
+    );
     assert_eq!(
         json["verification"]["verified_shapes"],
         serde_json::json!([])
     );
+    assert!(json["verification"]["known_limits"].is_array());
+    assert!(json["verification"]["unverified_assumptions"].is_array());
+    #[cfg(windows)]
+    assert!(!json.to_string().contains(r"\\\\?\\"), "{json}");
+}
+
+#[test]
+fn missing_custom_configuration_is_carried_into_the_command() {
+    let root = fixture();
+    let json = report(
+        &cli(
+            root.path(),
+            &[
+                "config",
+                "--show",
+                "--config",
+                "policy/o'hare.yaml",
+                "--format",
+                "json",
+            ],
+        ),
+        2,
+    );
+    let command = json["next_steps"][0]["command"].as_str().unwrap();
+    #[cfg(windows)]
+    assert!(
+        command.contains("--config 'policy/o''hare.yaml'"),
+        "{command}"
+    );
+    #[cfg(not(windows))]
+    assert!(
+        command.contains("--config 'policy/o'\\''hare.yaml'"),
+        "{command}"
+    );
+    assert!(
+        json["gate"]["blockers"][0]
+            .as_str()
+            .unwrap()
+            .ends_with("policy\\o'hare.yaml")
+            || json["gate"]["blockers"][0]
+                .as_str()
+                .unwrap()
+                .ends_with("policy/o'hare.yaml")
+    );
+}
+
+#[test]
+fn snapshot_guidance_depends_on_local_policy_and_selection() {
+    let root = fixture();
+    let absent = report(
+        &cli(root.path(), &["check", "--staged", "--format", "json"]),
+        2,
+    );
+    assert_eq!(
+        absent["next_steps"][0]["action"],
+        "initialize_candidate_policy"
+    );
+    assert_eq!(
+        absent["next_steps"][1]["action"],
+        "include_policy_in_snapshot"
+    );
+    report(&cli(root.path(), &["init", "--format", "json"]), 0);
+    let unstaged = report(
+        &cli(root.path(), &["check", "--staged", "--format", "json"]),
+        2,
+    );
+    assert_eq!(unstaged["next_steps"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        unstaged["next_steps"][0]["action"],
+        "include_policy_in_snapshot"
+    );
+    assert!(unstaged["next_steps"][0].get("command").is_none());
+    let historical = report(
+        &cli(
+            root.path(),
+            &["check", "--policy-ref", "HEAD", "--format", "json"],
+        ),
+        2,
+    );
+    assert_eq!(
+        historical["next_steps"][0]["action"],
+        "select_policy_reference"
+    );
+    assert!(!historical["next_steps"].to_string().contains("Stage"));
+}
+
+#[test]
+fn unreadable_or_malformed_configuration_does_not_suggest_init() {
+    let root = fixture();
+    std::fs::create_dir(root.path().join("qualitygate.yaml")).unwrap();
+    let unreadable = report(
+        &cli(root.path(), &["config", "--show", "--format", "json"]),
+        2,
+    );
+    assert!(
+        unreadable["gate"]["blockers"][0]
+            .as_str()
+            .unwrap()
+            .contains("Cannot read")
+    );
+    #[cfg(windows)]
+    assert!(!unreadable.to_string().contains(r"\\\\?\\"), "{unreadable}");
+    assert!(unreadable.get("next_steps").is_none());
+    std::fs::remove_dir(root.path().join("qualitygate.yaml")).unwrap();
+    std::fs::write(root.path().join("qualitygate.yaml"), "invalid: [").unwrap();
+    let malformed = report(
+        &cli(root.path(), &["config", "--show", "--format", "json"]),
+        2,
+    );
+    assert!(malformed.get("next_steps").is_none());
 }
 
 #[test]

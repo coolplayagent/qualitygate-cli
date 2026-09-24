@@ -71,12 +71,22 @@ pub fn parse(bytes: &[u8]) -> Result<Config> {
 
 pub fn read(root: &Path, file: &Path) -> Result<Config> {
     let file = crate::paths::confined(root, file)?;
-    let metadata = std::fs::metadata(&file)
-        .with_context(|| format!("Cannot read {}; run qualitygate init first", file.display()))?;
+    let metadata = std::fs::metadata(&file).map_err(|error| read_error(&file, error))?;
     if metadata.len() > MAX_CONFIG_BYTES as u64 {
         bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
     }
-    parse(&std::fs::read(file)?)
+    parse(&std::fs::read(&file).map_err(|error| read_error(&file, error))?)
+}
+
+fn read_error(file: &Path, error: std::io::Error) -> anyhow::Error {
+    if error.kind() == std::io::ErrorKind::NotFound {
+        crate::domain::PolicyInputError::LocalConfigurationMissing {
+            path: crate::paths::display(file).to_string(),
+        }
+        .into()
+    } else {
+        anyhow::Error::new(error).context(format!("Cannot read {}", crate::paths::display(file)))
+    }
 }
 
 /// Initializes a candidate policy without overwriting any existing configuration.

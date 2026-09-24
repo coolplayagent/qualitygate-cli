@@ -34,8 +34,15 @@ reports, and capability gaps. It may create a candidate `qualitygate.yaml`; it
 does not approve that candidate, infer exemptions, or declare a team policy.
 Review suggested commands and unsupported project shapes before adoption.
 
-Before initialization, `config --show` reports incomplete validation. Table and
-Markdown output include `Run: qualitygate init`; JSON retains `gate.blockers`.
+Before initialization, `config --show` reports incomplete validation with exit
+code 2. JSON retains `schema_version`, `gate`, and `verification`, and adds
+`next_steps` only when a reliable action is known. A missing local policy gives
+an `init` command with the selected `--root` and any custom `--config`; review
+the generated candidate before retrying. Table and Markdown show the same
+command. A policy missing from a selected snapshot instead guides you to include
+the reviewed file in that snapshot or choose a policy reference containing it.
+Other read, path, and parse errors do not suggest `init`. On Windows, ordinary
+paths are shown without the internal `\\?\` prefix when that conversion is safe.
 `init` also emits an advisory `snapshot_preflight` over HEAD and eligible
 worktree metadata, including tracked files ignored by discovery. It lists up to
 100 oversized/unsupported entries of each kind, counts all observed entries,
