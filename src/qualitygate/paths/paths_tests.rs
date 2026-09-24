@@ -29,6 +29,22 @@ fn native_filesystem_paths_are_normalized_before_policy_comparison() {
     assert!(from_native(&Path::new("src").join("..").join("escape")).is_err());
 }
 
+#[cfg(windows)]
+#[test]
+fn displays_ordinary_windows_paths_without_verbatim_prefix() {
+    assert_eq!(
+        display(Path::new(r"\\?\C:\workspace\project\qualitygate.yaml")).to_string(),
+        r"C:\workspace\project\qualitygate.yaml"
+    );
+    let reserved = Path::new(r"\\?\C:\CON\qualitygate.yaml");
+    assert_eq!(
+        display(reserved).to_string(),
+        reserved.display().to_string()
+    );
+    let network = Path::new(r"\\?\UNC\server\share\qualitygate.yaml");
+    assert_eq!(display(network).to_string(), network.display().to_string());
+}
+
 #[cfg(unix)]
 #[test]
 fn rejects_symlink_ancestors_even_when_leaf_does_not_exist() {

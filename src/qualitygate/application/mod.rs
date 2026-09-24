@@ -16,6 +16,7 @@ pub mod pilot;
 mod policy;
 pub mod policy_active;
 pub mod policy_candidates;
+pub mod policy_guidance;
 pub mod policy_promotion;
 pub mod policy_rollback;
 pub mod policy_validation;

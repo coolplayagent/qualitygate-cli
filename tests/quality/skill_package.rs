@@ -90,6 +90,74 @@ fn skill_frontmatter_accepts_lf_and_crlf_without_accepting_malformed_delimiters(
 }
 
 #[test]
+fn skill_initialization_contract_requires_auto_init_stop_and_recheck() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let skill = read(root, "skills/qualitygate-cli/SKILL.md");
+    let manifest: SkillManifest = serde_norway::from_str(frontmatter(&skill).unwrap()).unwrap();
+    assert!(
+        manifest
+            .description
+            .contains("run init automatically without asking")
+    );
+    let prerequisite = skill
+        .split("## Initialization prerequisite")
+        .nth(1)
+        .unwrap()
+        .split("## Resolve the executable")
+        .next()
+        .unwrap()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    for obligation in [
+        "Use file/Git inspection or a read-only `config --show`",
+        "Run this prerequisite separately",
+        "run ordinary `init` automatically without asking the user",
+        "preserving any explicitly selected configuration path",
+        "does not authorize `--with-checks`, rule enabling or policy adoption",
+        "Until required `init` has run successfully and the required policy is available, stop",
+        "If `init` cannot run, fails, or leaves the required configuration unavailable",
+        "Recheck configuration availability after initialization before proceeding",
+        "An existing valid policy does not require another `init`",
+        "Report malformed or unreadable configuration as an error",
+        "must also be present in the selected index/commit before checking",
+        "Do not silently stage, commit or change the snapshot selector",
+    ] {
+        assert!(
+            prerequisite.contains(obligation),
+            "missing initialization obligation: {obligation}"
+        );
+    }
+    let bootstrap = skill
+        .split("## Resolve the executable")
+        .nth(1)
+        .unwrap()
+        .split("Release archives place a platform binary")
+        .next()
+        .unwrap();
+    assert!(bootstrap.contains("config --show --root $RepositoryRoot --format json"));
+    assert!(bootstrap.contains("config --show --root \"$REPOSITORY_ROOT\" --format json"));
+    assert!(!bootstrap.contains(" init --root"));
+    let operations = read(root, "skills/qualitygate-cli/references/operations.md")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    for obligation in [
+        "run ordinary `init` automatically without asking",
+        "Until initialization succeeds and the required policy is available, stop subsequent Qualitygate workflow actions",
+        "If initialization cannot run, fails, or leaves configuration unavailable",
+        "Recheck configuration availability after initialization",
+        "Report malformed or unreadable configuration as an error instead of overwriting it",
+        "For staged/diff/MR, place the configuration in the selected index/commit first",
+    ] {
+        assert!(
+            operations.contains(obligation),
+            "missing operations obligation: {obligation}"
+        );
+    }
+}
+
+#[test]
 fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let cargo: CargoManifest = toml::from_str(&read(root, "Cargo.toml")).unwrap();

@@ -3,6 +3,11 @@
 use anyhow::{Context, Result, bail};
 use std::path::{Component, Path, PathBuf};
 
+/// Presents an OS path without a Windows verbatim prefix when that is safe.
+pub fn display(path: &Path) -> std::path::Display<'_> {
+    dunce::simplified(path).display()
+}
+
 /// Converts a user path into a portable, confined repository-relative name.
 pub fn relative(path: &Path) -> Result<String> {
     if path
@@ -45,12 +50,12 @@ pub fn confined(root: &Path, path: &Path) -> Result<PathBuf> {
             Ok(metadata) if metadata.file_type().is_symlink() => {
                 bail!(
                     "Symlinks are not valid checked inputs: {}",
-                    result.display()
+                    display(&result)
                 );
             }
             Ok(_) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error).with_context(|| result.display().to_string()),
+            Err(error) => return Err(error).with_context(|| display(&result).to_string()),
         }
     }
     Ok(result)

@@ -30,8 +30,15 @@ qualitygate --root /path/to/repository init --with-checks --format json
 `qualitygate.yaml`，但不会批准候选策略、推断豁免或代表团队完成采用。启用前应审核建议命令、
 项目识别结果和不支持的形态。
 
-未初始化时，`config --show` 返回未完成；table/Markdown 输出独立的
-`Run: qualitygate init` 提示，JSON 保留 `gate.blockers`。`init` 还输出建议性的
+未初始化时，`config --show` 返回未完成和退出码 2。JSON 保留 `schema_version`、
+`gate`、`verification`，仅在能确定可靠操作时增加 `next_steps`。本地策略缺失时，
+引导命令包含所选 `--root` 和自定义 `--config`；应审核生成的候选策略后再重试。
+`next_steps[].command` 是包含可执行文件及原始参数的数组，应直接创建进程执行，
+无需 shell 解析。table/Markdown 标明展示命令适用的 shell（Windows 为 PowerShell，
+其他平台为 POSIX shell）；`cmd.exe` 调用方应使用结构化参数，不应复制 PowerShell 展示命令。
+所选快照缺少策略时，提示将审核后的文件纳入快照；显式指定 `--policy-ref` 时仅提示
+选择包含策略的引用，即使本地没有配置也不建议初始化。其他读取、路径和解析错误不会建议执行 `init`。Windows
+普通路径在安全可转换时不展示内部 `\\?\` 前缀。`init` 还输出建议性的
 `snapshot_preflight`，检查 HEAD 与符合条件的工作区文件元数据，包括被 discovery 忽略但
 已跟踪的文件。过大文件和不支持条目各最多列出 100 项，并提供总数、截断状态与预检未完成原因。
 这不代表任意 diff/MR 端点、暂存内容、总预算或工具链已经通过检查。

@@ -37,9 +37,11 @@ pub(super) async fn load(
         let files = &candidate.files;
         let mut invalid = Vec::new();
         let selected = trusted.as_ref().unwrap_or(files);
-        let file = selected
-            .get(&options.config)
-            .context("Selected policy snapshot has no qualitygate configuration; run init and stage/commit it as appropriate")?;
+        let file = selected.get(&options.config).ok_or_else(|| {
+            PolicyInputError::SnapshotConfigurationMissing {
+                path: options.config.clone(),
+            }
+        })?;
         let config = config::parse(&file.bytes)?;
         let catalog = Catalog::load(
             &config,
@@ -65,12 +67,16 @@ pub(super) async fn load(
         let mut changes = BTreeSet::new();
         if trusted.is_some() {
             if Some((&file.bytes, file.executable))
-                != files.get(&options.config).map(|file| (&file.bytes, file.executable))
+                != files
+                    .get(&options.config)
+                    .map(|file| (&file.bytes, file.executable))
             {
                 changes.insert(options.config.clone());
             }
             if let Some(task) = &options.task
-                && selected.get(task).map(|file| (&file.bytes, file.executable))
+                && selected
+                    .get(task)
+                    .map(|file| (&file.bytes, file.executable))
                     != files.get(task).map(|file| (&file.bytes, file.executable))
             {
                 changes.insert(task.clone());
@@ -79,8 +85,7 @@ pub(super) async fn load(
             for asset in &config.verification_assets {
                 builder.add(globset::Glob::new(asset)?);
             }
-            if let Some(project_rules) = crate::config::catalog::project_rules_directory(&config)
-            {
+            if let Some(project_rules) = crate::config::catalog::project_rules_directory(&config) {
                 builder.add(globset::Glob::new(&format!(
                     "{}/**",
                     project_rules.trim_end_matches('/')
@@ -128,7 +133,20 @@ pub(super) async fn load(
             .into(),
             changes: changes.into_iter().collect(),
         };
-        Ok((Loaded { protected_paths: protected_paths(&config, &catalog, &options.config, options.task.as_deref()), catalog, evidence: policy, plan }, invalid))
+        Ok((
+            Loaded {
+                protected_paths: protected_paths(
+                    &config,
+                    &catalog,
+                    &options.config,
+                    options.task.as_deref(),
+                ),
+                catalog,
+                evidence: policy,
+                plan,
+            },
+            invalid,
+        ))
     })
     .await??;
     invalid.extend(errors);

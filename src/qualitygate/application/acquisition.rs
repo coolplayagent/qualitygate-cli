@@ -1,7 +1,7 @@
 //! Load bounded policy inputs before acquiring repository content.
 use super::{CheckOptions, policy};
-use crate::{config, snapshot};
-use anyhow::{Context, Result, ensure};
+use crate::{config, domain::PolicyInputError, snapshot};
+use anyhow::{Result, ensure};
 
 pub(super) async fn prepare(
     options: &mut CheckOptions,
@@ -23,7 +23,13 @@ pub(super) async fn prepare(
             comparison = captured.identity.merge_request;
             captured.files
         };
-        let bytes = files.get(&options.config).context("Selected policy snapshot has no qualitygate configuration; run init and stage/commit it as appropriate")?.bytes.clone();
+        let bytes = files
+            .get(&options.config)
+            .ok_or_else(|| PolicyInputError::SnapshotConfigurationMissing {
+                path: options.config.clone(),
+            })?
+            .bytes
+            .clone();
         tokio::task::spawn_blocking(move || config::parse(&bytes)).await??
     };
     let matcher = config::exclusions::matcher(&config.exclude)?;

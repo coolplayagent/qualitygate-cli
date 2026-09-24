@@ -57,6 +57,7 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 | 编号 | 要求 | 验收证据 |
 |---|---|---|
 | INIT-33 | 首次运行错误遵循 JSON/table/Markdown 格式；未初始化时给出下一步。init 提供 HEAD/工作区元数据预检，大文件、不支持条目、截断及预检失败明确可见；候选创建不代表检查通过 | `tests/init.rs`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+| INIT-35 | 缺少本地配置或所选策略快照缺少配置时，保留原有完整错误报告字段；仅在能确定安全后续操作时输出 `next_steps`，不增加重复的 `error` 对象。命令以可直接执行的参数数组输出，人类格式标注 shell；显式策略引用缺失时不建议初始化本地文件。Windows 普通扩展路径在展示时还原为常用形式，特殊路径保留原形式 | `tests/init.rs`、`paths::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 | SNAP-33 | 单文件采集容量默认 2 MiB，可显式调整至 1–8 MiB；Git/worktree 保留完整字节与摘要，总量、并发、超时和输出限制继续生效；diff/MR/path 不隐式排除历史文件；重检保留预算，策略变化与违规仍然阻塞 | `tests/large_repository.rs`、`snapshot::git::tests`、`snapshot::tests`；[快照语义](../../docs/zh/01-user-guide/02-snapshots-and-check-workflow.md) |
 | SNAP-33-REVIEW | 测试 overlay 沿用单文件预算；受保护套件的可选 `snapshot_max_file_mib` 默认 2、范围 1–8，预算变更需要匹配外部信任；人读引导转义控制字符，JSON 保留原路径 | `tests/test_effectiveness.rs`、`tests/policy_validation.rs`、`interfaces::render::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 
@@ -684,6 +685,7 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | DIST-01 | Skill 与 CLI、Bazel 的版本一致；版本标签触发 GitHub Actions 先验证 Rust 质量门禁、再构建并核查各平台资产、发布可下载归档及 SHA-256；无标签的手动试运行不发布 | `tests/quality/skill_package.rs`、`tests/bazel.rs`、[发布工作流](../../.github/workflows/release.yml)的实际运行记录和 Release 资产 |
 | DIST-02 | `main` 的静态 Pages 站点提供当前版本的下载、安装和文档入口；站点内链接及版本在仓库质量门禁中校验，部署结果由 GitHub Pages 实际地址复核 | `tests/quality/site.rs`、[Pages 工作流](../../.github/workflows/pages.yml)的实际运行记录和在线页面 |
 | DIST-03 | Skill 描述优先匹配代码实现、缺陷修复和重构任务；Agent 只在最终快照的无路径过滤 `full` 检查完整通过、必需交付检查无待执行项，并已完成仓库要求的其他验证后，才能报告代码任务已通过质量验证。违规或证据缺失需修复并复验，不能改弱策略或伪造验收 | [Skill 入口](../../skills/qualitygate-cli/SKILL.md)、[操作边界](../../skills/qualitygate-cli/references/operations.md)、`tests/quality/skill_package.rs` 的元数据、引用与版本契约，以及 `tests/cli.rs` 的完整范围 / 快速范围门禁断言 |
+| DIST-04 | Skill 独立检查所需配置；本地配置缺失时自动执行普通 `init`，保留自定义路径，不自动启用检查或采用策略。初始化失败或配置仍不可用时停止，成功后复查配置及所选快照；已有有效配置不重复初始化，不覆盖损坏配置，不静默 stage/commit 或切换选择器 | `tests/quality/skill_package.rs::skill_initialization_contract_requires_auto_init_stop_and_recheck`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 
 发布工作流成功与正式试点收益验收相互独立；站点只陈述已实现能力，
 不能把受控 fixture 或未启动的 8 任务/7 天试点称为真实收益。
