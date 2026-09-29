@@ -2,7 +2,7 @@
 
 [简体中文](../../zh/02-reference/06-runtime-and-preflight.md) · [Volume index](README.md)
 
-These additions are under development after v0.5.6. The package version alone
+These capabilities are available from v0.5.7. The package version alone
 does not establish support: query the capability IDs and executable digest.
 
 ```bash
@@ -30,7 +30,7 @@ version's scope; use the formal MR workflow with explicit remaining gaps.
 ```yaml
 schema_version: 1
 requires:
-  min_cli_version: '0.5.6'
+  min_cli_version: '0.5.7'
   capabilities: [config.requires.v1, command.required-env.v1, doctor.static.v1]
 checks:
   - id: verify
@@ -43,8 +43,8 @@ checks:
 
 `requires` is optional. `min_cli_version` is a semantic version, including
 prerelease ordering; `capabilities` requires exact IDs returned by the runtime.
-The example's capability requirements are necessary because the released
-v0.5.6 does not have these development additions. Empty new fields are omitted
+The example declares both version and capability requirements so callers can
+identify builds that support this workflow. Empty new fields are omitted
 from serialized legacy configurations. Requirements are also validated by the
 reusable planner and active-policy paths.
 
@@ -126,7 +126,7 @@ Git history and tagged source confirm these earliest published versions:
 | Declared bounded tool version probes | v0.3.0 | `a7f9550`, contained in v0.3.0 |
 | File contracts and report ratchets | v0.4.0 | `baa1eb3`, contained in v0.4.0 |
 | `exclude`, per-file budget and `init.snapshot_preflight` | v0.5.5 | `98c0a66`; absent in v0.5.1–v0.5.4 tagged source |
-| Runtime capabilities, `requires`, `required_env`, doctor | Unreleased after v0.5.6 | Require the exported versioned IDs; do not infer from `0.5.6` |
+| Runtime capabilities, `requires`, `required_env`, doctor | v0.5.7 | `82f51a8`; require the exported versioned IDs; v0.5.6 lacks these additions |
 
 Use Windows assets in PowerShell or native Windows Git Bash/MSYS2; use Linux
 assets in Linux and WSL. Windows Git Bash can invoke `.exe` directly. Quote

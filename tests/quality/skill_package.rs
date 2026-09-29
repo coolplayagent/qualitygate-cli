@@ -713,7 +713,8 @@ fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
     for text in [
         "v0.5.5",
         "98c0a66",
-        "Unreleased after v0.5.6",
+        "v0.5.7",
+        "82f51a8",
         "--snapshot-max-file-mib 8",
         "120-second",
         "not delivery acceptance",

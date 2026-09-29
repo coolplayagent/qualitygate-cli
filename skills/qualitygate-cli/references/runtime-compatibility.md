@@ -12,10 +12,10 @@ invent a capabilities response or relabel an arbitrary parse error as age.
 | Declared bounded tool version probes | v0.3.0 | `a7f9550` belongs to v0.3.0 |
 | File contracts and report ratchets | v0.4.0 | `baa1eb3` belongs to v0.4.0 |
 | `exclude`, `--snapshot-max-file-mib`, `init.snapshot_preflight` | v0.5.5 | `98c0a66`; absent in v0.5.1–v0.5.4 tagged source |
-| Capabilities, runtime requirements, environment requirements and doctor | Unreleased after v0.5.6 | Require exported capability IDs; released v0.5.6 lacks these additions |
+| Capabilities, runtime requirements, environment requirements and doctor | v0.5.7 | `82f51a8`; require exported capability IDs; v0.5.6 lacks these additions |
 
-This development Skill retains v0.5.6 metadata until release preparation. A
-v0.5.6 version match alone is insufficient. Require `runtime.capabilities.v1`,
+This workflow requires v0.5.7 or a later compatible runtime. A version match
+alone is insufficient. Require `runtime.capabilities.v1`,
 `config.requires.v1`, `command.required-env.v1`, `doctor.static.v1`, and
 `doctor.tool-probes.v1` for this workflow. Old runtime conclusions remain valid
 only for the inspected build. Select an already verified compatible install or

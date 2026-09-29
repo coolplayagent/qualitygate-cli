@@ -2,7 +2,7 @@
 
 [English](../../en/02-reference/06-runtime-and-preflight.md) · [卷目录](README.md)
 
-本功能属于 v0.5.6 之后的未发布开发变更。相同版本号的构建可能不同，必须查询能力 ID
+本功能从 v0.5.7 开始提供。相同版本号的构建可能不同，必须查询能力 ID
 和可执行文件摘要，不能仅凭版本号推断支持情况。
 
 ```bash
@@ -26,7 +26,7 @@ SHA-256、系统/架构、版本化能力 ID、协议版本和资源限制。摘
 ```yaml
 schema_version: 1
 requires:
-  min_cli_version: '0.5.6'
+  min_cli_version: '0.5.7'
   capabilities: [config.requires.v1, command.required-env.v1, doctor.static.v1]
 checks:
   - id: verify
@@ -38,7 +38,7 @@ checks:
 ```
 
 `requires` 可省略。最低版本采用语义版本比较，包括预发布版本；能力要求精确匹配运行时
-返回的 ID。示例必须保留能力要求，因为已发布的 v0.5.6 没有这些开发功能。空的新字段不改变
+返回的 ID。示例同时声明版本与能力要求，以识别支持本工作流的构建。空的新字段不改变
 旧配置的序列化。可复用规划器和活动策略流程也验证要求。
 
 命令检查与任务 `acceptance[].verification` 可声明 `required_env`。变量名符合
@@ -99,7 +99,7 @@ qualitygate check --root . --profile full \
 | 声明式有界工具版本探针 | v0.3.0 | `a7f9550`，包含于 v0.3.0 |
 | 文件契约和报告 ratchet | v0.4.0 | `baa1eb3`，包含于 v0.4.0 |
 | `exclude`、单文件预算与 `init.snapshot_preflight` | v0.5.5 | `98c0a66`；v0.5.1–v0.5.4 标签源码中不存在 |
-| capabilities、`requires`、`required_env`、doctor | v0.5.6 之后未发布 | 必须核对导出的能力 ID，不能从 `0.5.6` 推断 |
+| capabilities、`requires`、`required_env`、doctor | v0.5.7 | `82f51a8`；必须核对导出的能力 ID，v0.5.6 不含这些功能 |
 
 PowerShell 与 Windows 原生 Git Bash/MSYS2 使用 Windows 资产；Linux、WSL 使用 Linux 资产。
 Git Bash 可直接调用 `.exe`。带空格路径必须引用，传入原生程序的仓库/资产环境路径通过
