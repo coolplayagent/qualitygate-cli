@@ -55,3 +55,15 @@ keys, sign subjects, approve policy, or fill in missing real-world evidence.
 Use `qualitygate --help` and subcommand help for the version-specific option
 surface. Scripts should check both the process exit code and the structured
 gate fields.
+
+## Runtime capabilities and environment preflight
+
+```bash
+qualitygate capabilities --format json
+qualitygate doctor --worktree --profile full --format json
+qualitygate doctor --staged --profile full --probe-tools --format json
+qualitygate schema capabilities --format json
+qualitygate schema doctor --format json
+```
+
+[Runtime capabilities and environment preflight](06-runtime-and-preflight.md).

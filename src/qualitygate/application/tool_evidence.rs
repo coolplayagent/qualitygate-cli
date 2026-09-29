@@ -10,6 +10,18 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path, time::Duration};
 
+#[derive(Debug)]
+pub(super) struct ProbeError {
+    pub code: &'static str,
+    message: String,
+}
+impl std::fmt::Display for ProbeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+impl std::error::Error for ProbeError {}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(super) struct ToolEvidence {
     id: String,
@@ -70,7 +82,11 @@ pub(super) async fn collect_until(
             .map(|end| end.saturating_duration_since(std::time::Instant::now()))
             .unwrap_or(Duration::from_secs(tool.timeout_seconds));
         if remaining.is_zero() {
-            bail!("Paired test execution exhausted its shared deadline during tool probes");
+            return Err(ProbeError {
+                code: "probe.budget_exhausted",
+                message: "Tool probing exhausted its shared deadline".into(),
+            }
+            .into());
         }
         let output = runner::capture(
             &resolved_argv,
@@ -124,25 +140,48 @@ pub(super) async fn collect_until(
             if baseline { "baseline_tools" } else { "tools" }.into(),
             serde_json::to_value(&evidence)?,
         );
+        result.metadata.insert(
+            "tool_capture_error".into(),
+            serde_json::json!(output.capture_error),
+        );
         if output.timed_out
             || output.capture_error.is_some()
             || output.exit_code != Some(0)
             || version.is_empty()
             || version.contains('\0')
         {
-            bail!(
-                "Tool version probe {} did not produce a successful bounded version response",
-                tool.id
-            );
+            let code = if output.timed_out {
+                "probe.timeout"
+            } else if output.capture_error.is_some()
+                || output.stdout.len() + output.stderr.len() > 65_536
+            {
+                "probe.output_limit"
+            } else if output.exit_code != Some(0) {
+                "probe.exit_code"
+            } else {
+                "probe.version_invalid"
+            };
+            return Err(ProbeError {
+                code,
+                message: format!(
+                    "Tool version probe {} did not produce a successful bounded version response",
+                    tool.id
+                ),
+            }
+            .into());
         }
         let after = runner::identity::executable(&tool.argv[0], &cwd).await?;
         if after.digest != evidence.last().unwrap().executable.digest
             || after.path != evidence.last().unwrap().executable.path
         {
-            bail!(
-                "Tool executable changed during version probing: {}",
-                tool.id
-            );
+            return Err(ProbeError {
+                code: "probe.executable_changed",
+                message: format!(
+                    "Tool executable changed during version probing: {}",
+                    tool.id
+                ),
+            }
+            .into());
         }
     }
     Ok(evidence)

@@ -20,6 +20,19 @@ pub fn platform() -> (&'static str, &'static str) {
     (std::env::consts::OS, std::env::consts::ARCH)
 }
 
+/// Values never leave this boundary, including non-UTF-8 inherited values.
+pub fn required_present(name: &str) -> bool {
+    std::env::var_os(name).is_some_and(|value| !value.is_empty())
+}
+
+pub fn missing_required(names: &[String]) -> Vec<String> {
+    names
+        .iter()
+        .filter(|name| !required_present(name))
+        .cloned()
+        .collect()
+}
+
 pub fn current_executable() -> anyhow::Result<PathBuf> {
     Ok(std::env::current_exe()?)
 }

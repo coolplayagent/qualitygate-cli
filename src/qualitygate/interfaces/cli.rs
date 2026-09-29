@@ -38,6 +38,10 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Offline runtime identity, supported protocols, capabilities and resource limits.
+    Capabilities,
+    /// Inspect snapshot and command prerequisites without running formal checks.
+    Doctor(Box<super::doctor::DoctorArgs>),
     /// Run a bounded external warning assessment without changing a check gate.
     Judgment {
         #[command(subcommand)]
@@ -120,6 +124,8 @@ enum Judgment {
 
 #[derive(Debug, Subcommand)]
 enum SchemaKind {
+    Capabilities,
+    Doctor,
     Decision,
     Feedback,
     ProjectRule,
@@ -273,18 +279,8 @@ struct CheckArgs {
     evidence_dir: Option<PathBuf>,
     #[arg(long, value_enum)]
     severity: Option<Severity>,
-    /// Maximum total content bytes per snapshot, in MiB (1..=1024).
-    #[arg(long, default_value_t = 256, value_parser = clap::value_parser!(u32).range(1..=1024))]
-    snapshot_max_mib: u32,
-    /// Maximum bytes per snapshot file, in MiB (1..=8); independent of rule scope.
-    #[arg(long, default_value_t = 2, value_parser = clap::value_parser!(u32).range(1..=8))]
-    snapshot_max_file_mib: u32,
-    /// Shared maximum concurrent snapshot content readers (1..=16).
-    #[arg(long, default_value_t = 4, value_parser = clap::value_parser!(u32).range(1..=16))]
-    snapshot_jobs: u32,
-    /// Deadline for each complete snapshot acquisition (1..=3600 seconds).
-    #[arg(long, default_value_t = 120, value_parser = clap::value_parser!(u32).range(1..=3600))]
-    snapshot_timeout_secs: u32,
+    #[command(flatten)]
+    snapshot: super::doctor::SnapshotArgs,
 }
 
 impl Cli {
@@ -325,6 +321,45 @@ impl Cli {
     }
 
     pub async fn run(self) -> Result<(String, u8)> {
+        if matches!(self.command, Command::Capabilities) && self.envelope {
+            bail!("Preflight uses its own protocol and does not produce a decision envelope");
+        }
+        if let Command::Capabilities = self.command {
+            let report = application::capabilities::report().await?;
+            return Ok((
+                super::render::metadata(&serde_json::to_value(report)?, self.format)?,
+                0,
+            ));
+        }
+        if let Command::Doctor(args) = self.command {
+            let probe_tools = args.probe_tools;
+            let profile = args.profile.clone();
+            let report = if self.envelope {
+                application::doctor::invalid_request(
+                    profile,
+                    probe_tools,
+                    "doctor does not produce a delivery decision envelope",
+                )
+                .await
+            } else {
+                match args.options(self.root, self.config) {
+                    Ok(options) => application::doctor::run(options, probe_tools).await,
+                    Err(error) => {
+                        application::doctor::invalid_request(
+                            profile,
+                            probe_tools,
+                            &format!("{error:#}"),
+                        )
+                        .await
+                    }
+                }
+            };
+            let code = report.exit_code();
+            return Ok((
+                super::render::metadata(&serde_json::to_value(report)?, self.format)?,
+                code,
+            ));
+        }
         if self.envelope && self.format != Format::Json {
             bail!("--envelope requires --format json");
         }
@@ -346,6 +381,8 @@ impl Cli {
                 SchemaKind::Decision => config::decision_schema::document(),
                 SchemaKind::Feedback => config::decision_schema::feedback_document(),
                 SchemaKind::ProjectRule => config::rule_schema::document(),
+                SchemaKind::Capabilities => config::preflight_schema::capabilities_document(),
+                SchemaKind::Doctor => config::preflight_schema::doctor_document(),
             })
             .await??;
             return Ok((serde_json::to_string_pretty(&document)?, 0));
@@ -362,6 +399,9 @@ impl Cli {
             .canonicalize()
             .context("Repository root does not exist")?;
         match self.command {
+            Command::Capabilities | Command::Doctor(_) => {
+                unreachable!("preflight handled before repository discovery")
+            }
             Command::Schema { .. } => unreachable!("schema export does not require a repository"),
             Command::SelfcheckProbe { .. } => {
                 unreachable!("fixed probe handled before repository discovery")
@@ -556,16 +596,7 @@ impl Cli {
                         api_base: args.mr_api_base,
                     }
                 } else if let Some(diff) = args.diff {
-                    let (base, head) = diff
-                        .split_once("..")
-                        .context("--diff requires <base>..<head>")?;
-                    if base.is_empty() || head.is_empty() || head.starts_with('.') {
-                        bail!("--diff requires two explicit commit endpoints");
-                    }
-                    Selection::Diff {
-                        base: base.into(),
-                        head: head.into(),
-                    }
+                    super::doctor::diff_selection(&diff)?
                 } else if args.staged {
                     Selection::Staged
                 } else if args.worktree {
@@ -592,13 +623,8 @@ impl Cli {
                     config: self.config,
                     selection,
                     snapshot_options: crate::snapshot::CaptureOptions {
-                        scope: crate::domain::check_scope::CheckScope::Delivery,
-                        max_bytes: args.snapshot_max_mib as usize * 1024 * 1024,
-                        max_file_bytes: args.snapshot_max_file_mib as usize * 1024 * 1024,
-                        jobs: args.snapshot_jobs as usize,
-                        timeout: std::time::Duration::from_secs(args.snapshot_timeout_secs.into()),
                         path_filter,
-                        ..Default::default()
+                        ..args.snapshot.options()
                     },
                     profile: args.profile,
                     task: args.task,

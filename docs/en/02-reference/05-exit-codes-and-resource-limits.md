@@ -46,3 +46,6 @@ Keep unit, integration, live-producer, Miri, and ASan results separate. A test
 fixture pass covers only its represented shapes. Real-repository, platform,
 network, and human-review assumptions remain visible until independently
 verified.
+
+Doctor returns `0` only for the requested `scope: preflight`; blocked or incomplete
+preflight returns `2`. It has no delivery verdict. See [runtime and preflight](06-runtime-and-preflight.md).

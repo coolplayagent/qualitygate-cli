@@ -106,8 +106,28 @@ pub(super) fn prepare(
     options: &super::CheckOptions,
     invalid: &mut Vec<String>,
 ) -> Result<super::policy::Loaded> {
+    prepare_inner(active, snapshot, options, invalid, true)
+}
+
+pub(super) fn prepare_plan(
+    active: &Active,
+    snapshot: &Snapshot,
+    options: &super::CheckOptions,
+) -> Result<super::policy::Loaded> {
+    prepare_inner(active, snapshot, options, &mut Vec::new(), false)
+}
+
+fn prepare_inner(
+    active: &Active,
+    snapshot: &Snapshot,
+    options: &super::CheckOptions,
+    invalid: &mut Vec<String>,
+    validate_inputs: bool,
+) -> Result<super::policy::Loaded> {
     let (config, catalog) = active.frozen.resolve(&active.config)?;
-    super::acquisition::validate_config(&config, &catalog, options, snapshot)?;
+    if validate_inputs {
+        super::acquisition::validate_config(&config, &catalog, options, snapshot)?;
+    }
     if options
         .policy_ref
         .as_ref()
@@ -133,7 +153,7 @@ pub(super) fn prepare(
     let task = task_bytes.as_deref().map(config::parse_task).transpose()?;
     let mut changes = Vec::new();
     for (path, asset) in &active.version.files {
-        if path == &active.version.config_path {
+        if !validate_inputs || path == &active.version.config_path {
             continue;
         }
         if !snapshot.files.get(path).is_some_and(|file| {

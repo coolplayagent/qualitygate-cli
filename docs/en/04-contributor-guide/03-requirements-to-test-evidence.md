@@ -68,3 +68,20 @@ historical findings from changed delivery findings without hiding producer error
 Report-gate unit tests and SARIF CLI regression preserve current multiplicity
 before delivery filtering in both producer orders. Feedback unit/envelope tests
 keep unavailable repository replays omitted while retaining delivery commands.
+
+## Issue #39 runtime/preflight evidence
+
+| Requirement | Unit / pure evidence | Integration / platform evidence |
+| --- | --- | --- |
+| ENV-39-01/02: offline fingerprint, requirements and parser diagnostics | `config::runtime::tests`, `domain::doctor::tests` | `tests/doctor.rs`: offline capabilities/schema and compatibility counterexamples |
+| ENV-39-03: exact plan and environment requirements | `config::plan::tests` | `tests/doctor.rs`: dependency expansion, task environment, missing/empty values, staged/diff/policy selection; `tests/policy_promotion.rs`: active signed policy |
+| ENV-39-04: static execution boundary and bounded probes | `application::doctor_context::tests` | `tests/doctor/probes.rs`: timeout, overflow, empty version, changed script/input/policy and secret output |
+| ENV-39-05: exact per-side budgets | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`: base-only oversize, 2/8 MiB, above maximum, total bytes, protected exclusions, index and truncation |
+| ENV-39-06: preflight protocol and executable next steps | `domain::doctor::tests` | `tests/doctor.rs` schema validation and replay of suggested argv |
+| ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` native Windows PowerShell/Git Bash step with paths containing spaces |
+
+Run `cargo test --test doctor --all-features` independently of native unit tests.
+The Windows CI result, full selfcheck, architecture source/line digest evidence,
+Cargo/Bazel checks and >=90% coverage remain separately required. Miri exercises
+pure domain; ASan exercises native unit tests. A Linux pass does not establish
+Windows shell acceptance. See [runtime/preflight](../02-reference/06-runtime-and-preflight.md).

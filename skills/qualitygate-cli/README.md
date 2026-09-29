@@ -114,3 +114,9 @@ Existing repositories: follow [the trimming workflow](references/operations.md#e
 Checks derive delivery from the chosen snapshot; use reviewed top-level `exclude`
 globs to omit historical resources from acquisition and tool inputs. Preserve the
 report selection and exclusion evidence. The profile selects checks, not scope.
+
+The [runtime compatibility workflow](references/runtime-compatibility.md) adds
+offline capability fingerprints, strict runtime requirements and selected-snapshot
+preflight. It ships [capabilities](references/schemas/capabilities.schema.json)
+and [doctor](references/schemas/doctor.schema.json) schemas. These development
+additions are not present in the released v0.5.6 binary; inspect capability IDs.

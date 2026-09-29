@@ -8,6 +8,7 @@ mod io_workers;
 mod limits;
 mod merge_request;
 pub mod preflight;
+pub mod selected_preflight;
 pub mod test_overlay;
 mod worktree;
 pub use changes::{Change, compare as compare_files};

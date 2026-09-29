@@ -18,7 +18,7 @@ pub fn parse_task(bytes: &[u8]) -> Result<TaskContract> {
     if bytes.len() > MAX_CONFIG_BYTES {
         bail!("Task contract exceeds configuration budget");
     }
-    let task: TaskContract = super::parse_yaml(bytes)?;
+    let task: TaskContract = super::runtime::decode(bytes)?;
     validate_task(&task)?;
     Ok(task)
 }
@@ -51,6 +51,7 @@ impl Plan {
                 let v = &item.verification;
                 combined.checks.push(CommandCheck {
                     id: v.check_id.clone(),
+                    required_env: v.required_env.clone(),
                     kind: v.kind,
                     argv: v.argv.clone(),
                     cwd: v.cwd.clone(),

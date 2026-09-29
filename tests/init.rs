@@ -213,7 +213,13 @@ fn unreadable_or_malformed_configuration_does_not_suggest_init() {
         &cli(root.path(), &["config", "--show", "--format", "json"]),
         2,
     );
-    assert!(malformed.get("next_steps").is_none());
+    assert_eq!(malformed["next_steps"][0]["action"], "repair_configuration");
+    assert!(malformed["next_steps"][0].get("command").is_none());
+    assert!(
+        !malformed["next_steps"]
+            .to_string()
+            .contains("initialize_candidate_policy")
+    );
 }
 
 #[test]

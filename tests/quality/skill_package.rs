@@ -175,6 +175,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "diagnostic-ratchets",
         "rule-management",
         "selfcheck",
+        "runtime-compatibility",
     ] {
         let path = format!("references/{reference}.md");
         assert!(!read(&root.join("skills/qualitygate-cli"), &path).is_empty());
@@ -281,6 +282,8 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/project-rule.schema.json",
         "references/schemas/decision.schema.json",
         "references/schemas/feedback.schema.json",
+        "references/schemas/capabilities.schema.json",
+        "references/schemas/doctor.schema.json",
         "references/decision-protocol.md",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
@@ -683,4 +686,65 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
     let environment = read(root, "src/qualitygate/env/mod.rs");
     assert!(!catalog.contains("include_str!(\"../../../qualitygate/rules/"));
     assert!(environment.contains("BUILTIN_RULES_DIR_ENV"));
+}
+
+#[test]
+fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let skill = read(root, "skills/qualitygate-cli/SKILL.md");
+    let reference = read(
+        root,
+        "skills/qualitygate-cli/references/runtime-compatibility.md",
+    );
+    for text in [
+        "runtime compatibility",
+        "cygpath -m",
+        "MSYS2_ARG_CONV_EXCL",
+        "MINGW*|MSYS*",
+        "Linux and WSL",
+        "--probe-tools",
+        "capabilities",
+    ] {
+        assert!(
+            skill.contains(text),
+            "missing Skill runtime contract: {text}"
+        );
+    }
+    for text in [
+        "v0.5.5",
+        "98c0a66",
+        "Unreleased after v0.5.6",
+        "--snapshot-max-file-mib 8",
+        "120-second",
+        "not delivery acceptance",
+        "config.unknown_field",
+        "schemas/doctor.schema.json",
+    ] {
+        assert!(
+            reference.contains(text),
+            "missing runtime reference contract: {text}"
+        );
+    }
+    let ci = read(root, ".github/workflows/pr-checks.yml");
+    assert!(ci.contains("--test doctor"));
+    assert!(ci.contains("Native PowerShell preflight"));
+    assert!(ci.contains("Native Git Bash preflight"));
+    assert!(read(root, "qualitygate.yaml").contains("--test, doctor"));
+    for (name, schema) in [
+        (
+            "capabilities",
+            qualitygate::config::preflight_schema::capabilities_document().unwrap(),
+        ),
+        (
+            "doctor",
+            qualitygate::config::preflight_schema::doctor_document().unwrap(),
+        ),
+    ] {
+        let bundled: serde_json::Value = serde_json::from_str(&read(
+            root,
+            &format!("skills/qualitygate-cli/references/schemas/{name}.schema.json"),
+        ))
+        .unwrap();
+        assert_eq!(schema, bundled);
+    }
 }

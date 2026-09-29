@@ -10,3 +10,8 @@ archive, suite, trust, DSSE approval, rollback and effectiveness contracts.
 The project-rule schema supports [file inventory assertions](../../docs/en/02-reference/02-rules.md).
 Report configuration supports [diagnostic count ratchets](../../docs/en/02-reference/03-projects-and-tool-reports.md)
 through the same check command and serialized execution evidence.
+
+[Runtime and preflight](../../docs/en/02-reference/06-runtime-and-preflight.md)
+defines offline executable fingerprints, versioned capabilities, explicit policy
+requirements, environment names, selected-snapshot doctor and argv next steps.
+The preflight protocol remains independent of delivery decision envelopes.

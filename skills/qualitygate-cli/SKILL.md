@@ -45,6 +45,13 @@ obligations as explicit gaps, and route graph/type/data-flow/runtime semantics
 to existing lints, project adapters, bounded command checks, or manual review.
 Only write or adopt a rule when the user authorizes that policy mutation.
 
+Resolve the runtime → compare version and capabilities → establish configuration
+existence and compatibility → run the matching doctor → run formal check.
+The [runtime compatibility workflow](references/runtime-compatibility.md) contains
+verified introduction versions, old-runtime handling, schemas and a large-repository
+template. The initialization prerequisite below applies after runtime resolution;
+capabilities and schema export do not require repository configuration.
+
 ## Initialization prerequisite
 
 Before repository verification, establish whether the required policy exists
@@ -168,11 +175,48 @@ if (-not $qualitygateReady) {
 }
 ```
 
-Do not run `qualitygate.exe` from bash, sh, zsh, fish, or WSL bash. If neither
-asset nor a published `PATH` executable works, report that installation is
-needed rather than changing the repository or global tool configuration.
+Windows Git Bash/MSYS2 can invoke the native Windows `.exe` directly. Use
+Linux assets in Linux and WSL; use PowerShell syntax only in PowerShell.
+For Git Bash/MSYS2, set the two roots to shell paths (spaces are supported):
+
+```bash
+(
+  case "$(uname -s)" in
+    MINGW*|MSYS*) ;;
+    *) echo "This snippet requires Windows Git Bash/MSYS2" >&2; exit 2 ;;
+  esac
+  case "$(uname -m)" in
+    x86_64|amd64) qualitygate_asset=windows-x86_64 ;;
+    aarch64|arm64) qualitygate_asset=windows-aarch64 ;;
+    *) echo "Unsupported Windows architecture" >&2; exit 2 ;;
+  esac
+  qualitygate_bin="$QUALITYGATE_SKILL_ROOT/assets/$qualitygate_asset/qualitygate.exe"
+  "$qualitygate_bin" --version || exit 2
+  "$qualitygate_bin" capabilities --format json || exit 2
+  QUALITYGATE_BUILTIN_RULES_DIR="$(cygpath -m "$QUALITYGATE_SKILL_ROOT/references/rules")" \
+  MSYS2_ENV_CONV_EXCL=QUALITYGATE_BUILTIN_RULES_DIR MSYS2_ARG_CONV_EXCL='*' \
+    "$qualitygate_bin" doctor --root "$(cygpath -m "$REPOSITORY_ROOT")" \
+    --worktree --profile full --format json
+)
+```
+
+Explicit conversion keeps native paths distinct from shell paths; the conversion
+exclusions apply only to that invocation. Resolve missing configuration through
+the initialization prerequisite before retrying doctor. If neither a matching
+asset nor a verified published PATH executable works, report the installation
+gap without changing repository or global tool configuration.
 
 ## Verify code tasks before completion
+
+Compare runtime `--version` with this Skill's metadata and consult
+[runtime compatibility](references/runtime-compatibility.md). Query capabilities
+and compare exact IDs and executable digest; identical version strings do not
+prove identical builds. After configuration inspection, run `doctor` with the
+intended selector/profile/task/policy/budgets. Default doctor is static; explicitly
+select `--probe-tools` when declared tool execution is authorized. Repair its
+structured prerequisites before formal checks. MR doctor is not supported yet;
+retain that preflight gap when using the formal MR workflow.
+
 
 Use the repository's current policy and any applicable task contract. Inspect
 the effective configuration and identify the snapshot being delivered. For
@@ -345,10 +389,13 @@ under `qualitygate/rules`; it does not enable the rule or issue approval.
 
 ## Interpret results
 
-Exit code `0` means a complete passing gate, `1` means a blocking violation,
+Exit code `0` for formal `check` means a complete passing gate, `1` means a blocking violation,
 and `2` means incomplete validation. Preserve the report and its evidence; do
 not convert an incomplete result to pass or claim that a warning filter changes
 the computed gate.
+
+Doctor uses exit `0` only for its requested preflight scope and `2` for blocked
+or incomplete preflight; it never establishes delivery readiness.
 
 This skill operates through the CLI only. It does not configure MCP, create
 manual approvals, alter Git configuration, publish external results, or bypass

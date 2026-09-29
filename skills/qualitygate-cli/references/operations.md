@@ -212,3 +212,12 @@ Report remaining warnings and the verification boundary alongside the pass.
 Use a repair loop only when the user authorizes code or policy changes. After a
 repair, rerun against a newly selected snapshot and retain both reports rather
 than treating a prior report as evidence for changed inputs.
+
+## Runtime and selected-snapshot preflight
+
+After resolving the runtime, follow [runtime compatibility](runtime-compatibility.md):
+version/capability identity, configuration existence and compatibility, then doctor
+with the same selector/profile/task/policy and budgets before formal check.
+Use the large-repository template only when metadata or repository instructions
+justify increasing the 2 MiB default toward the 8 MiB maximum. Total and per-file
+budgets are independent. A preflight pass is not a delivery verdict.

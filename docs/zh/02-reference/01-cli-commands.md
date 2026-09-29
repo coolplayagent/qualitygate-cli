@@ -49,3 +49,15 @@ selfcheck 将内置 fixtures 与独立编写的 golden 结果比较。pilot 命�
 信任密钥、不签名、不批准策略，也不补齐缺失的真实世界证据。
 
 版本特定参数以 `qualitygate --help` 和子命令帮助为准。脚本应同时检查进程退出码与结构化 gate 字段。
+
+## 运行时能力与环境预检
+
+```bash
+qualitygate capabilities --format json
+qualitygate doctor --worktree --profile full --format json
+qualitygate doctor --staged --profile full --probe-tools --format json
+qualitygate schema capabilities --format json
+qualitygate schema doctor --format json
+```
+
+[运行时能力与环境预检](06-runtime-and-preflight.md).

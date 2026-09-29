@@ -36,6 +36,11 @@ fn dot() -> String {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub schema_version: u32,
+    #[serde(
+        default,
+        skip_serializing_if = "crate::domain::runtime::Requirements::is_empty"
+    )]
+    pub requires: crate::domain::runtime::Requirements,
     #[serde(default)]
     pub exclude: Vec<String>,
     #[serde(default)]
@@ -75,6 +80,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             schema_version: 1,
+            requires: Default::default(),
             exclude: Vec::new(),
             languages: Vec::new(),
             rulesets: vec!["core".into()],
@@ -188,6 +194,8 @@ pub struct Profile {
 #[serde(deny_unknown_fields)]
 pub struct CommandCheck {
     pub id: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_env: Vec<String>,
     #[serde(default)]
     pub kind: CheckKind,
     #[serde(default)]
@@ -375,6 +383,8 @@ pub struct Acceptance {
 #[serde(deny_unknown_fields)]
 pub struct Verification {
     pub check_id: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_env: Vec<String>,
     #[serde(default)]
     pub kind: CheckKind,
     #[serde(default)]

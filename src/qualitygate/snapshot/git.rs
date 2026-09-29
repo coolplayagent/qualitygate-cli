@@ -105,7 +105,7 @@ fn entries(listing: &[u8], index: bool, options: &super::CaptureOptions) -> Resu
         .filter(|entry| !entry.is_empty())
     {
         visited += 1;
-        if visited > MAX_FILES {
+        if options.include.is_none() && visited > MAX_FILES {
             bail!("Snapshot exceeds {MAX_FILES} files");
         }
         let entry = std::str::from_utf8(entry)?;

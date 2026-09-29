@@ -34,3 +34,6 @@ Git 对象通常按最多 4 MiB 与 1,024 个对象分批；显式允许的更�
 
 单元、集成、live producer、Miri 与 ASan 结果必须分别解释。fixture 通过只覆盖其代表形态；真实仓库、
 平台、网络和人工审核假设在独立验证前始终可见。
+
+Doctor 退出 `0` 仅表示请求的 `scope: preflight` 通过；受阻或未完成退出 `2`，
+不产生交付结论。见[运行时与预检](06-runtime-and-preflight.md)。

@@ -28,6 +28,7 @@ pub mod policy_promotion;
 pub mod policy_rollback;
 pub mod policy_store;
 pub mod policy_validation;
+pub mod preflight_schema;
 mod project_inventory;
 pub mod project_rules;
 mod python;
@@ -35,6 +36,7 @@ pub mod rule_authoring;
 pub mod rule_management;
 pub mod rule_query;
 pub mod rule_schema;
+pub mod runtime;
 pub mod selfcheck;
 pub mod selfcheck_policy;
 pub mod source_reviews;
@@ -61,7 +63,8 @@ pub fn parse(bytes: &[u8]) -> Result<Config> {
     if bytes.len() > MAX_CONFIG_BYTES {
         bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
     }
-    let config: Config = parse_yaml(bytes).context("Invalid qualitygate YAML")?;
+    runtime::requirements(bytes)?;
+    let config: Config = runtime::decode(bytes).context("Invalid qualitygate YAML")?;
     validation::layout(&config, false)?;
     if config.custom_rules.is_none() {
         catalog::Catalog::load(&config, std::iter::empty())?.resolve(&config)?;

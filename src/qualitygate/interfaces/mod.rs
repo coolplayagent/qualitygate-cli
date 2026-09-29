@@ -1,6 +1,7 @@
 //! Command-line parsing and deterministic report presentation.
 
 pub mod cli;
+mod doctor;
 mod pilot;
 mod policy;
 mod render;
@@ -35,6 +36,17 @@ pub async fn render_failure(
             Vec::new()
         }
     };
+    if format == cli::Format::Json {
+        let mut report = incomplete_report(&format!("{error:#}"));
+        if !steps.is_empty() {
+            report["next_steps"] = serde_json::json!(steps);
+        }
+        if let Some(diagnostic) = error.downcast_ref::<crate::domain::runtime::ConfigurationError>()
+        {
+            report["diagnostics"] = serde_json::json!([diagnostic]);
+        }
+        return report.to_string();
+    }
     render_incomplete_with_steps(&format!("{error:#}"), format, &steps)
 }
 

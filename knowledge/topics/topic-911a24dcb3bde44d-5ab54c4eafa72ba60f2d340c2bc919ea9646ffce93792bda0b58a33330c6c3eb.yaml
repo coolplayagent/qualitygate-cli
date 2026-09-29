@@ -1,0 +1,21 @@
+schema_version: 4
+topic:
+  id: runtime-preflight
+  title: runtime-preflight
+  description: Added by CLI source registration.
+sources:
+- id: runtime-preflight
+  topic: runtime-preflight
+  kind: doc
+  uri: docs/en/02-reference/06-runtime-and-preflight.md
+  source_scope: repo
+  read_policy: direct
+  write_policy: manual-review
+  status: active
+  version: 1
+  description: Runtime capability fingerprints, compatibility requirements, environment names and snapshot-bound preflight.
+route:
+  topic: runtime-preflight
+  source_order:
+  - runtime-preflight
+  fallback: bounded-search

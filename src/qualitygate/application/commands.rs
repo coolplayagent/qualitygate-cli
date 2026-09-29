@@ -21,6 +21,21 @@ pub(super) async fn execute_until(
     inputs: &snapshot::InputGuard,
     deadline: Option<std::time::Instant>,
 ) -> CheckResult {
+    let missing = crate::env::missing_required(&check.required_env);
+    if !missing.is_empty() {
+        let mut result = CheckResult::pending(&check.id, check.required, check.severity);
+        result.block(
+            ExecutionStatus::Blocked,
+            format!(
+                "Required environment variables are missing or empty: {}",
+                missing.join(", ")
+            ),
+        );
+        result
+            .metadata
+            .insert("required_env_missing".into(), serde_json::json!(missing));
+        return result;
+    }
     if let Err(error) = inputs.verify().await {
         let mut result = CheckResult::pending(&check.id, check.required, check.severity);
         result.block(

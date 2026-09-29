@@ -18,6 +18,19 @@ pub(super) async fn load(
     options: &CheckOptions,
     invalid: &mut Vec<String>,
 ) -> Result<Loaded> {
+    load_inner(snapshot, options, invalid, true).await
+}
+
+pub(super) async fn load_plan(snapshot: &Arc<Snapshot>, options: &CheckOptions) -> Result<Loaded> {
+    load_inner(snapshot, options, &mut Vec::new(), false).await
+}
+
+async fn load_inner(
+    snapshot: &Arc<Snapshot>,
+    options: &CheckOptions,
+    invalid: &mut Vec<String>,
+    validate_inputs: bool,
+) -> Result<Loaded> {
     let resolved_commit = if let Some(reference) = &options.policy_ref {
         Some(snapshot::resolve_commit(&snapshot.root, reference).await?)
     } else {
@@ -50,7 +63,9 @@ pub(super) async fn load(
                 .map(|(path, file)| (path.as_str(), file.bytes.as_slice())),
         )?;
         let config = catalog.resolve(&config)?;
-        super::acquisition::validate_config(&config, &catalog, &options, &candidate)?;
+        if validate_inputs {
+            super::acquisition::validate_config(&config, &catalog, &options, &candidate)?;
+        }
         let task_file = options
             .task
             .as_ref()
@@ -65,7 +80,7 @@ pub(super) async fn load(
             .transpose()?;
         let plan = Plan::build(&config, task.as_ref(), &options.profile)?;
         let mut changes = BTreeSet::new();
-        if trusted.is_some() {
+        if trusted.is_some() && validate_inputs {
             if Some((&file.bytes, file.executable))
                 != files
                     .get(&options.config)

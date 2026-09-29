@@ -7,3 +7,4 @@
 3. [Projects and tool reports](03-projects-and-tool-reports.md)
 4. [Policy, task, and signed evidence](04-policy-task-and-signed-evidence.md)
 5. [Exit codes and resource limits](05-exit-codes-and-resource-limits.md)
+6. [Runtime capabilities and environment preflight](06-runtime-and-preflight.md)

@@ -34,7 +34,7 @@ jobs:
           - gate: unit-test
             command: cargo test --locked --lib --bins --all-features
           - gate: rust-integration
-            command: cargo test --locked --no-fail-fast --test bazel --test cli --test custom_rules --test file_contracts --test delivery_scope --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test issue11_rules --test issue12_rules --test issue13_rules --test issue14_rules --test issue15_rules --test issue16_rules --test issue18_rules --test issue19_rules --test issue20_rules --test decision_envelope --test judgment_provider --test c_family_ratchet --test clippy_ratchet --test eslint_ratchet --test golangci_ratchet --test ruff_ratchet --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
+            command: cargo test --locked --no-fail-fast --test bazel --test cli --test doctor --test custom_rules --test file_contracts --test delivery_scope --test ratchet --test test_effectiveness --test pilot_baseline --test feedback --test agent_loop --test case_provenance --test pilot_summary --test pilot_seal --test pilot_authorization --test pilot_acceptance --test pilot_templates --test rule_authoring --test rule_management --test issue9_rules --test issue10_rules --test issue11_rules --test issue12_rules --test issue13_rules --test issue14_rules --test issue15_rules --test issue16_rules --test issue18_rules --test issue19_rules --test issue20_rules --test decision_envelope --test judgment_provider --test c_family_ratchet --test clippy_ratchet --test eslint_ratchet --test golangci_ratchet --test ruff_ratchet --test policy_categories --test policy_candidates --test policy_validation --test policy_promotion --test policy_lifecycle --test merge_request --test execution --test init --test manual --test provenance --test git_trailers --test compatibility --test sarif --test coverage --test source_reviews --test policy --test selfcheck --all-features
           - gate: selfcheck-minimal
             command: cargo run --locked -- selfcheck --fixture minimal --format json
           - gate: documentation
@@ -81,6 +81,36 @@ jobs:
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
         run: cargo test --locked --all-targets --all-features
+      - name: Native PowerShell preflight in a path with spaces
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'qualitygate preflight powershell'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          git -C $root init -q
+          git -C $root -c user.name=Fixture -c user.email=fixture@example.invalid commit --allow-empty -qm initial
+          @('schema_version: 1', 'checks: [{id: version, argv: [git, --version], tools: [{id: git, argv: [git, --version]}]}]') |
+            Set-Content -LiteralPath (Join-Path $root 'qualitygate.yaml')
+          $bin = Join-Path $env:GITHUB_WORKSPACE 'target/debug/qualitygate.exe'
+          & $bin capabilities --format json
+          if ($LASTEXITCODE -ne 0) { throw 'capabilities failed' }
+          & $bin doctor --root $root --worktree --probe-tools --format json
+          if ($LASTEXITCODE -ne 0) { throw 'PowerShell doctor failed' }
+      - name: Native Git Bash preflight with explicit path conversion
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          qualitygate_root="$(cygpath -u "$RUNNER_TEMP")/qualitygate preflight git bash"
+          qualitygate_workspace="$(cygpath -u "$GITHUB_WORKSPACE")"
+          mkdir -p "$qualitygate_root"
+          git -C "$qualitygate_root" init -q
+          git -C "$qualitygate_root" -c user.name=Fixture -c user.email=fixture@example.invalid commit --allow-empty -qm initial
+          printf '%s\n' 'schema_version: 1' 'checks: [{id: version, argv: [git, --version], tools: [{id: git, argv: [git, --version]}]}]' > "$qualitygate_root/qualitygate.yaml"
+          qualitygate_bin="$qualitygate_workspace/target/debug/qualitygate.exe"
+          "$qualitygate_bin" capabilities --format json
+          QUALITYGATE_BUILTIN_RULES_DIR="$(cygpath -m "$qualitygate_workspace/skills/qualitygate-cli/references/rules")" \
+          MSYS2_ENV_CONV_EXCL=QUALITYGATE_BUILTIN_RULES_DIR MSYS2_ARG_CONV_EXCL='*' \
+            "$qualitygate_bin" doctor --root "$(cygpath -m "$qualitygate_root")" --worktree --probe-tools --format json
       - name: Run macOS gates
         if: runner.os != 'Windows'
         run: cargo test --locked --all-targets --all-features

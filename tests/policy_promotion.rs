@@ -165,6 +165,15 @@ fn only_independent_signed_exact_validation_can_activate_a_policy_and_history_is
     assert_eq!(config["config"]["rules"]["line-ending"]["enabled"], true);
     let case = &fixture.suite.cases[0];
     let diff = format!("{}..{}", case.base, case.head);
+    let preflight = run(
+        fixture.root.path(),
+        &["doctor", "--diff", &diff, "--profile", "full"],
+        0,
+    );
+    qualitygate::config::preflight_schema::validate_doctor(&preflight).unwrap();
+    assert_eq!(preflight["policy"]["trust"], "signed_active_policy");
+    assert_eq!(preflight["policy"]["source"], expected.candidate_policy);
+    assert_eq!(preflight["scope"], "preflight");
     let checked = run(
         fixture.root.path(),
         &["check", "--diff", &diff, "--profile", "full"],

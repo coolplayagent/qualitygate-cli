@@ -6,7 +6,7 @@ use anyhow::{Result, ensure};
 pub(super) async fn prepare(
     options: &mut CheckOptions,
     active: Option<&config::Config>,
-) -> Result<Option<crate::domain::MergeRequest>> {
+) -> Result<(Option<crate::domain::MergeRequest>, config::Config)> {
     let mut comparison = None;
     let mut bootstrap = options.snapshot_options.clone();
     bootstrap.include = Some(vec![globset::escape(&options.config)]);
@@ -43,9 +43,9 @@ pub(super) async fn prepare(
             "exclude matches the task contract: {task}"
         );
     }
-    options.snapshot_options.exclude = config.exclude;
+    options.snapshot_options.exclude = config.exclude.clone();
     options.snapshot_options.include = None;
-    Ok(comparison)
+    Ok((comparison, config))
 }
 
 pub(super) fn validate_excluded(snapshot: &snapshot::Snapshot, protected: &[String]) -> Result<()> {

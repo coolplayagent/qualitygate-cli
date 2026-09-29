@@ -8,6 +8,7 @@ pub(super) fn validate(config: &Config) -> Result<()> {
 }
 
 pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
+    super::runtime::validate(&config.requires)?;
     super::exclusions::matcher(&config.exclude)?;
     super::categories::validate(config)?;
     if config.rule_lifecycle.len() > 512 {
@@ -57,6 +58,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         }
     }
     for check in &config.checks {
+        super::runtime::validate_env(&check.required_env)?;
         validate_id(&check.id)?;
         super::compatibility::validate(check)?;
         super::test_effectiveness::validate(check)?;
@@ -77,6 +79,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         }
         if check.kind == CheckKind::Manual
             && (!check.argv.is_empty()
+                || !check.required_env.is_empty()
                 || !check.tools.is_empty()
                 || !check.reports.is_empty()
                 || !check.projects.is_empty()

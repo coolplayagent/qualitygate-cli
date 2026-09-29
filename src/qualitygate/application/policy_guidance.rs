@@ -26,6 +26,18 @@ pub struct Context {
 }
 
 pub async fn next_steps(error: &Error, context: Context) -> Result<Vec<NextStep>> {
+    if let Some(error) = error.downcast_ref::<crate::domain::runtime::ConfigurationError>() {
+        let incompatible = error.code.starts_with("runtime.");
+        return Ok(vec![NextStep {
+            action: if incompatible { "select_compatible_runtime" } else { "repair_configuration" }.into(),
+            command: incompatible.then(|| vec!["qualitygate".into(), "capabilities".into(), "--format".into(), "json".into()]),
+            message: if incompatible {
+                "Select a verified CLI/Skill build satisfying the declared version and capability IDs, inspect its capabilities, then retry. No tool is installed automatically."
+            } else {
+                "Repair the reported YAML syntax, type or field using its original error and location. An unknown field alone does not establish that the runtime is outdated."
+            }.into(),
+        }]);
+    }
     let Some(failure) = error
         .chain()
         .find_map(|source| source.downcast_ref::<PolicyInputError>())

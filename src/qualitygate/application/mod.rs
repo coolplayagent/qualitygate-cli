@@ -1,10 +1,14 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
 mod acquisition;
+pub mod capabilities;
 mod commands;
 mod compatibility;
 mod compatibility_inputs;
 mod coverage_gate;
+pub mod doctor;
+mod doctor_context;
+mod doctor_plan;
 mod evidence;
 mod external;
 pub mod feedback;
@@ -68,7 +72,7 @@ pub async fn check_with_expected_base(
     expected_base: Option<&str>,
 ) -> Result<Report> {
     let active = policy_active::load(options.root.clone()).await?;
-    let comparison = acquisition::prepare(
+    let (comparison, _) = acquisition::prepare(
         &mut options,
         active.as_ref().map(|active| &active.active.config),
     )
@@ -203,7 +207,24 @@ async fn check_prepared(
                     && result.verdict == Some(Verdict::Pass)
             })
         });
-        let mut result = if let Some(dependency) = dependency_failure {
+        let missing_env = command
+            .map(|check| crate::env::missing_required(&check.required_env))
+            .unwrap_or_default();
+        let mut result = if !missing_env.is_empty() {
+            let mut result = CheckResult::pending(id, required, severity);
+            result.block(
+                ExecutionStatus::Blocked,
+                format!(
+                    "Required environment variables are missing or empty: {}",
+                    missing_env.join(", ")
+                ),
+            );
+            result.metadata.insert(
+                "required_env_missing".into(),
+                serde_json::json!(missing_env),
+            );
+            result
+        } else if let Some(dependency) = dependency_failure {
             let mut result = CheckResult::pending(id, required, severity);
             result.block(
                 ExecutionStatus::Blocked,

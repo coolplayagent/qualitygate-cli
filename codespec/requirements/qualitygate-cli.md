@@ -699,3 +699,18 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | DEC-03 | warning 试点隔离校准与验证时间，使用独立标签计算校准与风险指标，对高优先级建议抽样审计；缺证据保持未完成，策略变更仍走外部批准流程 | `tests/judgment_provider.rs`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[策略演进](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
 
 | SNAP-33-DELIVERY | Selector-derived delivery-line checks without a separate CLI scope option, policy-bound pre-acquisition exclusions, preserved command failures and packaged Skill trimming/bootstrap workflows | `tests/delivery_scope.rs`, `tests/quality.rs`, `application::report_gate::tests` |
+
+## 15. 能力契约与统一环境预检（issue #39）
+
+| 编号 | 要求 | 验收证据 |
+| --- | --- | --- |
+| ENV-39-01 | capabilities 无仓库、配置或网络依赖；可执行摘要区分同版本构建；输出协议、版本化能力 ID 和限制，打包 Schema | `tests/doctor.rs::offline_capabilities_and_schemas_ignore_repository_and_invalid_policy`；`tests/quality/skill_package.rs` |
+| ENV-39-02 | YAML 结构、运行时要求、严格字段/类型分阶段验证，保留位置；旧序列化不增加空字段；不将拼写错误泛化为旧版本 | `tests/doctor.rs::explicit_requirements_precede_strict_fields_but_do_not_mask_bad_yaml`；`config::runtime::tests` |
+| ENV-39-03 | doctor 与 check 对 selected profile、依赖、活动策略、任务和 policy-ref 使用相同计划；required_env 仅检查存在非空且不泄露值 | `tests/doctor.rs`；`tests/policy_promotion.rs` |
+| ENV-39-04 | 默认静态；显式工具探针只运行 tools argv，顺序共享 120 秒；失败、超时、输出超限、空版本、输入与工具替换保留未完成 | `tests/doctor/probes.rs`；`application::doctor_context::tests` |
+| ENV-39-05 | 分别检查实际 base/target/policy 元数据；工作区、index、diff 相互隔离；保护输入、总量、2/8 MiB、最大容量与明细截断明确 | `tests/doctor/budgets.rs`；`snapshot::selected_preflight::tests` |
+| ENV-39-06 | scope 固定 preflight，0 只代表请求范围通过，2 表示受阻或未完成；保留未执行项、修复 argv，不能替代正式交付门禁 | `tests/doctor.rs`；[协议说明](../../docs/en/02-reference/06-runtime-and-preflight.md) |
+| ENV-39-07 | Skill 依次解析运行时、能力/版本、配置、doctor、check；保留初始化约束，提供历史兼容表、大仓库、PowerShell/Git Bash/Linux/WSL 指引 | `tests/quality/skill_package.rs`；[Windows 验证流程](../../.github/workflows/pr-checks.yml) 的实际运行证据 |
+
+本变更不安装工具、不修改项目外的 RelayAgent，也不发布新版本。Windows 原生实测、Miri、
+ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际运行。

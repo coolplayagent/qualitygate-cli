@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:capabilities:1",
+  "title": "Qualitygate capabilities v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cli_version",
+    "executable",
+    "platform",
+    "capabilities",
+    "protocols",
+    "limits"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "cli_version": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "digest",
+        "bytes"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "os",
+        "architecture"
+      ],
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "architecture": {
+          "type": "string"
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "protocols": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_default_file_bytes",
+        "snapshot_max_file_bytes",
+        "snapshot_default_bytes",
+        "snapshot_max_bytes",
+        "snapshot_max_files",
+        "snapshot_max_jobs",
+        "snapshot_max_seconds",
+        "configuration_bytes",
+        "process_stream_bytes",
+        "tool_version_bytes",
+        "tool_probe_max_seconds",
+        "doctor_probe_seconds",
+        "diagnostic_details"
+      ],
+      "properties": {
+        "snapshot_default_file_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_max_file_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_default_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_max_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_max_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_max_jobs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot_max_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "configuration_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "process_stream_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tool_version_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tool_probe_max_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "doctor_probe_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "diagnostic_details": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

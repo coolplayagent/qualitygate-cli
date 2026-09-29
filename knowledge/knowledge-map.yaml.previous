@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: knowledge
-map_version: 14
-updated_at: unix:1789802920
+map_version: 15
+updated_at: unix:1789803039
 directories:
 - directory: best-practices
   purpose: Reviewed engineering and knowledge-management practices.
@@ -81,8 +81,8 @@ topics:
   description: Added by CLI source registration.
   source_ids:
   - policy-evolution-contract
-  ref: topics/topic-16b01242f1a3e8ea-a6c4ac3ce2bdfc5ebab92940024b56815a0831f3019438c378082f22f59c5d48.yaml
-  digest: a6c4ac3ce2bdfc5ebab92940024b56815a0831f3019438c378082f22f59c5d48
+  ref: topics/topic-16b01242f1a3e8ea-4fe91fabb53fb6387aba1d6f5cbf39509363a2372d22ec989f6539f1e1e1f59e.yaml
+  digest: 4fe91fabb53fb6387aba1d6f5cbf39509363a2372d22ec989f6539f1e1e1f59e
 - id: rule-maintenance
   title: rule-maintenance
   description: Added by CLI source registration.
@@ -157,3 +157,7 @@ history:
     action: source.update
     actor: cli
     summary: Updated source 'diagnostic-count-ratchets'.
+  - version: 15
+    action: source.update
+    actor: cli
+    summary: Updated source 'policy-evolution-contract'.

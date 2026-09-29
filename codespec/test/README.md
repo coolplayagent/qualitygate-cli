@@ -77,3 +77,10 @@ v5 compatibility.
 The [phase-L matrix](../../docs/en/01-user-guide/05-real-repository-pilot.md) covers v7 model
 capture binding, explicit unknown, missing or changed archives, path bounds and
 v6 compatibility.
+
+`doctor` is a separate Rust integration target. Its `doctor/budgets.rs` and
+`doctor/probes.rs` modules cover selected-snapshot budgets, native producer
+execution boundaries and incomplete evidence. `doctor/native_probe.rs` is a
+small Rust producer compiled into temporary storage by the test harness;
+production executable identity limits remain unchanged. Windows PowerShell and
+Git Bash invocations have a distinct native CI step and require its actual result.

@@ -51,3 +51,19 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 回归区分历史诊断和交付诊断，同时保留生产器错误。
 报告门禁单元测试和 SARIF CLI 回归覆盖保留历史实例并新增同标识诊断的两种生产器顺序；
 反馈单元及 envelope 回归确保不可用的全仓复查仍标记 omitted，同时保留交付复查命令。
+
+## Issue #39 运行时与预检证据
+
+| 要求 | 单元 / 纯领域证据 | 集成 / 平台证据 |
+| --- | --- | --- |
+| ENV-39-01/02：离线指纹、运行时要求与解析诊断 | `config::runtime::tests`、`domain::doctor::tests` | `tests/doctor.rs`：离线 capabilities/Schema、兼容性反例 |
+| ENV-39-03：指定计划与环境变量要求 | `config::plan::tests` | `tests/doctor.rs`：依赖展开、任务变量、缺失/空值、staged/diff/policy 选择；`tests/policy_promotion.rs`：活动签名策略 |
+| ENV-39-04：静态边界与有界探针 | `application::doctor_context::tests` | `tests/doctor/probes.rs`：超时、超限、空版本、脚本/输入/策略变化、敏感输出 |
+| ENV-39-05：分侧文件预算 | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`：仅 base 超限、2/8 MiB、最大容量、总量、受保护排除、index、计数与截断 |
+| ENV-39-06：预检协议与可执行建议 | `domain::doctor::tests` | `tests/doctor.rs`：Schema 校验与建议 argv 重放 |
+| ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：带空格路径下的 Windows PowerShell/Git Bash 验证 |
+
+`cargo test --test doctor --all-features` 是独立于原生单元测试的集成目标。
+Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Cargo/Bazel 和至少 90% 行覆盖率
+仍须分别通过。Miri 验证纯领域，ASan 验证原生单元测试；Linux 结果不能替代 Windows Shell
+实测。见[运行时与预检](../02-reference/06-runtime-and-preflight.md)。

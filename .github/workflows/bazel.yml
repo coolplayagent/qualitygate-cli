@@ -32,4 +32,4 @@ jobs:
       - name: Build CLI from Cargo-resolved dependencies
         run: bazel build --lockfile_mode=error //:qualitygate
       - name: Run Bazel tests
-        run: bazel test --lockfile_mode=error //:unit_tests //:bazel_contract_test
+        run: bazel test --lockfile_mode=error //:unit_tests //:bazel_contract_test //:doctor_test

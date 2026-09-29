@@ -1,5 +1,5 @@
-load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("//bazel:rust_deps.bzl", "aliases", "all_crate_deps", "crate_edition", "package_rustc_env")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -37,6 +37,31 @@ alias(
 alias(
     name = "qualitygate",
     actual = "//src/qualitygate:qualitygate",
+)
+
+rust_binary(
+    name = "doctor_probe",
+    srcs = ["tests/doctor/native_probe.rs"],
+    edition = crate_edition(),
+    testonly = True,
+)
+
+rust_test(
+    name = "doctor_test",
+    crate_root = "tests/doctor.rs",
+    srcs = ["tests/doctor.rs", "tests/common/mod.rs"] + glob(["tests/doctor/*.rs"]),
+    data = [":qualitygate", ":packaged_rules", ":rule_schemas", ":doctor_probe"],
+    env_inherit = ["PATH"],
+    rustc_env = dict(
+        package_rustc_env(),
+        CARGO_BIN_EXE_qualitygate = "$(rootpath :qualitygate)",
+        CARGO_MANIFEST_DIR = ".",
+        QUALITYGATE_TEST_PROBE = "$(rootpath :doctor_probe)",
+    ),
+    aliases = aliases(normal = True, normal_dev = True, proc_macro_dev = True),
+    edition = crate_edition(),
+    deps = [":qualitygate_lib"] + all_crate_deps(normal = True, normal_dev = True),
+    proc_macro_deps = all_crate_deps(proc_macro = True, proc_macro_dev = True),
 )
 
 test_suite(
