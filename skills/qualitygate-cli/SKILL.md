@@ -28,6 +28,15 @@ For implementation, bug fixes, and refactors, use the existing repository gate
 to verify the final code snapshot before reporting the task as complete.
 The gate's coverage and evidence determine what that claim means.
 
+When effective policy declares `agent_obligations`, use the
+[consuming-agent contract workflow](references/agent-contracts.md) before acting.
+Obtain a current `agent-contract` projection with the selected role, task and
+policy, and apply its prompt to the agent performing the work. Reload it after
+resume or handoff. Required gaps block readiness; a ready projection proves
+neither compliance nor host enforcement. Preserve higher-priority instructions
+and existing permissions. A required host control needs an actual supporting
+host; do not substitute an acknowledgement or code-gate pass.
+
 ## Use the Skill over the CLI
 
 For ordinary code work, let this Skill select the snapshot, profile, evidence,
@@ -261,6 +270,7 @@ Route the requested capability before editing policy:
 | Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
 | Compose typed entity predicates, counts and bounded collection checks | [Operators](references/operators.md); capability `rules.operators.v2`, `schema operator-rule`, then standard validation/generation |
 | Track every declared clause, its adoption, unsupported gaps and snapshot execution | [Constraint coverage](references/constraint-coverage.md); `schema constraint`, `config --show`, automatic `constraint-coverage` check |
+| Apply adopted behavior obligations to the consuming Agent | [Agent contracts](references/agent-contracts.md); `schema agent-obligation`, `agent-contract`; host enforcement needs an actual host |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
 | Supply bounded repair context to an external Agent | [Agent feedback](references/agent-feedback.md); `check --feedback`, complete report references and full rechecks |
 | Consume versioned decisions or assess warning findings with an external provider | [Decision protocol](references/decision-protocol.md); exported decision/feedback schemas, optional `--envelope`, and shadow/advisory judgment |

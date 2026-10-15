@@ -40,6 +40,7 @@ pub use rule_validation::*;
 pub use source_review::*;
 pub use verification::*;
 
+pub mod agent_contract;
 pub mod check_scope;
 pub mod doctor;
 pub mod runtime;

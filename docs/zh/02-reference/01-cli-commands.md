@@ -64,3 +64,5 @@ qualitygate schema project-rule-family --format json
 ```
 
 [运行时能力与环境预检](06-runtime-and-preflight.md).
+
+`qualitygate schema agent-obligation` · `qualitygate agent-contract --worktree --role implementer --format json`

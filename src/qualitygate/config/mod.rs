@@ -112,6 +112,7 @@ pub fn enable_rule(root: &Path, path: &Path, rule_id: &str) -> Result<()> {
     Ok(())
 }
 
+pub mod agent_contract;
 #[cfg(test)]
 #[path = "config_tests.rs"]
 mod tests;

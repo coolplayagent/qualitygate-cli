@@ -12,6 +12,7 @@ pub(super) struct Loaded {
     pub plan: Plan,
     pub protected_paths: Vec<String>,
     pub constraint_bindings: BTreeMap<String, String>,
+    pub agent_bindings: BTreeMap<String, String>,
 }
 
 pub(super) async fn load(
@@ -147,6 +148,7 @@ async fn load_inner(
         Ok((
             Loaded {
                 constraint_bindings: config::constraint_inventory::bindings(&config, &catalog)?,
+                agent_bindings: config::agent_contract::bindings(&config, &catalog)?,
                 protected_paths: protected_paths(
                     &config,
                     &catalog,
