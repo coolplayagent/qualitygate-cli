@@ -2,10 +2,11 @@
 
 [简体中文](../../zh/03-architecture/07-rule-capabilities-and-agent-contracts.md) · [Volume index](README.md) · [Rule engine implementation](06-rule-engine-implementation.md)
 
-Status: design proposal. Current behavior is grounded in repository version
-`0.5.7`. The proposed expressions and Agent contracts below are not implemented.
-This chapter defines capabilities and collaboration boundaries; it enables no
-rules and changes no existing Schema, Skill, or CLI behavior. Its readers are
+Status: staged implementation of the design based on version `0.5.7`.
+[Clause coverage](../02-reference/07-constraint-coverage.md) is implemented with
+capability `constraints.coverage.v1`. The proposed expressions and Agent
+contracts below remain future stages. This chapter defines collaboration
+boundaries; it does not enable rules. Its readers are
 rule maintainers, CLI/core developers, and developers of Agent hosts integrating
 Qualitygate.
 
@@ -60,8 +61,8 @@ Current implementation anchors:
 Track each clause by source document, section and digest, obligation identity,
 scope, interpretation, required facts, rule/check associations, adoption state,
 and positive, negative, and boundary examples. One clause can require several
-checks; several clauses can share a producer. This clause record is a proposed
-design model, not additional fields in the current project-rule Schema.
+checks; several clauses can share a producer. The first implementation uses a
+separate policy `constraints` inventory; project-rule v1 stays unchanged.
 
 ```mermaid
 flowchart LR
@@ -282,8 +283,9 @@ dependencies.
 Future public additions include expression contracts, obligation projections,
 and host evidence exchange. Introduce them through explicit versions and
 capability declarations; old project-rule v1 must not interpret unknown fields.
-Preserve existing rules, commands, reports, and judgment authority. This document
-exports no Schema, adds no CLI commands, and introduces no model service or host SDK.
+Preserve existing rules, commands, reports, and judgment authority. Clause
+coverage now exports its separate schema; expressions and host exchange remain
+future implementation contracts.
 
 ## 7. Acceptance scenarios and implementation sequence
 
@@ -320,7 +322,8 @@ keeps gaps visible. Do not advertise proposed capabilities as available. Host
 selection, expression wire Schema, and numeric budgets belong to implementation
 proposals; this document does not enable defaults for them.
 
-This documentation delivery reuses existing Rust checks for links, anchors,
-fences, bilingual paths/navigation, and the 1000-line file limit. Do not add
-passing requirement-to-test claims for unimplemented features. Future behavior
-changes update the formal requirements and test-evidence index.
+The [evidence index](../04-contributor-guide/03-requirements-to-test-evidence.md)
+records clause coverage requirements and repeatable tests. Later stages remain
+design requirements, not passing tests. The selected first host extends the
+existing Rust Agent harness with configurable Agent commands and management of
+Prompt injection, repair and delivery; it is not universal host interception.

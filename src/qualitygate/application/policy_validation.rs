@@ -467,9 +467,7 @@ fn prepare_check(
         config_digest: policy.version.files[&policy.version.config_path]
             .digest
             .clone(),
-        rules_digest: digest(&serde_json::to_vec(
-            &serde_json::json!({"settings":policy.config.rules,"definitions":policy.catalog,"source_reviews":policy.config.source_reviews,"engine_version":env!("CARGO_PKG_VERSION")}),
-        )?),
+        rules_digest: config::policy_promotion::rules_digest(&policy.config, &policy.catalog)?,
         task_contract_digest: Some(digest(&serde_json::to_vec(task)?)),
         task_contract_source: Some(task.task_id.clone()),
         trust: "protected_paired_evaluation".into(),
@@ -477,6 +475,10 @@ fn prepare_check(
         source_reviews: config::source_reviews::evidence(&policy.config, &policy.catalog)?,
     };
     Ok(super::policy::Loaded {
+        constraint_bindings: config::constraint_inventory::bindings(
+            &policy.config,
+            &policy.catalog,
+        )?,
         protected_paths: super::policy::protected_paths(
             &policy.config,
             &policy.catalog,

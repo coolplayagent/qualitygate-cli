@@ -7,6 +7,7 @@ pub mod catalog;
 mod catalog_assets;
 pub mod categories;
 pub mod compatibility;
+pub mod constraint_inventory;
 mod constraints;
 mod custom_validation;
 pub mod decision_schema;

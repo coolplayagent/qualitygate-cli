@@ -2,8 +2,9 @@
 
 [English](../../en/03-architecture/07-rule-capabilities-and-agent-contracts.md) · [本卷目录](README.md) · [规则引擎实现](06-rule-engine-implementation.md)
 
-状态：设计提案。现状依据仓库版本 `0.5.7` 的源码；下文标记为“拟新增”的表达式和 Agent 契约均未实现。
-本章定义能力与协作边界，不启用规则、不修改现有 Schema，也不改变 Skill 或 CLI 的运行行为。
+状态：依据版本 `0.5.7` 分阶段实现。[条款覆盖](../02-reference/07-constraint-coverage.md)已通过能力
+`constraints.coverage.v1` 接入；下文拟新增的表达式和 Agent 契约仍属于后续阶段。
+本章定义能力与协作边界，不自动启用规则。
 读者是规则维护者、CLI/core 开发者和接入 Qualitygate 的 Agent 宿主开发者。
 
 ## 1. 目标与能力模型
@@ -50,7 +51,7 @@ gate 决策，避免把事实精度与规则语法混为一谈。
 
 每条条款建立可追踪记录：来源文档、章节与摘要，条款身份，适用范围，解释，所需事实，规则或检查关联，
 采用状态，以及正例、反例和边界案例。一个条款可以拆成多个检查；多个条款也可复用同一 producer。
-条款记录是拟新增的设计模型，不是当前 project-rule Schema 的额外字段。
+第一阶段通过策略 `constraints` 清单实现条款记录，保持 project-rule v1 不变。
 
 ```mermaid
 flowchart LR
@@ -223,8 +224,8 @@ flowchart TD
 拥有。未来共享数据类型不能放入 CLI 再由 adapters 反向依赖。
 
 未来公开接口的增量包括表达式契约、行为义务投影及宿主证据交换。它们必须通过独立的版本/能力声明
-接入，不能让旧 project-rule v1 解释陌生字段。现有规则、命令、报告及 judgment 权限保持兼容；本次
-文档不导出 Schema、不增加 CLI 子命令、不引入模型服务或宿主 SDK。
+接入，不能让旧 project-rule v1 解释陌生字段。现有规则、命令、报告及 judgment 权限保持兼容。
+条款覆盖已提供独立 Schema；表达式及宿主交换契约仍待实现。
 
 ## 7. 验收场景与实施顺序
 
@@ -255,5 +256,6 @@ flowchart TD
 受控入口与证据绑定 → 验证恢复、绕过通道和交付竞态。每阶段独立声明能力，缺口继续可见；不得提前
 把设计能力列为已支持。具体宿主选型、表达式 wire schema 与数值预算在实现提案中确定，不由本文默认启用。
 
-本次文档交付复用现有 Rust 文档检查，验证链接、锚点、围栏、双语路径/导航和每文件 1000 行限制。
-未实现能力不添加虚假的需求到测试通过记录；未来行为变更再更新正式需求与测试证据索引。
+条款覆盖的正式需求和可重复证据见[证据索引](../04-contributor-guide/03-requirements-to-test-evidence.md)。
+后续能力保持设计状态，不提前登记为测试通过。首个宿主选择扩展现有 Rust Agent harness，
+支持配置任意 Agent 命令并管理 Prompt 注入、修复和交付；它不等于任意宿主的通用拦截。

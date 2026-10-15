@@ -1,6 +1,7 @@
 //! YAML schema version 1. Unknown fields are errors, never silently ignored.
 
 use crate::domain::Severity;
+pub use crate::domain::constraint::Source;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -36,6 +37,8 @@ fn dot() -> String {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub schema_version: u32,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub constraints: Vec<crate::domain::constraint::Constraint>,
     #[serde(
         default,
         skip_serializing_if = "crate::domain::runtime::Requirements::is_empty"
@@ -80,6 +83,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             schema_version: 1,
+            constraints: Vec::new(),
             requires: Default::default(),
             exclude: Vec::new(),
             languages: Vec::new(),
@@ -168,14 +172,6 @@ impl Default for RuleSetting {
             specified: Default::default(),
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Source {
-    pub document: String,
-    pub section: String,
-    pub content_hash: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

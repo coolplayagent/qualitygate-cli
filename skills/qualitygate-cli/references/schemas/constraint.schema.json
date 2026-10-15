@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:constraint:1",
+  "title": "Source-bound constraint v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "version", "source", "statement", "required", "realization"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"$ref": "#/$defs/id"},
+    "version": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["document", "section", "content_hash"],
+      "properties": {
+        "document": {"type": "string", "minLength": 1},
+        "section": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "content_hash": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "statement": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "required": {"type": "boolean"},
+    "realization": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "mechanism", "checks", "positive_examples", "negative_examples"],
+          "properties": {
+            "kind": {"const": "checks"},
+            "mechanism": {"enum": ["regex", "ast", "operator", "tool", "agent_prompt"]},
+            "checks": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+            "positive_examples": {"$ref": "#/$defs/examples"},
+            "negative_examples": {"$ref": "#/$defs/examples"}
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "reason", "evidence_owner"],
+          "properties": {
+            "kind": {"const": "unsupported"},
+            "reason": {"type": "string", "minLength": 1, "maxLength": 4096},
+            "evidence_owner": {"type": "string", "minLength": 1, "maxLength": 1024}
+          }
+        }
+      ]
+    },
+    "adoption": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["id", "reviewer", "reference", "resolution", "rationale", "binding_digest"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "reviewer": {"type": "string", "minLength": 1, "maxLength": 256},
+        "reference": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "resolution": {"enum": ["initial_mapping", "rule_updated", "rule_unchanged"]},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "binding_digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_.-]+$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "examples": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 1024}}
+  }
+}

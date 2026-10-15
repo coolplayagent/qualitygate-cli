@@ -16,10 +16,12 @@ use serde_json::{Value, json};
 use std::{collections::BTreeSet, path::Path};
 
 pub fn rules_digest(config: &super::Config, catalog: &super::catalog::Catalog) -> Result<String> {
-    Ok(digest(&serde_json::to_vec(
-        &json!({"settings":config.rules,"definitions":catalog,
-        "source_reviews":config.source_reviews,"engine_version":env!("CARGO_PKG_VERSION")}),
-    )?))
+    let mut subject = json!({"settings":config.rules,"definitions":catalog,
+        "source_reviews":config.source_reviews,"engine_version":env!("CARGO_PKG_VERSION")});
+    if !config.constraints.is_empty() {
+        subject["constraints"] = serde_json::to_value(&config.constraints)?;
+    }
+    Ok(digest(&serde_json::to_vec(&subject)?))
 }
 
 /// Recompute the oracle comparison from the retained full reports before accepting an approval.

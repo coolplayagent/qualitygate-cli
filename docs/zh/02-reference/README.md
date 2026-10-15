@@ -8,3 +8,4 @@
 4. [策略、任务与签名证据](04-policy-task-and-signed-evidence.md)
 5. [退出码与资源限制](05-exit-codes-and-resource-limits.md)
 6. [运行时能力与环境预检](06-runtime-and-preflight.md)
+7. [条款覆盖](07-constraint-coverage.md)
