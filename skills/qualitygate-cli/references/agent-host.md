@@ -89,8 +89,10 @@ same-user replacement.
 The lower-level `check --export-delivery <external-directory> --format json`
 returns `{schema_version: 1, kind: delivery_check, report, delivery}`. Failing or
 incomplete checks have no delivery object; quick/path-filtered checks cannot
-export. This check alone does not establish Agent behavior compliance. The ZIP
-contains all unexcluded captured context, including untracked files, and is
+export. This check alone does not establish Agent behavior compliance. The
+destination is confined outside the canonical repository root, including when
+the root or destination uses equivalent path spellings or Windows prefixes.
+The ZIP contains all unexcluded captured context, including untracked files, and is
 bounded by snapshot acquisition limits, 2 GiB output and 120-second export/hash
 operations. The exporter never rereads live source files after checking.
 

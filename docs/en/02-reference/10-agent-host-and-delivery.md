@@ -23,6 +23,8 @@ untracked files and executable modes. The digest is computed over the generated
 stream, never an Agent-provided file. Later workspace changes cannot enter it.
 The host checks the object's integrity and authorizes that digest, not live
 workspace contents. Recipients must verify the digest before consumption.
+The output directory must stay outside the canonical repository root; equivalent
+path spellings and Windows path prefixes cannot bypass that boundary.
 
 Supported controls are Prompt injection, fixed-policy integrity, final full
 checking and immutable delivery at this controller's entry points. Arbitrary
