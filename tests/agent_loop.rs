@@ -5,7 +5,32 @@ mod harness;
 use clap::Parser;
 use common::*;
 use serde_json::{Value, json};
-use std::path::Path;
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+    sync::LazyLock,
+};
+
+static FAILED_AGENT: LazyLock<(tempfile::TempDir, PathBuf)> = LazyLock::new(|| {
+    let root = tempfile::tempdir().unwrap();
+    let source = root.path().join("agent.rs");
+    std::fs::write(&source, include_str!("fixtures/failing_agent.rs")).unwrap();
+    let executable = root
+        .path()
+        .join(if cfg!(windows) { "agent.exe" } else { "agent" });
+    let output = Command::new("rustc")
+        .args(["--edition=2024", "-o"])
+        .arg(&executable)
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    (root, executable)
+});
 
 async fn run(root: &Path, output: &Path, agent: Value, attempts: u8) -> Value {
     run_budget(root, output, agent, attempts, 30).await
@@ -103,7 +128,7 @@ async fn harness_retains_failed_attempts_and_stops_at_progress_or_attempt_limits
             "attempt_budget",
             1,
         ),
-        (3, json!(["git", "not-a-real-command"]), "agent_failed", 1),
+        (3, json!([FAILED_AGENT.1]), "agent_failed", 1),
     ] {
         let root = setup();
         let evidence = tempfile::tempdir().unwrap();
@@ -112,8 +137,21 @@ async fn harness_retains_failed_attempts_and_stops_at_progress_or_attempt_limits
         assert_eq!(result["attempts"].as_array().unwrap().len(), count);
         assert_eq!(result["complete"], false);
         assert!(!result["attempts"][0]["agent"]["stdout"]["digest"].is_null());
-        if stop != "agent_failed" {
-            assert!(result["attempts"][0]["agent"]["capture_error"].is_null());
+        assert!(result["attempts"][0]["agent"]["capture_error"].is_null());
+        assert_eq!(result["attempts"][0]["agent"]["timed_out"], false);
+        if stop == "agent_failed" {
+            assert_eq!(result["attempts"][0]["agent"]["exit_code"], 7);
+            let log = Path::new(
+                result["attempts"][0]["agent"]["stderr"]["path"]
+                    .as_str()
+                    .unwrap(),
+            );
+            assert_eq!(log, Path::new("attempt-1-agent-stderr.log"));
+            assert_eq!(
+                result["attempts"][0]["agent"]["stderr"]["digest"],
+                qualitygate::snapshot::digest(b"controlled agent failure\n")
+            );
+        } else {
             assert_eq!(result["attempts"][0]["agent"]["exit_code"], 0);
         }
     }
