@@ -91,6 +91,28 @@ fn failed_incomplete_quick_and_filtered_checks_cannot_export_delivery() {
 }
 
 #[tokio::test]
+async fn equivalent_repository_paths_cannot_bypass_delivery_confinement() {
+    let root = setup();
+    let output = tempfile::tempdir().unwrap();
+    let mut captured = snapshot::capture(
+        root.path(),
+        &Selection::Worktree {
+            base: "HEAD".into(),
+        },
+    )
+    .await
+    .unwrap();
+    let nested = root.path().join("nested");
+    std::fs::create_dir(&nested).unwrap();
+    captured.root = nested.join("..");
+    for destination in [root.path(), nested.as_path()] {
+        let error = snapshot::delivery::export(&captured, destination).unwrap_err();
+        assert!(error.to_string().contains("outside checked inputs"));
+    }
+    assert!(snapshot::delivery::export(&captured, output.path()).is_ok());
+}
+
+#[tokio::test]
 async fn late_workspace_mutations_cannot_enter_the_frozen_export_and_tampering_is_rejected() {
     let root = setup();
     let output = tempfile::tempdir().unwrap();

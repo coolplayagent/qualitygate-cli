@@ -52,9 +52,11 @@ pub fn export(snapshot: &Snapshot, destination: &Path) -> Result<Delivery> {
         super::content_digest(&snapshot.files) == snapshot.identity.content_digest,
         "Delivery inputs no longer match the frozen snapshot identity"
     );
+    // Compare filesystem identities in the same canonical path representation.
+    let root = snapshot.root.canonicalize()?;
     let destination = destination.canonicalize()?;
     ensure!(
-        !destination.starts_with(&snapshot.root),
+        !destination.starts_with(&root),
         "Delivery destination must be outside checked inputs"
     );
     let started = Instant::now();
