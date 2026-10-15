@@ -18,6 +18,11 @@ cargo llvm-cov --all-targets --all-features --fail-under-lines 90
 单元与集成门禁保持分离。纯 domain 另用 Miri；native 单元测试单独用 ASan。依赖外部工具链或网络的
 live producer 测试，未实际运行时不能算入稳定本地套件。
 
+Windows 原生 CI 在 30 分钟作业预算内执行同一条完整 Cargo 测试命令。该步骤的 dev/test profile
+关闭调试符号生成以减少 PDB 生成和链接开销，同时显式启用调试断言与溢出检查。这些独立的
+[Cargo profile 设置](https://doc.rust-lang.org/cargo/reference/profiles.html)只作用于该 Windows
+步骤；本地默认配置、测试清单、优化级别、Miri 和 ASan 保持不变。作业中断仍属于未完成。
+
 每项行为变化都要更新相关文档和需求—测试证据。按适用情况覆盖通过、违规、未完成、超时、策略变化和
 快照不匹配。绝不能削弱失败检查或测试来宣称完成。
 

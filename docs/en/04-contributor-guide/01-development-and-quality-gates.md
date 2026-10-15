@@ -22,6 +22,13 @@ eligible for Miri; native unit tests are exercised separately under ASan. Live
 producer tests that need external toolchains or networks never count as though
 they ran in the stable local suite.
 
+Native Windows CI runs the same complete Cargo test command within its 30-minute
+job budget. Its dev/test profiles omit debug symbols to reduce PDB generation and
+linking costs; debug assertions and overflow checks remain explicitly enabled.
+These independent [Cargo profile settings](https://doc.rust-lang.org/cargo/reference/profiles.html)
+apply only to that Windows step. Local defaults, test selection, optimization
+levels, Miri and ASan stay unchanged. An interrupted job remains incomplete.
+
 Every behavior change updates its relevant documentation and requirement-to-test
 evidence. Cover pass, violation, incomplete execution, timeout, policy change,
 and snapshot mismatch where applicable. Never weaken a failing check or its test

@@ -82,7 +82,7 @@ keep unavailable repository replays omitted while retaining delivery commands.
 | ENV-39-04: static execution boundary and bounded probes | `application::doctor_context::tests` | `tests/doctor/probes.rs`: timeout, overflow, empty version, changed script/input/policy and secret output |
 | ENV-39-05: exact per-side budgets | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`: base-only oversize, 2/8 MiB, above maximum, total bytes, protected exclusions, index and truncation |
 | ENV-39-06: preflight protocol and executable next steps | `domain::doctor::tests` | `tests/doctor.rs` schema validation and replay of suggested argv |
-| ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` native Windows PowerShell/Git Bash step with paths containing spaces |
+| ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` full native Windows test command with debug assertions/overflow checks enabled and debug symbols omitted; PowerShell/Git Bash steps with paths containing spaces |
 
 Run `cargo test --test doctor --all-features` independently of native unit tests.
 The Windows CI result, full selfcheck, architecture source/line digest evidence,

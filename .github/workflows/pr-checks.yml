@@ -80,6 +80,13 @@ jobs:
         env:
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
+          # Avoid PDB generation/linking costs while keeping debug-time checks.
+          CARGO_PROFILE_DEV_DEBUG: "0"
+          CARGO_PROFILE_TEST_DEBUG: "0"
+          CARGO_PROFILE_DEV_DEBUG_ASSERTIONS: "true"
+          CARGO_PROFILE_TEST_DEBUG_ASSERTIONS: "true"
+          CARGO_PROFILE_DEV_OVERFLOW_CHECKS: "true"
+          CARGO_PROFILE_TEST_OVERFLOW_CHECKS: "true"
         run: cargo test --locked --all-targets --all-features
       - name: Native PowerShell preflight in a path with spaces
         if: runner.os == 'Windows'
