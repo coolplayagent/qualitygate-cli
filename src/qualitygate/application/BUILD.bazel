@@ -13,6 +13,10 @@ rust_library(
     crate_name = "qualitygate_application",
     crate_root = "bazel_lib.rs",
     srcs = [":sources"],
+    compile_data = [
+        "//src/qualitygate/domain:agent_host.rs",
+        "//src/qualitygate/snapshot:delivery.rs",
+    ],
     aliases = aliases(),
     edition = crate_edition(),
     rustc_env = package_rustc_env(),
