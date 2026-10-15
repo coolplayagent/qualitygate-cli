@@ -25,6 +25,10 @@ impl RuleIssue {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleFileValidation {
     pub file: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_digest: Option<String>,
     pub rule_id: Option<String>,
     pub valid: bool,
     pub issues: Vec<RuleIssue>,

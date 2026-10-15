@@ -40,5 +40,5 @@ Limits: 256 clauses, 64 checks per clause, 16 example references per polarity,
 and the existing 1 MiB policy budget. Unknown fields, duplicates, empty mappings,
 unknown policy checks, self-reference and malformed sources are rejected.
 Coverage describes the declared inventory, not proof of exhaustive prose
-extraction or sufficiency of its interpretation. General operators and Agent
-behavior projection/enforcement remain later implementation stages.
+extraction or sufficiency of its interpretation. The [bounded operator protocol](08-bounded-operators.md)
+is available separately; Agent behavior projection/enforcement remain later stages.

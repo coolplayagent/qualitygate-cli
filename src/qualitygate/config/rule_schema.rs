@@ -11,6 +11,15 @@ pub const SCHEMA_ID: &str = "urn:qualitygate:project-rule:1";
 pub const SCHEMA_PATH: &str = "references/schemas/project-rule.schema.json";
 pub const SCHEMA: &str =
     include_str!("../../../skills/qualitygate-cli/references/schemas/project-rule.schema.json");
+pub const OPERATOR_SCHEMA_ID: &str = "urn:qualitygate:project-rule:2";
+pub const FAMILY_SCHEMA_ID: &str = "urn:qualitygate:project-rule-family:1";
+const OPERATOR_SCHEMA: &str =
+    include_str!("../../../skills/qualitygate-cli/references/schemas/operator-rule.schema.json");
+
+static OPERATOR_VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> = LazyLock::new(|| {
+    let schema: Value = serde_json::from_str(OPERATOR_SCHEMA).map_err(|e| e.to_string())?;
+    jsonschema::draft202012::new(&schema).map_err(|e| e.to_string())
+});
 
 static VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> = LazyLock::new(|| {
     let schema: Value = serde_json::from_str(SCHEMA).map_err(|error| error.to_string())?;
@@ -28,6 +37,78 @@ pub fn digest() -> String {
 pub fn document() -> Result<Value> {
     validator()?;
     Ok(serde_json::from_str(SCHEMA)?)
+}
+
+pub fn document_version(version: u32) -> Result<Value> {
+    match version {
+        1 => document(),
+        2 => {
+            operator_validator()?;
+            Ok(serde_json::from_str(OPERATOR_SCHEMA)?)
+        }
+        _ => bail!("Unsupported project-rule schema version: {version}"),
+    }
+}
+pub fn schema_identity(version: u32) -> Result<(&'static str, String)> {
+    match version {
+        1 => Ok((SCHEMA_ID, digest())),
+        2 => Ok((
+            OPERATOR_SCHEMA_ID,
+            format!("sha256:{:x}", Sha256::digest(OPERATOR_SCHEMA.as_bytes())),
+        )),
+        _ => bail!("Unsupported project-rule schema version: {version}"),
+    }
+}
+fn operator_validator() -> Result<&'static jsonschema::Validator> {
+    OPERATOR_VALIDATOR
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("Bundled operator schema could not be compiled: {e}"))
+}
+
+/// The authoring report for a mixed package binds both pinned validators.
+pub fn family_document() -> Result<Value> {
+    fn relocate(value: &mut Value, prefix: &str) {
+        match value {
+            Value::Object(map) => {
+                if let Some(Value::String(reference)) = map.get_mut("$ref")
+                    && let Some(local) = reference.strip_prefix("#/")
+                {
+                    *reference = format!("#/$defs/{prefix}/{local}");
+                }
+                for child in map.values_mut() {
+                    relocate(child, prefix);
+                }
+            }
+            Value::Array(values) => {
+                for child in values {
+                    relocate(child, prefix);
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut definitions = serde_json::Map::new();
+    for version in [1, 2] {
+        let name = format!("v{version}");
+        let mut value = document_version(version)?;
+        value
+            .as_object_mut()
+            .expect("pinned schema object")
+            .remove("$id");
+        relocate(&mut value, &name);
+        definitions.insert(name, value);
+    }
+    let document = serde_json::json!({"$schema":"https://json-schema.org/draft/2020-12/schema","$id":FAMILY_SCHEMA_ID,
+        "$defs":definitions,"oneOf":[{"$ref":"#/$defs/v1"},{"$ref":"#/$defs/v2"}]});
+    jsonschema::draft202012::new(&document)?;
+    Ok(document)
+}
+
+pub fn family_digest() -> Result<String> {
+    Ok(format!(
+        "sha256:{:x}",
+        Sha256::digest(serde_json::to_vec(&family_document()?)?)
+    ))
 }
 
 fn validator() -> Result<&'static jsonschema::Validator> {
@@ -67,9 +148,14 @@ fn yaml_shape(value: &serde_norway::Value, depth: usize, nodes: &mut usize) -> R
 }
 
 pub fn inspect(bytes: &[u8]) -> Result<(Option<CustomRule>, Vec<RuleIssue>)> {
-    let validator = validator()?;
+    let (_, rule, issues) = inspect_versioned(bytes)?;
+    Ok((rule, issues))
+}
+
+pub fn inspect_versioned(bytes: &[u8]) -> Result<(u32, Option<CustomRule>, Vec<RuleIssue>)> {
     if bytes.len() > super::MAX_CONFIG_BYTES {
         return Ok((
+            1,
             None,
             vec![RuleIssue::new("input", "Project rule exceeds 1 MiB")],
         ));
@@ -82,7 +168,17 @@ pub fn inspect(bytes: &[u8]) -> Result<(Option<CustomRule>, Vec<RuleIssue>)> {
     })();
     let value = match parsed {
         Ok(value) => value,
-        Err(error) => return Ok((None, vec![RuleIssue::new("yaml", format!("{error:#}"))])),
+        Err(error) => return Ok((1, None, vec![RuleIssue::new("yaml", format!("{error:#}"))])),
+    };
+    let version = if value.get("schema_version") == Some(&serde_json::json!(2)) {
+        2
+    } else {
+        1
+    };
+    let validator = if version == 2 {
+        operator_validator()?
+    } else {
+        validator()?
     };
     let issues: Vec<_> = validator
         .iter_errors(&value)
@@ -94,7 +190,7 @@ pub fn inspect(bytes: &[u8]) -> Result<(Option<CustomRule>, Vec<RuleIssue>)> {
         })
         .collect();
     if !issues.is_empty() {
-        return Ok((None, issues));
+        return Ok((version, None, issues));
     }
     let rule = (|| -> Result<CustomRule> {
         let rule: CustomRule = serde_json::from_value(value).context("Invalid typed rule")?;
@@ -102,8 +198,12 @@ pub fn inspect(bytes: &[u8]) -> Result<(Option<CustomRule>, Vec<RuleIssue>)> {
         Ok(rule)
     })();
     match rule {
-        Ok(rule) => Ok((Some(rule), Vec::new())),
-        Err(error) => Ok((None, vec![RuleIssue::new("semantic", format!("{error:#}"))])),
+        Ok(rule) => Ok((version, Some(rule), Vec::new())),
+        Err(error) => Ok((
+            version,
+            None,
+            vec![RuleIssue::new("semantic", format!("{error:#}"))],
+        )),
     }
 }
 

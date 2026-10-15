@@ -23,6 +23,7 @@ pub async fn report() -> Result<Capabilities> {
             ("configuration", 1),
             ("task", 1),
             ("constraint", 1),
+            ("operator_rule", 2),
         ]
         .into_iter()
         .map(|(key, value)| (key.into(), value))

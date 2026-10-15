@@ -65,6 +65,8 @@ qualitygate doctor --staged --profile full --probe-tools --format json
 qualitygate schema capabilities --format json
 qualitygate schema doctor --format json
 qualitygate schema constraint --format json
+qualitygate schema operator-rule --format json
+qualitygate schema project-rule-family --format json
 ```
 
 [Runtime capabilities and environment preflight](06-runtime-and-preflight.md).

@@ -4,8 +4,8 @@
 
 Status: staged implementation of the design based on version `0.5.7`.
 [Clause coverage](../02-reference/07-constraint-coverage.md) is implemented with
-capability `constraints.coverage.v1`. The proposed expressions and Agent
-contracts below remain future stages. This chapter defines collaboration
+capability `constraints.coverage.v1`; [bounded operators](../02-reference/08-bounded-operators.md)
+are available as `rules.operators.v2`. Agent contracts remain future stages. This chapter defines collaboration
 boundaries; it does not enable rules. Its readers are
 rule maintainers, CLI/core developers, and developers of Agent hosts integrating
 Qualitygate.
@@ -44,7 +44,7 @@ decisions without confusing fact precision with rule syntax.
 | --- | --- | --- |
 | Text rules | `source-pattern`, `file-pattern`, name/text assertions, explicit incremental scope and budgets | Add rules for concrete needs without relabelling text matches as semantic proof. |
 | Structure and project facts | Tree-sitter entities and base/head matching; bounded facts from project adapters including Maven/Python | New type, call, or data-flow requirements need corresponding capabilities; do not claim complete cross-language semantics. |
-| Composable rules | Fixed `when`/`then` in `CustomRule`, including count, marker, dependency, and inventory assertions | Typed expression trees and bounded composition. No open lambda runtime exists today. |
+| Composable rules | Fixed v1 `when`/`then` assertions and typed v2 expressions over selected entities | Additional semantic predicates need corresponding facts; no open lambda runtime is provided. |
 | External tools | Command checks, runner, report normalization, ratchets for supported formats | Unsupported reports need explicit adapters; producers cannot rewrite the gate. |
 | Agent instructions | Packaged Skill requires final checks, repair/recheck, honest incomplete results, and authority boundaries | Individually traceable obligations, versioned Prompt projections, and a host integration contract. |
 | Repair and delivery | Feedback/recheck, task contracts, and an optional example harness | Generic tool/completion interception belongs to the integrating host; the example is not universal Agent enforcement. |
@@ -102,7 +102,7 @@ or explicit manual acceptance obligations, without fabricated passing evidence.
 
 ## 4. Bounded lambda operators
 
-Proposed expressions are interpreted typed data. A lambda binds only the current
+Implemented v2 expressions are interpreted typed data. A lambda binds only the current
 collection element. It cannot execute arbitrary Rust/scripts, dynamically load
 code, recurse, access files/network/processes, or read the environment.
 Natural language becomes a candidate during authoring; deterministic execution
@@ -115,7 +115,7 @@ does not interpret prose on demand.
 | `all`, `any` | Require every element or at least one element to satisfy a predicate. |
 | `count`, comparisons | Count selected elements and compare with same-typed constants. |
 | Membership, pattern matching | Check membership or a validated regex on declared types. |
-| Typed fact predicates | Reuse declared marker, name, and change capabilities without arbitrary function calls. |
+| Typed fact predicates | Name/text/path fields use existing selection; marker/dependency assertions remain fixed and additive. |
 
 This is conceptual notation, not syntax accepted by the current CLI:
 
@@ -145,10 +145,11 @@ violations alongside incomplete execution reasons.
 
 Bound expression nodes, nesting, selected elements, text bytes, diagnostics,
 and execution time. Composed operators share the rule's budget; each iteration
-cannot reset it. Numeric limits belong to a subsequent versioned runtime
-contract; this proposal changes no existing budgets. Diagnostics retain rule
-identity, expression location, failing entities, source ranges, and fact
-provenance for deterministic ordering, stable fingerprints, and rechecks.
+cannot reset it. Numeric limits are now defined by the [v2 runtime contract](../02-reference/08-bounded-operators.md).
+Aggregate diagnostics retain rule identity and bounded expression observations,
+including entity locations and available ranges, while the report binds the
+snapshot and policy. False subexpressions are observations, not independently
+violations; only the whole expression determines its result.
 
 ## 5. Strong constraint Prompt for the Agent
 
@@ -284,12 +285,13 @@ Future public additions include expression contracts, obligation projections,
 and host evidence exchange. Introduce them through explicit versions and
 capability declarations; old project-rule v1 must not interpret unknown fields.
 Preserve existing rules, commands, reports, and judgment authority. Clause
-coverage now exports its separate schema; expressions and host exchange remain
-future implementation contracts.
+coverage and operators export separate schemas; Agent obligations and host
+exchange remain future implementation contracts.
 
 ## 7. Acceptance scenarios and implementation sequence
 
-These are requirements for future implementation, not tests passed in this change.
+These are acceptance requirements. The evidence index now covers clause and
+operator scenarios; Agent host scenarios remain future implementation work.
 
 | Scenario | Required result | Intended verification layer |
 | --- | --- | --- |
@@ -311,8 +313,9 @@ These are requirements for future implementation, not tests passed in this chang
 Existing foundations include [rule authoring](../../../tests/rule_authoring.rs),
 [finite DSL](../../../tests/custom_rules.rs), [feedback](../../../tests/feedback.rs),
 and [example harness](../../../tests/agent_loop.rs) tests. They establish their
-existing behaviors, not implementation of the proposed general operators,
-instruction injection, or host interception.
+existing behaviors. [Operator integration](../../../tests/operators.rs) now
+adds typed composition evidence; instruction injection and host interception
+remain future stages.
 
 Suggested sequence: clause/capability coverage records → bounded operator
 composition → behavior obligations and Prompt projections → one host integration

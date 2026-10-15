@@ -11,6 +11,7 @@ mod gate;
 pub mod judgment;
 pub mod language;
 pub mod normative;
+pub mod operator;
 pub mod pilot;
 pub mod policy_approval;
 pub mod policy_effectiveness;

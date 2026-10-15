@@ -10,6 +10,7 @@ pub mod git_trailers;
 mod markers;
 pub mod maven;
 pub mod maven_usage;
+pub mod operators;
 mod parallel;
 pub mod pilot_acceptance;
 pub mod pilot_authorization;

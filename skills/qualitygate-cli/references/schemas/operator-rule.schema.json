@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:project-rule:2",
+  "title": "Qualitygate typed operator rule, protocol 2",
+  "description": "Typed bounded expressions over the complete entity collection selected by when/applies_to. Fixed assertions remain additive. No arbitrary code, dynamic fields or implicit missing facts. CLI additionally validates types, expression/regex budgets and source binding.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "source", "requires_capabilities", "when", "fix", "schema_version", "expression"],
+  "properties": {
+    "schema_version": {"const": 2},
+    "id": {"$ref": "#/$defs/id"},
+    "version": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+    "source": {"$ref": "#/$defs/source"},
+    "language": {
+      "description": "Canonical programming language names, e.g. java, python, rust, typescript, go, shell, cpp. Empty means language-neutral; it does not grant missing adapter capabilities.",
+      "type": "array",
+      "uniqueItems": true,
+      "default": [],
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_+-]{0,63}$", "not": {"const": "all"}}
+    },
+    "required": {"type": "boolean", "default": true},
+    "severity": {"enum": ["error", "warning", "info"], "default": "error"},
+    "applies_to": {"$ref": "#/$defs/applies_to", "default": {}},
+    "requires_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"enum": ["test_methods", "annotations", "comments", "imports", "files", "commits", "dependency_resolution", "external_provenance"]}
+    },
+    "binding": {"anyOf": [{"$ref": "#/$defs/binding"}, {"type": "null"}]},
+    "when": {"$ref": "#/$defs/trigger"},
+    "then": {"$ref": "#/$defs/assertions", "default": {}},
+    "fix": {"$ref": "#/$defs/nonblank", "description": "Actionable repair instructions derived from the selected source section."},
+    "expression": {"$ref": "#/$defs/expression"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"when": {"required": ["change"], "properties": {"change": {"const": "all"}}}}},
+      "then": {"properties": {"when": {"properties": {"entity": {"const": "file"}}}}}
+    },
+    {
+      "if": {
+        "required": ["then"],
+        "properties": {
+          "then": {
+            "anyOf": [
+              {"required": ["max_lines"], "properties": {"max_lines": {"type": "integer"}}},
+              {"required": ["max_total_words"], "properties": {"max_total_words": {"type": "integer"}}},
+              {"required": ["required_paths"], "properties": {"required_paths": {"minItems": 1}}}
+            ]
+          }
+        }
+      },
+      "then": {"properties": {"when": {"required": ["change"], "properties": {"entity": {"const": "file"}, "change": {"const": "all"}}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "test_method"}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "test_methods"}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "comment"}}}}},
+      "then": {
+        "properties": {"requires_capabilities": {"contains": {"const": "comments"}}, "when": {"properties": {"change": {"enum": ["added", "any", null]}}}}
+      }
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "import"}}}}},
+      "then": {
+        "properties": {"requires_capabilities": {"contains": {"const": "imports"}}, "when": {"properties": {"change": {"enum": ["added", "any", null]}}}}
+      }
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "file"}}}}},
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "files"}}}}
+    },
+    {
+      "if": {"properties": {"when": {"properties": {"entity": {"const": "commit"}}}}},
+      "then": {
+        "properties": {
+          "requires_capabilities": {"contains": {"const": "commits"}},
+          "language": {"maxItems": 0},
+          "applies_to": {"properties": {"paths": {"maxItems": 0}}},
+          "when": {"properties": {"change": {"enum": ["added", null]}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"then": {"required": ["require_marker"], "properties": {"require_marker": {"const": true}}}}, "required": ["then"]},
+      "then": {
+        "required": ["binding", "applies_to"],
+        "properties": {
+          "when": {"properties": {"entity": {"const": "test_method"}}},
+          "binding": {"$ref": "#/$defs/binding"},
+          "applies_to": {"required": ["provenance_scope"], "properties": {"provenance_scope": {"enum": ["all_added_tests", "ai_only"]}}}
+        }
+      },
+      "else": {"properties": {"binding": {"type": "null"}, "applies_to": {"properties": {"provenance_scope": {"type": "null"}}}}}
+    },
+    {
+      "if": {
+        "required": ["binding"],
+        "properties": {"binding": {"type": "object", "properties": {"marker": {"properties": {"type": {"const": "annotation"}}}}}}
+      },
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "annotations"}}}}
+    },
+    {
+      "if": {
+        "required": ["binding"],
+        "properties": {"binding": {"type": "object", "properties": {"marker": {"properties": {"type": {"const": "comment"}}}}}}
+      },
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "comments"}}}}
+    },
+    {
+      "if": {
+        "required": ["binding"],
+        "properties": {"binding": {"type": "object", "properties": {"marker": {"properties": {"type": {"const": "git_trailer"}}}}}}
+      },
+      "then": {"properties": {"requires_capabilities": {"contains": {"const": "commits"}}}}
+    },
+    {
+      "if": {
+        "properties": {"then": {"required": ["require_dependency"], "properties": {"require_dependency": {"type": "object"}}}},
+        "required": ["then"]
+      },
+      "then": {
+        "properties": {"when": {"properties": {"entity": {"const": "test_method"}}}, "requires_capabilities": {"contains": {"const": "dependency_resolution"}}}
+      }
+    }
+  ],
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_.-]+$"},
+    "nonblank": {"type": "string", "pattern": "\\S"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "section", "content_hash"],
+      "properties": {
+        "document": {"$ref": "#/$defs/nonblank", "description": "Confined repository-relative normative document, e.g. AGENTS.md or docs/standards.md."},
+        "section": {
+          "$ref": "#/$defs/nonblank",
+          "description": "Unique top-level-container ATX heading title. Use rules source to obtain the exact source binding."
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "SHA-256 of exact section UTF-8 bytes, including heading and line endings; never invent this digest."
+        }
+      }
+    },
+    "applies_to": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paths": {"type": "array", "items": {"type": "string"}, "default": []},
+        "provenance_scope": {
+          "enum": ["all_added_tests", "ai_only", null],
+          "description": "Required only for marker assertions. AI-only scope still needs authenticated run evidence at execution."
+        }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity"],
+      "properties": {
+        "entity": {"enum": ["test_method", "comment", "import", "file", "commit"]},
+        "change": {"enum": ["added", "modified", "renamed", "any", "all", null], "default": "added"}
+      }
+    },
+    "assertions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_marker": {"type": "boolean", "default": false},
+        "require_dependency": {"anyOf": [{"$ref": "#/$defs/dependency"}, {"type": "null"}]},
+        "name_pattern": {"type": ["string", "null"], "description": "Rust regex required to match the entity name; CLI checks regex syntax."},
+        "require_pattern": {"type": ["string", "null"], "description": "Rust regex required in each triggered entity text."},
+        "forbid_pattern": {"type": ["string", "null"], "description": "Rust regex forbidden in entity text; CLI checks regex syntax."},
+        "max_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "min_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "max_lines": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "max_total_words": {"type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615},
+        "required_paths": {"type": "array", "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/nonblank"}, "default": []}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["marker"],
+      "properties": {
+        "marker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "name"],
+          "properties": {
+            "type": {"enum": ["annotation", "comment", "git_trailer"]},
+            "name": {"$ref": "#/$defs/nonblank"},
+            "fields": {"type": "array", "items": {"$ref": "#/$defs/id"}, "default": []}
+          }
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact"],
+      "properties": {"group": {"type": ["string", "null"]}, "artifact": {"$ref": "#/$defs/nonblank"}}
+    },
+    "expression": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {
+          "enum": ["bool", "number", "string", "field", "entities", "and", "or", "not", "all", "any", "filter", "count", "compare", "in", "matches"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"op": {"const": "bool"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "value"],
+            "properties": {"op": {"const": "bool"}, "value": {"type": "boolean"}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "number"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "value"],
+            "properties": {"op": {"const": "number"}, "value": {"type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "string"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "value"],
+            "properties": {"op": {"const": "string"}, "value": {"type": "string", "maxLength": 4096}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "field"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "name"],
+            "properties": {"op": {"const": "field"}, "name": {"enum": ["name", "text", "path"]}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "entities"}}, "required": ["op"]},
+          "then": {"type": "object", "additionalProperties": false, "required": ["op"], "properties": {"op": {"const": "entities"}}}
+        },
+        {
+          "if": {"properties": {"op": {"const": "and"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "args"],
+            "properties": {"op": {"const": "and"}, "args": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/$defs/expression"}}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "or"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "args"],
+            "properties": {"op": {"const": "or"}, "args": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/$defs/expression"}}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "not"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "arg"],
+            "properties": {"op": {"const": "not"}, "arg": {"$ref": "#/$defs/expression"}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "all"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "input", "predicate"],
+            "properties": {"op": {"const": "all"}, "input": {"$ref": "#/$defs/expression"}, "predicate": {"$ref": "#/$defs/expression"}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "any"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "input", "predicate"],
+            "properties": {"op": {"const": "any"}, "input": {"$ref": "#/$defs/expression"}, "predicate": {"$ref": "#/$defs/expression"}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "filter"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "input", "predicate"],
+            "properties": {"op": {"const": "filter"}, "input": {"$ref": "#/$defs/expression"}, "predicate": {"$ref": "#/$defs/expression"}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "count"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "input"],
+            "properties": {"op": {"const": "count"}, "input": {"$ref": "#/$defs/expression"}}
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "compare"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "left", "relation", "right"],
+            "properties": {
+              "op": {"const": "compare"},
+              "left": {"$ref": "#/$defs/expression"},
+              "relation": {"enum": ["eq", "ne", "lt", "le", "gt", "ge"]},
+              "right": {"$ref": "#/$defs/expression"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "in"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "value", "set"],
+            "properties": {
+              "op": {"const": "in"},
+              "value": {"$ref": "#/$defs/expression"},
+              "set": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/$defs/scalar"}}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "matches"}}, "required": ["op"]},
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "value", "pattern"],
+            "properties": {"op": {"const": "matches"}, "value": {"$ref": "#/$defs/expression"}, "pattern": {"type": "string", "maxLength": 1024}}
+          }
+        }
+      ]
+    },
+    "scalar": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "number"}, "value": {"type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "string"}, "value": {"type": "string", "maxLength": 4096}}
+        }
+      ]
+    }
+  },
+  "x-limits": {"depth": 16, "nodes": 256, "entities": 50000, "fact_bytes": 33554432, "operations": 100000, "scanned_bytes": 33554432, "seconds": 30}
+}
