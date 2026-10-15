@@ -124,6 +124,7 @@ enum Judgment {
 
 #[derive(Debug, Subcommand)]
 enum SchemaKind {
+    Constraint,
     Capabilities,
     Doctor,
     Decision,
@@ -378,6 +379,7 @@ impl Cli {
         }
         if let Command::Schema { kind } = self.command {
             let document = tokio::task::spawn_blocking(move || match kind {
+                SchemaKind::Constraint => config::constraint_inventory::schema(),
                 SchemaKind::Decision => config::decision_schema::document(),
                 SchemaKind::Feedback => config::decision_schema::feedback_document(),
                 SchemaKind::ProjectRule => config::rule_schema::document(),

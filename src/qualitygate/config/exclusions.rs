@@ -37,6 +37,12 @@ pub fn protected_paths(
     let mut paths = config.verification_assets.clone();
     paths.push(globset::escape(configuration));
     paths.extend(task.map(globset::escape));
+    paths.extend(
+        config
+            .constraints
+            .iter()
+            .map(|c| globset::escape(&c.source.document)),
+    );
     if let Some(directory) = super::catalog::project_rules_directory(config) {
         paths.push(format!("{}/**", globset::escape(directory)));
     }

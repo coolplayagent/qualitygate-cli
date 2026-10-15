@@ -714,3 +714,9 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 
 本变更不安装工具、不修改项目外的 RelayAgent，也不发布新版本。Windows 原生实测、Miri、
 ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际运行。
+
+## 16. 自然语言条款覆盖
+
+| 编号 | 要求 | 验收证据 |
+| --- | --- | --- |
+| CONSTRAINT-01 | 有界严格条款清单绑定规范章节、解释、例子、有效检查定义及采用记录；来源保护、策略冻结、快照范围保持一致；未采用、过期、不支持、未运行和超时保留缺口；必需条款违规阻断，可选缺口可见，不能宣称自然语言提取已穷尽或标签提供了宿主强制能力 | `tests/constraint_coverage.rs`；`domain::constraint::tests`；[条款覆盖](../../docs/zh/02-reference/07-constraint-coverage.md) |

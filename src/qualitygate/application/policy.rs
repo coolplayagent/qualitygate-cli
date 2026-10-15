@@ -11,6 +11,7 @@ pub(super) struct Loaded {
     pub evidence: PolicyEvidence,
     pub plan: Plan,
     pub protected_paths: Vec<String>,
+    pub constraint_bindings: BTreeMap<String, String>,
 }
 
 pub(super) async fn load(
@@ -132,12 +133,7 @@ async fn load_inner(
                 .clone()
                 .unwrap_or_else(|| options.config.clone()),
             config_digest: snapshot::digest(&file.bytes),
-            rules_digest: snapshot::digest(&serde_json::to_vec(&serde_json::json!({
-                "settings": config.rules,
-                "definitions": catalog,
-                "source_reviews": config.source_reviews,
-                "engine_version": env!("CARGO_PKG_VERSION"),
-            }))?),
+            rules_digest: config::policy_promotion::rules_digest(&config, &catalog)?,
             task_contract_digest: task_file.map(|file| snapshot::digest(&file.bytes)),
             task_contract_source: options.task.clone(),
             trust: if trusted.is_some() {
@@ -150,6 +146,7 @@ async fn load_inner(
         };
         Ok((
             Loaded {
+                constraint_bindings: config::constraint_inventory::bindings(&config, &catalog)?,
                 protected_paths: protected_paths(
                     &config,
                     &catalog,

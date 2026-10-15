@@ -8,6 +8,7 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
+| CONSTRAINT-01 来源绑定清单、采用、快照覆盖与显式缺口 | `tests/constraint_coverage.rs`；`domain::constraint::tests` |
 | 快照选择、执行、报告与退出语义 | `tests/cli.rs`、`tests/execution.rs`、`tests/policy.rs`、domain 单元测试 |
 | 初始化与能力缺口 | `tests/init.rs` |
 | Issue 33 评审：大文件测试 overlay、受保护容量授权、人读引导转义 | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`；`tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`；`interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |

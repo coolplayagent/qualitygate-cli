@@ -5,6 +5,7 @@ pub mod capabilities;
 mod commands;
 mod compatibility;
 mod compatibility_inputs;
+mod constraint_coverage;
 mod coverage_gate;
 pub mod doctor;
 mod doctor_context;
@@ -140,6 +141,7 @@ async fn check_prepared(
         evidence: policy,
         plan,
         protected_paths,
+        constraint_bindings,
     } = loaded;
     let git_facts = git_trailers::load(&plan, &catalog, &snapshot, &options.snapshot_options).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
@@ -192,6 +194,10 @@ async fn check_prepared(
         None
     };
     for id in &plan.order {
+        if id == constraint::CHECK_ID {
+            // Aggregate after final external-evidence revalidation can block producers.
+            continue;
+        }
         let rule = plan.rules.get(id);
         let command = plan.commands.iter().find(|command| &command.id == id);
         let (required, severity, dependencies) = if let Some(rule) = rule {
@@ -415,6 +421,25 @@ async fn check_prepared(
         && let Err(error) = policy_active::revalidate(options.root.clone(), active).await
     {
         invalid.push(format!("Active policy authorization is invalid: {error:#}"));
+    }
+    if !plan.constraints.is_empty() {
+        let (constraints, snapshot, policy) = (
+            plan.constraints.clone(),
+            Arc::clone(&snapshot),
+            policy.clone(),
+        );
+        results = tokio::task::spawn_blocking(move || {
+            let coverage = constraint_coverage::evaluate(
+                &constraints,
+                &constraint_bindings,
+                &snapshot,
+                &policy,
+                &results,
+            )?;
+            results.push(coverage);
+            Ok::<_, anyhow::Error>(results)
+        })
+        .await??;
     }
     let recheck = recheck_argv.unwrap_or_else(|| {
         recheck(

@@ -180,6 +180,7 @@ fn prepare_inner(
         source_reviews: config::source_reviews::evidence(&config, &catalog)?,
     };
     Ok(super::policy::Loaded {
+        constraint_bindings: config::constraint_inventory::bindings(&config, &catalog)?,
         protected_paths: super::policy::protected_paths(
             &config,
             &catalog,
@@ -203,6 +204,6 @@ pub async fn configuration(root: PathBuf, path: String) -> Result<serde_json::Va
             let catalog = config::catalog::read(&root, &config)?;
             (catalog.resolve(&config)?, catalog, path, "local_candidate")
         };
-        Ok(serde_json::json!({"schema_version":1,"source":source,"config":config,"catalog":catalog,"review_trust":trust}))
+        Ok(serde_json::json!({"schema_version":1,"source":source,"constraint_bindings":config::constraint_inventory::bindings(&config, &catalog)?,"config":config,"catalog":catalog,"review_trust":trust}))
     }).await?
 }

@@ -12,6 +12,7 @@ pub struct Plan {
     pub task_id: Option<String>,
     pub acceptance: BTreeMap<String, String>,
     pub acceptance_descriptions: BTreeMap<String, String>,
+    pub constraints: Vec<crate::domain::constraint::Constraint>,
 }
 
 pub fn parse_task(bytes: &[u8]) -> Result<TaskContract> {
@@ -147,9 +148,16 @@ impl Plan {
             ordered.insert(id.clone());
             order.push(id);
         }
-        let required = all_required.intersection(&ordered).cloned().collect();
+        let mut required: Vec<_> = all_required.intersection(&ordered).cloned().collect();
         let pending_delivery = all_required.difference(&ordered).cloned().collect();
+        if !config.constraints.is_empty() {
+            order.push(crate::domain::constraint::CHECK_ID.into());
+            if config.constraints.iter().any(|c| c.required) {
+                required.push(crate::domain::constraint::CHECK_ID.into());
+            }
+        }
         Ok(Self {
+            constraints: config.constraints.clone(),
             rules,
             commands,
             order,
