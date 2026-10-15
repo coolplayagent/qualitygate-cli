@@ -4,11 +4,19 @@ use std::collections::BTreeSet;
 
 pub(super) fn validate(rule: &CustomRule) -> Result<()> {
     constraints::id(&rule.id)?;
-    if rule.schema_version != 1 {
+    if ![1, 2].contains(&rule.schema_version) {
         bail!(
             "Unsupported custom rule schema_version: {}",
             rule.schema_version
         );
+    }
+    match (rule.schema_version, &rule.expression) {
+        (1, Some(_)) => bail!("Project-rule v1 cannot contain expression"),
+        (2, None) => bail!("Project-rule v2 requires a typed expression"),
+        (_, Some(expression)) => {
+            expression.validate().map_err(anyhow::Error::msg)?;
+        }
+        _ => {}
     }
     if rule.version == 0 {
         bail!("Custom rule version must be positive");
@@ -72,7 +80,8 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
             bail!("Rule language cannot be empty");
         }
     }
-    if !rule.then.require_marker
+    if rule.expression.is_none()
+        && !rule.then.require_marker
         && rule.then.require_dependency.is_none()
         && rule.then.name_pattern.is_none()
         && rule.then.forbid_pattern.is_none()

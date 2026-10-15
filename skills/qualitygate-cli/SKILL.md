@@ -259,6 +259,7 @@ Route the requested capability before editing policy:
 | Require changed independent tests to expose assertion counterexamples on old code | [Test effectiveness](references/test-effectiveness.md); explicit command/task `test_effectiveness` |
 | Prevent existing analyzer debt from increasing | [Diagnostic ratchets](references/diagnostic-ratchets.md); command-check `reports[].mode: ratchet`, with a fresh base run |
 | Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
+| Compose typed entity predicates, counts and bounded collection checks | [Operators](references/operators.md); capability `rules.operators.v2`, `schema operator-rule`, then standard validation/generation |
 | Track every declared clause, its adoption, unsupported gaps and snapshot execution | [Constraint coverage](references/constraint-coverage.md); `schema constraint`, `config --show`, automatic `constraint-coverage` check |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
 | Supply bounded repair context to an external Agent | [Agent feedback](references/agent-feedback.md); `check --feedback`, complete report references and full rechecks |
@@ -365,12 +366,15 @@ merge-request, manual-acceptance, or trusted-policy flows.
 When asked to enforce `AGENTS.md`, `Agent.md`, contributor guidance, or another
 repository policy, first read [rule authoring](references/rule-authoring.md) and
 the complete
-[project rule schema](references/schemas/project-rule.schema.json). Then:
+[project rule schema](references/schemas/project-rule.schema.json). For typed
+v2 expressions, also read [operators](references/operators.md), export
+`schema operator-rule`, and compare the complete packaged v2 schema. Then:
 
 1. Use `rules list --source all` to avoid duplicating a built-in, project rule,
    lint, or report adapter.
 2. Use `rules schema --format json` and compare the parsed result with the
-   packaged Schema. A mismatch is a compatibility gap.
+   packaged v1 Schema, or `schema operator-rule` for a v2 candidate. A mismatch
+   is a compatibility gap; do not put expressions into v1.
 3. Use `rules source --document ... --section ... --format json` to obtain the
    exact source object. Never calculate or guess its digest in prose.
 4. Classify every clause. Translate only subjects and assertions supported by

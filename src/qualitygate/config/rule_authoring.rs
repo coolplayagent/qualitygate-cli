@@ -130,6 +130,8 @@ pub fn validate(root: &Path, path: &str) -> Result<RuleValidationReport> {
     for file in discovered {
         let mut result = RuleFileValidation {
             file: file.clone(),
+            schema_id: None,
+            schema_digest: None,
             rule_id: None,
             valid: false,
             issues: Vec::new(),
@@ -145,7 +147,16 @@ pub fn validate(root: &Path, path: &str) -> Result<RuleValidationReport> {
                     ));
                     break;
                 }
-                let (rule, issues) = rule_schema::inspect(&bytes)?;
+                let (version, rule, issues) = rule_schema::inspect_versioned(&bytes)?;
+                if version == 2 {
+                    let (id, digest) = rule_schema::schema_identity(version)?;
+                    result.schema_id = Some(id.into());
+                    result.schema_digest = Some(digest);
+                    if report.schema_id != rule_schema::FAMILY_SCHEMA_ID {
+                        report.schema_id = rule_schema::FAMILY_SCHEMA_ID.into();
+                        report.schema_digest = rule_schema::family_digest()?;
+                    }
+                }
                 result.issues = issues;
                 if let Some(rule) = rule {
                     if !ids.insert(rule.id.clone()) {
@@ -223,9 +234,8 @@ pub fn generate(root: &Path, input: &str) -> Result<serde_json::Value> {
     temporary
         .persist_noclobber(target)
         .context("Cannot create candidate; existing rules are never overwritten")?;
-    Ok(
-        serde_json::json!({"schema_version":1,"schema_id":rule_schema::SCHEMA_ID,
-        "schema_digest":rule_schema::digest(),"file":name,"rule_id":rule.id,
-        "status":"candidate","policy_changed":false,"review_trust":"local_candidate"}),
-    )
+    let (schema_id, schema_digest) = rule_schema::schema_identity(rule.schema_version)?;
+    Ok(serde_json::json!({"schema_version":1,"schema_id":schema_id,
+        "schema_digest":schema_digest,"file":name,"rule_id":rule.id,
+        "status":"candidate","policy_changed":false,"review_trust":"local_candidate"}))
 }

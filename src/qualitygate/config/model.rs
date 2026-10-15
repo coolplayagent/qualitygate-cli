@@ -432,7 +432,10 @@ pub struct CustomRule {
     #[serde(default)]
     pub binding: Option<Binding>,
     pub when: Trigger,
+    #[serde(default)]
     pub then: Assertions,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expression: Option<crate::domain::operator::Expr>,
     pub fix: String,
 }
 

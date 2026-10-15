@@ -139,6 +139,19 @@ fn run(
             "Required project capability unavailable: dependency_resolution; declare depends_on for a project facts command"
         );
     }
+    if rule.schema_version == 2
+        && rule
+            .requires_capabilities
+            .iter()
+            .any(|c| c == "dependency_resolution")
+        && projects.iter().any(|project| {
+            project.schema_version != 1
+                || !["maven", "python"].contains(&project.ecosystem.as_str())
+                || project.snapshot_digest != snapshot.identity.content_digest
+        })
+    {
+        bail!("Required project facts are unsupported or belong to another snapshot");
+    }
     let subjects = subjects(rule, snapshot, facts)?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     if rule.when.entity == "file" && rule.when.change.as_deref() == Some("all") {
@@ -289,6 +302,39 @@ fn run(
             &rule.fix,
             "max_count",
         ));
+    }
+    if let Some(expression) = &rule.expression {
+        let entities: Vec<_> = subjects
+            .iter()
+            .filter(|subject| subject.triggered)
+            .map(|subject| super::operators::Entity {
+                name: &subject.name,
+                text: &subject.text,
+                path: subject.file.as_deref(),
+                range: subject.range.as_ref(),
+            })
+            .collect();
+        let outcome = super::operators::evaluate(
+            expression,
+            super::operators::Facts {
+                entities: &entities,
+                complete: true,
+            },
+        )?;
+        if !outcome.passed {
+            result.diagnostics.push(diagnostic(
+                &rule.id,
+                None,
+                None,
+                "Typed expression did not hold for the complete selected entity collection".into(),
+                serde_json::json!({"assertion":"expression","outcome":outcome}),
+                &rule.fix,
+                "expression",
+            ));
+        }
+        result
+            .metadata
+            .insert("expression".into(), serde_json::to_value(outcome)?);
     }
     Ok(())
 }
