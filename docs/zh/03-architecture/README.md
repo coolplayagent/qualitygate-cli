@@ -24,3 +24,5 @@ flowchart TB
 5. [+1 场景](05-scenarios.md)
 
 技术深潜：[规则引擎实现](06-rule-engine-implementation.md)。
+
+设计提案：[五类规则能力与 Agent 行为约束](07-rule-capabilities-and-agent-contracts.md)。

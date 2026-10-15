@@ -11,6 +11,9 @@ glob/正则及不安全组合。适配器创建 pending 结果、验证所需事
 [`config/parameters.rs`](../../../src/qualitygate/config/parameters.rs) 和
 [`config/builtin_validation.rs`](../../../src/qualitygate/config/builtin_validation.rs)。
 
+拟新增的算子组合和面向使用者 Agent 的强约束 Prompt，见[五类规则能力与 Agent 行为约束设计提案](07-rule-capabilities-and-agent-contracts.md)。
+该提案区分已有实现、拟新增能力与宿主职责，不改变本章描述的运行时行为。
+
 ## 渐进精度架构
 
 Qualitygate 使用足以诚实支撑规则的最低成本证据层，同时显式披露层级和边界：
