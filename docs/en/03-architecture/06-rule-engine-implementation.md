@@ -16,6 +16,11 @@ contracts are in
 [`config/parameters.rs`](../../../src/qualitygate/config/parameters.rs) and
 [`config/builtin_validation.rs`](../../../src/qualitygate/config/builtin_validation.rs).
 
+Proposed operator composition and strong constraint Prompts for the consuming
+Agent are described in [Five rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md).
+That proposal distinguishes existing behavior, planned capabilities, and host
+responsibilities without changing the runtime described here.
+
 ## Progressive precision
 
 Qualitygate uses the least expensive evidence level that can honestly support a
