@@ -12,3 +12,5 @@
 8. [有界算子规则](08-bounded-operators.md)
 
 - [09 · 面向使用者 Agent 的行为契约](09-agent-contracts.md)
+
+- [10 · Agent 宿主与不可变交付](10-agent-host-and-delivery.md)

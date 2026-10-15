@@ -5,7 +5,8 @@
 状态：依据版本 `0.5.7` 分阶段实现。[条款覆盖](../02-reference/07-constraint-coverage.md)已通过能力
 `constraints.coverage.v1` 接入；[有界算子](../02-reference/08-bounded-operators.md)已通过
 `rules.operators.v2` 提供。[Agent 义务投影](../02-reference/09-agent-contracts.md)已通过
-`agent.contracts.v1` 提供；宿主强制接入属于下一阶段。
+`agent.contracts.v1` 提供；[Rust 宿主与不可变交付](../02-reference/10-agent-host-and-delivery.md)
+已通过 `agent.host.v1` 和 `agent.delivery.v1` 提供，限于明确支持的入口。
 本章定义能力与协作边界，不自动启用规则。
 读者是规则维护者、CLI/core 开发者和接入 Qualitygate 的 Agent 宿主开发者。
 
@@ -39,8 +40,8 @@ gate 决策，避免把事实精度与规则语法混为一谈。
 | 结构与项目事实 | tree-sitter 实体与 base/head 匹配；Maven/Python 等项目适配器提供限定事实 | 新的类型、调用或数据流需求必须接入相应事实能力，不宣称跨语言完整语义。 |
 | 可组合规则 | v1 固定 `when`/`then` DSL；v2 叠加类型化表达式树和有界算子组合 | 新事实能力仍需适配器；不开放任意 lambda 代码运行时。 |
 | 外部工具 | command check、runner、报告归一化与部分格式的 ratchet | 未支持的报告需明确适配器；外部生产者不能直接改写 gate。 |
-| Agent 指令 | 发布版 Skill 已要求最终检查、修复复验、保留未完成状态和权限边界 | 可单独追踪的行为义务、版本化 Prompt 投影和宿主接入契约。 |
-| 修复与交付 | feedback/recheck、任务契约和可选示例 harness | 通用工具/完成事件拦截由接入宿主提供，示例 harness 不等于任意 Agent 的强制控制。 |
+| Agent 指令 | 绑定来源的行为义务、面向使用者 Agent 的版本化 Prompt 投影和 Skill 流程 | 注入可以记录；不能据此证明理解或遵守任意自然语言条款。 |
+| 修复与交付 | 可复用 Rust 宿主、有界修复/恢复/切换、固定 full 检查和不可变制品交付 | 任意工具、最终答复和进程内部上下文拦截仍不支持；本宿主不是操作系统沙箱。 |
 
 现状依据：
 
@@ -229,11 +230,11 @@ flowchart TD
 
 公开接口的增量包括表达式契约、行为义务投影及宿主证据交换。它们必须通过独立的版本/能力声明
 接入，不能让旧 project-rule v1 解释陌生字段。现有规则、命令、报告及 judgment 权限保持兼容。
-条款覆盖、算子和 Agent 义务已提供独立 Schema；宿主交换契约仍待实现。
+条款覆盖、算子和 Agent 义务已提供独立 Schema；Rust 宿主提供版本化注入记录及按内容寻址的交付证据。
 
 ## 7. 验收场景与实施顺序
 
-下表是验收要求。证据索引已覆盖条款与算子场景；Agent 宿主场景仍属于后续实现工作。
+下表是验收要求。证据索引已覆盖条款、算子及已实现的 Agent 宿主场景；不支持的通道继续明确披露。
 
 | 场景 | 必需结果 | 拟验证层 |
 | --- | --- | --- |
@@ -255,12 +256,13 @@ flowchart TD
 已有可复用测试基础包括[规则编写](../../../tests/rule_authoring.rs)、[有限 DSL](../../../tests/custom_rules.rs)、
 [反馈](../../../tests/feedback.rs)及[示例 harness](../../../tests/agent_loop.rs)测试。它们只证明各自已有
 行为。[算子集成](../../../tests/operators.rs)已增加类型化组合证据；
-[Agent 契约测试](../../../tests/agent_contracts.rs)覆盖采用、范围、投影和失效。宿主注入与拦截属于下一阶段。
+[Agent 契约测试](../../../tests/agent_contracts.rs)覆盖采用、范围、投影和失效；
+[宿主集成](../../../tests/agent_host.rs)与[交付测试](../../../tests/delivery.rs)覆盖已实现的注入、恢复和制品交付控制。
 
 实施顺序建议为：条款与能力覆盖记录 → 有限算子组合 → 行为义务与 Prompt 投影 → 选择一个宿主实现
 受控入口与证据绑定 → 验证恢复、绕过通道和交付竞态。每阶段独立声明能力，缺口继续可见；不得提前
 把设计能力列为已支持。具体宿主选型、表达式 wire schema 与数值预算在实现提案中确定，不由本文默认启用。
 
 条款覆盖的正式需求和可重复证据见[证据索引](../04-contributor-guide/03-requirements-to-test-evidence.md)。
-后续能力保持设计状态，不提前登记为测试通过。首个宿主选择扩展现有 Rust Agent harness，
+不支持的任意工具、答复和内部上下文拦截继续保留为能力缺口。首个宿主扩展现有 Rust Agent harness，
 支持配置任意 Agent 命令并管理 Prompt 注入、修复和交付；它不等于任意宿主的通用拦截。

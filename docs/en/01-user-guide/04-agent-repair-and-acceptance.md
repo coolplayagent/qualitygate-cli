@@ -34,3 +34,5 @@ but it does not prove semantic correctness. Git trailers can associate a
 declaration with the actual test-changing commit; they are evidence bindings,
 not substitutes for execution. The final gate remains the authoritative result
 for the selected snapshot and configured checks.
+
+The reusable Rust controller is now available as [`agent-run`](../02-reference/10-agent-host-and-delivery.md). The example entry point delegates to the same core, which injects current obligations and authorizes content-addressed delivery from fresh full evidence.

@@ -2,12 +2,16 @@
 
 mod acquisition;
 pub mod agent_contract;
+pub mod agent_host;
+mod agent_host_contract;
+mod agent_host_io;
 pub mod capabilities;
 mod commands;
 mod compatibility;
 mod compatibility_inputs;
 mod constraint_coverage;
 mod coverage_gate;
+pub mod delivery;
 pub mod doctor;
 mod doctor_context;
 mod doctor_plan;
@@ -70,9 +74,16 @@ pub async fn check(options: CheckOptions) -> Result<Report> {
 
 /// Replays may require selectors with an implicit base to retain its identity.
 pub async fn check_with_expected_base(
-    mut options: CheckOptions,
+    options: CheckOptions,
     expected_base: Option<&str>,
 ) -> Result<Report> {
+    Ok(check_and_snapshot(options, expected_base).await?.0)
+}
+
+async fn check_and_snapshot(
+    mut options: CheckOptions,
+    expected_base: Option<&str>,
+) -> Result<(Report, Arc<snapshot::Snapshot>)> {
     let active = policy_active::load(options.root.clone()).await?;
     let (comparison, _) = acquisition::prepare(
         &mut options,
@@ -113,7 +124,17 @@ pub async fn check_with_expected_base(
     } else {
         (policy::load(&snapshot, &options, &mut invalid).await?, None)
     };
-    check_prepared(options, snapshot, loaded, invalid, true, active, None).await
+    let report = check_prepared(
+        options,
+        Arc::clone(&snapshot),
+        loaded,
+        invalid,
+        true,
+        active,
+        None,
+    )
+    .await?;
+    Ok((report, snapshot))
 }
 
 async fn evaluator_digest() -> Result<String> {
@@ -519,10 +540,10 @@ async fn check_prepared(
         checks: results,
         summary,
     };
+    if !plan.agent_obligations.is_empty() {
+        report.verification.known_limits.push("Agent obligations require a current agent-contract projection and consuming-host evidence; this code check does not establish instruction delivery or behavioral compliance.".into());
+    }
     if snapshot.delivery() {
-        if !plan.agent_obligations.is_empty() {
-            report.verification.known_limits.push("Agent obligations require a current agent-contract projection and consuming-host evidence; this code check does not establish instruction delivery or behavioral compliance.".into());
-        }
         report.verification.known_limits.push("Delivery scope selects changed lines and changed-file findings; unlocated command failures and incomplete evidence remain blocking. This is not repository-wide approval.".into());
         if snapshot.scope_evidence.empty_delivery {
             report

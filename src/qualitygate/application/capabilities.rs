@@ -26,6 +26,8 @@ pub async fn report() -> Result<Capabilities> {
             ("operator_rule", 2),
             ("agent_obligation", 1),
             ("agent_contract", 1),
+            ("agent_delivery", 1),
+            ("agent_host", 1),
         ]
         .into_iter()
         .map(|(key, value)| (key.into(), value))

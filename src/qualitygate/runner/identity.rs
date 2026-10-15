@@ -24,6 +24,12 @@ pub async fn evaluator() -> Result<Artifact> {
         .await?
 }
 
+/// Pin a caller-selected Qualitygate evaluator with the same bounded debug allowance.
+pub async fn selected_evaluator(path: &Path) -> Result<Artifact> {
+    let path = path.to_owned();
+    tokio::task::spawn_blocking(move || identify(&path, 1024 * 1024 * 1024)).await?
+}
+
 fn identify(path: &Path, limit: u64) -> Result<Artifact> {
     let started = std::time::Instant::now();
     let file = std::fs::File::open(path)?;

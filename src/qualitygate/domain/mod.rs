@@ -5,6 +5,7 @@ pub mod case_provenance;
 mod category;
 pub mod constraint;
 pub mod decision_envelope;
+pub mod delivery;
 pub mod evolution;
 pub mod feedback;
 mod gate;
@@ -41,6 +42,7 @@ pub use source_review::*;
 pub use verification::*;
 
 pub mod agent_contract;
+pub mod agent_host;
 pub mod check_scope;
 pub mod doctor;
 pub mod runtime;

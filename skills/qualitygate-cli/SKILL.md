@@ -36,6 +36,10 @@ resume or handoff. Required gaps block readiness; a ready projection proves
 neither compliance nor host enforcement. Preserve higher-priority instructions
 and existing permissions. A required host control needs an actual supporting
 host; do not substitute an acknowledgement or code-gate pass.
+When the user selects the Rust harness, follow the
+[Agent host workflow](references/agent-host.md): `agent-run` injects current
+obligations and guards its delivery entry point. Completion identifies a verified
+content-addressed artifact; it does not authorize arbitrary live workspace bytes.
 
 ## Use the Skill over the CLI
 
@@ -271,6 +275,7 @@ Route the requested capability before editing policy:
 | Compose typed entity predicates, counts and bounded collection checks | [Operators](references/operators.md); capability `rules.operators.v2`, `schema operator-rule`, then standard validation/generation |
 | Track every declared clause, its adoption, unsupported gaps and snapshot execution | [Constraint coverage](references/constraint-coverage.md); `schema constraint`, `config --show`, automatic `constraint-coverage` check |
 | Apply adopted behavior obligations to the consuming Agent | [Agent contracts](references/agent-contracts.md); `schema agent-obligation`, `agent-contract`; host enforcement needs an actual host |
+| Run the selected Rust Agent host with guarded delivery | [Agent host](references/agent-host.md); `agent-run`, current injection receipts, fresh full checks and immutable export |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
 | Supply bounded repair context to an external Agent | [Agent feedback](references/agent-feedback.md); `check --feedback`, complete report references and full rechecks |
 | Consume versioned decisions or assess warning findings with an external provider | [Decision protocol](references/decision-protocol.md); exported decision/feedback schemas, optional `--envelope`, and shadow/advisory judgment |

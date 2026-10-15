@@ -20,8 +20,8 @@ The CLI does not execute formal checks while projecting. A ready projection
 means suitable for injection, not delivery, understanding or compliance.
 Check references retain their fact boundaries. Host control declarations
 require an actual host implementation; arbitrary tool interception and internal
-context recovery are not provided by this protocol. Current Rust harness
-integration is a subsequent stage of the architecture design.
+context recovery are not provided by this protocol. The [Rust host](10-agent-host-and-delivery.md)
+now injects these projections and enforces its documented controls.
 
 Sources are protected from exclusions and preserved in frozen policies.
 Definition/check-setting changes invalidate adoption. Source and selected

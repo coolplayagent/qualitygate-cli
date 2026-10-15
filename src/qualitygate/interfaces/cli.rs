@@ -77,6 +77,8 @@ enum Command {
     Check(Box<CheckArgs>),
     /// Project adopted behavior obligations for the consuming agent; runs no checks.
     AgentContract(Box<super::agent_contract::ProjectArgs>),
+    /// Run a configured consuming agent with current Prompt injection and guarded delivery.
+    AgentRun(Box<super::agent_run::AgentArgs>),
     /// Compare bundled minimal/typical/stress fixtures with independent goldens.
     Selfcheck {
         #[arg(long, value_parser = ["minimal", "typical", "stress"])]
@@ -248,6 +250,9 @@ struct CheckArgs {
     /// Emit bounded JSON feedback linked to the unfiltered persisted report.
     #[arg(long)]
     feedback: bool,
+    /// Export a content-addressed ZIP of passing full checked inputs outside the repository.
+    #[arg(long, conflicts_with_all = ["feedback", "envelope", "severity"])]
+    export_delivery: Option<PathBuf>,
     /// Feedback byte limit including the trailing newline (4..=256 KiB).
     #[arg(long, requires = "feedback", value_parser = clap::value_parser!(u32).range(4096..=262144))]
     feedback_max_bytes: Option<u32>,
@@ -462,6 +467,14 @@ impl Cli {
                     code,
                 ))
             }
+            Command::AgentRun(args) => {
+                if self.envelope {
+                    bail!("Agent host uses its own lifecycle protocol");
+                }
+                let result = application::agent_host::run(args.options(root, self.config)).await?;
+                let code = if result["complete"] == true { 0 } else { 2 };
+                Ok((super::render::metadata(&result, self.format)?, code))
+            }
             Command::Config { .. } => {
                 let value =
                     application::policy_active::configuration(root, self.config.clone()).await?;
@@ -657,6 +670,19 @@ impl Cli {
                     trust_store: args.trust_store,
                     evidence_dir: args.evidence_dir,
                 };
+                if let Some(destination) = args.export_delivery {
+                    let export = application::delivery::check(
+                        options,
+                        args.expect_base.as_deref(),
+                        destination,
+                    )
+                    .await?;
+                    let code = export.report.gate.decision.exit_code();
+                    return Ok((
+                        super::render::metadata(&serde_json::to_value(export)?, self.format)?,
+                        code,
+                    ));
+                }
                 let report =
                     application::check_with_expected_base(options, args.expect_base.as_deref())
                         .await?;
