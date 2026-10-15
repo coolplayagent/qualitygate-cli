@@ -12,3 +12,5 @@
 8. [Bounded operator rules](08-bounded-operators.md)
 
 - [09 · Consuming-agent contracts](09-agent-contracts.md)
+
+- [10 · Agent host and immutable delivery](10-agent-host-and-delivery.md)

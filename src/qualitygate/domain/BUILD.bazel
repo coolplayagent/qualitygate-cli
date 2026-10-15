@@ -3,6 +3,8 @@ load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["agent_host.rs"])
+
 filegroup(
     name = "sources",
     srcs = glob([

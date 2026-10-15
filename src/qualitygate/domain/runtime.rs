@@ -20,6 +20,8 @@ pub const CAPABILITIES: &[&str] = &[
     "constraints.coverage.v1",
     "rules.operators.v2",
     "agent.contracts.v1",
+    "agent.delivery.v1",
+    "agent.host.v1",
 ];
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

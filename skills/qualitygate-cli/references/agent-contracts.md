@@ -59,5 +59,6 @@ snapshot. Protected normative sources cannot be excluded and enter frozen
 policy packages. A code check may pass while behavior remains unverified; its
 known limits explicitly identify this distinction. Host enforcement and final
 delivery require host-owned evidence, current full reports and actual controls.
-This projection capability alone does not intercept arbitrary Agent tools,
+The [Rust host](agent-host.md) injects current projections at process launches and
+enforces its supported delivery controls. This projection capability alone does not intercept arbitrary Agent tools,
 internal context compression, or final natural-language responses.

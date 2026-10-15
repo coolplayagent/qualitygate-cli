@@ -6,7 +6,8 @@ Status: staged implementation of the design based on version `0.5.7`.
 [Clause coverage](../02-reference/07-constraint-coverage.md) is implemented with
 capability `constraints.coverage.v1`; [bounded operators](../02-reference/08-bounded-operators.md)
 are available as `rules.operators.v2`. [Agent obligation projection](../02-reference/09-agent-contracts.md)
-is available as `agent.contracts.v1`; host enforcement remains the next stage. This chapter defines collaboration
+is available as `agent.contracts.v1`; the [Rust host and immutable delivery](../02-reference/10-agent-host-and-delivery.md)
+are available as `agent.host.v1` and `agent.delivery.v1` within documented entry points. This chapter defines collaboration
 boundaries; it does not enable rules. Its readers are
 rule maintainers, CLI/core developers, and developers of Agent hosts integrating
 Qualitygate.
@@ -47,8 +48,8 @@ decisions without confusing fact precision with rule syntax.
 | Structure and project facts | Tree-sitter entities and base/head matching; bounded facts from project adapters including Maven/Python | New type, call, or data-flow requirements need corresponding capabilities; do not claim complete cross-language semantics. |
 | Composable rules | Fixed v1 `when`/`then` assertions and typed v2 expressions over selected entities | Additional semantic predicates need corresponding facts; no open lambda runtime is provided. |
 | External tools | Command checks, runner, report normalization, ratchets for supported formats | Unsupported reports need explicit adapters; producers cannot rewrite the gate. |
-| Agent instructions | Packaged Skill requires final checks, repair/recheck, honest incomplete results, and authority boundaries | Individually traceable obligations, versioned Prompt projections, and a host integration contract. |
-| Repair and delivery | Feedback/recheck, task contracts, and an optional example harness | Generic tool/completion interception belongs to the integrating host; the example is not universal Agent enforcement. |
+| Agent instructions | Source-bound obligations, versioned consuming-agent Prompt projections and Skill workflow | Injection is observable; understanding and arbitrary prose compliance are not established. |
+| Repair and delivery | Reusable Rust host, bounded repair/resume/handoff, fixed full checks and immutable artifact delivery | General tool/final-response/in-process-context interception remains unsupported; this host is not an OS sandbox. |
 
 Current implementation anchors:
 
@@ -287,13 +288,12 @@ Public additions include expression contracts, obligation projections,
 and host evidence exchange. Introduce them through explicit versions and
 capability declarations; old project-rule v1 must not interpret unknown fields.
 Preserve existing rules, commands, reports, and judgment authority. Clause
-coverage, operators and Agent obligations export separate schemas; host
-exchange remains the next implementation stage.
+coverage, operators and Agent obligations export separate schemas; the Rust host provides versioned injection receipts and content-addressed delivery evidence.
 
 ## 7. Acceptance scenarios and implementation sequence
 
 These are acceptance requirements. The evidence index now covers clause and
-operator scenarios; Agent host scenarios remain future implementation work.
+operator and Agent host scenarios, with unsupported interception boundaries explicit.
 
 | Scenario | Required result | Intended verification layer |
 | --- | --- | --- |
@@ -317,7 +317,8 @@ Existing foundations include [rule authoring](../../../tests/rule_authoring.rs),
 and [example harness](../../../tests/agent_loop.rs) tests. They establish their
 existing behaviors. [Operator integration](../../../tests/operators.rs) now
 adds typed composition evidence; [Agent contract tests](../../../tests/agent_contracts.rs)
-cover adoption, scope, projection and invalidation. Host injection and interception remain the next stage.
+cover adoption, scope, projection and invalidation. [Host integration](../../../tests/agent_host.rs) and
+[delivery tests](../../../tests/delivery.rs) cover implemented injection, recovery and guarded artifact delivery.
 
 Suggested sequence: clause/capability coverage records → bounded operator
 composition → behavior obligations and Prompt projections → one host integration
@@ -328,7 +329,7 @@ selection, expression wire Schema, and numeric budgets belong to implementation
 proposals; this document does not enable defaults for them.
 
 The [evidence index](../04-contributor-guide/03-requirements-to-test-evidence.md)
-records clause coverage requirements and repeatable tests. Later stages remain
-design requirements, not passing tests. The selected first host extends the
+records clause coverage, operators, consuming-agent projection and the implemented host scenarios.
+Unsupported general tool/response/context interception remains explicit; no universal Agent sandbox is claimed. The selected first host extends the
 existing Rust Agent harness with configurable Agent commands and management of
 Prompt injection, repair and delivery; it is not universal host interception.

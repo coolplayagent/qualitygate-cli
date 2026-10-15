@@ -1,6 +1,7 @@
 //! Immutable Git inputs and independently mapped change ranges.
 
 mod changes;
+pub mod delivery;
 mod git;
 pub mod history;
 mod input_guard;

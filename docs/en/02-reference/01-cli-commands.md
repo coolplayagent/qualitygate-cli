@@ -72,3 +72,5 @@ qualitygate schema project-rule-family --format json
 [Runtime capabilities and environment preflight](06-runtime-and-preflight.md).
 
 `qualitygate schema agent-obligation` · `qualitygate agent-contract --worktree --role implementer --format json`
+
+`qualitygate agent-run --help` · `qualitygate check --export-delivery <external-directory> --format json`
