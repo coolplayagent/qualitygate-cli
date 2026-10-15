@@ -65,7 +65,7 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 | ENV-39-04：静态边界与有界探针 | `application::doctor_context::tests` | `tests/doctor/probes.rs`：超时、超限、空版本、脚本/输入/策略变化、敏感输出 |
 | ENV-39-05：分侧文件预算 | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`：仅 base 超限、2/8 MiB、最大容量、总量、受保护排除、index、计数与截断 |
 | ENV-39-06：预检协议与可执行建议 | `domain::doctor::tests` | `tests/doctor.rs`：Schema 校验与建议 argv 重放 |
-| ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：带空格路径下的 Windows PowerShell/Git Bash 验证 |
+| ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：保留调试断言/溢出检查、关闭调试符号的完整 Windows 测试命令；带空格路径的 PowerShell/Git Bash 验证 |
 
 `cargo test --test doctor --all-features` 是独立于原生单元测试的集成目标。
 Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Cargo/Bazel 和至少 90% 行覆盖率
