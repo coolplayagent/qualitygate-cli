@@ -39,6 +39,12 @@ pub fn protected_paths(
     paths.extend(task.map(globset::escape));
     paths.extend(
         config
+            .agent_obligations
+            .iter()
+            .map(|o| globset::escape(&o.source.document)),
+    );
+    paths.extend(
+        config
             .constraints
             .iter()
             .map(|c| globset::escape(&c.source.document)),

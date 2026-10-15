@@ -10,3 +10,5 @@
 6. [运行时能力与环境预检](06-runtime-and-preflight.md)
 7. [条款覆盖](07-constraint-coverage.md)
 8. [有界算子规则](08-bounded-operators.md)
+
+- [09 · 面向使用者 Agent 的行为契约](09-agent-contracts.md)

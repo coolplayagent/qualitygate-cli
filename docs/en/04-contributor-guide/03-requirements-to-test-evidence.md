@@ -12,6 +12,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | --- | --- |
 | CONSTRAINT-01 source-bound inventory, adoption, snapshot coverage and explicit gaps | `tests/constraint_coverage.rs`; `domain::constraint::tests` |
 | OPERATOR-01 strict v2 composition, complete facts, shared budgets and bounded source observations | `tests/operators.rs`; `domain::operator::tests`; `adapters::operators::tests`; existing `tests/rule_authoring.rs` and `tests/custom_rules.rs` preserve v1 |
+| AGENT-01 | Source-bound consuming-agent obligations, scoped Prompt projection, stale/missing evidence and conflict handling | `tests/agent_contracts.rs`; `domain/agent_contract.rs` scope unit test |
 | Snapshot selectors, execution, reports, and exit semantics | `tests/cli.rs`, `tests/execution.rs`, `tests/policy.rs`, native domain tests |
 | Initialization and capability gaps | `tests/init.rs` |
 | Issue 33 review: large-file test overlays, protected capacity authorization, escaped human guidance | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`; `tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`; `interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |

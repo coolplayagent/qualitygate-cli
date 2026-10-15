@@ -21,6 +21,9 @@ pub fn rules_digest(config: &super::Config, catalog: &super::catalog::Catalog) -
     if !config.constraints.is_empty() {
         subject["constraints"] = serde_json::to_value(&config.constraints)?;
     }
+    if !config.agent_obligations.is_empty() {
+        subject["agent_obligations"] = serde_json::to_value(&config.agent_obligations)?;
+    }
     Ok(digest(&serde_json::to_vec(&subject)?))
 }
 

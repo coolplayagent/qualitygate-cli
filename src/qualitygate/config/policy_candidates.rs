@@ -235,6 +235,12 @@ pub fn create_from_snapshot<'a>(
             .map(|rule| rule.source.document.clone()),
     );
     names.extend(config.constraints.iter().map(|c| c.source.document.clone()));
+    names.extend(
+        config
+            .agent_obligations
+            .iter()
+            .map(|o| o.source.document.clone()),
+    );
     if names.len() > 4096 {
         bail!("Policy package exceeds 4096 files");
     }

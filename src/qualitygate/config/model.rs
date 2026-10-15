@@ -39,6 +39,8 @@ pub struct Config {
     pub schema_version: u32,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub constraints: Vec<crate::domain::constraint::Constraint>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub agent_obligations: Vec<crate::domain::agent_contract::Obligation>,
     #[serde(
         default,
         skip_serializing_if = "crate::domain::runtime::Requirements::is_empty"
@@ -84,6 +86,7 @@ impl Default for Config {
         Self {
             schema_version: 1,
             constraints: Vec::new(),
+            agent_obligations: Vec::new(),
             requires: Default::default(),
             exclude: Vec::new(),
             languages: Vec::new(),

@@ -1,6 +1,7 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
 mod acquisition;
+pub mod agent_contract;
 pub mod capabilities;
 mod commands;
 mod compatibility;
@@ -142,6 +143,7 @@ async fn check_prepared(
         plan,
         protected_paths,
         constraint_bindings,
+        agent_bindings: _,
     } = loaded;
     let git_facts = git_trailers::load(&plan, &catalog, &snapshot, &options.snapshot_options).await;
     let external = match (&options.trust_store, &options.evidence_dir) {
@@ -518,6 +520,9 @@ async fn check_prepared(
         summary,
     };
     if snapshot.delivery() {
+        if !plan.agent_obligations.is_empty() {
+            report.verification.known_limits.push("Agent obligations require a current agent-contract projection and consuming-host evidence; this code check does not establish instruction delivery or behavioral compliance.".into());
+        }
         report.verification.known_limits.push("Delivery scope selects changed lines and changed-file findings; unlocated command failures and incomplete evidence remain blocking. This is not repository-wide approval.".into());
         if snapshot.scope_evidence.empty_delivery {
             report

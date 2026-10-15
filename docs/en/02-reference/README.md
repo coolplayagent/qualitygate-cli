@@ -10,3 +10,5 @@
 6. [Runtime capabilities and environment preflight](06-runtime-and-preflight.md)
 7. [Constraint coverage](07-constraint-coverage.md)
 8. [Bounded operator rules](08-bounded-operators.md)
+
+- [09 · Consuming-agent contracts](09-agent-contracts.md)

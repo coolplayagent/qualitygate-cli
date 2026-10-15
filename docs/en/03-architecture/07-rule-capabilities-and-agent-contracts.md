@@ -5,7 +5,8 @@
 Status: staged implementation of the design based on version `0.5.7`.
 [Clause coverage](../02-reference/07-constraint-coverage.md) is implemented with
 capability `constraints.coverage.v1`; [bounded operators](../02-reference/08-bounded-operators.md)
-are available as `rules.operators.v2`. Agent contracts remain future stages. This chapter defines collaboration
+are available as `rules.operators.v2`. [Agent obligation projection](../02-reference/09-agent-contracts.md)
+is available as `agent.contracts.v1`; host enforcement remains the next stage. This chapter defines collaboration
 boundaries; it does not enable rules. Its readers are
 rule maintainers, CLI/core developers, and developers of Agent hosts integrating
 Qualitygate.
@@ -181,8 +182,9 @@ host authority.
 
 ### 5.2 Conceptual contract
 
-A behavior obligation needs the following information. These are design
-semantics, not current CLI wire fields or promises of new commands.
+A behavior obligation needs the following information. The current wire fields
+and initial scope are documented in the [Agent contract reference](../02-reference/09-agent-contracts.md);
+this table also retains requirements for the upcoming host integration.
 
 | Information | Meaning |
 | --- | --- |
@@ -281,12 +283,12 @@ Environment, confined paths, and network remain owned by `env`, `paths`, and
 `net`. Future shared types cannot live in the CLI and create reverse adapter
 dependencies.
 
-Future public additions include expression contracts, obligation projections,
+Public additions include expression contracts, obligation projections,
 and host evidence exchange. Introduce them through explicit versions and
 capability declarations; old project-rule v1 must not interpret unknown fields.
 Preserve existing rules, commands, reports, and judgment authority. Clause
-coverage and operators export separate schemas; Agent obligations and host
-exchange remain future implementation contracts.
+coverage, operators and Agent obligations export separate schemas; host
+exchange remains the next implementation stage.
 
 ## 7. Acceptance scenarios and implementation sequence
 
@@ -314,8 +316,8 @@ Existing foundations include [rule authoring](../../../tests/rule_authoring.rs),
 [finite DSL](../../../tests/custom_rules.rs), [feedback](../../../tests/feedback.rs),
 and [example harness](../../../tests/agent_loop.rs) tests. They establish their
 existing behaviors. [Operator integration](../../../tests/operators.rs) now
-adds typed composition evidence; instruction injection and host interception
-remain future stages.
+adds typed composition evidence; [Agent contract tests](../../../tests/agent_contracts.rs)
+cover adoption, scope, projection and invalidation. Host injection and interception remain the next stage.
 
 Suggested sequence: clause/capability coverage records → bounded operator
 composition → behavior obligations and Prompt projections → one host integration

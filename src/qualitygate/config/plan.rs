@@ -13,6 +13,7 @@ pub struct Plan {
     pub acceptance: BTreeMap<String, String>,
     pub acceptance_descriptions: BTreeMap<String, String>,
     pub constraints: Vec<crate::domain::constraint::Constraint>,
+    pub agent_obligations: Vec<crate::domain::agent_contract::Obligation>,
 }
 
 pub fn parse_task(bytes: &[u8]) -> Result<TaskContract> {
@@ -158,6 +159,7 @@ impl Plan {
         }
         Ok(Self {
             constraints: config.constraints.clone(),
+            agent_obligations: config.agent_obligations.clone(),
             rules,
             commands,
             order,

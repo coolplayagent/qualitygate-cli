@@ -1,5 +1,6 @@
 //! Command-line parsing and deterministic report presentation.
 
+mod agent_contract;
 pub mod cli;
 mod doctor;
 mod pilot;

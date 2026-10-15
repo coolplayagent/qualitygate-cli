@@ -9,6 +9,7 @@ pub(super) fn validate(config: &Config) -> Result<()> {
 
 pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
     super::constraint_inventory::validate(config)?;
+    super::agent_contract::validate(config)?;
     super::runtime::validate(&config.requires)?;
     super::exclusions::matcher(&config.exclude)?;
     super::categories::validate(config)?;

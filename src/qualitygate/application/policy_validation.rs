@@ -475,6 +475,7 @@ fn prepare_check(
         source_reviews: config::source_reviews::evidence(&policy.config, &policy.catalog)?,
     };
     Ok(super::policy::Loaded {
+        agent_bindings: config::agent_contract::bindings(&policy.config, &policy.catalog)?,
         constraint_bindings: config::constraint_inventory::bindings(
             &policy.config,
             &policy.catalog,

@@ -4,7 +4,8 @@
 
 状态：依据版本 `0.5.7` 分阶段实现。[条款覆盖](../02-reference/07-constraint-coverage.md)已通过能力
 `constraints.coverage.v1` 接入；[有界算子](../02-reference/08-bounded-operators.md)已通过
-`rules.operators.v2` 提供。Agent 契约仍属于后续阶段。
+`rules.operators.v2` 提供。[Agent 义务投影](../02-reference/09-agent-contracts.md)已通过
+`agent.contracts.v1` 提供；宿主强制接入属于下一阶段。
 本章定义能力与协作边界，不自动启用规则。
 读者是规则维护者、CLI/core 开发者和接入 Qualitygate 的 Agent 宿主开发者。
 
@@ -142,7 +143,8 @@ and(
 
 ### 5.2 概念契约
 
-行为义务至少包含以下信息。字段含义是设计契约，不是当前 CLI 的序列化字段或新命令承诺。
+行为义务至少包含以下信息。当前序列化字段和初始范围见 [Agent 契约参考](../02-reference/09-agent-contracts.md)；
+本表同时保留后续宿主接入的设计要求。
 
 | 信息 | 含义 |
 | --- | --- |
@@ -227,7 +229,7 @@ flowchart TD
 
 公开接口的增量包括表达式契约、行为义务投影及宿主证据交换。它们必须通过独立的版本/能力声明
 接入，不能让旧 project-rule v1 解释陌生字段。现有规则、命令、报告及 judgment 权限保持兼容。
-条款覆盖和算子已提供独立 Schema；Agent 义务及宿主交换契约仍待实现。
+条款覆盖、算子和 Agent 义务已提供独立 Schema；宿主交换契约仍待实现。
 
 ## 7. 验收场景与实施顺序
 
@@ -252,7 +254,8 @@ flowchart TD
 
 已有可复用测试基础包括[规则编写](../../../tests/rule_authoring.rs)、[有限 DSL](../../../tests/custom_rules.rs)、
 [反馈](../../../tests/feedback.rs)及[示例 harness](../../../tests/agent_loop.rs)测试。它们只证明各自已有
-行为。[算子集成](../../../tests/operators.rs)现已增加类型化组合证据；指令注入和宿主拦截仍待后续实现。
+行为。[算子集成](../../../tests/operators.rs)已增加类型化组合证据；
+[Agent 契约测试](../../../tests/agent_contracts.rs)覆盖采用、范围、投影和失效。宿主注入与拦截属于下一阶段。
 
 实施顺序建议为：条款与能力覆盖记录 → 有限算子组合 → 行为义务与 Prompt 投影 → 选择一个宿主实现
 受控入口与证据绑定 → 验证恢复、绕过通道和交付竞态。每阶段独立声明能力，缺口继续可见；不得提前

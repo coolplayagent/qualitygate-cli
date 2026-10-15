@@ -19,6 +19,7 @@ pub const CAPABILITIES: &[&str] = &[
     "reports.ratchet.v1",
     "constraints.coverage.v1",
     "rules.operators.v2",
+    "agent.contracts.v1",
 ];
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

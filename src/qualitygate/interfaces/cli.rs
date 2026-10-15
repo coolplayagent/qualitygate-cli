@@ -75,6 +75,8 @@ enum Command {
     },
     /// Execute policy and acceptance checks against a selected Git snapshot.
     Check(Box<CheckArgs>),
+    /// Project adopted behavior obligations for the consuming agent; runs no checks.
+    AgentContract(Box<super::agent_contract::ProjectArgs>),
     /// Compare bundled minimal/typical/stress fixtures with independent goldens.
     Selfcheck {
         #[arg(long, value_parser = ["minimal", "typical", "stress"])]
@@ -124,6 +126,7 @@ enum Judgment {
 
 #[derive(Debug, Subcommand)]
 enum SchemaKind {
+    AgentObligation,
     OperatorRule,
     ProjectRuleFamily,
     Constraint,
@@ -381,6 +384,7 @@ impl Cli {
         }
         if let Command::Schema { kind } = self.command {
             let document = tokio::task::spawn_blocking(move || match kind {
+                SchemaKind::AgentObligation => config::agent_contract::schema(),
                 SchemaKind::OperatorRule => config::rule_schema::document_version(2),
                 SchemaKind::ProjectRuleFamily => config::rule_schema::family_document(),
                 SchemaKind::Constraint => config::constraint_inventory::schema(),
@@ -442,6 +446,20 @@ impl Cli {
                         self.format,
                     )?,
                     0,
+                ))
+            }
+            Command::AgentContract(args) => {
+                if self.envelope {
+                    bail!("Agent contract projection uses its own protocol");
+                }
+                let role = args.role.clone();
+                let projection =
+                    application::agent_contract::project(args.options(root, self.config)?, role)
+                        .await?;
+                let code = if projection.ready { 0 } else { 2 };
+                Ok((
+                    super::render::metadata(&serde_json::to_value(projection)?, self.format)?,
+                    code,
                 ))
             }
             Command::Config { .. } => {
