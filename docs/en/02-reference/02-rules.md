@@ -29,18 +29,20 @@ entities, assertions, messages, and resource bounds. Assertions can require or
 forbid bounded text and can require matching entity sets to be nonempty. They
 cannot call arbitrary code or silently broaden their declared capabilities.
 
-Schema-guided workflow:
+The following fields describe the v1 contract. For the extraction, validation,
+generation and separate adoption steps, follow the
+[authoring tutorial](../01-user-guide/06-schema-guided-repository-rules.md).
 
-1. Export the matching `rules schema`.
-2. Record the normative source and digest.
-3. Author a candidate with stable IDs and explicit languages/capabilities.
-4. Run `rules validate candidate.yaml`.
-5. Review generated rules and counterexamples independently.
-6. Publish to the project rule directory, then explicitly select it in policy.
-
-Unknown fields, duplicate identities, invalid regexes, missing capabilities,
-malformed syntax, and exhausted parser budgets fail validation or produce an
-incomplete check. Rule generation is never approval.
+| Contract field | Meaning |
+| --- | --- |
+| `schema_version`, `id`, `version` | Protocol and stable rule identity. |
+| `source` | Repository-relative document, exact section, and digest returned by `rules source`. |
+| `language`, `applies_to` | Explicit language and path/provenance scope. |
+| `requires_capabilities` | Facts the evaluator must possess; absence becomes incomplete. |
+| `when` | A closed subject/change selector for commits, files, tests, comments, or imports. |
+| `then` | Supported name, text, marker, dependency, count, required-path, line, or word assertions. |
+| `binding` | Typed annotation, comment, or Git-trailer association when traceability is required. |
+| `fix` | Actionable remediation derived from the same source clause. |
 
 ### Structured Schema contract
 
@@ -57,20 +59,12 @@ source approval. The CLI adds semantic validation for Rust regex/glob syntax,
 confined paths, unique identities, exact source-section hashes, capability
 combinations, and finite budgets.
 
-### Repository prose to executable rules
+### Version 2 composition
 
-`rules source` extracts one unambiguous section from `AGENTS.md` or another
-repository policy and returns the exact source binding. An LLM may translate
-only explicit, representable obligations into the finite DSL. File inventory,
-counts, names, bounded text, markers, imports, and supported dependency facts
-have structured representations. Graph, type, data-flow, runtime, or human
-judgment obligations must instead use the appropriate lint/project adapter,
-command check, or manual decision; they must not be approximated by a regex.
-
-The [Schema-guided workflow](../01-user-guide/06-schema-guided-repository-rules.md)
-shows the complete extraction, validation, generation, and separate adoption
-sequence. The authoritative packaged procedure is the Skill's
-[rule-authoring reference](../../../skills/qualitygate-cli/references/rule-authoring.md).
+The [bounded operator protocol](08-bounded-operators.md) adds a typed expression
+to v2 project rules. `rules schema` continues to export v1; use `schema
+operator-rule` for v2 and `schema project-rule-family` for a mixed package.
+Validation, source binding and policy adoption remain separate for both versions.
 
 ## Reports, file contracts, and triage
 
@@ -89,3 +83,7 @@ behavior and retain the source digest, reviewer, date, and known divergence.
 For the dispatch pipeline, lint reuse, diff/entity matching, and
 implementation-specific algorithms, see
 [Rule engine implementation](../03-architecture/06-rule-engine-implementation.md).
+
+---
+
+[Previous: CLI commands](01-cli-commands.md) · [Contents](../README.md) · [Next: Projects and tool reports](03-projects-and-tool-reports.md)

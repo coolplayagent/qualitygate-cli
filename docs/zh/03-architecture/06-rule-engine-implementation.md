@@ -11,8 +11,8 @@ glob/正则及不安全组合。适配器创建 pending 结果、验证所需事
 [`config/parameters.rs`](../../../src/qualitygate/config/parameters.rs) 和
 [`config/builtin_validation.rs`](../../../src/qualitygate/config/builtin_validation.rs)。
 
-拟新增的算子组合和面向使用者 Agent 的强约束 Prompt，见[五类规则能力与 Agent 行为约束设计提案](07-rule-capabilities-and-agent-contracts.md)。
-该提案区分已有实现、拟新增能力与宿主职责，不改变本章描述的运行时行为。
+算子组合与面向使用者 Agent 的契约扩展了这一证据模型，其已实现边界和宿主职责见
+[规则能力与 Agent 行为契约](07-rule-capabilities-and-agent-contracts.md)。
 
 ## 渐进精度架构
 
@@ -209,6 +209,10 @@ LLM 可以提出 `C`，但不能制造 `B`、重定义 `S`、自行宣布 `V` �
 的 CLI 负责。因此 `AGENTS.md` 等仓库 prose 可以转化为可维护的结构化规则，而 prompt 解释不会成为
 运行时 authority。
 
+
+V2 在选中的完整事实之上增加类型化表达式求值，嵌套操作共享预算，固定断言继续叠加生效。
+求值及未完成证据语义见[算子参考](../02-reference/08-bounded-operators.md)。
+
 ## 外部 lint 与报告实现
 
 外部 lint 不是另一个 catalog implementation 字符串，而是有界 command check 加类型化 report
@@ -237,3 +241,7 @@ Qualitygate 增加的是单个 lint 通常不负责的编排：Git 快照身份�
 `source-pattern` 只报告新增行并阻塞非法配置。各 Issue 集成目标覆盖路由、固定规则包 scope、修复、
 非法 UTF-8、文件缺失、预算和确定性顺序。结构、项目、自定义规则与报告测试分别覆盖移动、歧义、
 快照不匹配、事实缺失、超时和工具输出错误。
+
+---
+
+[上一章：+1 场景视图](05-scenarios.md) · [全书目录](../README.md) · [下一章：规则能力与 Agent 行为契约](07-rule-capabilities-and-agent-contracts.md)

@@ -95,3 +95,7 @@ stateDiagram-v2
 
 这些场景由各 owner 边界上的单元及集成门禁覆盖。任何改变场景的变更，都必须同步更新
 [CodeSpec](../../../codespec/requirements/qualitygate-cli.md) 中的需求与测试证据。
+
+---
+
+[上一章：物理视图](04-physical-view.md) · [全书目录](../README.md) · [下一章：规则引擎实现](06-rule-engine-implementation.md)

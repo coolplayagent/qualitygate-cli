@@ -2,6 +2,21 @@
 
 [简体中文](../../zh/01-user-guide/02-snapshots-and-check-workflow.md) · [Volume index](README.md)
 
+## Understand the inputs
+
+| Concept | What it fixes |
+| --- | --- |
+| Snapshot | The exact captured files and Git change selection used for execution. |
+| Policy | Rules, command checks, severity and profiles selected for this run. |
+| Task contract | Additional acceptance items for a specific request, when supplied. |
+| Evidence | Results and artifacts tied to those inputs; an edit requires new verification. |
+
+`quick` and `full` choose checks. A snapshot selector chooses the bytes and
+changes being verified. A full check therefore does not automatically mean
+repository-wide findings: the CLI evaluates delivery selected by Git changes.
+
+## Select the snapshot
+
 Choose one selector that matches the delivery surface:
 
 ```bash
@@ -34,62 +49,48 @@ checks. Only an unfiltered `full` report whose scope is `delivery` or `task`,
 whose pending delivery list is empty, and whose gate is complete can establish
 the configured delivery decision.
 
-## Large repositories
+## Read the report as evidence
 
-The worktree, staged, diff or MR selector determines the delivery automatically;
-without a selector the CLI compares the worktree. Quick/full selects checks.
-Line findings select changed lines; findings without line positions select changed
-files, including deletions, renames, binary and mode changes. Unlocated command/test
-failures, timeouts and missing evidence remain gate inputs. There is no separate
-scope option. An empty delivery is not repository approval.
+| Field | Read it for |
+| --- | --- |
+| `snapshot` and `policy` | Which captured inputs and policy produced the result. |
+| `selection` | Changed files/lines, exclusions, empty delivery and execution context. |
+| `profile` and `scope` | Which checks ran and whether this is delivery, task or path feedback. |
+| `plan.pending_delivery_checks` | Work still required for a delivery decision. |
+| `gate.complete` and `gate.decision` | Whether validation finished and whether blockers remain. |
 
-Builds and tests retain unexcluded dependency context. Diff/MR acquire both sides
-of that context; rule language/path filters alone do not omit content. Configure
-reviewed exclusions in the effective `qualitygate.yaml`:
+Line findings apply to changed lines; findings without line positions apply to
+changed files, including deletions, renames, binary and mode changes. Unlocated
+command failures, timeouts and missing evidence remain gate inputs. An empty
+delivery does not prove repository-wide quality.
 
-```yaml
-exclude:
-  - "gitbook/images/**"
-  - "legacy/demos/**"
-```
+Retain the JSON report and referenced evidence together. Content identity and
+verification scope are distinct; see [evidence bindings](../02-reference/04-policy-task-and-signed-evidence.md).
+If files, policy, task or report inputs change, capture and check a new snapshot.
 
-These case-sensitive repository-relative globs use `/` and also match tracked files.
-Absolute paths, parent traversal, negation and `.qualitygateignore` are unsupported.
-Excluded content is not acquired, checked or materialized for commands. Policy/task
-files, custom rules, sources and protected verification assets cannot be excluded.
-If tools need an excluded resource, narrow the exclusion and rerun. `.gitignore`
-does not remove tracked inputs. Diff/MR/index use their selected policy source,
-never unrelated dirty worktree exclusions.
+## Work with large repositories
 
-Unexcluded files retain a default 2 MiB capacity; choose `--snapshot-max-file-mib N`
-(1-8) to retain larger inputs. Above 8 MiB, acquisition remains incomplete unless
-the effective policy explicitly excludes the resource. Increasing the total
-`--snapshot-max-mib` alone does not change the single-file limit.
-Reports retain scope, exclusions, changed files/line counts, empty delivery and
-the execution-context digest in `selection`. Scope and exclusions bind verification
-identity; rechecks retain scope and capacity. A delivery pass is not repository-wide
-approval.
+Builds and tests need unexcluded dependency context, even for a small diff.
+Language selection or `--path` does not remove those inputs. Start with `doctor`
+for your actual selector; its metadata identifies capacity or unsupported-file gaps.
 
-Test-effectiveness checks use the same per-file capacity when composing old
-production code with new tests, retaining effective exclusions and context.
-For protected `policy candidate validate`, set `budget.snapshot_max_file_mib`
-in the external acceptance suite instead (default 2, range 1–8). Both policies
-use that bound. Changing it changes the suite digest and requires matching
-external trust; ordinary check flags cannot override protected suite budgets.
+1. Keep files needed by checks and choose a supported acquisition budget when justified.
+2. Review precise policy exclusions for unrelated resources; they also disappear from command inputs.
+3. Repeat doctor and the final full check with the same selector and budget.
 
-Snapshot acquisition checks object sizes before reading contents and uses
-bounded batches and concurrency. Callers can tune the total byte, worker, and
-deadline budgets without changing policy meaning:
+For example, if the report calls for 4 MiB per file:
 
 ```bash
-qualitygate check --worktree --profile full \
-  --snapshot-max-mib 512 --snapshot-jobs 8 --snapshot-timeout-secs 300
+qualitygate doctor --worktree --profile full --snapshot-max-file-mib 4 --format json
+qualitygate check --worktree --profile full --snapshot-max-file-mib 4 --format json
 ```
 
-Symlinks, submodules, unresolved index conflicts, oversized files, missing Git
-objects, and budget exhaustion fail closed. A path filter narrows feedback but
-does not redefine the underlying policy or turn a partial run into full
-delivery evidence.
+Exclusion syntax, protected files and selected-policy behavior are defined in
+[runtime and preflight](../02-reference/06-runtime-and-preflight.md).
+[Resource limits](../02-reference/05-exit-codes-and-resource-limits.md) lists all
+budget options. Increasing capacity changes acquisition, not policy approval.
 
-Retain the JSON report and referenced evidence together. If checked files,
-policy, task input, or reports change, select and check a new snapshot.
+
+---
+
+[Previous: Installation and first check](01-installation-and-first-check.md) · [Contents](../README.md) · [Next: Rule configuration](03-rule-configuration.md)

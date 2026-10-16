@@ -23,6 +23,7 @@ flowchart TB
 4. [物理视图](04-physical-view.md)
 5. [+1 场景](05-scenarios.md)
 
-技术深潜：[规则引擎实现](06-rule-engine-implementation.md)。
+6. [规则引擎实现](06-rule-engine-implementation.md)
+7. [规则能力与 Agent 行为契约](07-rule-capabilities-and-agent-contracts.md)
 
-设计提案：[五类规则能力与 Agent 行为约束](07-rule-capabilities-and-agent-contracts.md)。
+[开始本卷：逻辑视图](01-logical-view.md)

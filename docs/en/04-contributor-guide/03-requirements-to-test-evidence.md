@@ -8,35 +8,54 @@ This chapter is the stable evidence index; it replaces date-stamped
 implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
+## Snapshots, initialization and acquisition
+
+| Requirement area | Principal repeatable evidence |
+| --- | --- |
+| Snapshot selectors, execution, reports, and exit semantics | `tests/cli.rs`, `tests/execution.rs`, `tests/policy.rs`, native domain tests |
+| Initialization and capability gaps | `tests/init.rs` |
+| Large-file test overlays, protected capacity authorization, escaped human guidance | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`; `tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`; `interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |
+| Oversized acquisition stays incomplete and reports actual bytes plus the minimum retry budget | `fixtures/golden/stress.json`: `snapshot-oversized` pins the acquisition diagnostic; the incomplete outcome and 2 MiB default are unchanged |
+| First-run formats, advisory HEAD/worktree preflight, explicit large-file capacity and unchanged policy semantics | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`, `init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content`, `init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget`; `tests/large_repository.rs::legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes`, `raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering`; `snapshot::git::tests::explicitly_permitted_large_blobs_use_nonempty_bounded_batches` |
+| Missing-policy guidance, literal command arguments, explicit policy references and safe Windows path display | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`, `missing_custom_configuration_is_carried_into_the_command` (executes returned arguments with spaces/apostrophes), `explicit_policy_reference_never_suggests_local_initialization`, `snapshot_guidance_depends_on_local_policy_and_selection`, `unreadable_or_malformed_configuration_does_not_suggest_init`; `paths::tests::displays_ordinary_windows_paths_without_verbatim_prefix` (Windows) |
+| DIST-04 Skill configuration prerequisite, automatic init, failure stop and post-init recheck | `tests/quality/skill_package.rs::skill_initialization_contract_requires_auto_init_stop_and_recheck` checks entry metadata, read-only bootstrap examples, initialization boundaries and operational instructions |
+| Large-repository acquisition and performance bounds | `tests/large_repository.rs`, `tests/benchmarks.rs`, `tests/policy_performance.rs` |
+
+## Rules, policy and tool evidence
+
 | Requirement area | Principal repeatable evidence |
 | --- | --- |
 | CONSTRAINT-01 source-bound inventory, adoption, snapshot coverage and explicit gaps | `tests/constraint_coverage.rs`; `domain::constraint::tests` |
 | OPERATOR-01 strict v2 composition, complete facts, shared budgets and bounded source observations | `tests/operators.rs`; `domain::operator::tests`; `adapters::operators::tests`; existing `tests/rule_authoring.rs` and `tests/custom_rules.rs` preserve v1 |
-| AGENT-01 | Source-bound consuming-agent obligations, scoped Prompt projection, stale/missing evidence and conflict handling | `tests/agent_contracts.rs`; `domain/agent_contract.rs` scope unit test |
-| AGENT-HOST-01 | Consuming-agent injection, repair/resume/handoff, unsupported controls, forged reports, policy changes, immutable delivery and canonical output confinement | `tests/agent_host.rs`; `tests/delivery.rs`, including `equivalent_repository_paths_cannot_bypass_delivery_confinement`; `tests/agent_loop.rs`; pure `domain/agent_host_tests.rs` |
-| Snapshot selectors, execution, reports, and exit semantics | `tests/cli.rs`, `tests/execution.rs`, `tests/policy.rs`, native domain tests |
-| Initialization and capability gaps | `tests/init.rs` |
-| Issue 33 review: large-file test overlays, protected capacity authorization, escaped human guidance | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`; `tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`; `interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |
-| Oversized acquisition stays incomplete and reports actual bytes plus the minimum retry budget | `fixtures/golden/stress.json`: `snapshot-oversized` pins the exact new Issue 33 message; the incomplete outcome and 2 MiB default are unchanged |
-| Issue 33 first-run formats, advisory HEAD/worktree preflight, explicit large-file capacity and unchanged policy semantics | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`, `init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content`, `init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget`; `tests/large_repository.rs::legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes`, `raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering`; `snapshot::git::tests::explicitly_permitted_large_blobs_use_nonempty_bounded_batches` |
-| Issue 35 missing-policy guidance, literal command arguments, explicit policy references and safe Windows path display | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`, `missing_custom_configuration_is_carried_into_the_command` (executes returned arguments with spaces/apostrophes), `explicit_policy_reference_never_suggests_local_initialization`, `snapshot_guidance_depends_on_local_policy_and_selection`, `unreadable_or_malformed_configuration_does_not_suggest_init`; `paths::tests::displays_ordinary_windows_paths_without_verbatim_prefix` (Windows) |
-| DIST-04 Skill configuration prerequisite, automatic init, failure stop and post-init recheck | `tests/quality/skill_package.rs::skill_initialization_contract_requires_auto_init_stop_and_recheck` checks entry metadata, read-only bootstrap examples, initialization boundaries and operational instructions |
-| Large-repository acquisition and performance bounds | `tests/large_repository.rs`, `tests/benchmarks.rs`, `tests/policy_performance.rs` |
 | Built-in and project rules | `tests/issue9_rules.rs` through `tests/issue20_rules.rs`, `tests/custom_rules.rs`, `tests/rule_authoring.rs` |
 | Rule categories, mutation, candidates, promotion, and lifecycle | `tests/rule_management.rs`, `tests/policy_categories.rs`, `tests/policy_candidates.rs`, `tests/policy_promotion.rs`, `tests/policy_lifecycle.rs` |
 | File contracts and independent test counterexamples | `tests/file_contracts.rs`, `tests/test_effectiveness.rs` |
 | Maven, Python, compatibility, coverage, and SARIF adapters | `tests/maven.rs`, `tests/python.rs`, `tests/compatibility.rs`, `tests/coverage.rs`, `tests/sarif.rs` and explicit live variants |
 | Diagnostic ratchets | `tests/ratchet.rs`, language/tool-specific ratchet targets, `tests/c_family_ratchet.rs` |
+
+## Agent and task acceptance
+
+| Requirement area | Principal repeatable evidence |
+| --- | --- |
+| AGENT-01 — Source-bound consuming-agent obligations, scoped Prompt projection, stale/missing evidence and conflict handling | `tests/agent_contracts.rs`; `domain/agent_contract.rs` scope unit test |
+| AGENT-HOST-01 — Consuming-agent injection, repair/resume/handoff, unsupported controls, forged reports, policy changes, immutable delivery and canonical output confinement | `tests/agent_host.rs`; `tests/delivery.rs`, including `equivalent_repository_paths_cannot_bypass_delivery_confinement`; `tests/agent_loop.rs`; pure `domain/agent_host_tests.rs` |
 | Tasks, manual acceptance, provenance, and Git trailers | `tests/manual.rs`, `tests/provenance.rs`, `tests/case_provenance.rs`, `tests/git_trailers.rs` |
 | Agent feedback and bounded repair loop | `tests/feedback.rs`, `tests/agent_loop.rs`, explicitly invoked repair/live targets |
 | Pilot sealing, authorization, evidence, and acceptance | `tests/pilot_*`, `tests/pilot_seal/v8.rs` through `v10.rs`, native pilot domain tests |
 | Decision envelopes and optional judgment | `tests/decision_envelope.rs`, `tests/judgment_provider.rs` |
+
+## Documentation and distribution
+
+| Requirement area | Principal repeatable evidence |
+| --- | --- |
 | Architecture, documentation, site, and Skill release | `tests/quality/architecture.rs`, `documentation.rs`, `site.rs`, `skill_package.rs` |
 
-Issue-focused rule tests retain positive, negative, malformed-input, boundary,
+Rule regression tests retain positive, negative, malformed-input, boundary,
 and incomplete-evidence cases. Report-adapter tests separately cover parser
 normalization and real producer invocation; an unavailable live producer is not
 represented as passing integration evidence.
+
+## Evidence interpretation
 
 Pilot fixtures prove the machine contracts for plan sealing, source artifacts,
 run order, stopping rules, per-attempt model/execution records, old-schema
@@ -50,30 +69,19 @@ unavailable tools, performance environment, and all incomplete results. The
 current Git commit and gate report—not a historical prose status line—identify
 what was actually verified.
 
-Delivery scope and explicit exclusion evidence: `tests/delivery_scope.rs` covers
-selector-derived delivery versus reusable-core repository findings, immutable
-context, large tracked resources,
-selected policy provenance, protected exclusions, empty delivery and command failures.
-`tests/quality.rs` validates the packaged Skill links and architecture.
-`tests/coverage.rs` and live JaCoCo/ESLint acceptance compare delivery denominators
-and findings with explicit reusable-core repository contracts.
-The selector regression rejects the removed scope option and executes the emitted
-recheck argv, requiring an unchanged verification digest. `tests/policy_validation.rs`
-verifies differing exclusions bind both inputs within the two-tree memory budget,
-while equal exclusions retain the independently executed parallel checks.
-`tests/decision_envelope.rs` round-trips check/feedback scope bindings on every
-platform (repository comparisons use the core API) and rejects substituting the content digest for a verification digest.
-It also distinguishes repository-wide evidence from two different `--path`
-selections over identical captured bytes. Coverage regression verifies effective
-versus configured metadata for both scopes, including an empty denominator.
-`tests/test_effectiveness.rs` retains the no-production-change applicability
-contract using unexcluded context. SARIF and execution regressions distinguish
-historical findings from changed delivery findings without hiding producer errors.
-Report-gate unit tests and SARIF CLI regression preserve current multiplicity
-before delivery filtering in both producer orders. Feedback unit/envelope tests
-keep unavailable repository replays omitted while retaining delivery commands.
+## Delivery scope and evidence identity
 
-## Issue #39 runtime/preflight evidence
+| Behavior | Repeatable evidence |
+| --- | --- |
+| Selector-derived delivery, immutable context, exclusions, empty delivery and unlocated command failures | `tests/delivery_scope.rs`; selector recheck argv preserves the verification digest and rejects the removed scope option. |
+| Separate inputs for differing policy exclusions, within the two-tree budget | `tests/policy_validation.rs`; equal exclusions retain independently executed parallel checks. |
+| Content digests cannot replace scope-bound verification identities | `tests/decision_envelope.rs`; round-trips check/feedback on every platform and distinguishes two path filters over identical bytes. |
+| Effective/configured coverage modes and empty denominators | `tests/coverage.rs`; explicit live JaCoCo/ESLint comparisons retain delivery versus reusable-core repository contracts. |
+| No-production-change applicability uses retained context | `tests/test_effectiveness.rs`. |
+| Historical versus changed findings, retained multiplicity in either producer order and producer errors | `tests/sarif.rs`, `tests/execution.rs`, `application::report_gate::tests`. |
+| Unavailable repository replay is omitted while delivery recheck remains executable | Feedback unit tests and `tests/decision_envelope.rs`. |
+
+## Runtime and preflight
 
 | Requirement | Unit / pure evidence | Integration / platform evidence |
 | --- | --- | --- |
@@ -89,3 +97,7 @@ The Windows CI result, full selfcheck, architecture source/line digest evidence,
 Cargo/Bazel checks and >=90% coverage remain separately required. Miri exercises
 pure domain; ASan exercises native unit tests. A Linux pass does not establish
 Windows shell acceptance. See [runtime/preflight](../02-reference/06-runtime-and-preflight.md).
+
+---
+
+[Previous: Selfcheck and fixtures](02-selfcheck-and-fixtures.md) · [Contents](../README.md) · [Next: Pilot evaluation](04-pilot-evaluation.md)

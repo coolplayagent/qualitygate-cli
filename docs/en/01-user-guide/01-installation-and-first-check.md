@@ -2,93 +2,78 @@
 
 [简体中文](../../zh/01-user-guide/01-installation-and-first-check.md) · [Volume index](README.md)
 
-Qualitygate CLI checks a selected Git snapshot against repository policy and,
-when supplied, a task contract. Git is required. Configured project commands
-also require their own toolchains.
+This chapter takes an existing Git repository from installation to its first
+full report. You need Git and any toolchains required by the repository's checks.
+Commands below use `/path/to/repository` for the repository you want to verify.
 
-## Install
+## 1. Install and identify the runtime
 
-Download a release binary or the version-matched Agent Skill archive from the
-[project site](https://coolplayagent.github.io/qualitygate-cli/). Contributors
-can build the checked-out source:
+Download the CLI archive for your operating system and architecture from the
+[project site](https://coolplayagent.github.io/qualitygate-cli/). Extract the
+complete archive so the executable and rule assets stay together, and add its
+executable directory to PATH. For an Agent integration, use the matching Skill
+archive and its bundled executable.
 
 ```bash
-cargo build --locked
-cargo run -- --version
+qualitygate --version
+qualitygate capabilities --format json
 ```
 
-The released Skill contains its own matching executable and rule assets. Do not
-silently substitute a binary built from an unrelated checkout.
+Capability IDs identify available interfaces; a version string alone does not
+identify a development build. Source builds are covered in the
+[contributor guide](../04-contributor-guide/01-development-and-quality-gates.md).
 
-## Discover a candidate policy
-
-Run discovery in the repository you want to check:
+## 2. Initialize and review the candidate
 
 ```bash
 qualitygate --root /path/to/repository init --format json
-qualitygate --root /path/to/repository init --with-checks --format json
+qualitygate --root /path/to/repository config --show --format json
 ```
 
-`init` inventories languages, build manifests, existing commands, analyzer
-reports, and capability gaps. It may create a candidate `qualitygate.yaml`; it
-does not approve that candidate, infer exemptions, or declare a team policy.
-Review suggested commands and unsupported project shapes before adoption.
+`init` discovers languages, build manifests, available checks and capability gaps,
+and creates a missing candidate `qualitygate.yaml`. Review the selected rules and
+profiles. To include discovered command candidates, run `init --with-checks`
+within your team's policy adoption process; it does not install or run those tools.
+An existing valid policy can be inspected directly without another initialization.
 
-Before initialization, `config --show` reports incomplete validation with exit
-code 2. JSON retains `schema_version`, `gate`, and `verification`, and adds
-`next_steps` only when a reliable action is known. A missing local policy gives
-an `init` command with the selected `--root` and any custom `--config`; review
-the generated candidate before retrying. `next_steps[].command` is an array
-containing the executable and literal arguments, for direct process execution
-without shell parsing. Table and Markdown render it with an explicit shell label
-(PowerShell on Windows, POSIX shell elsewhere); `cmd.exe` callers should use the
-structured arguments instead of copying the PowerShell rendering.
-A policy missing from a selected snapshot instead guides you to include the
-reviewed file in that snapshot. With an explicit `--policy-ref`, only selecting
-a reference containing the policy is suggested, even if no local policy exists.
-Other read, path, and parse errors do not suggest `init`. On Windows, ordinary
-paths are shown without the internal `\\?\` prefix when that conversion is safe.
-`init` also emits an advisory `snapshot_preflight` over HEAD and eligible
-worktree metadata, including tracked files ignored by discovery. It lists up to
-100 oversized/unsupported entries of each kind, counts all observed entries,
-and marks truncated details or incomplete inspection explicitly. This does not
-validate arbitrary diff/MR endpoints, staged bytes, total budgets or toolchains.
+Candidate creation is not policy approval. In particular, a pass only covers
+configured checks: initialization alone does not guarantee that your tests or
+coverage tools are selected. Continue with [rule configuration](03-rule-configuration.md)
+when adapting the candidate to your repository.
 
-For existing files above the default 2 MiB limit, follow the suggested
-`--snapshot-max-file-mib N` (1–8 MiB) on `check`. This is caller-controlled
-acquisition capacity, not a policy exemption. `--with-checks` adds reviewed
-command candidates; it neither installs their dependencies nor runs them.
-Review the candidate once within the authorized adoption scope; ordinary
-acquisition retries do not require editing repository rules.
-
-Discovery is bounded. Unreadable files, malformed manifests, unsupported
-ecosystems, and exhausted budgets remain explicit gaps rather than successful
-fallbacks.
-
-## Existing-repository trimming
-
-Run `init --with-checks --format json` and review suggested commands and preflight.
-Within the authorized adoption scope, add precise top-level `exclude` globs for
-historical resources tools do not need, for example `exclude: ["gitbook/images/**"]`.
-Do not automatically exempt every large file. Rerun `init --format json` and inspect
-`excluded_file_count`, `excluded_paths`, remaining large inputs and incomplete reasons.
-Put the configuration in the selected index/commit before staged/diff/MR checks.
-Run `check --profile full` on the final inputs. If tools need
-excluded resources, narrow the pattern and rerun. Retain scope and exclusions;
-a trimmed delivery pass is not repository-wide approval.
-
-## Run the first check
+## 3. Check prerequisites, then get feedback
 
 ```bash
-qualitygate --root /path/to/repository \
-  check --worktree --profile quick --format json
+qualitygate --root /path/to/repository doctor --worktree --profile full --format json
+qualitygate --root /path/to/repository check --worktree --profile quick --format json
 ```
 
-This captures tracked changes and in-scope untracked files, materializes an
-immutable execution input, and returns structured findings. Quick feedback can
-guide a repair, but it cannot establish delivery readiness. Before delivery,
-run an unfiltered `--profile full` check against the intended final snapshot.
+Default `doctor` inspects prerequisites without running project commands.
+Resolve reported gaps before checking. `quick` runs the profile's selected checks
+against captured worktree bytes, including eligible untracked files. It is useful
+while editing; pending delivery checks remain visible in the report.
 
-The result separates three outcomes: a complete pass, a complete check with a
-blocking violation, and incomplete validation. Read the report's snapshot,
-policy, scope, pending checks, warnings, and evidence references together.
+## 4. Verify the final snapshot
+
+```bash
+qualitygate --root /path/to/repository check --worktree --profile full --format json
+```
+
+| Exit | What happened | Next action |
+| --- | --- | --- |
+| `0` | The selected scope passed completely | Retain the report, warnings and evidence limits. |
+| `1` | A blocking violation was found | Repair the finding and check again. |
+| `2` | Validation could not finish | Restore prerequisites or evidence and retry. |
+
+For delivery, use an unfiltered full report with no pending delivery checks.
+A later edit requires a new check. The next chapter explains
+[snapshots, report identities and delivery scope](02-snapshots-and-check-workflow.md).
+
+If acquisition stops on large or unsupported files, consult
+[runtime and preflight](../02-reference/06-runtime-and-preflight.md) before changing
+budgets or exclusions. Keep the report's incomplete reasons; do not interpret
+an interrupted check as a clean result.
+
+---
+
+[Contents](../README.md) · [Next: Snapshots and the check workflow](02-snapshots-and-check-workflow.md)

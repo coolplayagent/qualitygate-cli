@@ -16,10 +16,9 @@ contracts are in
 [`config/parameters.rs`](../../../src/qualitygate/config/parameters.rs) and
 [`config/builtin_validation.rs`](../../../src/qualitygate/config/builtin_validation.rs).
 
-Proposed operator composition and strong constraint Prompts for the consuming
-Agent are described in [Five rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md).
-That proposal distinguishes existing behavior, planned capabilities, and host
-responsibilities without changing the runtime described here.
+Operator composition and consuming-agent contracts extend this evidence model.
+See [rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md)
+for their implemented boundaries and host responsibilities.
 
 ## Progressive precision
 
@@ -276,6 +275,12 @@ those responsibilities in the matching CLI. This is why repository prose such
 as `AGENTS.md` can become maintainable structured rules without turning a prompt
 interpretation into runtime authority.
 
+
+V2 adds a typed expression evaluator over the selected complete facts, sharing
+one budget across nested operations. Fixed assertions remain additive. See the
+[operator reference](../02-reference/08-bounded-operators.md) for evaluation and
+incomplete-evidence semantics.
+
 ## External lint/report implementation
 
 External lint is not another catalog implementation string. It is a bounded
@@ -317,3 +322,7 @@ configuration. Issue integration targets cover routing, fixed package scope,
 repair, invalid UTF-8, missing files, budgets, and deterministic ordering.
 Structure, project, custom-rule, and report tests separately cover moves,
 ambiguity, snapshot mismatch, missing facts, timeout, and malformed tool output.
+
+---
+
+[Previous: +1 Scenarios](05-scenarios.md) · [Contents](../README.md) · [Next: Rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md)

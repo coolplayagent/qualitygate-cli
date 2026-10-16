@@ -37,3 +37,7 @@ Git 对象通常按最多 4 MiB 与 1,024 个对象分批；显式允许的更�
 
 Doctor 退出 `0` 仅表示请求的 `scope: preflight` 通过；受阻或未完成退出 `2`，
 不产生交付结论。见[运行时与预检](06-runtime-and-preflight.md)。
+
+---
+
+[上一章：策略、任务与签名证据](04-policy-task-and-signed-evidence.md) · [全书目录](../README.md) · [下一章：运行时能力与环境预检](06-runtime-and-preflight.md)

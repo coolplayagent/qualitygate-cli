@@ -24,6 +24,7 @@ flowchart TB
 4. [Physical view](04-physical-view.md)
 5. [+1 Scenarios](05-scenarios.md)
 
-Technical deep dive: [Rule engine implementation](06-rule-engine-implementation.md).
+6. [Rule engine implementation](06-rule-engine-implementation.md)
+7. [Rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md)
 
-Design proposal: [Five rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md).
+[Start this volume: Logical view](01-logical-view.md)

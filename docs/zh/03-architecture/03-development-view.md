@@ -73,3 +73,7 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 
 这种划分让审核者分别回答三个问题：决策是否纯且可序列化，外部动作是否受限有界，以及编排是否在不
 产生依赖环的前提下组合能力；同时也让可复用 library 不依赖可执行接口。
+
+---
+
+[上一章：进程视图](02-process-view.md) · [全书目录](../README.md) · [下一章：物理视图](04-physical-view.md)

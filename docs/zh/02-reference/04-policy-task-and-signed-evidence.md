@@ -50,3 +50,7 @@ Agent provenance 认证所声明的输入、输出、变换和工具身份；Git
 版本化 decision/feedback envelope 保留原始确定性 payload，以及证据摘要、warning、gap、pending 与
 omission。可选外部 judgment provider 只能在 shadow/advisory 模式评估 warning；概率结果、abstain、
 非法输出或执行缺口都不能改变确定性 gate 或批准策略。
+
+---
+
+[上一章：项目与工具报告](03-projects-and-tool-reports.md) · [全书目录](../README.md) · [下一章：退出码与资源限制](05-exit-codes-and-resource-limits.md)

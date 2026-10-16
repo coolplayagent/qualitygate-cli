@@ -87,3 +87,7 @@ This separation supports three independent review questions: whether a decision
 is pure and serializable, whether an external action is confined and bounded,
 and whether orchestration combines those capabilities without creating a cycle.
 It also keeps the reusable library independent from the executable interface.
+
+---
+
+[Previous: Process view](02-process-view.md) · [Contents](../README.md) · [Next: Physical view](04-physical-view.md)

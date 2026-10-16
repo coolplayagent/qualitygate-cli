@@ -70,3 +70,7 @@ payload plus evidence summaries, warnings, gaps, pending work, and omissions.
 An optional external judgment provider may assess warnings in shadow or advisory
 mode. Probabilistic, abstained, invalid, and execution-gap outcomes never change
 the deterministic gate or approve policy.
+
+---
+
+[Previous: Projects and tool reports](03-projects-and-tool-reports.md) · [Contents](../README.md) · [Next: Exit codes and resource limits](05-exit-codes-and-resource-limits.md)

@@ -49,3 +49,7 @@ verified.
 
 Doctor returns `0` only for the requested `scope: preflight`; blocked or incomplete
 preflight returns `2`. It has no delivery verdict. See [runtime and preflight](06-runtime-and-preflight.md).
+
+---
+
+[Previous: Policy, task, and signed evidence](04-policy-task-and-signed-evidence.md) · [Contents](../README.md) · [Next: Runtime capabilities and environment preflight](06-runtime-and-preflight.md)

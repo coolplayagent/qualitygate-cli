@@ -73,3 +73,7 @@ supports cheap diff/text signals, tree-sitter structural rules, project-fact
 rules, custom DSL rules, and native lint/report adapters while preserving their
 different evidence strengths. See the
 [rule-engine deep dive](06-rule-engine-implementation.md).
+
+---
+
+[Previous: Agent host and immutable delivery](../02-reference/10-agent-host-and-delivery.md) · [Contents](../README.md) · [Next: Process view](02-process-view.md)
