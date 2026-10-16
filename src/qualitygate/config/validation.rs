@@ -12,6 +12,8 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
     super::agent_contract::validate(config)?;
     super::runtime::validate(&config.requires)?;
     super::exclusions::matcher(&config.exclude)?;
+    super::exclusions::matcher(&config.unstructured_documents.retain)
+        .map_err(|error| anyhow::anyhow!("unstructured_documents.retain: {error}"))?;
     super::categories::validate(config)?;
     if config.rule_lifecycle.len() > 512 {
         bail!("Rule lifecycle inventory exceeds 512 records");

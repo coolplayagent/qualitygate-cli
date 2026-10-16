@@ -319,9 +319,13 @@ async fn run_case(
     };
     // Equal acquisition policies can share both immutable trees. Different
     // exclusions run sequentially so each case still reserves only two trees.
-    let shared = if prepared.baseline.config.exclude == prepared.candidate.config.exclude {
-        let mut shared_capture = capture.clone();
-        shared_capture.exclude = prepared.baseline.config.exclude.clone();
+    let baseline_capture = policy_capture(&capture, &prepared.baseline);
+    let candidate_capture = policy_capture(&capture, &prepared.candidate);
+    let shared = if baseline_capture.exclude == candidate_capture.exclude
+        && baseline_capture.unstructured_documents == candidate_capture.unstructured_documents
+        && baseline_capture.protected_paths == candidate_capture.protected_paths
+    {
+        let shared_capture = baseline_capture;
         Some(Arc::new(
             snapshot::capture_with_options(
                 &options.root,
@@ -337,8 +341,7 @@ async fn run_case(
         None
     };
     let run = |policy: Arc<PreparedPolicy>, policy_digest: String| {
-        let mut capture = capture.clone();
-        capture.exclude = policy.config.exclude.clone();
+        let capture = policy_capture(&capture, &policy);
         let shared = shared.clone();
         async move {
             let _permit = semaphore
@@ -450,6 +453,23 @@ async fn run_case(
         },
         (baseline_report, candidate_report),
     ))
+}
+
+fn policy_capture(
+    budget: &snapshot::CaptureOptions,
+    policy: &PreparedPolicy,
+) -> snapshot::CaptureOptions {
+    snapshot::CaptureOptions {
+        exclude: policy.config.exclude.clone(),
+        unstructured_documents: policy.config.unstructured_documents.clone(),
+        protected_paths: super::policy::protected_paths(
+            &policy.config,
+            &policy.catalog,
+            &policy.version.config_path,
+            None,
+        ),
+        ..budget.clone()
+    }
 }
 
 fn prepare_check(

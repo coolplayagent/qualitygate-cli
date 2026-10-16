@@ -155,6 +155,16 @@ async fn run_inner(options: &mut CheckOptions, report: &mut Report) -> Result<()
     )
     .await?;
     budget_diagnostics(options, report);
+    if report
+        .budgets
+        .iter()
+        .any(|budget| budget.resource_exclusions.default_excluded_count > 0)
+    {
+        report.next_steps.push(NextStep {
+            action: "review_default_resource_exclusions".into(), command: None,
+            message: "Default document/media exclusions are not read, verified or available to commands. Restore dependencies with unstructured_documents.retain or disable defaults with enabled: false; restored inputs still obey acquisition budgets.".into(),
+        });
+    }
     if !report.diagnostics.is_empty() {
         return Ok(());
     }

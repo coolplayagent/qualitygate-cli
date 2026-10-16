@@ -10,7 +10,7 @@ pub(super) async fn bootstrap(
 ) -> Result<(policy::Loaded, Option<policy_active::Authenticated>)> {
     let active = policy_active::load(options.root.clone()).await?;
     let (_, configuration) =
-        acquisition::prepare(options, active.as_ref().map(|active| &active.active.config)).await?;
+        acquisition::prepare(options, active.as_ref().map(|active| &active.active)).await?;
     let mut bootstrap = options.clone();
     let mut include = vec![globset::escape(&options.config)];
     include.extend(options.task.as_deref().map(globset::escape));

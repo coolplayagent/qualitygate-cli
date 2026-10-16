@@ -14,6 +14,7 @@ pub const CAPABILITIES: &[&str] = &[
     "snapshot.staged.v1",
     "snapshot.diff.v1",
     "snapshot.exclusions.v1",
+    "snapshot.unstructured-documents.v1",
     "snapshot.file-budget.v1",
     "rules.file-contracts.v1",
     "reports.ratchet.v1",

@@ -204,5 +204,7 @@ pub(super) fn protected_paths(
     {
         paths.push(globset::escape(&source.document));
     }
+    paths.sort();
+    paths.dedup();
     paths
 }

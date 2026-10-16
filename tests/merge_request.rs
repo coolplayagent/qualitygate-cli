@@ -139,6 +139,27 @@ fn github_compares_merge_base_to_source_and_preserves_user_checkout() {
 }
 
 #[test]
+fn merge_request_excludes_large_documents_from_source_without_hiding_source_findings() {
+    let mut branches = branches();
+    let root = branches.root.path();
+    git(root, &["checkout", "-q", "topic"]);
+    std::fs::write(root.join("slides.PPTX"), vec![0; 9 * 1024 * 1024]).unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "slides"]);
+    branches.source = git_output(root, &["rev-parse", "HEAD"]);
+    git(root, &["checkout", "-q", "target"]);
+    let server = Server::new(vec![github(&branches.source, &branches.target); 2]);
+    let result = report(&run(&branches, &server, "json"), 1);
+    assert_eq!(
+        result["selection"]["resource_exclusions"]["default_excluded_paths"],
+        value!(["slides.PPTX"])
+    );
+    assert_eq!(result["selection"]["changed_files"], value!(["hello.txt"]));
+    assert_eq!(result["gate"]["complete"], true);
+    assert_eq!(git_output(root, &["rev-parse", "HEAD"]), branches.target);
+}
+
+#[test]
 fn target_branch_movement_invalidates_evidence_even_when_merge_base_is_unchanged() {
     let branches = branches();
     let root = branches.root.path();

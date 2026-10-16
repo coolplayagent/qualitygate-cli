@@ -1,6 +1,7 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
 mod acquisition;
+pub use acquisition::initialization_preflight;
 pub mod agent_contract;
 pub mod agent_host;
 mod agent_host_contract;
@@ -85,11 +86,8 @@ async fn check_and_snapshot(
     expected_base: Option<&str>,
 ) -> Result<(Report, Arc<snapshot::Snapshot>)> {
     let active = policy_active::load(options.root.clone()).await?;
-    let (comparison, _) = acquisition::prepare(
-        &mut options,
-        active.as_ref().map(|active| &active.active.config),
-    )
-    .await?;
+    let (comparison, _) =
+        acquisition::prepare(&mut options, active.as_ref().map(|active| &active.active)).await?;
     let snapshot = Arc::new(
         snapshot::capture_resolved(
             &options.root,
@@ -552,8 +550,8 @@ async fn check_prepared(
                 .push("The selected delivery contains no unexcluded changed files.".into());
         }
     }
-    if !snapshot.scope_evidence.exclude.is_empty() {
-        report.verification.known_limits.push(format!("Policy exclusions removed {} paths from acquisition, execution inputs and verification; excluded resources are not verified.", snapshot.scope_evidence.excluded_paths.len()));
+    if !snapshot.scope_evidence.excluded_paths.is_empty() {
+        report.verification.known_limits.push(format!("Explicit and default resource exclusions removed {} paths from acquisition, execution inputs and verification; excluded resources are not verified.", snapshot.scope_evidence.excluded_paths.len()));
     }
     tokio::fs::write(
         directory.join("report.json"),

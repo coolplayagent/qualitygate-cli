@@ -16,6 +16,8 @@ pub struct CaptureOptions {
     pub path_filter: Option<String>,
     pub scope: crate::domain::check_scope::CheckScope,
     pub exclude: Vec<String>,
+    pub unstructured_documents: crate::domain::resource_exclusions::Policy,
+    pub protected_paths: Vec<String>,
     /// Internal bounded policy bootstrap; never used as a successful check input.
     pub include: Option<Vec<String>>,
 }
@@ -30,6 +32,8 @@ impl Default for CaptureOptions {
             path_filter: None,
             scope: Default::default(),
             exclude: Vec::new(),
+            unstructured_documents: Default::default(),
+            protected_paths: Vec::new(),
             include: None,
         }
     }
@@ -37,22 +41,42 @@ impl Default for CaptureOptions {
 
 impl CaptureOptions {
     pub fn selector(&self) -> Result<impl Fn(&str) -> bool + Send + 'static> {
-        let compile = |patterns: &[String]| -> Result<globset::GlobSet> {
-            let mut builder = globset::GlobSetBuilder::new();
-            for pattern in patterns {
-                builder.add(
-                    globset::GlobBuilder::new(pattern)
-                        .literal_separator(true)
-                        .build()?,
-                );
-            }
-            Ok(builder.build()?)
-        };
-        let include = self.include.as_deref().map(compile).transpose()?;
-        let exclude = compile(&self.exclude)?;
+        let include = self
+            .include
+            .as_deref()
+            .map(|patterns| compile(patterns, true))
+            .transpose()?;
+        let reason = self.exclusion_classifier()?;
         Ok(move |path: &str| {
-            include.as_ref().is_none_or(|set| set.is_match(path)) && !exclude.is_match(path)
+            include.as_ref().is_none_or(|set| set.is_match(path)) && reason(path).is_none()
         })
+    }
+
+    pub fn exclusion_classifier(
+        &self,
+    ) -> Result<impl Fn(&str) -> Option<crate::domain::resource_exclusions::Reason> + Send + 'static>
+    {
+        let exclude = compile(&self.exclude, true)?;
+        let retain = compile(&self.unstructured_documents.retain, true)?;
+        let protected = compile(&self.protected_paths, false)?;
+        // Bootstrap must acquire policy inputs even if their suffix is a resource suffix.
+        let enabled = self.include.is_none() && self.unstructured_documents.enabled;
+        Ok(move |path: &str| {
+            crate::domain::resource_exclusions::reason(
+                path,
+                enabled,
+                exclude.is_match(path),
+                retain.is_match(path) || protected.is_match(path),
+            )
+        })
+    }
+
+    pub fn exclusion_evidence(&self) -> crate::domain::resource_exclusions::Evidence {
+        crate::domain::resource_exclusions::Evidence {
+            policy: self.unstructured_documents.clone(),
+            protected_paths: self.protected_paths.clone(),
+            ..Default::default()
+        }
     }
     pub fn validate(&self) -> Result<()> {
         if !(1..=1024 * 1024 * 1024).contains(&self.max_bytes)
@@ -85,4 +109,16 @@ impl Acquisition {
             deadline: Instant::now() + options.timeout,
         })
     }
+}
+
+fn compile(patterns: &[String], literal_separator: bool) -> Result<globset::GlobSet> {
+    let mut builder = globset::GlobSetBuilder::new();
+    for pattern in patterns {
+        builder.add(
+            globset::GlobBuilder::new(pattern)
+                .literal_separator(literal_separator)
+                .build()?,
+        );
+    }
+    Ok(builder.build()?)
 }

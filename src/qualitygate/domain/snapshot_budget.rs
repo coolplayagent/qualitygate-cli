@@ -17,6 +17,7 @@ pub struct OversizedFile {
 pub struct Preflight {
     pub excluded_file_count: usize,
     pub excluded_paths: Vec<String>,
+    pub resource_exclusions: super::resource_exclusions::Evidence,
     pub scope: &'static str,
     pub head: String,
     pub complete: bool,

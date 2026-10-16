@@ -101,3 +101,16 @@ Windows shell acceptance. See [runtime/preflight](../02-reference/06-runtime-and
 ---
 
 [Previous: Selfcheck and fixtures](02-selfcheck-and-fixtures.md) · [Contents](../README.md) · [Next: Pilot evaluation](04-pilot-evaluation.md)
+
+## RESOURCE-43: Default document and media exclusions
+
+| Requirement | Evidence |
+| --- | --- |
+| Versioned suffix classification, precedence and bounded reason counts | `domain::resource_exclusions::tests` |
+| Exclude before per-file/aggregate budgets; base-only, changed, renamed, deleted, staged and diff resources | `tests/delivery_scope/resources.rs::default_resources_are_excluded_before_budgets_in_every_local_selector`, `aggregate_resources_do_not_consume_content_budget_and_unknown_types_still_fail` |
+| Retention, opt-out, protected inputs, explicit exclusion conflicts, strict policy and selected policy | `tests/delivery_scope/resources.rs::retain_disable_and_protected_inputs_restore_acquisition_without_bypassing_limits`, `policy_selection_and_strict_configuration_apply_to_default_exclusions` |
+| Missing command evidence stays incomplete; retained and declared tool dependencies remain available | `tests/delivery_scope/resources.rs::command_dependencies_need_retention_and_missing_evidence_stays_incomplete` |
+| Policy/inventory identity, history consistency and timeout | `tests/delivery_scope/resources.rs::resource_policy_and_inventory_bind_snapshot_identity_and_history` |
+| MR resources do not hide source violations | `tests/merge_request.rs::merge_request_excludes_large_documents_from_source_without_hiding_source_findings` |
+| Bootstrap/custom source protection and retained resource read failures | `tests/custom_rules.rs::custom_rule_sources_are_protected_even_with_a_document_suffix`; `tests/delivery_scope/resources.rs::bootstrap_protects_configuration_with_a_resource_suffix`, `restored_resources_do_not_bypass_confined_path_failures` (Unix) |
+| Complete counts with bounded details and restored over-budget resources | `snapshot::selected_preflight::tests::resource_counts_and_protected_overrides_survive_detail_truncation` |

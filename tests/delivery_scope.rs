@@ -315,3 +315,6 @@ fn deleted_renamed_and_binary_changes_are_reported_without_invented_lines() {
             .contains("no unexcluded changed files")
     );
 }
+
+#[path = "delivery_scope/resources.rs"]
+mod resources;

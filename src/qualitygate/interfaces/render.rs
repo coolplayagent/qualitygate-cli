@@ -128,6 +128,11 @@ pub(super) fn report(
         out.push_str(&format!("Selection: {} | changed files: {} | changed lines: {} | excluded files: {} | empty delivery: {}\n",
             selection.mode.as_str(), selection.changed_files.len(), selection.changed_lines,
             selection.excluded_paths.len(), selection.empty_delivery));
+        out.push_str(&format!(
+            "Exclusion reasons: default documents/media: {} | explicit policy: {}\n",
+            selection.resource_exclusions.default_excluded_count,
+            selection.resource_exclusions.explicit_excluded_count
+        ));
         for path in selection.excluded_paths.iter().take(100) {
             out.push_str(&format!("Excluded input: {}\n", escape_controls(path)));
         }

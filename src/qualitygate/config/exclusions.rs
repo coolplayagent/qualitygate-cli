@@ -35,6 +35,21 @@ pub fn protected_paths(
     task: Option<&str>,
 ) -> Vec<String> {
     let mut paths = config.verification_assets.clone();
+    paths.extend(
+        config
+            .checks
+            .iter()
+            .flat_map(|check| &check.tools)
+            .flat_map(|tool| &tool.inputs)
+            .map(|path| globset::escape(path)),
+    );
+    paths.extend(
+        config
+            .rules
+            .values()
+            .filter_map(|rule| rule.provenance.as_ref())
+            .map(|provenance| globset::escape(&provenance.evidence_file)),
+    );
     paths.push(globset::escape(configuration));
     paths.extend(task.map(globset::escape));
     paths.extend(
