@@ -15,6 +15,12 @@ invent a capabilities response or relabel an arbitrary parse error as age.
 | Capabilities, runtime requirements, environment requirements and doctor | v0.5.7 | `82f51a8`; require exported capability IDs; v0.5.6 lacks these additions |
 | Constraint coverage and typed bounded operators | v0.5.8 | `aaa82ff`, `59c91f5`; require `constraints.coverage.v1` and `rules.operators.v2` |
 | Consuming-agent contracts, Rust host and immutable delivery | v0.5.8 | `a780603`, `4579f40`, `8c4488a`; require `agent.contracts.v1`, `agent.host.v1` and `agent.delivery.v1` |
+| Default document/media exclusions, retention and classified inventory evidence | v0.5.9 | `be889e9`; require `snapshot.unstructured-documents.v1` |
+
+From v0.5.9, default document/media exclusions also apply to existing policies.
+Compare `snapshot.unstructured-documents.v1` when relying on this behavior.
+Restore command dependencies with `unstructured_documents.retain`, or set
+`enabled: false` to disable defaults. See [operations](operations.md#default-document-and-media-acquisition-exclusions).
 
 This workflow requires v0.5.7 or a later compatible runtime. A version match
 alone is insufficient. Require `runtime.capabilities.v1`,
