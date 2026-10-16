@@ -126,3 +126,12 @@ declared clauses and their evidence, [typed operators](references/operators.md)
 compose bounded rule expressions, and [agent contracts](references/agent-contracts.md)
 project adopted instructions. The optional [Rust host](references/agent-host.md)
 injects current contracts and guards immutable delivery with full checks.
+
+From v0.5.9, known document and media suffixes are excluded before snapshot
+content acquisition, including for existing policies. The
+`snapshot.unstructured-documents.v1` capability identifies this behavior.
+Use `unstructured_documents.retain` for command dependencies or `enabled: false`
+to disable the defaults; declared verification inputs are retained automatically.
+Excluded resources are not checked or available to commands. See the
+[resource exclusions](references/operations.md#default-document-and-media-acquisition-exclusions)
+workflow for the suffix list, evidence and unchanged acquisition limits.

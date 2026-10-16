@@ -153,6 +153,7 @@ Git history and tagged source confirm these earliest published versions:
 | Runtime capabilities, `requires`, `required_env`, doctor | v0.5.7 | `82f51a8`; require the exported versioned IDs; v0.5.6 lacks these additions |
 | Constraint coverage and typed bounded operators | v0.5.8 | `aaa82ff`, `59c91f5`; require `constraints.coverage.v1` and `rules.operators.v2` |
 | Consuming-agent contracts, Rust host and immutable delivery | v0.5.8 | `a780603`, `4579f40`, `8c4488a`; require `agent.contracts.v1`, `agent.host.v1` and `agent.delivery.v1` |
+| Default document/media exclusions, retention and classified inventory evidence | v0.5.9 | `be889e9`; require `snapshot.unstructured-documents.v1` |
 
 Use Windows assets in PowerShell or native Windows Git Bash/MSYS2; use Linux
 assets in Linux and WSL. Windows Git Bash can invoke `.exe` directly. Quote
