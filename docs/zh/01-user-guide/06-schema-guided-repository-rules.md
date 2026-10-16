@@ -21,25 +21,10 @@ flowchart LR
     Adopt --> Check[绑定快照的检查]
 ```
 
-## Schema 结构化了什么
+## 阅读规则契约
 
-版本匹配的 project-rule Schema 可由 `rules schema` 导出，也随 Agent Skill 发布在
-`references/schemas/project-rule.schema.json`。
-
-| 契约字段 | 含义 |
-| --- | --- |
-| `schema_version`、`id`、`version` | 协议版本与稳定规则身份。 |
-| `source` | 仓库相对文档、精确章节及 `rules source` 返回的 digest。 |
-| `language`、`applies_to` | 显式语言和路径/provenance scope。 |
-| `requires_capabilities` | evaluator 必须具备的事实；缺失时结果为 incomplete。 |
-| `when` | commit、file、test、comment 或 import 的封闭 subject/change selector。 |
-| `then` | 支持的名称、文本、marker、dependency、count、required-path、line 或 word assertion。 |
-| `binding` | 需要追溯时使用的 annotation、comment 或 Git trailer 类型化关联。 |
-| `fix` | 从同一来源条款推导的可执行修复说明。 |
-
-未知字段会被拒绝。JSON Schema 校验序列化形状；CLI 还会校验正则、glob、条件字段组合、受限路径、
-来源字节、capability 兼容性、重复 ID 与资源预算。任一层校验成功都不等于规则获批，也不能证明 prose
-翻译正确。
+编写前先导出匹配的 `rules schema`。[规则参考](../02-reference/02-rules.md)统一说明字段和验证边界。
+从一条明确、可测试的约束开始；无法表达的义务保留为缺口，不猜测或扩张规则含义。
 
 ## 在不编造策略的前提下转换 `AGENTS.md`
 
@@ -111,3 +96,7 @@ project-rule 目录、在目标 profile 启用 ID、保留 source review，并�
 
 完整 Agent 流程见 Skill 随包的[规则编写指南](../../../skills/qualitygate-cli/references/rule-authoring.md)，
 运行时边界见[规则引擎架构](../03-architecture/06-rule-engine-implementation.md)。
+
+---
+
+[上一章：规则配置](03-rule-configuration.md) · [全书目录](../README.md) · [下一章：Agent 修复与验收](04-agent-repair-and-acceptance.md)

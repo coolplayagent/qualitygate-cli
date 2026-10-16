@@ -20,17 +20,19 @@ Rust、Shell、C 和 C++ 包。适用时结构规则使用 tree-sitter。许多�
 版本 1 YAML 规则包声明身份、适用范围、来源审核、实体、断言、消息与资源边界。断言可要求或禁止
 有界文本，也可要求匹配实体集合非空，但不能执行任意代码或静默扩张能力。
 
-基于 Schema 的流程：
+下表说明 v1 契约字段。抽取、验证、生成与独立采用步骤统一见
+[编写教程](../01-user-guide/06-schema-guided-repository-rules.md)。
 
-1. 导出匹配版本的 `rules schema`。
-2. 记录规范来源及摘要。
-3. 使用稳定 ID、明确语言与能力编写候选。
-4. 执行 `rules validate candidate.yaml`。
-5. 独立审核生成规则及正反例。
-6. 发布到项目规则目录，再在策略中显式选择。
-
-未知字段、重复身份、无效正则、能力缺失、语法错误和解析预算耗尽会使验证失败或检查未完成。
-规则生成从不等于批准。
+| 契约字段 | 含义 |
+| --- | --- |
+| `schema_version`、`id`、`version` | 协议版本与稳定规则身份。 |
+| `source` | 仓库相对文档、精确章节及 `rules source` 返回的 digest。 |
+| `language`、`applies_to` | 显式语言和路径/provenance scope。 |
+| `requires_capabilities` | evaluator 必须具备的事实；缺失时结果为 incomplete。 |
+| `when` | commit、file、test、comment 或 import 的封闭 subject/change selector。 |
+| `then` | 支持的名称、文本、marker、dependency、count、required-path、line 或 word assertion。 |
+| `binding` | 需要追溯时使用的 annotation、comment 或 Git trailer 类型化关联。 |
+| `fix` | 从同一来源条款推导的可执行修复说明。 |
 
 ### 结构化 Schema 契约
 
@@ -43,15 +45,11 @@ project-rule JSON Schema 是 CLI、Skill、生成、校验及不可变策略加�
 不代表来源获批。CLI 还会执行 Rust regex/glob、受限路径、唯一身份、精确来源章节 hash、capability
 组合和有限预算等语义校验。
 
-### 从仓库 prose 到可执行规则
+### 版本 2 组合
 
-`rules source` 从 `AGENTS.md` 或其他仓库策略中抽取唯一无歧义章节，并返回精确 source binding。LLM
-只能把明确且可表达的约束翻译进有限 DSL。文件清单、计数、名称、有界文本、marker、import 与受支持
-dependency fact 有结构化表示；图、类型、数据流、运行时或人工判断约束必须路由到相应 lint/project
-adapter、command check 或 manual decision，不能用正则近似。
-
-[Schema 驱动流程](../01-user-guide/06-schema-guided-repository-rules.md)展示完整的抽取、校验、生成及独立
-采用步骤；权威的随包 Agent 流程见 Skill 的[规则编写指南](../../../skills/qualitygate-cli/references/rule-authoring.md)。
+[有界算子协议](08-bounded-operators.md)在 v2 项目规则中增加类型化表达式。`rules schema` 继续导出
+v1；v2 使用 `schema operator-rule`，混合包使用 `schema project-rule-family`。
+两个版本都分别执行验证、来源绑定与策略采用。
 
 ## 报告、文件契约与规则评估
 
@@ -64,3 +62,7 @@ adapter、command check 或 manual decision，不能用正则近似。
 
 实现分派、lint 复用、diff/实体匹配及各算法的技术原理见
 [规则引擎实现](../03-architecture/06-rule-engine-implementation.md)。
+
+---
+
+[上一章：CLI 命令](01-cli-commands.md) · [全书目录](../README.md) · [下一章：项目与工具报告](03-projects-and-tool-reports.md)

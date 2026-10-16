@@ -2,37 +2,71 @@
 
 [简体中文](../../zh/01-user-guide/04-agent-repair-and-acceptance.md) · [Volume index](README.md)
 
-`check --feedback` projects a bounded repair envelope from the complete report.
-It includes stable diagnostic IDs, locations, evidence references, limits,
-recheck arguments, pending delivery checks, and the original report identity.
-It does not hide incomplete execution or authorize policy edits.
+Use Qualitygate feedback to give an Agent specific findings and a reproducible
+recheck. Keep the repository policy, task acceptance and retry budget explicit
+throughout the repair cycle.
 
-An external harness should keep this loop finite:
+## Obtain repair feedback
 
-1. Select and retain the initial snapshot, policy, task, and full report.
-2. Give the Agent only the relevant feedback and permitted source scope.
-3. Record each proposal and attempt, including failures and timeouts.
-4. Recheck the resulting worktree with the same authority inputs.
-5. Stop on success, exhausted attempts or time, repeated no progress, or a
-   non-repairable prerequisite.
-6. Run a final unfiltered full check against the actual combined snapshot.
+```bash
+qualitygate check --worktree --profile quick --feedback --format json
+```
 
-The harness owns retry and elapsed-time budgets. Budget expiry before Agent
-launch, Agent timeout, command failure, and missing evidence remain distinct
-states. A repair must not disable a required rule, reduce severity, edit the
-trusted policy, or invent a manual approval.
+The bounded feedback includes diagnostic IDs, locations, evidence references,
+limits, recheck arguments, pending delivery checks and the original report
+identity. Keep that report alongside the feedback. A quick result guides editing;
+it does not authorize delivery or policy changes.
 
-Task contracts declare observable acceptance items and verification methods.
-They add to repository policy and cannot weaken it. Command acceptance must
-prove that the intended test ran; zero selected tests are not a pass. Manual
-acceptance requires a caller-controlled trust store and a signed external
-record bound to the task, snapshot, policy, acceptance item, validity window,
-and reviewer scope.
+If policy declares Agent behavior obligations, first obtain and apply the current
+[Agent contract](../02-reference/09-agent-contracts.md) for the selected role and
+task. Reload it after a resume, handoff or relevant input change.
 
-Signed Agent provenance can authenticate a declared transformation history,
-but it does not prove semantic correctness. Git trailers can associate a
-declaration with the actual test-changing commit; they are evidence bindings,
-not substitutes for execution. The final gate remains the authoritative result
-for the selected snapshot and configured checks.
+## Run a finite repair loop
 
-The reusable Rust controller is now available as [`agent-run`](../02-reference/10-agent-host-and-delivery.md). The example entry point delegates to the same core, which injects current obligations and authorizes content-addressed delivery from fresh full evidence.
+1. Retain the initial snapshot, selected policy, task and full report.
+2. Supply relevant feedback and the permitted source scope to the Agent.
+3. Record each attempt, including failures and timeouts.
+4. Recheck edits with the same policy and task authority.
+5. Stop when successful, out of attempts or time, repeatedly making no progress,
+   or unable to restore a prerequisite.
+6. Verify the actual final combined snapshot with an unfiltered full check.
+
+The harness owns attempt and elapsed-time budgets. Repairs cannot disable
+required rules, lower severity, replace trusted policy or invent manual approval.
+A changed snapshot always needs a new report.
+
+| Result | Response |
+| --- | --- |
+| Blocking violation | Repair within the permitted source scope, then recheck. |
+| Incomplete execution | Restore the missing tool, input or evidence; retain the gap if unavailable. |
+| Complete full pass | Verify scope, bindings and independent acceptance before delivery. |
+| Budget exhausted or no progress | Stop and report the remaining findings and incomplete items. |
+
+## Finish task acceptance
+
+```bash
+qualitygate check --worktree --profile full --task task.yaml --format json
+```
+
+Use the task option when a task contract exists; retain any selected policy and
+trust inputs on every recheck. A task adds observable acceptance items to
+repository policy. Command acceptance must prove the intended test ran; zero
+selected tests are not a pass. Required manual acceptance needs external signed
+evidence as described in [policy, task and signed evidence](../02-reference/04-policy-task-and-signed-evidence.md).
+
+For a passing delivery report, require `profile: full`, `scope: delivery` or
+`task`, empty `plan.pending_delivery_checks`, `gate.complete: true` and
+`gate.decision: pass`. Preserve warnings and known limits.
+
+## Use the Rust host when you need controlled delivery
+
+The reusable [`agent-run` host](../02-reference/10-agent-host-and-delivery.md)
+injects current obligations, runs independent full checks and authorizes an
+immutable delivery artifact. Select a runtime advertising its required
+capabilities and configure the Agent command explicitly. The host reference
+covers setup and the controls it supports; an instruction receipt alone does
+not prove compliance or control all Agent actions.
+
+---
+
+[Previous: Schema-guided repository rules](06-schema-guided-repository-rules.md) · [Contents](../README.md) · [Next: Evaluating adoption in a real repository](05-real-repository-pilot.md)

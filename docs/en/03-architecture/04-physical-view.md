@@ -53,3 +53,7 @@ The static Pages site is deployed from `site/` on `main`. It links to the
 repository-hosted English and Chinese books rather than copying them into the
 site artifact. Site tests check current-version download URLs and repository
 document targets; an actual Pages deployment remains external evidence.
+
+---
+
+[Previous: Development view](03-development-view.md) · [Contents](../README.md) · [Next: +1 Scenarios](05-scenarios.md)

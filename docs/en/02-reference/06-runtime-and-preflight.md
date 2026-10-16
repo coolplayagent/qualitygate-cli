@@ -9,8 +9,8 @@ does not establish support: query the capability IDs and executable digest.
 qualitygate capabilities --format json
 qualitygate schema capabilities --format json
 qualitygate schema doctor --format json
-qualitygate doctor --diff origin/1.8.x-alpha..HEAD --profile full --format json
-qualitygate doctor --diff origin/1.8.x-alpha..HEAD --profile full --probe-tools --format json
+qualitygate doctor --diff BASE..HEAD --profile full --format json
+qualitygate doctor --diff BASE..HEAD --profile full --probe-tools --format json
 ```
 
 `capabilities` works offline without a repository, configuration or rule assets.
@@ -106,9 +106,9 @@ Use the following only when metadata or repository instructions justify 8 MiB:
 
 ```bash
 qualitygate doctor --root . --profile full \
-  --diff origin/1.8.x-alpha..HEAD --snapshot-max-file-mib 8 --format json
+  --diff BASE..HEAD --snapshot-max-file-mib 8 --format json
 qualitygate check --root . --profile full \
-  --diff origin/1.8.x-alpha..HEAD --snapshot-max-file-mib 8 --format json
+  --diff BASE..HEAD --snapshot-max-file-mib 8 --format json
 ```
 
 Review selected-policy exclusions for unrelated resources; excluded files are
@@ -116,6 +116,30 @@ unavailable to builds. Protected verification and declared tool inputs must stay
 available. `init.snapshot_preflight` remains an advisory HEAD/worktree aid;
 `doctor` supplies selected-snapshot readiness. A valid existing policy does not
 need another `init`.
+
+## Exclusions and execution context
+
+Reviewed top-level policy exclusions can remove unrelated resources:
+
+```yaml
+exclude:
+  - "gitbook/images/**"
+  - "legacy/demos/**"
+```
+
+Globs are case-sensitive, repository-relative and use `/`. They also match
+tracked files; `.gitignore` does not remove tracked inputs. Absolute paths,
+parent traversal, negation and `.qualitygateignore` are unsupported.
+Excluded content is not acquired, checked or materialized for project commands.
+Policy/task files, project rules, normative sources and protected verification
+assets cannot be excluded. Narrow exclusions if a build needs those resources.
+
+Staged/diff/MR checks use the selected policy source, not unrelated dirty worktree
+exclusions. Include reviewed configuration in the chosen snapshot. Both diff/MR
+sides retain unexcluded context; rule language/path filters do not omit content.
+Reports retain exclusions, empty delivery and execution-context identity.
+Test-effectiveness overlays use the same per-file capacity. Protected policy
+validation instead uses its [signed suite budget](04-policy-task-and-signed-evidence.md).
 
 ## Compatibility and shells
 
@@ -139,3 +163,41 @@ complete examples. This follows the documented
 The Windows CI lane executes the Rust regression suite and direct PowerShell
 and Git Bash invocations in paths containing spaces. A Linux test run does not
 establish native Windows acceptance; retain the actual Windows job result.
+
+
+## Initialization diagnostics
+
+Before initialization, `config --show` reports incomplete validation with exit
+code 2. JSON retains `schema_version`, `gate`, and `verification`, and adds
+`next_steps` only when a reliable action is known. A missing local policy gives
+an `init` command with the selected `--root` and any custom `--config`; review
+the generated candidate before retrying. `next_steps[].command` is an array
+containing the executable and literal arguments, for direct process execution
+without shell parsing. Table and Markdown render it with an explicit shell label
+(PowerShell on Windows, POSIX shell elsewhere); `cmd.exe` callers should use the
+structured arguments instead of copying the PowerShell rendering.
+A policy missing from a selected snapshot instead guides you to include the
+reviewed file in that snapshot. With an explicit `--policy-ref`, only selecting
+a reference containing the policy is suggested, even if no local policy exists.
+Other read, path, and parse errors do not suggest `init`. On Windows, ordinary
+paths are shown without the internal `\\?\` prefix when that conversion is safe.
+`init` also emits an advisory `snapshot_preflight` over HEAD and eligible
+worktree metadata, including tracked files ignored by discovery. It lists up to
+100 oversized/unsupported entries of each kind, counts all observed entries,
+and marks truncated details or incomplete inspection explicitly. This does not
+validate arbitrary diff/MR endpoints, staged bytes, total budgets or toolchains.
+
+For existing files above the default 2 MiB limit, follow the suggested
+`--snapshot-max-file-mib N` (1–8 MiB) on `check`. This is caller-controlled
+acquisition capacity, not a policy exemption. `--with-checks` adds reviewed
+command candidates; it neither installs their dependencies nor runs them.
+Review the candidate once within the authorized adoption scope; ordinary
+acquisition retries do not require editing repository rules.
+
+Discovery is bounded. Unreadable files, malformed manifests, unsupported
+ecosystems, and exhausted budgets remain explicit gaps rather than successful
+fallbacks.
+
+---
+
+[Previous: Exit codes and resource limits](05-exit-codes-and-resource-limits.md) · [Contents](../README.md) · [Next: Constraint coverage](07-constraint-coverage.md)

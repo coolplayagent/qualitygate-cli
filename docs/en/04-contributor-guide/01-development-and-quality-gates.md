@@ -7,6 +7,20 @@ fixture project's own tools at the documented CLI boundary. Use isolated
 temporary Git repositories; never change the reference repository, user Git
 configuration, or unrelated runtime state.
 
+## Build from source
+
+The checked-in `rust-toolchain.toml` selects the contributor toolchain. Install
+its declared components, then build and inspect the local executable:
+
+```bash
+cargo build --locked
+cargo run -- --version
+```
+
+This is a development build, distinct from the installed release/Skill runtime.
+
+## Required checks
+
 Run the stable local contract:
 
 ```bash
@@ -43,3 +57,34 @@ language switches, complete indexes, and a clean `docs/` root.
 Run the architecture test after owner or import changes. Run package and site
 tests after Skill, release, version, or documentation-entry changes. Bazel is a
 separate supported build surface; it does not replace the Cargo commands above.
+
+
+## Maintain the documentation
+
+The book is ordinary Markdown; no generator is required. Keep English and Chinese
+paths, meanings, language switches and chapter navigation aligned. Tutorials own
+the task sequence, references own exact contracts, and architecture owns rationale.
+Link to the primary explanation instead of copying it. Remove completed roadmap
+language, but retain supported compatibility and evidence boundaries.
+
+```bash
+cargo test --test quality --all-features
+```
+
+This checks documentation, architecture, site entries and packaged Skill contracts.
+It complements the stable checks above. For command examples, use isolated Git
+repositories and verify the selected runtime; never change user Git configuration.
+
+## Requirements and repository navigation
+
+[CodeSpec requirements](../../../codespec/requirements/qualitygate-cli.md) are the
+normative product contract; the [evidence index](03-requirements-to-test-evidence.md)
+maps it to tests. Historical implementation records stay in
+[CodeSpec design](../../../codespec/design/README.md).
+[CodeSpec Map](../../../codespec/codespec-map.yaml) and
+[Knowledge Map](../../../knowledge/knowledge-map.yaml) govern repository navigation.
+The project is distributed under the MIT license.
+
+---
+
+[Previous: Rule capabilities and Agent behavior contracts](../03-architecture/07-rule-capabilities-and-agent-contracts.md) · [Contents](../README.md) · [Next: Selfcheck and fixtures](02-selfcheck-and-fixtures.md)

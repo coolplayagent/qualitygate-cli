@@ -9,8 +9,8 @@
 qualitygate capabilities --format json
 qualitygate schema capabilities --format json
 qualitygate schema doctor --format json
-qualitygate doctor --diff origin/1.8.x-alpha..HEAD --profile full --format json
-qualitygate doctor --diff origin/1.8.x-alpha..HEAD --profile full --probe-tools --format json
+qualitygate doctor --diff BASE..HEAD --profile full --format json
+qualitygate doctor --diff BASE..HEAD --profile full --probe-tools --format json
 ```
 
 `capabilities` 离线运行，不要求仓库、配置或规则资产，返回 CLI 版本、可执行文件
@@ -81,14 +81,33 @@ checks:
 
 ```bash
 qualitygate doctor --root . --profile full \
-  --diff origin/1.8.x-alpha..HEAD --snapshot-max-file-mib 8 --format json
+  --diff BASE..HEAD --snapshot-max-file-mib 8 --format json
 qualitygate check --root . --profile full \
-  --diff origin/1.8.x-alpha..HEAD --snapshot-max-file-mib 8 --format json
+  --diff BASE..HEAD --snapshot-max-file-mib 8 --format json
 ```
 
 只审查所选策略中与交付无关的资源排除项；排除内容无法用于构建，受保护验证输入和声明的工具
 输入必须保留。`init.snapshot_preflight` 仍是 HEAD/工作区辅助信息，doctor 才检查指定快照的
 预检范围。已有有效配置无需重新 init。
+
+## 排除与执行上下文
+
+审核后的策略顶层排除项可移除无关资源：
+
+```yaml
+exclude:
+  - "gitbook/images/**"
+  - "legacy/demos/**"
+```
+
+glob 区分大小写，使用仓库相对路径和 `/`，对已跟踪文件也生效；`.gitignore` 不移除已跟踪输入。
+不支持绝对路径、父目录穿越、反向包含或 `.qualitygateignore`。排除内容不采集、不检查，也不提供给
+项目命令。策略/任务文件、项目规则、规范来源和受保护验证资产不能排除；构建需要的资源应缩小排除范围。
+
+staged/diff/MR 检查使用选中策略来源，本地未提交的无关排除修改不会生效；审核后的配置应纳入所选
+快照。diff/MR 两端保留未排除上下文，规则语言/路径过滤不移除内容。报告记录排除项、空交付和
+执行上下文身份。测试有效性 overlay 沿用相同单文件容量；受保护策略验证另用
+[签名套件预算](04-policy-task-and-signed-evidence.md)。
 
 ## 兼容性与 Shell
 
@@ -108,3 +127,26 @@ Git Bash 可直接调用 `.exe`。带空格路径必须引用，传入原生程�
 
 Windows CI 执行 Rust 回归和带空格路径下的 PowerShell/Git Bash 直接调用。Linux 测试不能
 代替 Windows 实测，需保留实际 Windows job 结果。
+
+
+## 初始化诊断
+
+初始化前，`config --show` 在配置缺失时返回退出码 2，JSON 保留 `schema_version`、`gate`、
+`verification`。只有可确定下一步时才返回 `next_steps`：本地策略缺失时建议保留 `--root` 和自定义
+`--config` 的 `init` 命令；所选快照缺策略时提示把审核后的文件纳入该快照；显式 `--policy-ref`
+缺策略时只建议选择含策略的引用。其他读取、路径或解析错误不会被当成需要初始化。
+
+`next_steps[].command` 是包含可执行文件和原始参数的数组，应直接创建进程执行。表格和 Markdown
+使用带标签的 Shell 展示：Windows 为 PowerShell，其他平台为 POSIX；`cmd.exe` 应使用结构化参数。
+Windows 普通路径在安全转换时省略内部 `\\?\` 前缀。
+
+`init.snapshot_preflight` 是 HEAD 与合格工作区文件元数据的建议性检查，也包含发现阶段忽略的已跟踪
+文件。每类最多展示 100 条超大或不支持输入，保留完整计数，并明确标识截断与未完成原因。它不验证
+任意 diff/MR 端点、暂存区字节、总量预算或工具链；精确选择范围应使用 `doctor`。
+
+`init --with-checks` 写入待审核的命令候选，不安装依赖也不执行命令。发现过程有预算限制；不可读文件、
+非法 manifest、不支持的生态与预算耗尽都会保留为缺口。已有有效配置无需重复初始化。
+
+---
+
+[上一章：退出码与资源限制](05-exit-codes-and-resource-limits.md) · [全书目录](../README.md) · [下一章：条款覆盖](07-constraint-coverage.md)

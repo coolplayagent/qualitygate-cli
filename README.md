@@ -1,63 +1,40 @@
 # Qualitygate CLI
 
-[简体中文](README.zh-CN.md)
+[简体中文](README.zh-CN.md) · [Documentation](docs/en/README.md)
 
-Qualitygate CLI is a Rust command-line gate for repository policy and task
-acceptance. It checks a selected Git snapshot, runs bounded project tools, and
-returns reproducible evidence for developers, CI, and coding Agents.
+Qualitygate CLI is a repository quality and task acceptance gate for developers,
+CI, and coding Agents. It checks a selected Git snapshot against repository
+policy, runs existing project tools, and returns evidence for the delivery decision.
 
 ## Why Qualitygate
 
-- Binds every result to immutable Git snapshot, policy, and task identities.
-- Distinguishes blocking violations from incomplete execution.
-- Unifies built-in rules, schema-validated project rules, and external reports.
-- Turns enforceable repository instructions such as `AGENTS.md` into
-  source-bound structured rule candidates through a closed Schema and CLI.
-- Keeps policy, task, manual acceptance, and signed provenance traceable.
-- Gives Agents bounded feedback without weakening the final full-check contract.
-- Bounds time, concurrency, file acquisition, parsing, and process output.
+- **Reproducible evidence:** results bind the snapshot, policy and task, so a pass
+  cannot be reused for changed inputs.
+- **Clear outcomes:** blocking violations and incomplete validation are distinct;
+  missing reports, timeouts and unsupported capabilities remain visible.
+- **One gate for repository rules and tools:** combine built-in rules,
+  source-bound project rules derived from instructions such as `AGENTS.md`, and
+  reports from existing linters, tests and coverage tools.
+- **Traceable Agent acceptance:** bounded repair feedback leads back to a full
+  check of the final snapshot, with separate policy review and task acceptance.
 
-## Quick start
+## Get started
 
-Download the released CLI or matching Agent Skill from the
-[project site](https://coolplayagent.github.io/qualitygate-cli/), then run:
+Download the CLI or matching Agent Skill from the
+[project site](https://coolplayagent.github.io/qualitygate-cli/). With Git and
+`qualitygate` available on your PATH, initialize the repository:
 
 ```bash
 qualitygate --root /path/to/repository init --format json
-qualitygate --root /path/to/repository \
-  check --worktree --profile quick --format json
 ```
 
-Use an unfiltered `--profile full` check on the final snapshot before delivery.
-Exit code `0` is a complete pass, `1` is a blocking violation, and `2` is
-incomplete validation.
-
-## Documentation
-
-- [English book](docs/en/README.md)
-- [中文文档](docs/zh/README.md)
-- [Installation and first check](docs/en/01-user-guide/01-installation-and-first-check.md)
-- [Schema-guided repository rules](docs/en/01-user-guide/06-schema-guided-repository-rules.md)
-- [CLI reference](docs/en/02-reference/01-cli-commands.md)
-
-Normative product requirements live in
-[CodeSpec requirements](codespec/requirements/qualitygate-cli.md). Repository
-navigation is governed by the [CodeSpec map](codespec/codespec-map.yaml) and
-[Knowledge map](knowledge/knowledge-map.yaml).
-
-## Development
+Review the candidate `qualitygate.yaml`, then check your changes:
 
 ```bash
-cargo fmt --all -- --check
-cargo check --all-targets --all-features
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets --all-features
-cargo llvm-cov --all-targets --all-features --fail-under-lines 90
+qualitygate --root /path/to/repository check --worktree --profile quick --format json
+qualitygate --root /path/to/repository check --worktree --profile full --format json
 ```
 
-See the [contributor guide](docs/en/04-contributor-guide/README.md) for test,
-architecture, documentation, selfcheck, Miri, and ASan boundaries.
-
-## License
-
-MIT
+Use `quick` while editing and an unfiltered `full` check before delivery.
+Exit `0` means complete pass, `1` a blocking violation, and `2` incomplete validation.
+Continue with [installation and your first check](docs/en/01-user-guide/01-installation-and-first-check.md).

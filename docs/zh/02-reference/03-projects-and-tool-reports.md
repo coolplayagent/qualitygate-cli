@@ -46,3 +46,7 @@ lockfile 行为、平台和选中 target 都属于证据。
 增量模式必须声明含义：`new_diagnostics`、`changed_lines`、`affected_scope` 或 `full`。文件发生变更
 不代表其历史诊断全部变成新增问题。缺少可比基线时，必需 ratchet 保持未完成，除非受信策略事先
 允许且明确披露 full 回退。
+
+---
+
+[上一章：内置与自定义规则](02-rules.md) · [全书目录](../README.md) · [下一章：策略、任务与签名证据](04-policy-task-and-signed-evidence.md)

@@ -22,3 +22,7 @@ producer 属于单独显式运行的测试。golden 更新与行为变化采用�
 
 修改 CLI 或 Skill 包后，先用匹配的发布 runtime 运行完整 selfcheck，再运行仓库质量门禁。golden
 不匹配与执行缺口必须分别保留。安装本地构建的开发 runtime 是独立显式操作，不能描述为公开发布版。
+
+---
+
+[上一章：开发与质量门禁](01-development-and-quality-gates.md) · [全书目录](../README.md) · [下一章：需求到测试证据](03-requirements-to-test-evidence.md)

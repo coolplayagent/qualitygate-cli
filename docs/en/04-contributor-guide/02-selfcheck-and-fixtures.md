@@ -33,3 +33,7 @@ full selfcheck, then the repository quality gates. Preserve mismatches and
 execution gaps as separate findings. Installing a locally built development
 runtime is a distinct, explicit operation and must not be described as a
 published release.
+
+---
+
+[Previous: Development and quality gates](01-development-and-quality-gates.md) · [Contents](../README.md) · [Next: Requirement-to-test evidence](03-requirements-to-test-evidence.md)

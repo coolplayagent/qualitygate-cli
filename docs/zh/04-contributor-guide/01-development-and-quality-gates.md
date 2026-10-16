@@ -5,6 +5,19 @@
 仓库自有实现使用 Rust。测试可在文档化 CLI 边界调用 Git 和 fixture 项目已配置的工具。必须使用隔离
 临时 Git 仓库，不得修改参考仓库、用户 Git 配置或无关运行时状态。
 
+## 从源码构建
+
+仓库的 `rust-toolchain.toml` 选择贡献者工具链。安装其中声明的组件后，构建并查看本地可执行文件：
+
+```bash
+cargo build --locked
+cargo run -- --version
+```
+
+这是开发构建，与安装的发布版或 Skill 运行时分别标识。
+
+## 必需检查
+
 运行稳定本地契约：
 
 ```bash
@@ -32,3 +45,30 @@ Windows 原生 CI 在 30 分钟作业预算内执行同一条完整 Cargo 测试
 
 owner/import 变化后运行架构测试；Skill、发布、版本或文档入口变化后运行包与站点测试。Bazel 是额外
 支持的构建面，不替代上述 Cargo 命令。
+
+
+## 维护文档
+
+本书使用普通 Markdown，无需生成器。中英文路径、含义、语言切换和章节导航应保持对应。
+教程负责操作顺序，参考手册负责精确契约，架构负责设计依据；其他章节链接到主要说明，避免复制。
+清除已经完成的路线图表述，同时保留仍受支持的兼容性和证据边界。
+
+```bash
+cargo test --test quality --all-features
+```
+
+该目标检查文档、架构、站点入口和 Skill 包契约，与前面的稳定检查共同使用。
+验证命令示例时使用隔离 Git 仓库，并确认所选运行时，不修改用户 Git 配置。
+
+## 需求与仓库导航
+
+[CodeSpec 需求](../../../codespec/requirements/qualitygate-cli.md)是规范性产品契约，
+[证据索引](03-requirements-to-test-evidence.md)将需求关联到测试。
+历史实施记录留在 [CodeSpec 设计](../../../codespec/design/README.md)。
+[CodeSpec Map](../../../codespec/codespec-map.yaml) 与
+[Knowledge Map](../../../knowledge/knowledge-map.yaml)管理仓库导航。
+项目采用 MIT 许可证。
+
+---
+
+[上一章：规则能力与 Agent 行为契约](../03-architecture/07-rule-capabilities-and-agent-contracts.md) · [全书目录](../README.md) · [下一章：自检与 fixtures](02-selfcheck-and-fixtures.md)

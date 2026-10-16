@@ -58,3 +58,7 @@ Git 快照
 规则引擎只是该模型的一个消费者，而不是全部架构。它同时支持低成本 diff/文本信号、tree-sitter
 结构规则、项目事实规则、自定义 DSL 与原生 lint/report adapter，并保留各自不同的证据强度。详见
 [规则引擎技术深潜](06-rule-engine-implementation.md)。
+
+---
+
+[上一章：Agent 宿主与不可变交付](../02-reference/10-agent-host-and-delivery.md) · [全书目录](../README.md) · [下一章：进程视图](02-process-view.md)

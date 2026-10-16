@@ -2,75 +2,94 @@
 
 [简体中文](../../zh/02-reference/01-cli-commands.md) · [Volume index](README.md)
 
-All repository commands accept `--root`. Use `--format json` for automation and
-Markdown for human-readable reports.
+Use `qualitygate --help` and subcommand help for the installed runtime's exact
+options. Repository commands accept `--root`; examples below run from the root.
+Use `--format json` for automation and inspect both exit status and report fields.
+Uppercase identifiers and example paths must be replaced with your inputs.
 
-## Repository setup and inspection
-
-```bash
-qualitygate --root . init [--with-checks] --format json
-qualitygate --root . config --show --format json
-qualitygate --root . rules categories --format json
-qualitygate --root . rules list [--language rust] [--source all] --format json
-qualitygate --root . rules describe RULE_ID --format json
-qualitygate --root . rules schema
-qualitygate --root . rules validate candidate.yaml
-qualitygate --root . rules generate --input reviewed-source.md
-```
-
-`init`, `rules enable`, `rules disable`, and `rules configure` mutate candidate
-repository configuration. Listing, describing, schema export, and effective
-configuration inspection are read-only.
-
-## Checks
+## Initialization and inspection
 
 ```bash
-qualitygate --root . check --staged --profile full --format json
-qualitygate --root . check --worktree --profile quick --feedback --format json
-qualitygate --root . check --diff BASE..HEAD --profile full --task task.yaml
-qualitygate --root . check --mr URL --profile full --format markdown
-```
-
-Exactly one snapshot selector is used. `--path` narrows feedback. `--policy-ref`
-selects policy from a resolved commit but is not proof that the commit is
-approved. `--trust-store` and `--evidence-dir` point at caller-controlled inputs
-for signed evidence and should remain outside the checked repository.
-
-## Selfcheck and pilot evidence
-
-```bash
-qualitygate selfcheck [--fixture NAME] [--rule RULE_ID]
-qualitygate pilot seal --input pilot-plan.json --format json
-qualitygate pilot authorization-subject --input observations.json --format json
-qualitygate pilot acceptance-subject --input observations.json \
-  --trust-store /external/trust.json \
-  --authorization /external/start.dsse.json --format json
-qualitygate pilot summarize --input observations.json --format json
-```
-
-Selfcheck compares bundled fixtures with independently authored goldens. Pilot
-commands validate and summarize supplied records; they do not create trust
-keys, sign subjects, approve policy, or fill in missing real-world evidence.
-
-Use `qualitygate --help` and subcommand help for the version-specific option
-surface. Scripts should check both the process exit code and the structured
-gate fields.
-
-## Runtime capabilities and environment preflight
-
-```bash
+qualitygate init --format json
+qualitygate config --show --format json
 qualitygate capabilities --format json
 qualitygate doctor --worktree --profile full --format json
-qualitygate doctor --staged --profile full --probe-tools --format json
+```
+
+`init` creates a missing candidate configuration. `init --with-checks` also adds
+command candidates. `config --show` and `capabilities` are read-only; default
+`doctor` runs no project commands. `doctor --probe-tools` executes declared tool
+probes. See [runtime and preflight](06-runtime-and-preflight.md) for diagnostics,
+compatibility and initialization behavior.
+
+## Rule discovery and authoring
+
+```bash
+qualitygate rules categories --format json
+qualitygate rules list --language rust --source all --format json
+qualitygate rules describe RULE_ID --format json
+qualitygate rules schema --format json
+qualitygate rules source --document AGENTS.md --section "Quality contract" --format json
+qualitygate rules validate candidate.yaml --format json
+qualitygate rules generate --input candidate.yaml --format json
+```
+
+`generate` writes a structured rule candidate; it does not turn arbitrary prose
+into an adopted rule. `rules enable`, `rules disable` and `rules configure` mutate
+candidate policy. Listing, describing, source binding, schema export and validation
+are read-only. See [rules](02-rules.md) and the
+[authoring tutorial](../01-user-guide/06-schema-guided-repository-rules.md).
+
+## Snapshot checks
+
+```bash
+qualitygate check --staged --profile full --format json
+qualitygate check --worktree --profile quick --feedback --format json
+qualitygate check --diff BASE..HEAD --profile full --task task.yaml --format json
+qualitygate check --mr URL --profile full --format markdown
+```
+
+Choose one snapshot selector; omitted selection uses the worktree. `--path`
+narrows feedback. `--policy-ref` selects a resolved policy commit without proving
+its approval. `--trust-store` and `--evidence-dir` supply caller-controlled signed
+evidence. Check commands execute the project tools selected by policy.
+[Exit codes and limits](05-exit-codes-and-resource-limits.md) define outcomes.
+
+## Schemas and Agent integration
+
+```bash
 qualitygate schema capabilities --format json
 qualitygate schema doctor --format json
 qualitygate schema constraint --format json
 qualitygate schema operator-rule --format json
 qualitygate schema project-rule-family --format json
+qualitygate schema agent-obligation --format json
+qualitygate agent-contract --worktree --role implementer --format json
+qualitygate agent-run --help
+qualitygate check --worktree --profile full --export-delivery /external/delivery --format json
 ```
 
-[Runtime capabilities and environment preflight](06-runtime-and-preflight.md).
+Query capabilities before using these interfaces. Schema export and contract
+projection are read-only; projection does not run checks. `agent-run` launches a
+configured Agent, may change its checkout and writes evidence. Delivery export
+writes outside the repository. Follow [Agent contracts](09-agent-contracts.md)
+and [host setup](10-agent-host-and-delivery.md) for required inputs and limits.
 
-`qualitygate schema agent-obligation` · `qualitygate agent-contract --worktree --role implementer --format json`
+## Selfcheck and pilot evaluation
 
-`qualitygate agent-run --help` · `qualitygate check --export-delivery <external-directory> --format json`
+```bash
+qualitygate selfcheck --format json
+qualitygate pilot seal --input pilot-plan.json --format json
+qualitygate pilot authorization-subject --input observations.json --format json
+qualitygate pilot acceptance-subject --input observations.json --trust-store /external/trust.json --authorization /external/start.dsse.json --format json
+qualitygate pilot summarize --input observations.json --format json
+```
+
+Selfcheck executes bundled fixtures against independent goldens. Pilot commands
+validate supplied plans and records; they do not sign subjects or manufacture
+observations. See [selfcheck](../04-contributor-guide/02-selfcheck-and-fixtures.md)
+and [pilot evaluation](../04-contributor-guide/04-pilot-evaluation.md).
+
+---
+
+[Previous: Evaluating adoption in a real repository](../01-user-guide/05-real-repository-pilot.md) · [Contents](../README.md) · [Next: Built-in and custom rules](02-rules.md)

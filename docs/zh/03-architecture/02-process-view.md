@@ -53,3 +53,7 @@ sequenceDiagram
 
 quick 与 full 使用同一时序；profile 改变计划，不改变证据含义。quick 报告携带所省略检查，复验则
 捕获新快照，而不是把旧证据附着到新字节上。
+
+---
+
+[上一章：逻辑视图](01-logical-view.md) · [全书目录](../README.md) · [下一章：开发视图](03-development-view.md)

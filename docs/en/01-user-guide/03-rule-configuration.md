@@ -2,51 +2,70 @@
 
 [简体中文](../../zh/01-user-guide/03-rule-configuration.md) · [Volume index](README.md)
 
-Start with read-only discovery:
+A repository policy chooses which rules and commands matter for your delivery.
+Start with the candidate from `init`; inspect it before changing selection or
+thresholds. The examples below run from the repository root.
+
+## 1. Inspect the catalog and effective policy
 
 ```bash
-qualitygate --root . rules categories --format json
-qualitygate --root . rules list --source all --format json
-qualitygate --root . rules describe RULE_ID --format json
-qualitygate --root . config --show --format json
+qualitygate rules categories --format json
+qualitygate rules list --source all --format json
+qualitygate rules describe line-ending --format json
+qualitygate config --show --format json
 ```
 
-The catalog includes active rules, unselected built-in packages, and project
-rules. `enabled`, `source`, `language`, capability requirements, parameters,
-severity, and limitations are separate fields. Listing or assigning categories
-does not enable checks or approve policy.
+The catalog includes unselected built-in packages and project rules. Read each
+rule's `enabled`, `source`, `language`, capabilities, severity and parameters.
+Listing or assigning categories does not enable checks. Compare catalog entries
+with the effective policy to see what a check will actually use.
 
-Candidate mutations are explicit:
+## 2. Choose the mechanism
+
+| Repository requirement | Configure |
+| --- | --- |
+| A supported commit, text or syntax convention | An existing built-in rule, after reading its definition. |
+| A source-bound file, name, marker or bounded assertion | A project rule under `qualitygate/rules`. |
+| A lint, test or coverage command | A command check with the appropriate report adapter. |
+| Existing analyzer debt must not grow | A report ratchet with a fresh baseline run. |
+| A person must judge an acceptance item | Explicit manual acceptance and external signed evidence. |
+
+File contracts and report ratchets are configuration patterns, not extra
+built-in rule IDs. Missing semantic facts remain gaps; a text match cannot prove
+call resolution, data flow or runtime correctness.
+
+## 3. Change and review a candidate
+
+For example, selecting the existing line-ending rule is an explicit mutation:
 
 ```bash
-qualitygate --root . rules enable RULE_ID
-qualitygate --root . rules disable RULE_ID
-qualitygate --root . rules configure RULE_ID --set key=value
+qualitygate rules enable line-ending
+qualitygate config --show --format json
 ```
 
-Writes validate the complete candidate and replace configuration atomically.
-Invalid parameters, duplicate IDs, unknown capabilities, and unreadable rule
-packages are errors. A syntactically valid candidate still needs the team's
-normal review and adoption process.
+Use `rules configure RULE_ID --set key=value` only with parameters supported by
+that rule's definition. Writes validate the whole candidate before replacing it
+atomically. Invalid parameters, duplicate IDs and unreadable packages are errors.
+A valid candidate still needs the team's normal policy review and adoption.
+Disabling a required check to make a failing change pass is not a repair.
 
-Project rules live under `qualitygate/rules` by default. Author them from the
-exported schema, validate a candidate, and only then publish it:
+For project rules, continue with [Schema-guided repository rules](06-schema-guided-repository-rules.md).
+For command reports and adoption boundaries, use the
+[report reference](../02-reference/03-projects-and-tool-reports.md) and
+[policy lifecycle](../02-reference/04-policy-task-and-signed-evidence.md).
+
+## 4. Verify the selected policy
 
 ```bash
-qualitygate rules schema
-qualitygate rules validate candidate.yaml
-qualitygate rules generate --input candidate.yaml
+qualitygate doctor --worktree --profile full --format json
+qualitygate check --worktree --profile full --format json
 ```
 
-Generated rules preserve source hashes and declared capability limits, but
-generation is not normative review. Pattern rules are bounded signals: for
-example, a credential-like literal or unsafe-looking call is not proof of a
-vulnerability. Required facts that are missing, stale, malformed, or outside an
-adapter's supported capability produce incomplete validation.
+Confirm the intended checks appear in the plan and inspect pending work,
+violations and incomplete evidence. A policy or rule change requires new
+verification; staged/diff checks must contain the reviewed configuration in their
+selected snapshot. Preserve the report with the adopted policy identity.
 
-Use file contracts for required or size-bounded files, and report ratchets for
-external analyzer debt. Neither is an invented built-in rule ID.
+---
 
-For the complete workflow from repository prose such as `AGENTS.md` to a
-source-bound, Schema-validated rule candidate, continue with
-[Schema-guided repository rules](06-schema-guided-repository-rules.md).
+[Previous: Snapshots and the check workflow](02-snapshots-and-check-workflow.md) · [Contents](../README.md) · [Next: Schema-guided repository rules](06-schema-guided-repository-rules.md)

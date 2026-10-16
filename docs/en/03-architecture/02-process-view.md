@@ -70,3 +70,7 @@ shape cannot be converted to a successful empty result.
 The same sequence is used for quick and full profiles. Profiles change the plan,
 not the meaning of evidence. A quick result carries the checks it omitted; a
 recheck captures a new snapshot instead of attaching old evidence to new bytes.
+
+---
+
+[Previous: Logical view](01-logical-view.md) · [Contents](../README.md) · [Next: Development view](03-development-view.md)

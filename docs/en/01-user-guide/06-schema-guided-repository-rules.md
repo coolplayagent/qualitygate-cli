@@ -25,27 +25,11 @@ flowchart LR
     Adopt --> Check[snapshot-bound check]
 ```
 
-## What the Schema structures
+## Read the rule contract
 
-The version-matched project-rule Schema is available from `rules schema` and in
-the Agent Skill at `references/schemas/project-rule.schema.json`.
-
-| Contract field | Meaning |
-| --- | --- |
-| `schema_version`, `id`, `version` | Protocol and stable rule identity. |
-| `source` | Repository-relative document, exact section, and digest returned by `rules source`. |
-| `language`, `applies_to` | Explicit language and path/provenance scope. |
-| `requires_capabilities` | Facts the evaluator must possess; absence becomes incomplete. |
-| `when` | A closed subject/change selector for commits, files, tests, comments, or imports. |
-| `then` | Supported name, text, marker, dependency, count, required-path, line, or word assertions. |
-| `binding` | Typed annotation, comment, or Git-trailer association when traceability is required. |
-| `fix` | Actionable remediation derived from the same source clause. |
-
-Unknown fields are rejected. JSON Schema checks the serial form; the CLI also
-checks regexes, globs, conditional field combinations, confined paths, source
-bytes, capability compatibility, duplicate IDs, and resource budgets. Passing
-either layer does not approve the rule or prove that prose was translated
-correctly.
+Export the matching `rules schema` before authoring. The [rule reference](../02-reference/02-rules.md)
+defines the fields and validation boundary. Start with one explicit, testable
+clause; keep unsupported obligations visible instead of guessing a broader rule.
 
 ## Convert `AGENTS.md` without inventing policy
 
@@ -127,3 +111,7 @@ See the packaged [rule-authoring workflow](../../../skills/qualitygate-cli/refer
 for the complete Agent procedure and the
 [rule-engine architecture](../03-architecture/06-rule-engine-implementation.md)
 for runtime implementation boundaries.
+
+---
+
+[Previous: Rule configuration](03-rule-configuration.md) · [Contents](../README.md) · [Next: Agent repair and acceptance](04-agent-repair-and-acceptance.md)
