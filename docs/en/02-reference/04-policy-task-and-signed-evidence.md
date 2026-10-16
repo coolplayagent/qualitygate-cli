@@ -77,6 +77,10 @@ the deterministic gate or approve policy.
 
 ## Default document and media exclusions
 
+Exclusion evidence reuses the base and selected target listings acquired by the
+content readers, without separate Git inventory scans. Paths present only in an
+unselected intermediate HEAD are not part of that inventory.
+
 `unstructured_documents` defaults to `enabled: true` and `retain: []`, including
 existing policies with `exclude: []`. This changes acquisition coverage for those
 policies. Newly initialized policies serialize the defaults explicitly. Runtimes

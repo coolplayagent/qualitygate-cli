@@ -192,61 +192,12 @@ async fn capture_inner(
     let scope = acquisition.options.scope;
     let exclude = acquisition.options.exclude.clone();
     let mut resource_exclusions = acquisition.options.exclusion_evidence();
-    let excluded_paths = if exclude.is_empty()
-        && (!acquisition.options.unstructured_documents.enabled
-            || acquisition.options.include.is_some())
-    {
-        Vec::new()
-    } else {
-        let selected = acquisition.options.selector()?;
-        let mut paths = std::collections::BTreeSet::new();
-        for reference in [&base, &target] {
-            let names = run_git(
-                &root,
-                &["ls-tree", "-r", "--name-only", "-z", reference],
-                None,
-            )
-            .await?;
-            for name in names.split(|b| *b == 0).filter(|p| !p.is_empty()) {
-                let path = std::str::from_utf8(name)?;
-                if !selected(path) {
-                    paths.insert(path.to_owned());
-                }
-            }
-        }
-        if matches!(
-            selection,
-            Selection::Worktree { .. } | Selection::Path { .. } | Selection::Staged
-        ) {
-            let args: &[&str] = if matches!(selection, Selection::Staged) {
-                &["ls-files", "--cached", "-z"]
-            } else {
-                &[
-                    "ls-files",
-                    "--cached",
-                    "--others",
-                    "--exclude-standard",
-                    "-z",
-                ]
-            };
-            let names = run_git(&root, args, None).await?;
-            for name in names.split(|b| *b == 0).filter(|p| !p.is_empty()) {
-                let path = std::str::from_utf8(name)?;
-                if !selected(path) {
-                    paths.insert(path.to_owned());
-                }
-            }
-        }
-        anyhow::ensure!(
-            paths.len() <= MAX_FILES,
-            "Excluded inventory exceeds file budget"
-        );
-        paths.into_iter().collect()
-    };
     let classify = acquisition.options.exclusion_classifier()?;
     // Diffing and hashing scale with snapshot contents and must not occupy an async worker.
     let deadline = Some(acquisition.deadline);
+    let acquisition = acquisition.clone();
     tokio::task::spawn_blocking(move || {
+        let excluded_paths = acquisition.excluded_paths()?;
         for path in &excluded_paths {
             if let Some(reason) = classify(path) {
                 resource_exclusions.record(path, reason, MAX_FILES);

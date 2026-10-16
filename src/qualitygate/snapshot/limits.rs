@@ -2,7 +2,8 @@
 
 use anyhow::{Result, bail};
 use std::{
-    sync::Arc,
+    collections::BTreeSet,
+    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 use tokio::sync::Semaphore;
@@ -98,6 +99,7 @@ pub(super) struct Acquisition {
     pub options: CaptureOptions,
     pub permits: Arc<Semaphore>,
     pub deadline: Instant,
+    excluded_paths: Arc<Mutex<BTreeSet<String>>>,
 }
 
 impl Acquisition {
@@ -107,7 +109,38 @@ impl Acquisition {
             options: options.clone(),
             permits: Arc::new(Semaphore::new(options.jobs)),
             deadline: Instant::now() + options.timeout,
+            excluded_paths: Arc::default(),
         })
+    }
+
+    /// Record exclusions from the exact listings used by the content readers.
+    pub fn selector(&self) -> Result<impl Fn(&str) -> Result<bool> + Send + 'static> {
+        let selected = self.options.selector()?;
+        let bootstrap = self.options.include.is_some();
+        let excluded_paths = self.excluded_paths.clone();
+        Ok(move |path: &str| {
+            let included = selected(path);
+            if !included && !bootstrap {
+                let mut paths = excluded_paths
+                    .lock()
+                    .map_err(|_| anyhow::anyhow!("Exclusion inventory lock poisoned"))?;
+                if paths.len() == super::MAX_FILES && !paths.contains(path) {
+                    bail!("Excluded inventory exceeds file budget");
+                }
+                paths.insert(path.to_owned());
+            }
+            Ok(included)
+        })
+    }
+
+    pub fn excluded_paths(&self) -> Result<Vec<String>> {
+        Ok(self
+            .excluded_paths
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Exclusion inventory lock poisoned"))?
+            .iter()
+            .cloned()
+            .collect())
     }
 }
 
@@ -121,4 +154,39 @@ fn compile(patterns: &[String], literal_separator: bool) -> Result<globset::Glob
         );
     }
     Ok(builder.build()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shared_exclusion_inventory_bounds_the_union_and_ignores_bootstrap_omissions() {
+        let acquisition = Acquisition::new(&CaptureOptions::default()).unwrap();
+        let base = acquisition.selector().unwrap();
+        let target = acquisition.clone().selector().unwrap();
+        for index in 0..super::super::MAX_FILES {
+            assert!(!base(&format!("{index}.pdf")).unwrap());
+        }
+        assert!(!target("0.pdf").unwrap());
+        assert!(
+            target("new.pdf")
+                .unwrap_err()
+                .to_string()
+                .contains("budget")
+        );
+        assert!(target("source.rs").unwrap());
+        assert_eq!(
+            acquisition.excluded_paths().unwrap().len(),
+            super::super::MAX_FILES
+        );
+
+        let bootstrap = Acquisition::new(&CaptureOptions {
+            include: Some(vec!["policy.yaml".into()]),
+            ..Default::default()
+        })
+        .unwrap();
+        assert!(!bootstrap.selector().unwrap()("asset.pdf").unwrap());
+        assert!(bootstrap.excluded_paths().unwrap().is_empty());
+    }
 }

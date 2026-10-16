@@ -107,6 +107,7 @@ Windows shell acceptance. See [runtime/preflight](../02-reference/06-runtime-and
 | Requirement | Evidence |
 | --- | --- |
 | Versioned suffix classification, precedence and bounded reason counts | `domain::resource_exclusions::tests` |
+| Reuse acquired listings, bound the combined inventory, and omit unselected intermediate HEAD entries | `snapshot::limits::tests::shared_exclusion_inventory_bounds_the_union_and_ignores_bootstrap_omissions`; `tests/delivery_scope/resources.rs::resource_inventory_uses_acquired_trees_without_unselected_head_entries` |
 | Exclude before per-file/aggregate budgets; base-only, changed, renamed, deleted, staged and diff resources | `tests/delivery_scope/resources.rs::default_resources_are_excluded_before_budgets_in_every_local_selector`, `aggregate_resources_do_not_consume_content_budget_and_unknown_types_still_fail` |
 | Retention, opt-out, protected inputs, explicit exclusion conflicts, strict policy and selected policy | `tests/delivery_scope/resources.rs::retain_disable_and_protected_inputs_restore_acquisition_without_bypassing_limits`, `policy_selection_and_strict_configuration_apply_to_default_exclusions` |
 | Missing command evidence stays incomplete; retained and declared tool dependencies remain available | `tests/delivery_scope/resources.rs::command_dependencies_need_retention_and_missing_evidence_stays_incomplete` |

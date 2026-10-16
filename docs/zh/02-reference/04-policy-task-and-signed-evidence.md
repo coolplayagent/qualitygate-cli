@@ -57,6 +57,9 @@ omission。可选外部 judgment provider 只能在 shadow/advisory 模式评估
 
 ## 默认排除文档与媒体资源
 
+排除证据复用内容采集时的 base 和所选 target 文件列表，不再单独调用 Git 扫描。
+仅存在于未选中中间 HEAD 的路径不计入排除清单。
+
 `unstructured_documents` 缺省为 `enabled: true`、`retain: []`，已有配置（包括
 `exclude: []`）也生效，因此升级会改变这些策略的采集覆盖范围。新初始化配置会显式
 写出默认值。运行时通过 `snapshot.unstructured-documents.v1` 声明支持此能力。

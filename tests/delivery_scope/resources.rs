@@ -360,3 +360,27 @@ async fn resource_policy_and_inventory_bind_snapshot_identity_and_history() {
             .is_err()
     );
 }
+
+#[tokio::test]
+async fn resource_inventory_uses_acquired_trees_without_unselected_head_entries() {
+    let temp = fixture();
+    let root = temp.path();
+    write(root, "only-in-intermediate-head.pdf", b"resource\n");
+    commit(root);
+    git(root, &["rm", "only-in-intermediate-head.pdf"]);
+    write(root, "new.png", b"untracked resource\n");
+    let captured = snapshot::capture(
+        root,
+        &Selection::Worktree {
+            base: "HEAD~1".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(captured.scope_evidence.excluded_paths, ["new.png"]);
+    let staged = snapshot::capture(root, &Selection::Staged).await.unwrap();
+    assert_eq!(
+        staged.scope_evidence.excluded_paths,
+        ["only-in-intermediate-head.pdf"]
+    );
+}
