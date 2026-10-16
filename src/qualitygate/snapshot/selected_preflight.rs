@@ -258,9 +258,15 @@ fn summarize(
     protected: &[String],
     deadline: Instant,
 ) -> Result<SnapshotBudget> {
+    let mut options = options.clone();
+    options.protected_paths.extend_from_slice(protected);
+    options.protected_paths.sort();
+    options.protected_paths.dedup();
     let selected = options.selector()?;
+    let classify = options.exclusion_classifier()?;
+    let mut resource_exclusions = options.exclusion_evidence();
     let mut protection = globset::GlobSetBuilder::new();
-    for pattern in protected {
+    for pattern in &options.protected_paths {
         protection.add(globset::Glob::new(pattern)?);
     }
     let protection = protection.build()?;
@@ -273,6 +279,9 @@ fn summarize(
         budget(deadline)?;
         if !selected(&entry.path) {
             excluded.push(entry.path.clone());
+            if let Some(reason) = classify(&entry.path) {
+                resource_exclusions.record(&entry.path, reason, DETAIL_LIMIT);
+            }
             if protection.is_match(&entry.path) {
                 protected_exclusions.push(entry.path.clone());
             }
@@ -308,6 +317,7 @@ fn summarize(
         oversized_file_count: oversized.len(),
         unsupported_entry_count: unsupported.len(),
         excluded_file_count: excluded.len(),
+        resource_exclusions,
         protected_exclusion_count: protected_exclusions.len(),
         details_truncated: [
             oversized.len(),
@@ -340,6 +350,49 @@ fn budget(deadline: Instant) -> Result<()> {
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn resource_counts_and_protected_overrides_survive_detail_truncation() {
+        let mut options = CaptureOptions::default();
+        options.exclude.push("explicit/**".into());
+        options.protected_paths.push("explicit/image.png".into());
+        options
+            .unstructured_documents
+            .retain
+            .push("retained.pdf".into());
+        let entries = (0..105)
+            .map(|index| format!("media/{index}.PDF"))
+            .chain([
+                "protected.pdf".into(),
+                "retained.pdf".into(),
+                "explicit/image.png".into(),
+            ])
+            .map(|path| Entry {
+                path,
+                bytes: 600 * 1024 * 1024,
+                identity: "id".into(),
+                unsupported: None,
+            })
+            .collect();
+        let result = summarize(
+            "target",
+            "commit".into(),
+            entries,
+            &options,
+            &["protected.pdf".into()],
+            Instant::now() + Duration::from_secs(10),
+        )
+        .unwrap();
+        assert_eq!(result.resource_exclusions.default_excluded_count, 105);
+        assert_eq!(result.resource_exclusions.default_excluded_paths.len(), 100);
+        assert_eq!(result.resource_exclusions.explicit_excluded_count, 1);
+        assert!(result.resource_exclusions.details_truncated);
+        assert_eq!(result.excluded_file_count, 106);
+        assert_eq!(result.oversized_file_count, 2);
+        assert_eq!(result.protected_exclusion_count, 1);
+        assert_eq!(result.total_bytes, 1200 * 1024 * 1024);
+        assert!(!result.ready());
+    }
 
     #[test]
     fn aggregate_counts_survive_truncation_and_resource_failures_are_distinct() {

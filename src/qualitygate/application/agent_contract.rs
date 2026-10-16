@@ -14,7 +14,7 @@ pub async fn project(mut options: CheckOptions, role: String) -> Result<Projecti
     );
     let mut active = policy_active::load(options.root.clone()).await?;
     let (comparison, _) =
-        acquisition::prepare(&mut options, active.as_ref().map(|a| &a.active.config)).await?;
+        acquisition::prepare(&mut options, active.as_ref().map(|a| &a.active)).await?;
     let snapshot = Arc::new(
         snapshot::capture_resolved(
             &options.root,

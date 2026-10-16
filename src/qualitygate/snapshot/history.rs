@@ -71,6 +71,12 @@ pub async fn capture(snapshot: &Snapshot) -> Result<History> {
         snapshot,
         &super::CaptureOptions {
             exclude: snapshot.scope_evidence.exclude.clone(),
+            unstructured_documents: snapshot.scope_evidence.resource_exclusions.policy.clone(),
+            protected_paths: snapshot
+                .scope_evidence
+                .resource_exclusions
+                .protected_paths
+                .clone(),
             ..Default::default()
         },
     )

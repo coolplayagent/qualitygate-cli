@@ -250,19 +250,44 @@ fn init_preflights_tracked_ignored_and_untracked_large_files_without_reading_con
     );
     let preflight = &initialized["snapshot_preflight"];
     assert_eq!(preflight["complete"], true);
-    assert_eq!(preflight["oversized_file_count"], 2);
-    assert_eq!(preflight["recommended_max_file_mib"], 5);
-    assert_eq!(preflight["oversized_files"][0]["path"], "legacy/demo.gif");
+    assert_eq!(preflight["oversized_file_count"], 1);
+    assert_eq!(preflight["recommended_max_file_mib"], 3);
+    assert_eq!(preflight["oversized_files"][0]["path"], "untracked.bin");
+    assert_eq!(
+        preflight["resource_exclusions"]["default_excluded_paths"],
+        serde_json::json!(["legacy/demo.gif"])
+    );
     assert_eq!(initialized["discovery"]["commands_executed"], false);
     let bytes = std::fs::read(root.path().join("qualitygate.yaml")).unwrap();
     let human = cli(root.path(), &["init", "--format", "table"]);
     assert!(human.status.success());
     let human = String::from_utf8(human.stdout).unwrap();
-    assert!(human.contains("Snapshot warning: legacy/demo.gif (5242880 bytes)"));
-    assert!(human.contains("--snapshot-max-file-mib 5"));
+    assert!(human.contains("Snapshot warning: untracked.bin (3145728 bytes)"));
+    assert!(human.contains("--snapshot-max-file-mib 3"));
     assert_eq!(
         std::fs::read(root.path().join("qualitygate.yaml")).unwrap(),
         bytes
+    );
+    // Retention restores the original HEAD-only large-file capacity evidence.
+    let mut config = qualitygate::config::parse(&bytes).unwrap();
+    config
+        .unstructured_documents
+        .retain
+        .push("legacy/demo.gif".into());
+    write(
+        root.path(),
+        "qualitygate.yaml",
+        &serde_norway::to_string(&config).unwrap(),
+    );
+    let restored = report(&cli(root.path(), &["init", "--format", "json"]), 0);
+    assert_eq!(restored["snapshot_preflight"]["oversized_file_count"], 2);
+    assert_eq!(
+        restored["snapshot_preflight"]["recommended_max_file_mib"],
+        5
+    );
+    assert_eq!(
+        restored["snapshot_preflight"]["oversized_files"][0]["path"],
+        "legacy/demo.gif"
     );
 }
 

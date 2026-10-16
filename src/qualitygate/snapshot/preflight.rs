@@ -24,19 +24,27 @@ pub async fn inspect_policy(
     exclude: &[String],
     protected: &[String],
 ) -> Result<Preflight> {
+    inspect_options(
+        root,
+        &super::CaptureOptions {
+            exclude: exclude.to_vec(),
+            protected_paths: protected.to_vec(),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+pub async fn inspect_options(root: &Path, options: &super::CaptureOptions) -> Result<Preflight> {
     tokio::time::timeout(
         Duration::from_secs(30),
-        inspect_inner(root, exclude.to_vec(), protected.to_vec()),
+        inspect_inner(root, options.clone()),
     )
     .await
     .context("Snapshot preflight exceeded its 30-second budget")?
 }
 
-async fn inspect_inner(
-    root: &Path,
-    exclude: Vec<String>,
-    protected: Vec<String>,
-) -> Result<Preflight> {
+async fn inspect_inner(root: &Path, options: super::CaptureOptions) -> Result<Preflight> {
     let deadline = Instant::now() + Duration::from_secs(30);
     let root = run_git(root, &["rev-parse", "--show-toplevel"], None).await?;
     let root = std::path::PathBuf::from(std::str::from_utf8(&root)?.trim());
@@ -55,10 +63,11 @@ async fn inspect_inner(
     )
     .await?;
     tokio::task::spawn_blocking(move || {
-        let options = super::CaptureOptions { exclude, ..Default::default() };
+        let classify = options.exclusion_classifier()?;
+        let mut resource_exclusions = options.exclusion_evidence();
         let selected = options.selector()?;
         let mut protection = globset::GlobSetBuilder::new();
-        for pattern in protected { protection.add(globset::Glob::new(&pattern)?); }
+        for pattern in &options.protected_paths { protection.add(globset::Glob::new(pattern)?); }
         let protection = protection.build()?;
         let mut excluded = BTreeSet::new();
         let mut sizes = BTreeMap::<String, u64>::new();
@@ -96,6 +105,7 @@ async fn inspect_inner(
             }
         }
         for path in &excluded {
+            if let Some(reason) = classify(path) { resource_exclusions.record(path, reason, 100); }
             anyhow::ensure!(!protection.is_match(path), "exclude matches a protected verification input: {path}");
         }
         let oversized: Vec<_> = sizes.into_iter().filter(|(_, size)| *size > DEFAULT_FILE_BYTES as u64)
@@ -104,6 +114,7 @@ async fn inspect_inner(
         let recommended = (maximum > 0 && maximum <= MAX_FILE_BYTES as u64)
             .then(|| maximum.div_ceil(1024 * 1024));
         let mut next_steps = vec![
+            "Default document/media exclusions are not read, verified or available to commands. Use unstructured_documents.retain to restore dependencies, or enabled: false to disable default exclusions; restored inputs remain subject to acquisition budgets.".into(),
             "Review detected languages and suggested commands before adopting the candidate.".into(),
             "Checks select delivery lines from the chosen worktree, index, diff or MR, retaining unexcluded dependency context. --path alone does not exclude acquisition.".into(),
             "To trim reviewed historical resources, add repository-relative globs to qualitygate.yaml exclude, for example exclude: ['legacy/demos/**']. Excluded files are not read or available to build/test commands. Rerun init, then check the intended snapshot; commit/stage this policy for diff/MR/staged checks.".into(),
@@ -118,6 +129,7 @@ async fn inspect_inner(
             next_steps.insert(0, "Unsupported Git/worktree entries prevent capture; review the listed paths before checking.".into());
         }
         Ok(Preflight {
+            resource_exclusions,
             excluded_file_count: excluded.len(), excluded_paths: excluded.iter().take(100).cloned().collect(),
             scope: "HEAD and eligible worktree metadata", head, complete: true,
             default_max_file_bytes: DEFAULT_FILE_BYTES, maximum_max_file_bytes: MAX_FILE_BYTES,

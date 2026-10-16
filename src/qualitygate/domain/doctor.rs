@@ -126,6 +126,7 @@ pub struct SnapshotBudget {
     pub unsupported_entries: Vec<String>,
     pub excluded_file_count: usize,
     pub excluded_paths: Vec<String>,
+    pub resource_exclusions: super::resource_exclusions::Evidence,
     pub protected_exclusion_count: usize,
     pub protected_exclusions: Vec<String>,
     pub details_truncated: bool,

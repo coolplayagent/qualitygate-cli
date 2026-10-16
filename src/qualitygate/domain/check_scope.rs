@@ -23,6 +23,8 @@ pub struct ScopeEvidence {
     pub mode: CheckScope,
     pub exclude: Vec<String>,
     pub excluded_paths: Vec<String>,
+    #[serde(default)]
+    pub resource_exclusions: super::resource_exclusions::Evidence,
     pub changed_files: Vec<String>,
     pub changed_lines: usize,
     pub execution_context_digest: String,

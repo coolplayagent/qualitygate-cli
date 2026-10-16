@@ -38,6 +38,31 @@ fn check(root: &Path, code: i32) -> serde_json::Value {
 const NAMING: &str = "language: [java, python]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method, change: added}\nthen: {name_pattern: '^test_descriptive_.+$'}";
 
 #[test]
+fn custom_rule_sources_are_protected_even_with_a_document_suffix() {
+    let directory = fixture();
+    let root = directory.path();
+    policy(root, "");
+    definition(root, NAMING);
+    std::fs::rename(root.join("AGENTS.md"), root.join("rules.pdf")).unwrap();
+    let path = root.join("private-rules/private.yaml");
+    let definition = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace("AGENTS.md", "rules.pdf");
+    std::fs::write(path, definition).unwrap();
+    reviews::record(root).unwrap();
+    std::fs::write(root.join("test_t.py"), "def test_wrong():\n    pass\n").unwrap();
+    let result = check(root, 1);
+    assert_eq!(
+        result["selection"]["resource_exclusions"]["default_excluded_count"],
+        0
+    );
+    let initialized = report(&cli(root, &["init", "--format", "json"]), 0);
+    assert_eq!(initialized["snapshot_preflight"]["excluded_file_count"], 0);
+    let preflight = report(&cli(root, &["doctor", "--format", "json"]), 0);
+    assert_eq!(preflight["budgets"][1]["excluded_file_count"], 0);
+}
+
+#[test]
 fn removing_a_baseline_comment_after_a_move_retains_only_marker_obligations() {
     let root = fixture();
     let root = root.path();

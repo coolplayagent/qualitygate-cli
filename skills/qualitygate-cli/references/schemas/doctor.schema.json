@@ -159,7 +159,8 @@
             "changed_files",
             "changed_lines",
             "execution_context_digest",
-            "empty_delivery"
+            "empty_delivery",
+            "resource_exclusions"
           ],
           "properties": {
             "mode": {
@@ -192,6 +193,9 @@
             },
             "empty_delivery": {
               "type": "boolean"
+            },
+            "resource_exclusions": {
+              "$ref": "#/$defs/resource_exclusions"
             }
           }
         },
@@ -235,7 +239,8 @@
           "protected_exclusion_count",
           "protected_exclusions",
           "details_truncated",
-          "recommended_max_file_mib"
+          "recommended_max_file_mib",
+          "resource_exclusions"
         ],
         "properties": {
           "side": {
@@ -343,6 +348,9 @@
                 "type": "null"
               }
             ]
+          },
+          "resource_exclusions": {
+            "$ref": "#/$defs/resource_exclusions"
           }
         }
       }
@@ -765,6 +773,73 @@
               "minimum": 0
             }
           }
+        }
+      }
+    },
+    "resource_exclusions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classifier_version",
+        "policy",
+        "protected_paths",
+        "default_excluded_count",
+        "default_excluded_paths",
+        "explicit_excluded_count",
+        "explicit_excluded_paths",
+        "details_truncated"
+      ],
+      "properties": {
+        "classifier_version": {
+          "const": 1
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "retain"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "retain": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "protected_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "default_excluded_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "default_excluded_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "explicit_excluded_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "explicit_excluded_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "details_truncated": {
+          "type": "boolean"
         }
       }
     }

@@ -431,10 +431,10 @@ impl Cli {
                     config::initialize_at(&initialize_root, path.as_ref(), with_checks)
                 })
                 .await??;
-                let snapshot_preflight = match crate::snapshot::preflight::inspect_policy(
+                let snapshot_preflight = match application::initialization_preflight(
                     &root,
-                    &initialized.config.exclude,
-                    &config::exclusions::protected_paths(&initialized.config, &self.config, None),
+                    &initialized.config,
+                    &self.config,
                 )
                 .await
                 {

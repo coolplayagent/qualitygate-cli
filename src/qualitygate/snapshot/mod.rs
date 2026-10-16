@@ -191,70 +191,38 @@ async fn capture_inner(
     )?;
     let scope = acquisition.options.scope;
     let exclude = acquisition.options.exclude.clone();
-    let excluded_paths = if exclude.is_empty() {
-        Vec::new()
-    } else {
-        let selected = acquisition.options.selector()?;
-        let mut paths = std::collections::BTreeSet::new();
-        for reference in [&base, &target] {
-            let names = run_git(
-                &root,
-                &["ls-tree", "-r", "--name-only", "-z", reference],
-                None,
-            )
-            .await?;
-            for name in names.split(|b| *b == 0).filter(|p| !p.is_empty()) {
-                let path = std::str::from_utf8(name)?;
-                if !selected(path) {
-                    paths.insert(path.to_owned());
-                }
-            }
-        }
-        if matches!(
-            selection,
-            Selection::Worktree { .. } | Selection::Path { .. } | Selection::Staged
-        ) {
-            let args: &[&str] = if matches!(selection, Selection::Staged) {
-                &["ls-files", "--cached", "-z"]
-            } else {
-                &[
-                    "ls-files",
-                    "--cached",
-                    "--others",
-                    "--exclude-standard",
-                    "-z",
-                ]
-            };
-            let names = run_git(&root, args, None).await?;
-            for name in names.split(|b| *b == 0).filter(|p| !p.is_empty()) {
-                let path = std::str::from_utf8(name)?;
-                if !selected(path) {
-                    paths.insert(path.to_owned());
-                }
-            }
-        }
-        anyhow::ensure!(
-            paths.len() <= MAX_FILES,
-            "Excluded inventory exceeds file budget"
-        );
-        paths.into_iter().collect()
-    };
+    let mut resource_exclusions = acquisition.options.exclusion_evidence();
+    let classify = acquisition.options.exclusion_classifier()?;
     // Diffing and hashing scale with snapshot contents and must not occupy an async worker.
     let deadline = Some(acquisition.deadline);
+    let acquisition = acquisition.clone();
     tokio::task::spawn_blocking(move || {
+        let excluded_paths = acquisition.excluded_paths()?;
+        for path in &excluded_paths {
+            if let Some(reason) = classify(path) {
+                resource_exclusions.record(path, reason, MAX_FILES);
+            }
+        }
         let changes = changes::compare_until(&base_files, &files, deadline)?;
         let context_digest = content_digest_until(&files, deadline)?;
         let scope_evidence = crate::domain::check_scope::ScopeEvidence {
-            mode: scope, exclude, excluded_paths,
+            mode: scope,
+            exclude,
+            excluded_paths,
+            resource_exclusions,
             changed_files: changes.keys().cloned().collect(),
-            changed_lines: changes.values().map(|change| change.added_lines.len()).sum(),
-            execution_context_digest: context_digest.clone(), empty_delivery: changes.is_empty(),
+            changed_lines: changes
+                .values()
+                .map(|change| change.added_lines.len())
+                .sum(),
+            execution_context_digest: context_digest.clone(),
+            empty_delivery: changes.is_empty(),
         };
-        let verification_digest = if scope == crate::domain::check_scope::CheckScope::Repository && scope_evidence.exclude.is_empty() && path_filter.is_none() {
-            None
-        } else {
-            Some(digest(&serde_json::to_vec(&serde_json::json!({"context":context_digest,"base_context":content_digest_until(&base_files, deadline)?,"scope":scope_evidence,"path_filter":path_filter,"changes":changes}))?))
-        };
+        let verification_digest = Some(digest(&serde_json::to_vec(&serde_json::json!({
+            "context":context_digest,
+            "base_context":content_digest_until(&base_files, deadline)?,
+            "scope":scope_evidence,"path_filter":path_filter,"changes":changes
+        }))?));
         Ok(Snapshot {
             scope_evidence,
             root,

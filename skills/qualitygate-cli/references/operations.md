@@ -221,3 +221,18 @@ with the same selector/profile/task/policy and budgets before formal check.
 Use the large-repository template only when metadata or repository instructions
 justify increasing the 2 MiB default toward the 8 MiB maximum. Total and per-file
 budgets are independent. A preflight pass is not a delivery verdict.
+
+## Default document and media acquisition exclusions
+
+Runtimes advertising `snapshot.unstructured-documents.v1` default to excluding
+known document/media suffixes before reading content, even with `exclude: []`.
+Classifier v1 uses case-insensitive final suffixes: documents
+`pdf doc docx xls xlsx ppt pptx odt ods odp rtf`, images
+`png jpg jpeg gif webp bmp tif tiff ico avif heic heif`, audio/video
+`mp3 wav flac aac ogg m4a mp4 mov avi mkv webm mpeg mpg`.
+Markdown, HTML, SVG, fonts, archives and unknown `.bin` remain inputs. Use
+`unstructured_documents: {enabled: false}` to disable defaults, or `retain`
+repository-relative globs for command dependencies. Protected inputs remain
+captured; explicit exclusions keep their existing protection errors. Restored
+files still obey acquisition budgets. Do not claim excluded resources are checked.
+Inspect `selection.resource_exclusions` and the corresponding doctor/init counts.

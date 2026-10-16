@@ -54,3 +54,44 @@ omission。可选外部 judgment provider 只能在 shadow/advisory 模式评估
 ---
 
 [上一章：项目与工具报告](03-projects-and-tool-reports.md) · [全书目录](../README.md) · [下一章：退出码与资源限制](05-exit-codes-and-resource-limits.md)
+
+## 默认排除文档与媒体资源
+
+排除证据复用内容采集时的 base 和所选 target 文件列表，不再单独调用 Git 扫描。
+仅存在于未选中中间 HEAD 的路径不计入排除清单。
+
+`unstructured_documents` 缺省为 `enabled: true`、`retain: []`，已有配置（包括
+`exclude: []`）也生效，因此升级会改变这些策略的采集覆盖范围。新初始化配置会显式
+写出默认值。运行时通过 `snapshot.unstructured-documents.v1` 声明支持此能力。
+
+```yaml
+unstructured_documents:
+  enabled: true
+  retain: ['assets/required.pdf', 'tests/fixtures/**']
+```
+
+版本 1 分类器按文件名最后一个后缀识别，不区分 ASCII 大小写：
+
+- 文档：`pdf doc docx xls xlsx ppt pptx odt ods odp rtf`。
+- 图片：`png jpg jpeg gif webp bmp tif tiff ico avif heic heif`。
+- 音视频：`mp3 wav flac aac ogg m4a mp4 mov avi mkv webm mpeg mpg`。
+
+不检查内容，也不根据大小猜测类型。Markdown、纯文本、HTML、SVG、字体、压缩包、
+未知 `.bin` 及其他未列出的后缀仍参与采集。因此 9 MiB PDF 可被排除，9 MiB `.bin`
+仍导致采集 `incomplete`。本能力不提高单文件 8 MiB、总量 1 GiB 的容量上限。
+
+默认排除发生在读取内容和计算字节预算之前，统一作用于 base/target、工作区、索引、
+diff/MR 和历史快照。排除的资源不进入命令执行目录，不接受规则检查，也没有内容完整性
+保证。命令依赖的资源须恢复采集；缺少命令证据不能判定通过。仅修改排除资源时，报告
+受检交付为空，不声称资源通过检查。
+
+`retain` 复用 `exclude` 的有界、区分大小写、仓库相对路径 glob，仅恢复默认排除。
+策略、任务契约、规则来源、验证资产、来源证据和声明的工具输入自动保留。显式
+`exclude` 优先于 `retain`，命中受保护输入仍报错。`enabled: false` 仅关闭默认排除。
+恢复采集的文件仍受正常读取、类型和容量约束。
+
+`selection.resource_exclusions` 记录分类版本、有效配置、保护路径以及分别统计的
+`default_excluded_*`、`explicit_excluded_*` 数量和路径；字段名区分默认及显式排除原因。
+验证摘要绑定这些证据与完整排除清单，不哈希被排除的内容。doctor 预算及 init 预检提供
+同样的分类证据，但路径详情有上限、总数完整，须查看 `details_truncated`。原有
+`excluded_paths` 仍为两类排除的合并清单。

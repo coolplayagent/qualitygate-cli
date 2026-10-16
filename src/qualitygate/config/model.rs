@@ -49,6 +49,8 @@ pub struct Config {
     #[serde(default)]
     pub exclude: Vec<String>,
     #[serde(default)]
+    pub unstructured_documents: crate::domain::resource_exclusions::Policy,
+    #[serde(default)]
     pub languages: Vec<String>,
     #[serde(default)]
     pub rulesets: Vec<String>,
@@ -89,6 +91,7 @@ impl Default for Config {
             agent_obligations: Vec::new(),
             requires: Default::default(),
             exclude: Vec::new(),
+            unstructured_documents: Default::default(),
             languages: Vec::new(),
             rulesets: vec!["core".into()],
             rules: BTreeMap::new(),

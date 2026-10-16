@@ -47,3 +47,5 @@ pub mod check_scope;
 pub mod doctor;
 pub mod runtime;
 pub mod test_effectiveness;
+
+pub mod resource_exclusions;
