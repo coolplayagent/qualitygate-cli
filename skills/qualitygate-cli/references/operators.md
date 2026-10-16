@@ -1,7 +1,7 @@
 # Typed bounded operators
 
-Requires `rules.operators.v2`. This capability is a development addition after
-published 0.5.7; compare capabilities and executable digest, not only version.
+Requires `rules.operators.v2`, available from v0.5.8. Compare capabilities and
+executable digest, not only version.
 Export `qualitygate schema operator-rule` and compare it with the packaged
 [v2 schema](schemas/operator-rule.schema.json). Default `rules schema` and
 `schema project-rule` still export strict v1; v1 rejects `expression`.

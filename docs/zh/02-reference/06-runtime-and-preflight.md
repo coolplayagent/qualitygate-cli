@@ -119,6 +119,8 @@ staged/diff/MR 检查使用选中策略来源，本地未提交的无关排除�
 | 文件契约和报告 ratchet | v0.4.0 | `baa1eb3`，包含于 v0.4.0 |
 | `exclude`、单文件预算与 `init.snapshot_preflight` | v0.5.5 | `98c0a66`；v0.5.1–v0.5.4 标签源码中不存在 |
 | capabilities、`requires`、`required_env`、doctor | v0.5.7 | `82f51a8`；必须核对导出的能力 ID，v0.5.6 不含这些功能 |
+| 条款覆盖与类型化有界算子 | v0.5.8 | `aaa82ff`、`59c91f5`；要求 `constraints.coverage.v1`、`rules.operators.v2` |
+| 使用者 Agent 契约、Rust 宿主与不可变交付 | v0.5.8 | `a780603`、`4579f40`、`8c4488a`；要求 `agent.contracts.v1`、`agent.host.v1`、`agent.delivery.v1` |
 
 PowerShell 与 Windows 原生 Git Bash/MSYS2 使用 Windows 资产；Linux、WSL 使用 Linux 资产。
 Git Bash 可直接调用 `.exe`。带空格路径必须引用，传入原生程序的仓库/资产环境路径通过

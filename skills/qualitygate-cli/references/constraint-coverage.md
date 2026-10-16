@@ -6,8 +6,8 @@ Requires exact runtime capability `constraints.coverage.v1`. Export
 entry in the policy's optional `constraints` array; existing project-rule v1
 is unchanged. At most 256 clauses, 64 check references per clause, and 16
 references per example polarity are accepted within the 1 MiB policy budget.
-This is a development addition after published 0.5.7; its version string alone
-does not establish support. Compare capabilities and executable digest.
+This capability is available from v0.5.8; the version string alone does not
+establish support. Compare capabilities and executable digest.
 
 Read the source and extract clauses before drafting. Obtain each `source` with
 `rules source --document AGENTS.md --section Quality --format json`; never

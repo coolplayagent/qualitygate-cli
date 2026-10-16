@@ -25,17 +25,17 @@
         <h1 id="page-title">Qualitygate CLI</h1>
         <p>Repository policy and task acceptance checks for software development. Each result is bound to the code and policy snapshot it checked, with violations and incomplete execution reported separately.</p>
         <div class="intro-links">
-          <a class="primary-link" href="https://github.com/coolplayagent/qualitygate-cli/releases/tag/v0.5.7">Download v0.5.7</a>
+          <a class="primary-link" href="https://github.com/coolplayagent/qualitygate-cli/releases/tag/v0.5.8">Download v0.5.8</a>
           <a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/README.md">Read the README</a>
         </div>
       </section>
 
       <section id="install" aria-labelledby="install-title">
         <h2 id="install-title">Install the Agent Skill</h2>
-        <p>The release archive contains the Skill instructions, rule references, and matching Linux and Windows CLI binaries. For Codex on Linux or macOS, download and extract it into your skills directory:</p>
-        <pre><code>gh release download v0.5.7 --repo coolplayagent/qualitygate-cli --pattern 'qualitygate-cli-skill-v0.5.7.tar.gz'
+        <p>The release archive contains the Skill instructions, rule references, schemas, and matching Linux and Windows binaries for x86_64 and ARM64. For Codex on Linux, download and extract it into your skills directory:</p>
+        <pre><code>gh release download v0.5.8 --repo coolplayagent/qualitygate-cli --pattern 'qualitygate-cli-skill-v0.5.8.tar.gz'
 mkdir -p ~/.codex/skills/qualitygate-cli
-tar -xzf qualitygate-cli-skill-v0.5.7.tar.gz --strip-components=1 -C ~/.codex/skills/qualitygate-cli</code></pre>
+tar -xzf qualitygate-cli-skill-v0.5.8.tar.gz --strip-components=1 -C ~/.codex/skills/qualitygate-cli</code></pre>
         <p>Windows users can extract the same archive and use its matching <code>assets/windows-*/qualitygate.exe</code> binary. Review the <a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/skills/qualitygate-cli/README.md">package layout and runtime rules</a> before using it.</p>
       </section>
 
@@ -52,11 +52,15 @@ tar -xzf qualitygate-cli-skill-v0.5.7.tar.gz --strip-components=1 -C ~/.codex/sk
           </article>
           <article>
             <h3>Repository rules</h3>
-            <p>Turn enforceable AGENTS.md and policy clauses into source-bound, schema-validated project rules, while reusing built-ins, native lints, ratchets, and bounded command evidence.</p>
+            <p>Turn enforceable AGENTS.md and policy clauses into source-bound, schema-validated rules. Typed bounded operators compose existing text and AST facts alongside native lints, ratchets, and command evidence.</p>
           </article>
           <article>
-            <h3>Agent feedback</h3>
-            <p>Give a coding agent bounded repair feedback while keeping policy changes, missing tools, and human acceptance visible as separate decisions.</p>
+            <h3>Constraint coverage</h3>
+            <p>Track each declared policy clause through adoption and execution. Unsupported clauses, stale reviews, and missing evidence remain visible in the final decision.</p>
+          </article>
+          <article>
+            <h3>Agent contracts and delivery</h3>
+            <p>Project adopted instructions for the working agent. The optional Rust host injects current obligations and requires a fresh full check before exporting an immutable delivery artifact.</p>
           </article>
           <article>
             <h3>Pilot evidence</h3>
@@ -64,6 +68,7 @@ tar -xzf qualitygate-cli-skill-v0.5.7.tar.gz --strip-components=1 -C ~/.codex/sk
           </article>
         </div>
         <pre><code>qualitygate capabilities --format json
+qualitygate --root /path/to/repository init
 qualitygate --root /path/to/repository doctor --worktree --profile full --format json
 qualitygate --root /path/to/repository check --worktree --profile full --format json</code></pre>
         <p>For <code>check</code>, exit code <code>0</code> means a complete pass, <code>1</code> means blocking violations, and <code>2</code> means incomplete validation. A successful <code>doctor</code> result covers only the requested preflight and must be followed by the full check.</p>
@@ -77,6 +82,9 @@ qualitygate --root /path/to/repository check --worktree --profile full --format 
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/01-user-guide/01-installation-and-first-check.md">Start with a repository</a><span>Installation, discovery, and the first snapshot check</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/06-runtime-and-preflight.md">Runtime capabilities and preflight</a><span>Compatibility, environment requirements, and snapshot budgets</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/01-user-guide/06-schema-guided-repository-rules.md">Structured repository rules</a><span>Convert policy prose through Schema, source binding, validation, and review</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/07-constraint-coverage.md">Constraint coverage</a><span>Clause adoption, execution evidence, and unsupported gaps</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/08-bounded-operators.md">Bounded operator rules</a><span>Typed expressions over existing text and AST facts</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/10-agent-host-and-delivery.md">Agent contracts and delivery</a><span>Current instructions, guarded full checks, and immutable artifacts</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/01-user-guide/04-agent-repair-and-acceptance.md">Agent repair</a><span>Bounded feedback, rechecks, and acceptance evidence</span></li>
         </ul>
       </section>

@@ -1,6 +1,6 @@
 # Consuming-agent behavior contracts
 
-Requires `agent.contracts.v1`, a development addition after published 0.5.7.
+Requires `agent.contracts.v1`, available from v0.5.8.
 Compare capabilities and executable digest. Export `schema agent-obligation`
 and compare the [packaged schema](schemas/agent-obligation.schema.json).
 Project-rule v1/v2 remain separate artifact rule protocols.

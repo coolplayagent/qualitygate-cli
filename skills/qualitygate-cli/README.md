@@ -120,3 +120,9 @@ offline capability fingerprints, strict runtime requirements and selected-snapsh
 preflight. It ships [capabilities](references/schemas/capabilities.schema.json)
 and [doctor](references/schemas/doctor.schema.json) schemas. These capabilities
 are available from v0.5.7; inspect capability IDs when selecting a runtime.
+
+From v0.5.8, [constraint coverage](references/constraint-coverage.md) tracks
+declared clauses and their evidence, [typed operators](references/operators.md)
+compose bounded rule expressions, and [agent contracts](references/agent-contracts.md)
+project adopted instructions. The optional [Rust host](references/agent-host.md)
+injects current contracts and guards immutable delivery with full checks.

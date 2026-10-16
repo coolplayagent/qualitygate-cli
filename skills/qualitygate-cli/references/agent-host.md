@@ -1,8 +1,8 @@
 # Rust consuming-agent host and immutable delivery
 
-Requires `agent.contracts.v1`, `agent.host.v1` and `agent.delivery.v1`. These are
-development capabilities after published 0.5.7; compare executable identity and
-capabilities. The [contract reference](agent-contracts.md) defines adopted
+Requires `agent.contracts.v1`, `agent.host.v1` and `agent.delivery.v1`, available
+from v0.5.8. Compare executable identity and capabilities.
+The [contract reference](agent-contracts.md) defines adopted
 obligations and Prompt readiness. This host implements their supported controls.
 
 Use `agent-run` when the user has selected this host workflow and authorized

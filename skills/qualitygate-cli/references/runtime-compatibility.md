@@ -13,6 +13,8 @@ invent a capabilities response or relabel an arbitrary parse error as age.
 | File contracts and report ratchets | v0.4.0 | `baa1eb3` belongs to v0.4.0 |
 | `exclude`, `--snapshot-max-file-mib`, `init.snapshot_preflight` | v0.5.5 | `98c0a66`; absent in v0.5.1–v0.5.4 tagged source |
 | Capabilities, runtime requirements, environment requirements and doctor | v0.5.7 | `82f51a8`; require exported capability IDs; v0.5.6 lacks these additions |
+| Constraint coverage and typed bounded operators | v0.5.8 | `aaa82ff`, `59c91f5`; require `constraints.coverage.v1` and `rules.operators.v2` |
+| Consuming-agent contracts, Rust host and immutable delivery | v0.5.8 | `a780603`, `4579f40`, `8c4488a`; require `agent.contracts.v1`, `agent.host.v1` and `agent.delivery.v1` |
 
 This workflow requires v0.5.7 or a later compatible runtime. A version match
 alone is insufficient. Require `runtime.capabilities.v1`,
