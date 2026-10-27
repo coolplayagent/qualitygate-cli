@@ -4,6 +4,7 @@ mod attestation;
 pub mod case_provenance;
 mod category;
 pub mod constraint;
+pub mod coverage;
 pub mod decision_envelope;
 pub mod delivery;
 pub mod evolution;

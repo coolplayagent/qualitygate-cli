@@ -37,6 +37,13 @@ facts; zero counters are retained. Empty or internally inconsistent reports,
 missing source mappings, duplicate incompatible entries, and parse limits are
 incomplete. A high percentage is not proof of behavior.
 
+Coverage decisions compare exact covered/total counts with the configured
+threshold's canonical decimal value before rounding display percentages. A
+100% threshold requires every measured item to be covered; a 99.9% threshold
+accepts exactly 999/1000. Large counts cannot pass by rounding a deficit away.
+Diagnostics include exact counts even when the displayed percentage rounds to
+the threshold. Empty measured inventories retain null percentages.
+
 SARIF support preserves runs, tool versions, rules, result kinds, messages,
 locations, and partial fingerprints. A ratchet reruns the same analyzer against
 both immutable snapshots and compares `(tool, rule)` counts or stable identities

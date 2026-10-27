@@ -2,7 +2,7 @@ use super::report_gate::map_file;
 use crate::{
     adapters::{reports::Data, rules::diagnostic},
     config::{IncrementMode, ReportSpec},
-    domain::CheckResult,
+    domain::{CheckResult, coverage::below_threshold},
     paths,
     snapshot::Snapshot,
 };
@@ -153,15 +153,15 @@ pub(super) fn apply(
     result
         .metadata
         .insert(format!("{}:coverage", spec.path), evidence.clone());
-    if line_percent.is_some_and(|value| value < threshold)
-        || spec.require_branch_coverage && branch_percent.is_some_and(|value| value < threshold)
+    if below_threshold(hit, total, threshold)?
+        || spec.require_branch_coverage && below_threshold(branches_hit, branches, threshold)?
     {
         result.diagnostics.push(diagnostic(
             &result.id,
             None,
             None,
             format!(
-                "Coverage below {threshold}%: lines {line_percent:?}, branches {branch_percent:?}"
+                "Coverage below {threshold}%: lines {hit}/{total} ({line_percent:?}), branches {branches_hit}/{branches} ({branch_percent:?})"
             ),
             evidence,
             "Add tests for the uncovered behavior and branches",

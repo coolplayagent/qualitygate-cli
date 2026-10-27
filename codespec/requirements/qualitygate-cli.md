@@ -116,6 +116,10 @@ REPORT-COUNT-01：同一检查的测试报告与覆盖率报告累计匹配计�
 证据见 `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`、
 `tests/execution/report_counts.rs` 及[工具报告契约](../../docs/zh/02-reference/03-projects-and-tool-reports.md)。
 
+COVERAGE-THRESHOLD-01：覆盖率阈值按配置值的规范化十进制表示与精确计数比较，不能因展示百分比
+舍入而误放行；小数阈值相等时通过，可选分支与空测量集合语义保持一致。
+证据见 `domain::coverage::tests` 与 `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages`。
+
 ### 3.3 流程门禁
 
 | 功能 | 说明 |

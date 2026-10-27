@@ -92,6 +92,65 @@ impl Fixture {
 }
 
 #[test]
+fn coverage_thresholds_use_exact_counts_before_rounding_percentages() {
+    let mut fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.path().join("src/a.py"),
+        "def measured_value():\n    return 1\n",
+    )
+    .unwrap();
+    fixture.policy["checks"][0]["reports"][0]["format"] = json!("diagnostics");
+    let scale = usize::MAX / 10;
+    for (total, first_pass, threshold) in [
+        (usize::MAX, usize::MAX, 100.0),
+        (scale * 10, scale * 9, 90.0),
+        (1000, 999, 99.9),
+    ] {
+        fixture.policy["checks"][0]["reports"][0]["minimum_coverage"] = json!(threshold);
+        for hit in [first_pass - 1, first_pass] {
+            fixture.input(
+                &json!({"issues":[],"branch_coverage":true,"coverage_files":["src/a.py"],
+                    "coverage":[{"file":"src/a.py","line":1,"hits":1,
+                        "branches_found":total,"branches_hit":hit}]})
+                .to_string(),
+            );
+            for require_branches in [true, false] {
+                fixture.policy["checks"][0]["reports"][0]["require_branch_coverage"] =
+                    json!(require_branches);
+                fixture.configure();
+                let fails = require_branches && hit < first_pass;
+                let code = i32::from(fails);
+                for value in [
+                    fixture.run(code, &[]),
+                    report(
+                        &cli(fixture.root.path(), &["check", "--format", "json"]),
+                        code,
+                    ),
+                ] {
+                    assert_eq!(value["gate"]["complete"], true);
+                    let check = &value["checks"][0];
+                    assert_eq!(check["verdict"], if fails { "fail" } else { "pass" });
+                    let evidence = &check["metadata"]["target/coverage:coverage"];
+                    assert_eq!(evidence["branches"], total);
+                    assert_eq!(evidence["branches_hit"], hit);
+                    assert_eq!(evidence["threshold"], threshold);
+                    let diagnostics = check["diagnostics"].as_array().unwrap();
+                    assert_eq!(diagnostics.len(), usize::from(fails));
+                    if fails {
+                        assert!(
+                            diagnostics[0]["message"]
+                                .as_str()
+                                .unwrap()
+                                .contains(&format!("branches {hit}/{total}"))
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn delivery_coverage_counts_only_changed_executable_lines_and_keeps_evidence_errors() {
     let fixture = Fixture::new();
     let delivery = |code| {
