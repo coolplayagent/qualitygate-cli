@@ -54,6 +54,12 @@ compatibility comparison takes ownership of its captured archives without
 copying the source trees. Independent workspaces and input-mutation checks still
 apply to every execution, including replacement with identical bytes.
 
+An input guard over a shared snapshot reuses its captured content digest;
+constructing a guard from an owned file map computes that digest in the blocking
+worker. Both constructors inspect the materialized bytes, mode and file stamps
+before accepting the guard. Later verification still latches the first failure,
+even if a command restores the original content.
+
 Snapshot identity and policy/task digests flow into every plan and report.
 Before a result is accepted, the application confirms that produced evidence
 belongs to the same materialized snapshot. Mutation, missing objects, invalid

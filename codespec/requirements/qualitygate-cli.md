@@ -130,8 +130,10 @@ OUTPUT-PATH-01：报告路径（含 stdout 标签）与项目输出按仓库相�
 与 `tests/execution/output_aliases.rs`。
 
 SHARED-EXECUTION-01：基线派生由 snapshot 层在阻塞工作线程中完成，直接选择已捕获 base 文件并
-保留父级验证范围绑定。报告与兼容性执行的物化、输入校验共享各自不可变快照；兼容性比较直接接收
-捕获归档，不复制无关源码树。独立工作区、摘要绑定与输入替换检测保持有效。证据见
+保留父级验证范围绑定。报告与兼容性执行的物化、输入校验共享各自不可变快照；共享快照的输入校验器
+复用已绑定的内容摘要，直接接收文件映射时仍在阻塞工作线程中计算摘要。两种路径都要检查创建时的
+实际字节、权限及文件状态，后续篡改失败不能因恢复内容而清除。兼容性比较直接接收捕获归档，
+不复制无关源码树。独立工作区、摘要绑定与输入替换检测保持有效。证据见
 `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`、
 `tests/ratchet.rs` 和 `tests/compatibility.rs`。
 

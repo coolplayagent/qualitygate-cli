@@ -203,10 +203,19 @@ async fn derived_baseline_preserves_binding_and_isolates_shared_execution_inputs
         .await
         .unwrap();
     let new_workspace = materialize_shared(Arc::clone(&source)).await.unwrap();
+    let current_file = new_workspace.path().join("file.txt");
+    std::fs::write(&current_file, "altered\n").unwrap();
+    assert!(
+        InputGuard::for_snapshot(new_workspace.path(), Arc::clone(&source))
+            .await
+            .is_err()
+    );
+    std::fs::write(&current_file, "current\n").unwrap();
     let new_guard = InputGuard::for_snapshot(new_workspace.path(), Arc::clone(&source))
         .await
         .unwrap();
     assert_eq!(old_guard.digest, base.identity.content_digest);
+    assert_eq!(new_guard.digest, source.identity.content_digest);
     let old_file = old_workspace.path().join("file.txt");
     assert_eq!(std::fs::read(&old_file).unwrap(), b"old\n");
     std::fs::write(&old_file, "tampered\n").unwrap();

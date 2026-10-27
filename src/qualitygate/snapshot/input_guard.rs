@@ -62,6 +62,13 @@ impl ExpectedFiles {
             Self::Snapshot(snapshot) => &snapshot.files,
         }
     }
+
+    fn digest(&self) -> String {
+        match self {
+            Self::Owned(files) => content_digest(files),
+            Self::Snapshot(snapshot) => snapshot.identity.content_digest.clone(),
+        }
+    }
 }
 
 pub struct InputGuard {
@@ -75,16 +82,13 @@ impl InputGuard {
     }
 
     pub async fn for_snapshot(root: &Path, snapshot: Arc<super::Snapshot>) -> Result<Self> {
-        let digest = snapshot.identity.content_digest.clone();
-        let mut guard = Self::create(root, ExpectedFiles::Snapshot(snapshot)).await?;
-        guard.digest = digest;
-        Ok(guard)
+        Self::create(root, ExpectedFiles::Snapshot(snapshot)).await
     }
 
     async fn create(root: &Path, files: ExpectedFiles) -> Result<Self> {
         let root = root.to_owned();
         tokio::task::spawn_blocking(move || {
-            let digest = content_digest(files.files());
+            let digest = files.digest();
             let stamps = inspect(&root, files.files())?;
             Ok(Self {
                 inputs: Arc::new(Inputs {
