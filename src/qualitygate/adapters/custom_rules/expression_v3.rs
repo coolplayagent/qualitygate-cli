@@ -1,13 +1,9 @@
 //! Named sources reuse the existing selector adapters without top-level path clipping.
 use super::*;
-use crate::{
-    adapters::{
-        operators::Entity,
-        operators_v3::{self, Collection},
-    },
-    domain::operator::{MAX_ENTITIES, MAX_FACT_BYTES},
+use crate::adapters::{
+    operators::Entity,
+    operators_v3::{self, Collection},
 };
-use std::time::{Duration, Instant};
 
 pub(super) fn evaluate(
     rule: &CustomRule,
@@ -15,37 +11,18 @@ pub(super) fn evaluate(
     facts: &super::super::facts::RuleFacts<'_>,
     primary: &[Subject],
     result: &mut CheckResult,
+    budget: &mut selection::Budget,
 ) -> Result<()> {
-    let started = Instant::now();
-    let mut count = 0usize;
-    let mut bytes = 0usize;
-    let mut budget = |subjects: &[Subject]| -> Result<()> {
-        for subject in subjects.iter().filter(|s| s.triggered) {
-            count = count.saturating_add(1);
-            bytes = bytes
-                .saturating_add(subject.name.len())
-                .saturating_add(subject.text.len())
-                .saturating_add(subject.file.as_ref().map_or(0, String::len));
-        }
-        anyhow::ensure!(
-            count <= MAX_ENTITIES && bytes <= MAX_FACT_BYTES,
-            "Named sources exceed 50000 entities or 32 MiB facts"
-        );
-        anyhow::ensure!(
-            started.elapsed() < Duration::from_secs(30),
-            "Named source acquisition exceeded its 30-second deadline"
-        );
-        Ok(())
-    };
-    budget(primary)?;
+    budget.check()?;
     let mut owned = BTreeMap::new();
     for (name, source) in &rule.sources {
+        budget.check()?;
         let selector = rule.for_source(source);
         requirements(&selector, snapshot, facts)?;
-        let subjects = selected_subjects(&selector, snapshot, facts, true)?;
-        budget(&subjects)?;
+        let subjects = selection::collect(&selector, snapshot, facts, true, Some(budget))?;
         owned.insert(name.clone(), subjects);
     }
+    budget.check()?;
     let mut collections = BTreeMap::new();
     for (name, subjects) in std::iter::once(("entities", primary)).chain(
         owned

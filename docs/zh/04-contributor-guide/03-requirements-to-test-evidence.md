@@ -25,7 +25,7 @@
 | --- | --- |
 | CONSTRAINT-01 来源绑定清单、采用、快照覆盖与显式缺口 | `tests/constraint_coverage.rs`；`domain::constraint::tests` |
 | OPERATOR-01 严格 v2 组合、完整事实、共享预算和有界来源观察记录 | `tests/operators.rs`；`domain::operator::tests`；`adapters::operators::tests`；既有 `tests/rule_authoring.rs`、`tests/custom_rules.rs` 保持 v1 回归 |
-| OPERATOR-02 | `tests/operators/v3.rs` (via `tests/operators.rs`): named source correspondence, unchanged tests, staged/path scope, source/policy changes, schema/generation compatibility, missing facts and exhaustion; `domain::operator_v3::tests` and `adapters::operators_v3::tests`: lexical typing, projection, set operations, UTF-8, provenance and shared budgets. |
+| OPERATOR-02 | `tests/operators/v3.rs` (via `tests/operators.rs`): named source correspondence, unchanged tests, staged/path scope, source/policy changes, schema/generation compatibility, missing facts and exhaustion; `domain::operator_v3::tests` and `adapters::operators_v3::tests`: lexical typing, projection, set operations, UTF-8, provenance and shared budgets; `adapters::custom_rules::selection::tests`: shared acquisition limits, reservations before copying and inherited syntax deadlines; `v3_acquisition_exhaustion_keeps_prior_violations_and_never_claims_complete_inputs`: incomplete acquisition retains fixed findings. |
 | 内置与项目规则 | `tests/issue9_rules.rs` 到 `tests/issue20_rules.rs`、`tests/custom_rules.rs`、`tests/rule_authoring.rs` |
 | 规则类别、修改、候选、推广与生命周期 | `tests/rule_management.rs`、`tests/policy_categories.rs`、`tests/policy_candidates.rs`、`tests/policy_promotion.rs`、`tests/policy_lifecycle.rs` |
 | 文件契约与独立测试反例 | `tests/file_contracts.rs`、`tests/test_effectiveness.rs` |

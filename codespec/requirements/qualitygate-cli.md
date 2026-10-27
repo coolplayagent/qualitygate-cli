@@ -721,6 +721,12 @@ ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际
 | --- | --- | --- |
 | CONSTRAINT-01 | 有界严格条款清单绑定规范章节、解释、例子、有效检查定义及采用记录；来源保护、策略冻结、快照范围保持一致；未采用、过期、不支持、未运行和超时保留缺口；必需条款违规阻断，可选缺口可见，不能宣称自然语言提取已穷尽或标签提供了宿主强制能力 | `tests/constraint_coverage.rs`；`domain::constraint::tests`；[条款覆盖](../../docs/zh/02-reference/07-constraint-coverage.md) |
 | OPERATOR-01 | 通过独立 v2 契约提供类型化有限算子，v1 拒绝新字段；所有声明事实完整且绑定后求值；空集合语义、错误类型、深度/节点/集合/字节/运算/时间共享预算明确；失败条件与执行缺口分开，保留已有违规和有界表达式/实体来源观察记录 | `tests/operators.rs`；`domain::operator::tests`；`adapters::operators::tests`；[有界算子](../../docs/zh/02-reference/08-bounded-operators.md) |
-| OPERATOR-02 | 独立 v3 契约提供命名事实来源、词法变量与外层引用、标量投影/去重/集合比较及有界字符串变换；全部来源绑定同一快照，未改动对应文件可显式参与；类型、完整性、操作/扫描/物化/时间预算失败不静默降级；v1/v2 保持兼容，无额外语言运行时 | `tests/operators/v3.rs`（通过 `tests/operators.rs`）；`domain::operator_v3::tests`；`adapters::operators_v3::tests`；[有界算子](../../docs/zh/02-reference/08-bounded-operators.md) |
+| OPERATOR-02 | 独立 v3 契约提供命名事实来源、词法变量与外层引用、标量投影/去重/集合比较及有界字符串变换；全部来源绑定同一快照，未改动对应文件可显式参与；打包示例的文档源摘要在 Windows 风格检出后仍按精确字节校验；主集合与命名来源共享采集截止时间，复制事实前预留实体/字节额度，语法解析和匹配继承剩余时间；类型、完整性、操作/扫描/物化/时间预算失败不静默降级；v1/v2 保持兼容，无额外语言运行时 | `tests/operators/v3.rs`（通过 `tests/operators.rs`）；`domain::operator_v3::tests`；`adapters::operators_v3::tests`；`adapters::custom_rules::selection::tests`；[有界算子](../../docs/zh/02-reference/08-bounded-operators.md) |
 | AGENT-01 | Project adopted behavior obligations for the consuming agent with source/policy/task/snapshot bindings; readiness never implies compliance or host enforcement. Required gaps and conflicts remain incomplete. |
 | AGENT-HOST-01 | The Rust host injects current obligations before agent launches and guards delivery with host-owned current full evidence, fixed policy/task identity and content-addressed checked bytes. Unsupported required controls remain incomplete; resume/handoff cannot reuse completion. Canonical repository/output paths keep delivery outside checked inputs on every platform. | `tests/agent_host.rs`; `tests/delivery.rs`, including `equivalent_repository_paths_cannot_bypass_delivery_confinement`; `tests/agent_loop.rs`; pure `domain/agent_host_tests.rs` |
+
+## 17. 测试执行隔离
+
+| 编号 | 要求 | 验收证据 |
+| --- | --- | --- |
+| TEST-ISOLATION-01 | CLI 集成测试的 Cargo 夹具独立使用物化快照内的构建目录，不继承父测试进程的 `CARGO_TARGET_DIR`，避免并行同名项目产物互串；父构建缓存保持不变，真实缺陷、修复、重构断言不得减弱；生产 CLI 的环境契约不变 | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory`；[自检与 fixtures](../../docs/zh/04-contributor-guide/02-selfcheck-and-fixtures.md) |

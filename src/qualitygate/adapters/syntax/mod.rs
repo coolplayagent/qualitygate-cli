@@ -48,6 +48,24 @@ pub fn language(path: &str) -> Option<&'static str> {
 }
 
 pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
+    parse_before(path, bytes, Instant::now() + Duration::from_secs(2))
+}
+
+/// Parsing and fact extraction cannot outlive the caller's acquisition deadline.
+pub(super) fn parse_before(
+    path: &str,
+    bytes: &[u8],
+    deadline: Instant,
+) -> Result<Option<Structure>> {
+    let deadline = deadline.min(Instant::now() + Duration::from_secs(2));
+    let check_deadline = || -> Result<()> {
+        anyhow::ensure!(
+            Instant::now() < deadline,
+            "Syntax parsing exceeded its budget: {path}"
+        );
+        Ok(())
+    };
+    check_deadline()?;
     let Some(language) = language(path) else {
         return Ok(None);
     };
@@ -66,9 +84,8 @@ pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
     };
     let mut parser = Parser::new();
     parser.set_language(&grammar)?;
-    let started = Instant::now();
     let mut progress = |_: &tree_sitter::ParseState| {
-        if started.elapsed() > Duration::from_secs(2) {
+        if Instant::now() >= deadline {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())
@@ -90,6 +107,7 @@ pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
     let mut pending = vec![tree.root_node()];
     let mut visited = 0;
     while let Some(node) = pending.pop() {
+        check_deadline()?;
         visited += 1;
         if visited > 200_000 {
             bail!("Source syntax exceeds node budget: {path}");
@@ -133,6 +151,7 @@ pub fn parse(path: &str, bytes: &[u8]) -> Result<Option<Structure>> {
     result
         .comments
         .sort_by_key(|comment| comment.range.start_line);
+    check_deadline()?;
     Ok(Some(result))
 }
 

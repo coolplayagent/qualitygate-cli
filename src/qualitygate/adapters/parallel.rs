@@ -7,6 +7,13 @@ pub(super) fn deadline() -> Instant {
     Instant::now() + Duration::from_secs(30)
 }
 
+pub(super) fn check_deadline(deadline: Instant) -> Result<()> {
+    if Instant::now() >= deadline {
+        bail!("Rule analysis exceeded 30 seconds");
+    }
+    Ok(())
+}
+
 pub(super) fn map<T: Sync, R: Send>(
     items: &[T],
     deadline: Instant,
@@ -28,9 +35,7 @@ fn map_with_jobs<T: Sync, R: Send>(
         bail!("Rule analysis jobs must be 1..4");
     }
     let evaluate = |item: &T| {
-        if Instant::now() >= deadline {
-            bail!("Rule analysis exceeded 30 seconds");
-        }
+        check_deadline(deadline)?;
         operation(item)
     };
     let results = if jobs == 1 || items.len() < 16 {
@@ -65,9 +70,7 @@ fn map_with_jobs<T: Sync, R: Send>(
             Ok(ordered)
         })?
     };
-    if Instant::now() >= deadline {
-        bail!("Rule analysis exceeded 30 seconds");
-    }
+    check_deadline(deadline)?;
     Ok(results)
 }
 

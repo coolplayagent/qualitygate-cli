@@ -4,6 +4,7 @@ use super::syntax::{self, Entity, Structure};
 use crate::snapshot::{self, File, Snapshot};
 use anyhow::{Result, bail};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::time::Instant;
 
 pub(super) struct TestChange {
     pub entity: Entity,
@@ -32,14 +33,17 @@ pub(super) fn collect(
         paths,
         languages,
         |path| snapshot.includes(path),
+        super::parallel::deadline(),
     )
 }
 
-/// Named sources have their own explicit selectors, independent of feedback filtering.
-pub(super) fn collect_independent(
+/// A v3 source inherits its acquisition deadline; named selectors bypass feedback filtering.
+pub(super) fn collect_before(
     snapshot: &Snapshot,
     paths: &[String],
     languages: &[String],
+    independent: bool,
+    deadline: Instant,
 ) -> Result<Vec<FileView>> {
     analyze(
         &snapshot.base_files,
@@ -47,7 +51,8 @@ pub(super) fn collect_independent(
         &snapshot.changes,
         paths,
         languages,
-        |_| true,
+        |path| independent || snapshot.includes(path),
+        deadline,
     )
 }
 
@@ -62,6 +67,7 @@ pub(super) fn collect_between(
         &[],
         &[],
         |_| true,
+        super::parallel::deadline(),
     )
 }
 
@@ -72,7 +78,9 @@ fn analyze(
     paths: &[String],
     languages: &[String],
     includes: impl Fn(&str) -> bool,
+    deadline: Instant,
 ) -> Result<Vec<FileView>> {
+    super::parallel::check_deadline(deadline)?;
     for language in languages {
         if !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str()) {
             bail!("Syntax capability unavailable for language: {language}");
@@ -96,24 +104,24 @@ fn analyze(
             })
         })
         .collect();
-    let deadline = super::parallel::deadline();
     for chunk in selected.chunks(64) {
         let parsed = super::parallel::map(chunk, deadline, |(path, change)| {
             let current = files
                 .get(*path)
-                .map(|file| syntax::parse(path, &file.bytes))
+                .map(|file| syntax::parse_before(path, &file.bytes, deadline))
                 .transpose()?
                 .flatten();
             let previous = change
                 .old_path
                 .as_ref()
                 .and_then(|old_path| base_files.get(old_path).map(|file| (old_path, file)))
-                .map(|(old_path, file)| syntax::parse(old_path, &file.bytes))
+                .map(|(old_path, file)| syntax::parse_before(old_path, &file.bytes, deadline))
                 .transpose()?
                 .flatten();
             Ok(((*path).clone(), change.old_path.clone(), current, previous))
         })?;
         for (path, old_path, current, previous) in parsed {
+            super::parallel::check_deadline(deadline)?;
             if let Some(view) = current {
                 entity_count += view.tests.len();
                 head.insert(path, view);
@@ -142,6 +150,7 @@ fn analyze(
     let mut ambiguous_matches = BTreeSet::new();
     let mut symbols: BTreeMap<_, VecDeque<_>> = BTreeMap::new();
     for (index, (path, language, test)) in old.iter().enumerate() {
+        super::parallel::check_deadline(deadline)?;
         symbols
             .entry((path.as_str(), language.as_str(), test.symbol.as_str()))
             .or_default()
@@ -150,6 +159,7 @@ fn analyze(
     // Reserve every surviving symbol before assigning a removed body to a move.
     for (path, view) in &head {
         for (index, test) in view.tests.iter().enumerate() {
+            super::parallel::check_deadline(deadline)?;
             if let Some(candidates) =
                 symbols.get_mut(&(path.as_str(), view.language.as_str(), test.symbol.as_str()))
             {
@@ -168,6 +178,7 @@ fn analyze(
     // matching; repeated trivial bodies otherwise exchange identities on reorder.
     let mut named_bodies: BTreeMap<_, VecDeque<_>> = BTreeMap::new();
     for (index, (_, language, entity)) in old.iter().enumerate() {
+        super::parallel::check_deadline(deadline)?;
         if !used.contains(&index) {
             named_bodies
                 .entry((
@@ -182,6 +193,7 @@ fn analyze(
     let mut moved = BTreeMap::new();
     for (path, view) in &head {
         for (index, entity) in view.tests.iter().enumerate() {
+            super::parallel::check_deadline(deadline)?;
             if matches.contains_key(&(path.clone(), index)) {
                 continue;
             }
@@ -200,6 +212,7 @@ fn analyze(
     }
     let mut bodies: BTreeMap<_, VecDeque<_>> = BTreeMap::new();
     for (index, (_, language, entity)) in old.iter().enumerate() {
+        super::parallel::check_deadline(deadline)?;
         if !used.contains(&index) {
             bodies
                 .entry((language.to_string(), entity.body_digest.clone()))
@@ -209,8 +222,10 @@ fn analyze(
     }
     let mut result = Vec::new();
     for (path, view) in head {
+        super::parallel::check_deadline(deadline)?;
         let mut tests = Vec::new();
         for (index, entity) in view.tests.iter().enumerate() {
+            super::parallel::check_deadline(deadline)?;
             let direct = matches.get(&(path.clone(), index)).copied();
             let named = moved.get(&(path.clone(), index)).copied();
             let mut ambiguous = named.is_some_and(|(_, ambiguous)| ambiguous)
@@ -258,5 +273,6 @@ fn analyze(
             });
         }
     }
+    super::parallel::check_deadline(deadline)?;
     Ok(result)
 }

@@ -100,6 +100,36 @@ fn head(root: &Path) -> String {
     String::from_utf8(output.stdout).unwrap().trim().into()
 }
 
+#[test]
+fn cargo_fixture_builds_ignore_parent_target_directory() {
+    let parent_cache = tempfile::tempdir().unwrap();
+    let marker = parent_cache.path().join("parent-cache-marker");
+    std::fs::write(&marker, "preserve parent artifacts").unwrap();
+    // Replay a real defect/repair/refactor case with an inherited override.
+    // Do not mutate this process's environment while other tests are running.
+    let output = Command::new(std::env::current_exe().unwrap())
+        .env("CARGO_TARGET_DIR", parent_cache.path())
+        .args([
+            "--exact",
+            "task_templates_capture_real_assertions_and_allow_behavior_preserving_refactors",
+            "--nocapture",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+    assert_eq!(std::fs::read_dir(parent_cache.path()).unwrap().count(), 1);
+    assert_eq!(
+        std::fs::read_to_string(marker).unwrap(),
+        "preserve parent artifacts"
+    );
+}
+
 fn execution(report: &Value) -> &Value {
     report["checks"]
         .as_array()

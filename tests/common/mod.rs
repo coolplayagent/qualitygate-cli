@@ -37,6 +37,8 @@ pub fn fixture() -> tempfile::TempDir {
 #[allow(dead_code)] // Core-only integration targets share the fixture/report helpers.
 pub fn cli(root: &Path, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_qualitygate"))
+        // Fixture Cargo projects must not share the parent test runner's artifacts.
+        .env_remove("CARGO_TARGET_DIR")
         .env(
             "QUALITYGATE_HOME",
             root.join(".git/qualitygate-test-evidence"),

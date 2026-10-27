@@ -27,7 +27,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | --- | --- |
 | CONSTRAINT-01 source-bound inventory, adoption, snapshot coverage and explicit gaps | `tests/constraint_coverage.rs`; `domain::constraint::tests` |
 | OPERATOR-01 strict v2 composition, complete facts, shared budgets and bounded source observations | `tests/operators.rs`; `domain::operator::tests`; `adapters::operators::tests`; existing `tests/rule_authoring.rs` and `tests/custom_rules.rs` preserve v1 |
-| OPERATOR-02 | `tests/operators/v3.rs` (via `tests/operators.rs`): named source correspondence, unchanged tests, staged/path scope, source/policy changes, schema/generation compatibility, missing facts and exhaustion; `domain::operator_v3::tests` and `adapters::operators_v3::tests`: lexical typing, projection, set operations, UTF-8, provenance and shared budgets. |
+| OPERATOR-02 | `tests/operators/v3.rs` (via `tests/operators.rs`): named source correspondence, unchanged tests, staged/path scope, source/policy changes, schema/generation compatibility, missing facts and exhaustion; `domain::operator_v3::tests` and `adapters::operators_v3::tests`: lexical typing, projection, set operations, UTF-8, provenance and shared budgets; `adapters::custom_rules::selection::tests`: shared acquisition limits, reservations before copying and inherited syntax deadlines; `v3_acquisition_exhaustion_keeps_prior_violations_and_never_claims_complete_inputs`: incomplete acquisition retains fixed findings. |
 | Built-in and project rules | `tests/issue9_rules.rs` through `tests/issue20_rules.rs`, `tests/custom_rules.rs`, `tests/rule_authoring.rs` |
 | Rule categories, mutation, candidates, promotion, and lifecycle | `tests/rule_management.rs`, `tests/policy_categories.rs`, `tests/policy_candidates.rs`, `tests/policy_promotion.rs`, `tests/policy_lifecycle.rs` |
 | File contracts and independent test counterexamples | `tests/file_contracts.rs`, `tests/test_effectiveness.rs` |
@@ -49,6 +49,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 
 | Requirement area | Principal repeatable evidence |
 | --- | --- |
+| TEST-ISOLATION-01: fixture Cargo outputs cannot share the parent build cache | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory` replays real defect/repair/refactor assertions and verifies the parent cache remains untouched |
 | Architecture, documentation, site, and Skill release | `tests/quality/architecture.rs`, `documentation.rs`, `site.rs`, `skill_package.rs` |
 
 Rule regression tests retain positive, negative, malformed-input, boundary,

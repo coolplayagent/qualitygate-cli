@@ -89,3 +89,8 @@ requires configured tests and, when appropriate, `test_effectiveness`.
 ---
 
 [Previous: Constraint coverage](07-constraint-coverage.md) · [Contents](../README.md) · [Next: Consuming-agent contracts](09-agent-contracts.md)
+
+The primary selection and all named sources share one acquisition deadline and
+entity/byte allowance. Selectors reserve normalized facts before copying them;
+syntax parsing and entity matching inherit the remaining time. Exhaustion leaves
+the check incomplete and preserves fixed violations already established.

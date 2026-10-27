@@ -235,6 +235,21 @@ fn packaged_correspondence_example_is_source_bound_and_executable() {
         include_str!("../../skills/qualitygate-cli/references/operators-v3.md"),
     )
     .unwrap();
+    std::fs::write(
+        root.join(".gitattributes"),
+        include_str!("../../.gitattributes"),
+    )
+    .unwrap();
+    // Reproduce Windows-style checkout conversion on every platform. The
+    // packaged source hash remains a byte-exact contract, including line endings.
+    git(root, &["config", "core.autocrlf", "true"]);
+    git(root, &["add", ".gitattributes", document]);
+    std::fs::remove_file(root.join(document)).unwrap();
+    git(root, &["checkout", "--", document]);
+    assert_eq!(
+        std::fs::read(root.join(document)).unwrap(),
+        include_bytes!("../../skills/qualitygate-cli/references/operators-v3.md")
+    );
     let example =
         include_str!("../../skills/qualitygate-cli/references/examples/operators-v3.yaml");
     std::fs::write(root.join("candidate.yaml"), example).unwrap();
@@ -288,5 +303,42 @@ fn packaged_correspondence_example_is_source_bound_and_executable() {
         "#[test] fn widget_test() {}\n",
     )
     .unwrap();
+    check(root, 0);
+}
+
+#[test]
+fn v3_acquisition_exhaustion_keeps_prior_violations_and_never_claims_complete_inputs() {
+    let dir = setup();
+    let root = dir.path();
+    let mut value = rule(json!({"op":"bool","value":true}));
+    value["sources"] = json!({});
+    for index in 0..16 {
+        value["sources"][format!("source{index}")] = json!({
+            "when":{"entity":"file","change":"all"},
+            "applies_to":{"paths":["src/**/*.rs"]},
+            "requires_capabilities":["files"]
+        });
+    }
+    value["then"] = json!({"min_count":2});
+    install(root, &value);
+    std::fs::write(root.join("src/a.rs"), vec![b'a'; 2 * 1024 * 1024]).unwrap();
+    let incomplete = check(root, 2);
+    let result = &incomplete["checks"][0];
+    assert_eq!(incomplete["gate"]["complete"], false);
+    assert!(
+        result["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("32 MiB facts")
+    );
+    assert_eq!(
+        result["diagnostics"][0]["evidence"]["assertion"],
+        "min_count"
+    );
+    assert!(result["metadata"].get("expression_inputs").is_none());
+    // Every source is still visited when the root expression is a constant.
+    value["sources"] = json!({});
+    value["then"] = json!({});
+    install(root, &value);
     check(root, 0);
 }

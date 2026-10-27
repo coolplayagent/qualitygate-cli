@@ -1,6 +1,6 @@
 //! Finite DSL version 1 over snapshot, Git and language facts.
 
-use super::{entity_changes, markers, rules::diagnostic, syntax};
+use super::{markers, rules::diagnostic, syntax};
 use crate::{
     config::{CustomRule, RuleSetting},
     domain::*,
@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 
 mod expression_v3;
 mod file_inventory;
+mod selection;
 
 struct Subject {
     file: Option<String>,
@@ -107,9 +108,10 @@ fn run(
     facts: &super::facts::RuleFacts<'_>,
     result: &mut CheckResult,
 ) -> Result<()> {
+    let mut budget = (rule.schema_version == 3).then(selection::Budget::new);
     requirements(rule, snapshot, facts)?;
     let projects = facts.projects;
-    let subjects = subjects(rule, snapshot, facts)?;
+    let subjects = selection::collect(rule, snapshot, facts, false, budget.as_mut())?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     if rule.when.entity == "file" && rule.when.change.as_deref() == Some("all") {
         file_inventory::assert(rule, snapshot, &subjects, result)?;
@@ -261,7 +263,14 @@ fn run(
         ));
     }
     if rule.schema_version == 3 {
-        expression_v3::evaluate(rule, snapshot, facts, &subjects, result)?;
+        expression_v3::evaluate(
+            rule,
+            snapshot,
+            facts,
+            &subjects,
+            result,
+            budget.as_mut().expect("v3 acquisition budget"),
+        )?;
     } else if let Some(expression) = &rule.expression {
         let entities: Vec<_> = subjects
             .iter()
@@ -484,165 +493,4 @@ fn dependencies(
         }
     }
     Ok(())
-}
-
-fn subjects(
-    rule: &CustomRule,
-    snapshot: &Snapshot,
-    facts: &super::facts::RuleFacts<'_>,
-) -> Result<Vec<Subject>> {
-    selected_subjects(rule, snapshot, facts, false)
-}
-
-fn selected_subjects(
-    rule: &CustomRule,
-    snapshot: &Snapshot,
-    facts: &super::facts::RuleFacts<'_>,
-    independent: bool,
-) -> Result<Vec<Subject>> {
-    let provenance = facts.provenance;
-    let change = rule.when.change.as_deref().unwrap_or("added");
-    if rule.when.entity == "commit" {
-        return Ok(snapshot
-            .commits
-            .iter()
-            .map(|(oid, message)| Subject {
-                file: None,
-                range: None,
-                identity: oid.clone(),
-                name: message.lines().next().unwrap_or_default().into(),
-                text: message.clone(),
-                declaration: None,
-                triggered: true,
-            })
-            .collect());
-    }
-    if rule.when.entity == "file" {
-        return file_inventory::selected_subjects(rule, snapshot, independent);
-    }
-    let files = if independent {
-        entity_changes::collect_independent(snapshot, &rule.applies_to.paths, &rule.language)?
-    } else {
-        entity_changes::collect(snapshot, &rule.applies_to.paths, &rule.language)?
-    };
-    let mut subjects = Vec::new();
-    let mut previous_views = BTreeMap::new();
-    let started = std::time::Instant::now();
-    for file in files {
-        if started.elapsed().as_secs() >= 30 {
-            bail!("Marker retention exceeds analysis budget");
-        }
-        require_syntax_capabilities(&file.view.language, &rule.requires_capabilities)?;
-        match rule.when.entity.as_str() {
-            "test_method" => {
-                let bytes = &snapshot.files[&file.path].bytes;
-                for test in &file.tests {
-                    let in_scope = rule.applies_to.provenance_scope.as_deref() != Some("ai_only")
-                        || provenance
-                            .is_some_and(|facts| facts.participated(&file.path, &test.entity));
-                    let triggered = (change == "any" || test.kind == change) && in_scope;
-                    let previous_declaration = if let (Some(binding), Some(previous), Some(path)) =
-                        (&rule.binding, &test.previous, &test.previous_path)
-                    {
-                        if !previous_views.contains_key(path) {
-                            previous_views.insert(
-                                path.clone(),
-                                syntax::parse(path, &snapshot.base_files[path].bytes)?
-                                    .expect("previous supported syntax"),
-                            );
-                        }
-                        markers::bound_declaration(
-                            &binding.marker,
-                            previous,
-                            &previous_views[path],
-                            path,
-                            snapshot,
-                            true,
-                            facts.git_trailers,
-                        )?
-                    } else {
-                        None
-                    };
-                    let retained = previous_declaration.is_some();
-                    let declaration = rule
-                        .binding
-                        .as_ref()
-                        .map(|binding| {
-                            markers::bound_declaration(
-                                &binding.marker,
-                                &test.entity,
-                                &file.view,
-                                &file.path,
-                                snapshot,
-                                false,
-                                facts.git_trailers,
-                            )
-                        })
-                        .transpose()?
-                        .flatten();
-                    if !triggered && !retained && declaration.is_none() {
-                        continue;
-                    }
-                    let entity = &test.entity;
-                    subjects.push(Subject {
-                        triggered,
-                        file: Some(file.path.clone()),
-                        range: if snapshot.delivery()
-                            && retained
-                            && previous_declaration != declaration
-                        {
-                            None
-                        } else {
-                            Some(entity.range.clone())
-                        },
-                        identity: entity.symbol.clone(),
-                        name: entity.name.clone(),
-                        text: std::str::from_utf8(&bytes[entity.byte_range.clone()])?.into(),
-                        declaration,
-                    });
-                }
-            }
-            "comment" | "import" => {
-                let entities = |view: &syntax::Structure| -> Vec<(String, Range)> {
-                    if rule.when.entity == "comment" {
-                        view.comments
-                            .iter()
-                            .map(|value| (value.text.clone(), value.range.clone()))
-                            .collect()
-                    } else {
-                        view.imports
-                            .iter()
-                            .map(|value| (value.text.clone(), value.range.clone()))
-                            .collect()
-                    }
-                };
-                let mut counts = BTreeMap::new();
-                if let Some(previous) = &file.previous {
-                    for (text, _) in entities(previous) {
-                        *counts.entry(text).or_insert(0usize) += 1;
-                    }
-                }
-                for (text, range) in entities(&file.view) {
-                    if change != "any"
-                        && let Some(count) = counts.get_mut(&text)
-                        && *count > 0
-                    {
-                        *count -= 1;
-                        continue;
-                    }
-                    subjects.push(Subject {
-                        triggered: true,
-                        file: Some(file.path.clone()),
-                        range: Some(range),
-                        identity: text.clone(),
-                        name: text.clone(),
-                        text,
-                        declaration: None,
-                    });
-                }
-            }
-            other => bail!("Unsupported DSL entity: {other}"),
-        }
-    }
-    Ok(subjects)
 }

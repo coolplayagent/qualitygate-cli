@@ -10,13 +10,13 @@ pub(super) fn selected_subjects(
     rule: &CustomRule,
     snapshot: &Snapshot,
     independent: bool,
+    budget: Option<&mut super::selection::Budget>,
 ) -> Result<Vec<Subject>> {
-    collect(
-        rule,
-        snapshot,
-        Instant::now() + Duration::from_secs(30),
-        independent,
-    )
+    let deadline = budget.as_ref().map_or_else(
+        || Instant::now() + Duration::from_secs(30),
+        |budget| budget.deadline(),
+    );
+    collect(rule, snapshot, deadline, independent, budget)
 }
 
 fn deadline_check(deadline: Instant) -> Result<()> {
@@ -31,6 +31,7 @@ fn collect(
     snapshot: &Snapshot,
     deadline: Instant,
     independent: bool,
+    mut budget: Option<&mut super::selection::Budget>,
 ) -> Result<Vec<Subject>> {
     deadline_check(deadline)?;
     let mut filters = globset::GlobSetBuilder::new();
@@ -75,6 +76,9 @@ fn collect(
             .ok_or_else(|| anyhow::anyhow!("File rule byte count overflow"))?;
         if subjects.len() >= 50_000 || bytes > 32 * 1024 * 1024 {
             bail!("File rule exceeds 50,000 files or 32 MiB of selected text");
+        }
+        if let Some(budget) = budget.as_deref_mut() {
+            budget.reserve(path.len(), file.bytes.len(), path.len())?;
         }
         subjects.push(Subject {
             file: Some(path.clone()),
@@ -221,7 +225,7 @@ mod tests {
             commits: vec![],
         };
         let expired = Instant::now();
-        assert!(collect(&rule, &snapshot, expired, false).is_err());
+        assert!(collect(&rule, &snapshot, expired, false, None).is_err());
         assert!(
             measure(
                 &rule,
@@ -242,7 +246,7 @@ mod tests {
             );
         }
         assert!(
-            selected_subjects(&rule, &snapshot, false)
+            selected_subjects(&rule, &snapshot, false, None)
                 .err()
                 .unwrap()
                 .to_string()
@@ -259,7 +263,7 @@ mod tests {
             );
         }
         assert!(
-            selected_subjects(&rule, &snapshot, false)
+            selected_subjects(&rule, &snapshot, false, None)
                 .err()
                 .unwrap()
                 .to_string()

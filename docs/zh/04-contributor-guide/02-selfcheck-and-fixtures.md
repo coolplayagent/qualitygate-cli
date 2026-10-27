@@ -23,6 +23,14 @@ producer 属于单独显式运行的测试。golden 更新与行为变化采用�
 修改 CLI 或 Skill 包后，先用匹配的发布 runtime 运行完整 selfcheck，再运行仓库质量门禁。golden
 不匹配与执行缺口必须分别保留。安装本地构建的开发 runtime 是独立显式操作，不能描述为公开发布版。
 
+集成测试的 CLI helper 会从子进程环境中移除继承的 `CARGO_TARGET_DIR`，使嵌套 Cargo
+夹具使用各自物化快照中的 target 目录，避免同名项目并行运行时混用测试二进制或写入父进程
+构建缓存。这是测试 harness 的隔离约束；安装后的 CLI 继续遵循项目运行环境。
+
+绑定仓库文档的打包规则示例必须在检出后保留精确的源字节。`.gitattributes` 固定 V3 算子
+参考文档为 LF；可执行示例测试还会在临时仓库中显式启用 `core.autocrlf=true`，验证检出
+后的文档仍满足原有源摘要绑定。
+
 ---
 
 [上一章：开发与质量门禁](01-development-and-quality-gates.md) · [全书目录](../README.md) · [下一章：需求到测试证据](03-requirements-to-test-evidence.md)

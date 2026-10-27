@@ -114,7 +114,12 @@ violations remain visible if expression execution cannot finish.
 Existing expression limits remain: 256 nodes, depth 16, 100,000 operations,
 32 MiB cumulative scans and a 30-second evaluation deadline. Aggregate sources
 are limited to 50,000 entities and 32 MiB name/text/path bytes, with a separate
-30-second acquisition deadline and existing adapter limits. Intermediate
+30-second acquisition deadline and existing adapter limits. This deadline starts
+before the primary selection and is passed through every named selector, syntax
+parse and entity matching pass; each source uses the remaining time. Normalized
+name/text/path bytes and entity slots are reserved before copying a subject,
+including retained primary marker subjects and sources unused by the expression.
+Syntax structures retain their separate parser bounds. Intermediate
 collections have at most 50,000 items and a shared cumulative 32 MiB materialized
 budget. Strings and collection entries are charged before allocation; borrowed
 references may be charged conservatively. Boolean/set membership operations do

@@ -34,6 +34,17 @@ execution gaps as separate findings. Installing a locally built development
 runtime is a distinct, explicit operation and must not be described as a
 published release.
 
+The integration CLI helper removes inherited `CARGO_TARGET_DIR` from each child
+process. Nested Cargo fixtures then use their own materialized snapshot target
+directories, so concurrent fixtures with the same package name cannot exchange
+test binaries or write into the parent build cache. This applies to the test
+harness; the installed CLI continues to honor the project environment.
+
+Packaged rule examples that bind a repository document must preserve its exact
+source bytes on checkout. `.gitattributes` pins the V3 operator reference to LF;
+the executable example test also forces `core.autocrlf=true` in its temporary
+repository and verifies that checkout preserves the bound source hash.
+
 ---
 
 [Previous: Development and quality gates](01-development-and-quality-gates.md) · [Contents](../README.md) · [Next: Requirement-to-test evidence](03-requirements-to-test-evidence.md)
