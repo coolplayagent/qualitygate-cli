@@ -21,6 +21,11 @@ fn main() {
     if mode == "mutate-current" || (base && mode == "mutate-base") {
         std::fs::write("source.txt", "99").unwrap();
     }
+    if mode == "mutate-current-attributes" || (base && mode == "mutate-base-attributes") {
+        let mut permissions = std::fs::metadata("source.txt").unwrap().permissions();
+        permissions.set_readonly(true);
+        std::fs::set_permissions("source.txt", permissions).unwrap();
+    }
     if mode == "shared" { std::thread::sleep(std::time::Duration::from_millis(600)); }
     if base && mode == "timeout" {
         println!("baseline started");
@@ -238,6 +243,11 @@ fn real_assertions_prove_each_changed_file_and_retain_both_executions() {
 #[test]
 fn execution_gaps_and_non_assertion_failures_never_establish_effectiveness() {
     let mut fixture = Fixture::new();
+    let mutation_reason = if cfg!(windows) {
+        "unexpected analyzer"
+    } else {
+        "invalid"
+    };
     for (mode, reason) in [
         ("missing", "Required report"),
         ("malformed", "root node"),
@@ -249,8 +259,10 @@ fn execution_gaps_and_non_assertion_failures_never_establish_effectiveness() {
         ("omit", "insufficient"),
         ("identity", "identities differ"),
         ("crash", "unexpected analyzer"),
-        ("mutate-base", "invalid"),
-        ("mutate-current", "invalid"),
+        ("mutate-base", mutation_reason),
+        ("mutate-current", mutation_reason),
+        ("mutate-base-attributes", "invalid"),
+        ("mutate-current-attributes", "invalid"),
         ("false-success", "contradict"),
     ] {
         fixture.mode(mode);
@@ -259,6 +271,35 @@ fn execution_gaps_and_non_assertion_failures_never_establish_effectiveness() {
         assert!(check["verdict"].is_null(), "{mode}");
         let actual = check["execution"]["reason"].as_str().unwrap();
         assert!(actual.contains(reason), "{mode}: {actual}");
+        if mode.starts_with("mutate") {
+            let side = if mode.starts_with("mutate-base") {
+                "baseline"
+            } else {
+                "current"
+            };
+            let execution = &check["metadata"][format!("{side}_test_execution")];
+            let prevented = cfg!(windows) && !mode.ends_with("attributes");
+            assert_eq!(
+                execution["metadata"]["input_integrity"]["after"],
+                if prevented { "verified" } else { "invalid" }
+            );
+            assert_eq!(
+                execution["execution"]["status"],
+                if prevented { "tool_error" } else { "blocked" }
+            );
+            if prevented {
+                assert!(
+                    execution["execution"]["exit_code"]
+                        .as_i64()
+                        .is_some_and(|code| code != 0)
+                );
+                assert_artifact_contains(&execution["execution"], "stderr.log", "code: 32");
+            }
+            assert_eq!(
+                std::fs::read_to_string(fixture.path().join("source.txt")).unwrap(),
+                "2"
+            );
+        }
     }
     fixture.policy["checks"][0]["timeout_seconds"] = json!(1);
     fixture.mode("timeout");

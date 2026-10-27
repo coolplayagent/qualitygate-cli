@@ -67,3 +67,22 @@ pub fn report(output: &Output, code: i32) -> Value {
     );
     serde_json::from_slice(&output.stdout).unwrap()
 }
+
+#[allow(dead_code)] // Only producer-failure integration targets inspect raw stderr.
+pub fn assert_artifact_contains(execution: &Value, suffix: &str, expected: &str) {
+    let artifact = execution["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|artifact| {
+            Path::new(artifact["path"].as_str().unwrap())
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.ends_with(suffix))
+        })
+        .unwrap();
+    let bytes = std::fs::read(artifact["path"].as_str().unwrap()).unwrap();
+    assert_eq!(artifact["digest"], qualitygate::snapshot::digest(&bytes));
+    let text = String::from_utf8(bytes).unwrap();
+    assert!(text.contains(expected), "{suffix}: {text}");
+}

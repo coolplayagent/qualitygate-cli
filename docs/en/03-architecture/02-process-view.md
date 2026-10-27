@@ -69,6 +69,11 @@ acquisition and initial validation share the 30-second work budget and the
 Content, identity and attribute checks still apply; an observed attribute change
 remains invalid after restoration. The native selfcheck records rejected mutation
 as incomplete and retains the underlying prevention or detection error.
+Report producers that terminate after a denied write retain their nonzero exit
+and raw stderr as tool-error evidence while input integrity remains verified.
+An actual attribute mutation instead invalidates the input and blocks execution.
+Coverage, diagnostic baselines and paired test-effectiveness runs preserve this
+distinction; neither path establishes a rule verdict.
 
 Snapshot identity and policy/task digests flow into every plan and report.
 Before a result is accepted, the application confirms that produced evidence

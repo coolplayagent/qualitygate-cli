@@ -18,6 +18,11 @@ fn main() {
             "skip-base" => return,
             "timeout-base" => std::thread::sleep(std::time::Duration::from_secs(30)),
             "mutate-base" => std::fs::write("a.rs", "changed after capture\n").unwrap(),
+            "mutate-base-attributes" => {
+                let mut permissions = std::fs::metadata("a.rs").unwrap().permissions();
+                permissions.set_readonly(true);
+                std::fs::set_permissions("a.rs", permissions).unwrap();
+            }
             "restore-base" => {
                 let modified = std::fs::metadata("a.rs").unwrap().modified().unwrap();
                 std::fs::rename("a.rs", "a-held").unwrap();
@@ -172,11 +177,17 @@ fn ratchet_reexecutes_both_snapshots_and_does_not_trade_between_rule_counts() {
 fn ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete() {
     let mut fixture = Fixture::new();
     fixture.input(vec![]);
+    let mutation_reason = if cfg!(windows) {
+        "unexpected exit code"
+    } else {
+        "changed its checked inputs"
+    };
     for (mode, reason) in [
         ("skip-base", "Required report was not produced"),
         ("timeout-base", "did not complete"),
-        ("mutate-base", "changed its checked inputs"),
-        ("restore-base", "changed its checked inputs"),
+        ("mutate-base", mutation_reason),
+        ("restore-base", mutation_reason),
+        ("mutate-base-attributes", "changed its checked inputs"),
         ("crash-base", "unexpected exit code"),
     ] {
         fixture.policy["checks"][0]["argv"][1] = json!(mode);
@@ -190,6 +201,32 @@ fn ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete(
                 .contains(reason),
             "{incomplete}"
         );
+        if matches!(
+            mode,
+            "mutate-base" | "restore-base" | "mutate-base-attributes"
+        ) {
+            let prevented = cfg!(windows) && mode != "mutate-base-attributes";
+            assert_eq!(
+                incomplete["checks"][0]["metadata"]["baseline_input_integrity"]["status"],
+                if prevented { "verified" } else { "invalid" }
+            );
+            if prevented {
+                assert!(
+                    incomplete["checks"][0]["metadata"]["baseline_execution"]["exit_code"]
+                        .as_i64()
+                        .is_some_and(|code| code != 0)
+                );
+                assert_artifact_contains(
+                    &incomplete["checks"][0]["execution"],
+                    "baseline-stderr",
+                    "code: 32",
+                );
+            }
+            assert_eq!(
+                std::fs::read_to_string(fixture.root.path().join("a.rs")).unwrap(),
+                "old\nnew\nlast\n"
+            );
+        }
     }
     fixture.policy["checks"][0]["argv"][1] = json!("normal");
     fixture.policy["checks"][0]["tools"][0]["argv"]

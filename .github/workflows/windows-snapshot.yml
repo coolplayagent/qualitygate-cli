@@ -17,6 +17,6 @@ jobs:
         env:
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
-        run: cargo test --locked --lib --test policy_performance --test selfcheck --all-features -- --nocapture
+        run: cargo test --locked --lib --test policy_performance --test selfcheck --test coverage --test ratchet --test test_effectiveness --all-features -- --nocapture
       - name: Verify inputs are unchanged
         run: git diff --exit-code

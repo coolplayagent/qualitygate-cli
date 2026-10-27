@@ -16,6 +16,11 @@ fn main() {
     std::fs::create_dir_all("target").unwrap();
     std::fs::write("target/coverage", input).unwrap();
     if args[1] == "mutate" { std::fs::write("src/a.py", "changed after measurement\n").unwrap(); }
+    if args[1] == "mutate-attributes" {
+        let mut permissions = std::fs::metadata("src/a.py").unwrap().permissions();
+        permissions.set_readonly(true);
+        std::fs::set_permissions("src/a.py", permissions).unwrap();
+    }
 }
 "#;
 
@@ -246,21 +251,43 @@ fn native_coverage_repairs_preserve_raw_reports_and_reject_inconsistent_or_absen
     for (mode, expected) in [
         ("skip", "tool_error"),
         ("timeout", "timed_out"),
-        ("mutate", "blocked"),
+        (
+            "mutate",
+            if cfg!(windows) {
+                "tool_error"
+            } else {
+                "blocked"
+            },
+        ),
+        ("mutate-attributes", "blocked"),
     ] {
         fixture.policy["checks"][0]["argv"][1] = json!(mode);
         fixture.configure();
         let incomplete = fixture.run(2, &[]);
+        assert!(incomplete["checks"][0]["verdict"].is_null());
         assert_eq!(
             incomplete["checks"][0]["execution"]["status"], expected,
             "{mode}: {}",
             incomplete["checks"][0]["execution"]["reason"]
         );
-        if mode == "mutate" {
+        if mode.starts_with("mutate") {
+            let prevented = cfg!(windows) && mode == "mutate";
             assert_eq!(
                 incomplete["checks"][0]["metadata"]["input_integrity"]["after"],
-                "invalid"
+                if prevented { "verified" } else { "invalid" }
             );
+            if prevented {
+                assert!(
+                    incomplete["checks"][0]["execution"]["exit_code"]
+                        .as_i64()
+                        .is_some_and(|code| code != 0)
+                );
+                assert_artifact_contains(
+                    &incomplete["checks"][0]["execution"],
+                    "stderr.log",
+                    "code: 32",
+                );
+            }
             assert_eq!(
                 std::fs::read_to_string(fixture.root.path().join("src/a.py")).unwrap(),
                 "def value():\n    return 1\n"
