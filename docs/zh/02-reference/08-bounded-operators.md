@@ -53,6 +53,21 @@ expression:
 将完整规则保存为 `candidate.yaml`，执行 `rules validate candidate.yaml`，再在获准编写流程中运行
 `rules generate --input candidate.yaml`。V1 拒绝 `expression`；生成不会启用规则。
 
+## V3：命名来源与词法 lambda
+
+`rules.operators.v3` 提供独立的 `schema_version: 3` 契约，通过
+`schema operator-rule-v3` 导出。V1/V2 语义及 `schema operator-rule` 保持不变；
+family Schema 包含三个版本。使用匹配的预编译 qualitygate 即可，不需要安装 Rust、Node.js 或 Python。
+
+规则可以声明多个独立选择的事实集合、绑定变量、引用外层实体，并组合标量 `map`、`distinct`、
+`contains`、`subset`、`concat` 和字面量 `replace`。全部声明来源必须完整且绑定同一快照；
+缺失事实不能当成空集合。顶层触发与固定断言语义不变。命名文件来源可显式包含未修改的上下文，
+但不扩大已采集快照或绕过排除策略；AST 全量选择仍不支持。
+
+[完整 V3 参考与源文件／测试对应示例](../../../skills/qualitygate-cli/references/operators-v3.md)
+定义类型、来源、变量作用域、物化预算和诊断。文件对应检查只证明文件关系；行为证据仍由配置的测试
+及适用时的 `test_effectiveness` 提供。qualitygate 的职责仍是规则化与规则执行。
+
 ---
 
 [上一章：条款覆盖](07-constraint-coverage.md) · [全书目录](../README.md) · [下一章：面向使用者 Agent 的行为契约](09-agent-contracts.md)

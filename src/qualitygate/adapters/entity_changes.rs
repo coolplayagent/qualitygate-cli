@@ -35,6 +35,22 @@ pub(super) fn collect(
     )
 }
 
+/// Named sources have their own explicit selectors, independent of feedback filtering.
+pub(super) fn collect_independent(
+    snapshot: &Snapshot,
+    paths: &[String],
+    languages: &[String],
+) -> Result<Vec<FileView>> {
+    analyze(
+        &snapshot.base_files,
+        &snapshot.files,
+        &snapshot.changes,
+        paths,
+        languages,
+        |_| true,
+    )
+}
+
 pub(super) fn collect_between(
     base: &BTreeMap<String, File>,
     head: &BTreeMap<String, File>,

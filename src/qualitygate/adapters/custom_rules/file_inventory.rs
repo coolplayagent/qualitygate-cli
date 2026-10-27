@@ -6,8 +6,17 @@ use anyhow::bail;
 use serde_json::json;
 use std::time::{Duration, Instant};
 
-pub(super) fn subjects(rule: &CustomRule, snapshot: &Snapshot) -> Result<Vec<Subject>> {
-    collect(rule, snapshot, Instant::now() + Duration::from_secs(30))
+pub(super) fn selected_subjects(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    independent: bool,
+) -> Result<Vec<Subject>> {
+    collect(
+        rule,
+        snapshot,
+        Instant::now() + Duration::from_secs(30),
+        independent,
+    )
 }
 
 fn deadline_check(deadline: Instant) -> Result<()> {
@@ -17,7 +26,12 @@ fn deadline_check(deadline: Instant) -> Result<()> {
     Ok(())
 }
 
-fn collect(rule: &CustomRule, snapshot: &Snapshot, deadline: Instant) -> Result<Vec<Subject>> {
+fn collect(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    deadline: Instant,
+    independent: bool,
+) -> Result<Vec<Subject>> {
     deadline_check(deadline)?;
     let mut filters = globset::GlobSetBuilder::new();
     for path in &rule.applies_to.paths {
@@ -43,7 +57,9 @@ fn collect(rule: &CustomRule, snapshot: &Snapshot, deadline: Instant) -> Result<
         || rule.then.max_total_words.is_some();
     for (path, file) in files {
         deadline_check(deadline)?;
-        if !(if aggregate {
+        if !(if independent {
+            true
+        } else if aggregate {
             snapshot.feedback_includes(path)
         } else {
             snapshot.includes(path)
@@ -205,7 +221,7 @@ mod tests {
             commits: vec![],
         };
         let expired = Instant::now();
-        assert!(collect(&rule, &snapshot, expired).is_err());
+        assert!(collect(&rule, &snapshot, expired, false).is_err());
         assert!(
             measure(
                 &rule,
@@ -226,7 +242,7 @@ mod tests {
             );
         }
         assert!(
-            subjects(&rule, &snapshot)
+            selected_subjects(&rule, &snapshot, false)
                 .err()
                 .unwrap()
                 .to_string()
@@ -243,7 +259,7 @@ mod tests {
             );
         }
         assert!(
-            subjects(&rule, &snapshot)
+            selected_subjects(&rule, &snapshot, false)
                 .err()
                 .unwrap()
                 .to_string()

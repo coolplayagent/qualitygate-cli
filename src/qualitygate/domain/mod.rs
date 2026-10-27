@@ -13,6 +13,7 @@ pub mod judgment;
 pub mod language;
 pub mod normative;
 pub mod operator;
+pub mod operator_v3;
 pub mod pilot;
 pub mod policy_approval;
 pub mod policy_effectiveness;

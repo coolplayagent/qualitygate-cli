@@ -441,7 +441,9 @@ pub struct CustomRule {
     #[serde(default)]
     pub then: Assertions,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub expression: Option<crate::domain::operator::Expr>,
+    pub expression: Option<crate::domain::operator_v3::Expr>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub sources: BTreeMap<String, RuleSource>,
     pub fix: String,
 }
 
@@ -509,4 +511,31 @@ pub struct Dependency {
     #[serde(default)]
     pub group: Option<String>,
     pub artifact: String,
+}
+
+/// Explicit selector over facts supplied by existing adapters in one snapshot.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuleSource {
+    #[serde(default)]
+    pub language: Vec<String>,
+    pub when: Trigger,
+    #[serde(default)]
+    pub applies_to: AppliesTo,
+    pub requires_capabilities: Vec<String>,
+}
+impl CustomRule {
+    pub fn for_source(&self, source: &RuleSource) -> Self {
+        let mut rule = self.clone();
+        rule.schema_version = 2;
+        rule.sources.clear();
+        rule.language = source.language.clone();
+        rule.when = source.when.clone();
+        rule.applies_to = source.applies_to.clone();
+        rule.requires_capabilities = source.requires_capabilities.clone();
+        rule.binding = None;
+        rule.then = Assertions::default();
+        rule.expression = Some(crate::domain::operator_v3::Expr::Bool { value: true });
+        rule
+    }
 }

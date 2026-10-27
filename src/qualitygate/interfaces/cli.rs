@@ -130,6 +130,7 @@ enum Judgment {
 enum SchemaKind {
     AgentObligation,
     OperatorRule,
+    OperatorRuleV3,
     ProjectRuleFamily,
     Constraint,
     Capabilities,
@@ -391,6 +392,7 @@ impl Cli {
             let document = tokio::task::spawn_blocking(move || match kind {
                 SchemaKind::AgentObligation => config::agent_contract::schema(),
                 SchemaKind::OperatorRule => config::rule_schema::document_version(2),
+                SchemaKind::OperatorRuleV3 => config::rule_schema::document_version(3),
                 SchemaKind::ProjectRuleFamily => config::rule_schema::family_document(),
                 SchemaKind::Constraint => config::constraint_inventory::schema(),
                 SchemaKind::Decision => config::decision_schema::document(),

@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 pub(super) fn validate(rule: &CustomRule) -> Result<()> {
     constraints::id(&rule.id)?;
-    if ![1, 2].contains(&rule.schema_version) {
+    if ![1, 2, 3].contains(&rule.schema_version) {
         bail!(
             "Unsupported custom rule schema_version: {}",
             rule.schema_version
@@ -12,11 +12,27 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
     }
     match (rule.schema_version, &rule.expression) {
         (1, Some(_)) => bail!("Project-rule v1 cannot contain expression"),
-        (2, None) => bail!("Project-rule v2 requires a typed expression"),
+        (2 | 3, None) => bail!("Project-rule v2/v3 requires a typed expression"),
         (_, Some(expression)) => {
-            expression.validate().map_err(anyhow::Error::msg)?;
+            if rule.schema_version == 3 {
+                expression
+                    .validate(&rule.sources.keys().cloned().collect())
+                    .map_err(anyhow::Error::msg)?;
+            } else {
+                expression
+                    .legacy()
+                    .map_err(anyhow::Error::msg)?
+                    .validate()
+                    .map_err(anyhow::Error::msg)?;
+            }
         }
         _ => {}
+    }
+    if rule.schema_version != 3 && !rule.sources.is_empty() {
+        bail!("Named sources require project-rule v3");
+    }
+    for source in rule.sources.values() {
+        validate(&rule.for_source(source))?;
     }
     if rule.version == 0 {
         bail!("Custom rule version must be positive");

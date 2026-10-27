@@ -326,3 +326,6 @@ async fn unused_declared_project_facts_still_require_a_supported_snapshot_bindin
         );
     }
 }
+
+#[path = "operators/v3.rs"]
+mod v3;

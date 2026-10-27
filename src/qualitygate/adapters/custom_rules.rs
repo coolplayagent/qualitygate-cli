@@ -10,6 +10,7 @@ use anyhow::{Result, bail};
 use regex::Regex;
 use std::collections::BTreeMap;
 
+mod expression_v3;
 mod file_inventory;
 
 struct Subject {
@@ -106,52 +107,8 @@ fn run(
     facts: &super::facts::RuleFacts<'_>,
     result: &mut CheckResult,
 ) -> Result<()> {
-    let (projects, provenance) = (facts.projects, facts.provenance);
-    for language in &rule.language {
-        require_syntax_capabilities(language, &rule.requires_capabilities)?;
-    }
-    if let Some(capability) = rule
-        .requires_capabilities
-        .iter()
-        .find(|capability| capability.as_str() == "external_provenance")
-        && provenance.is_none()
-    {
-        bail!("Required project capability unavailable: {capability}");
-    }
-    if rule.applies_to.provenance_scope.as_deref() == Some("ai_only") && provenance.is_none() {
-        bail!("AI-only scope requires verified external execution provenance");
-    }
-    if rule
-        .binding
-        .as_ref()
-        .is_some_and(|binding| binding.marker.kind == "git_trailer")
-        && facts.git_trailers.is_none()
-    {
-        bail!("Commit-to-entity provenance is required for git_trailer binding");
-    }
-    if rule
-        .requires_capabilities
-        .iter()
-        .any(|capability| capability == "dependency_resolution")
-        && projects.is_empty()
-    {
-        bail!(
-            "Required project capability unavailable: dependency_resolution; declare depends_on for a project facts command"
-        );
-    }
-    if rule.schema_version == 2
-        && rule
-            .requires_capabilities
-            .iter()
-            .any(|c| c == "dependency_resolution")
-        && projects.iter().any(|project| {
-            project.schema_version != 1
-                || !["maven", "python"].contains(&project.ecosystem.as_str())
-                || project.snapshot_digest != snapshot.identity.content_digest
-        })
-    {
-        bail!("Required project facts are unsupported or belong to another snapshot");
-    }
+    requirements(rule, snapshot, facts)?;
+    let projects = facts.projects;
     let subjects = subjects(rule, snapshot, facts)?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     if rule.when.entity == "file" && rule.when.change.as_deref() == Some("all") {
@@ -303,7 +260,9 @@ fn run(
             "max_count",
         ));
     }
-    if let Some(expression) = &rule.expression {
+    if rule.schema_version == 3 {
+        expression_v3::evaluate(rule, snapshot, facts, &subjects, result)?;
+    } else if let Some(expression) = &rule.expression {
         let entities: Vec<_> = subjects
             .iter()
             .filter(|subject| subject.triggered)
@@ -315,7 +274,7 @@ fn run(
             })
             .collect();
         let outcome = super::operators::evaluate(
-            expression,
+            &expression.legacy().map_err(anyhow::Error::msg)?,
             super::operators::Facts {
                 entities: &entities,
                 complete: true,
@@ -335,6 +294,60 @@ fn run(
         result
             .metadata
             .insert("expression".into(), serde_json::to_value(outcome)?);
+    }
+    Ok(())
+}
+
+fn requirements(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    facts: &super::facts::RuleFacts<'_>,
+) -> Result<()> {
+    let (projects, provenance) = (facts.projects, facts.provenance);
+    for language in &rule.language {
+        require_syntax_capabilities(language, &rule.requires_capabilities)?;
+    }
+    if let Some(capability) = rule
+        .requires_capabilities
+        .iter()
+        .find(|capability| capability.as_str() == "external_provenance")
+        && provenance.is_none()
+    {
+        bail!("Required project capability unavailable: {capability}");
+    }
+    if rule.applies_to.provenance_scope.as_deref() == Some("ai_only") && provenance.is_none() {
+        bail!("AI-only scope requires verified external execution provenance");
+    }
+    if rule
+        .binding
+        .as_ref()
+        .is_some_and(|binding| binding.marker.kind == "git_trailer")
+        && facts.git_trailers.is_none()
+    {
+        bail!("Commit-to-entity provenance is required for git_trailer binding");
+    }
+    if rule
+        .requires_capabilities
+        .iter()
+        .any(|capability| capability == "dependency_resolution")
+        && projects.is_empty()
+    {
+        bail!(
+            "Required project capability unavailable: dependency_resolution; declare depends_on for a project facts command"
+        );
+    }
+    if rule.schema_version >= 2
+        && rule
+            .requires_capabilities
+            .iter()
+            .any(|c| c == "dependency_resolution")
+        && projects.iter().any(|project| {
+            project.schema_version != 1
+                || !["maven", "python"].contains(&project.ecosystem.as_str())
+                || project.snapshot_digest != snapshot.identity.content_digest
+        })
+    {
+        bail!("Required project facts are unsupported or belong to another snapshot");
     }
     Ok(())
 }
@@ -478,6 +491,15 @@ fn subjects(
     snapshot: &Snapshot,
     facts: &super::facts::RuleFacts<'_>,
 ) -> Result<Vec<Subject>> {
+    selected_subjects(rule, snapshot, facts, false)
+}
+
+fn selected_subjects(
+    rule: &CustomRule,
+    snapshot: &Snapshot,
+    facts: &super::facts::RuleFacts<'_>,
+    independent: bool,
+) -> Result<Vec<Subject>> {
     let provenance = facts.provenance;
     let change = rule.when.change.as_deref().unwrap_or("added");
     if rule.when.entity == "commit" {
@@ -496,9 +518,13 @@ fn subjects(
             .collect());
     }
     if rule.when.entity == "file" {
-        return file_inventory::subjects(rule, snapshot);
+        return file_inventory::selected_subjects(rule, snapshot, independent);
     }
-    let files = entity_changes::collect(snapshot, &rule.applies_to.paths, &rule.language)?;
+    let files = if independent {
+        entity_changes::collect_independent(snapshot, &rule.applies_to.paths, &rule.language)?
+    } else {
+        entity_changes::collect(snapshot, &rule.applies_to.paths, &rule.language)?
+    };
     let mut subjects = Vec::new();
     let mut previous_views = BTreeMap::new();
     let started = std::time::Instant::now();

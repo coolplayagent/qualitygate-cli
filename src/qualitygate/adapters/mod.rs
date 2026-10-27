@@ -11,6 +11,7 @@ mod markers;
 pub mod maven;
 pub mod maven_usage;
 pub mod operators;
+pub mod operators_v3;
 mod parallel;
 pub mod pilot_acceptance;
 pub mod pilot_authorization;

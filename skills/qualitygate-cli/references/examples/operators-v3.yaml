@@ -1,0 +1,36 @@
+schema_version: 3
+id: source-test-correspondence
+version: 1
+source: {"content_hash": "sha256:f6f26f39e46b09ae5e4f160c2151a1b9508e8c807e13789a771fd2692ecf2116", "document": "skills/qualitygate-cli/references/operators-v3.md", "section": "File correspondence"}
+language: []
+requires_capabilities: [files]
+when: {entity: file, change: any}
+applies_to: {paths: ['src/**/*.rs']}
+sources:
+  tests:
+    when: {entity: file, change: all}
+    applies_to: {paths: ['tests/**/*.rs']}
+    requires_capabilities: [files]
+expression:
+  op: subset
+  left:
+    op: distinct
+    input:
+      op: map
+      input: {op: entities}
+      as: source
+      body:
+        op: replace
+        value:
+          op: replace
+          value: {op: field, name: path, of: {op: var, name: source}}
+          from: 'src/'
+          to: 'tests/'
+        from: '.rs'
+        to: '_test.rs'
+  right:
+    op: map
+    input: {op: source, name: tests}
+    as: test
+    body: {op: field, name: path, of: {op: var, name: test}}
+fix: Add the corresponding test file under tests, preserving subdirectories and using the _test.rs suffix.

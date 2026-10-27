@@ -66,6 +66,26 @@ Save the complete rule as `candidate.yaml`, run `rules validate candidate.yaml`,
 then `rules generate --input candidate.yaml` within the authorized authoring
 workflow. V1 rejects `expression`; generation does not enable the rule.
 
+## V3: named sources and lexical lambdas
+
+`rules.operators.v3` adds an independent `schema_version: 3` contract, exported
+by `schema operator-rule-v3`. V1/V2 behavior and `schema operator-rule` stay
+unchanged. The family schema includes all three versions. Use the matching
+precompiled qualitygate binary; no Rust, Node.js or Python runtime is needed.
+
+Rules can declare multiple independently selected fact collections, bind
+lexical variables, capture outer entities, and compose scalar `map`, `distinct`,
+`contains`, `subset`, `concat` and literal `replace`. All declared sources must be
+complete and snapshot-bound; absent facts cannot become empty collections.
+Top-level triggering and fixed assertions retain their meaning. Named file
+sources can explicitly include unchanged context without broadening the
+snapshot or its exclusions. AST full-inventory selectors remain unsupported.
+
+[The complete V3 reference and source/test example](../../../skills/qualitygate-cli/references/operators-v3.md)
+define types, source selectors, scopes, allocation budgets and diagnostics.
+Correspondence checks prove only file relationships; behavioral evidence still
+requires configured tests and, when appropriate, `test_effectiveness`.
+
 ---
 
 [Previous: Constraint coverage](07-constraint-coverage.md) · [Contents](../README.md) · [Next: Consuming-agent contracts](09-agent-contracts.md)

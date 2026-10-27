@@ -24,6 +24,7 @@ pub async fn report() -> Result<Capabilities> {
             ("task", 1),
             ("constraint", 1),
             ("operator_rule", 2),
+            ("operator_rule_v3", 3),
             ("agent_obligation", 1),
             ("agent_contract", 1),
             ("agent_delivery", 1),

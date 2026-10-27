@@ -273,6 +273,7 @@ Route the requested capability before editing policy:
 | Prevent existing analyzer debt from increasing | [Diagnostic ratchets](references/diagnostic-ratchets.md); command-check `reports[].mode: ratchet`, with a fresh base run |
 | Extract enforceable obligations from a policy document | [Rule authoring](references/rule-authoring.md); `rules source`, `schema`, `validate`, `generate` |
 | Compose typed entity predicates, counts and bounded collection checks | [Operators](references/operators.md); capability `rules.operators.v2`, `schema operator-rule`, then standard validation/generation |
+| Relate named fact collections with lexical lambdas, projections and set checks | [V3 operators](references/operators-v3.md); capability `rules.operators.v3`, `schema operator-rule-v3`, then standard source validation/generation |
 | Track every declared clause, its adoption, unsupported gaps and snapshot execution | [Constraint coverage](references/constraint-coverage.md); `schema constraint`, `config --show`, automatic `constraint-coverage` check |
 | Apply adopted behavior obligations to the consuming Agent | [Agent contracts](references/agent-contracts.md); `schema agent-obligation`, `agent-contract`; host enforcement needs an actual host |
 | Run the selected Rust Agent host with guarded delivery | [Agent host](references/agent-host.md); `agent-run`, current injection receipts, fresh full checks and immutable export |

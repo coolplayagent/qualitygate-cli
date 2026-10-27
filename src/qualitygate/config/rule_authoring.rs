@@ -148,7 +148,7 @@ pub fn validate(root: &Path, path: &str) -> Result<RuleValidationReport> {
                     break;
                 }
                 let (version, rule, issues) = rule_schema::inspect_versioned(&bytes)?;
-                if version == 2 {
+                if version >= 2 {
                     let (id, digest) = rule_schema::schema_identity(version)?;
                     result.schema_id = Some(id.into());
                     result.schema_digest = Some(digest);

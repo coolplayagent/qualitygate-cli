@@ -20,6 +20,7 @@ pub const CAPABILITIES: &[&str] = &[
     "reports.ratchet.v1",
     "constraints.coverage.v1",
     "rules.operators.v2",
+    "rules.operators.v3",
     "agent.contracts.v1",
     "agent.delivery.v1",
     "agent.host.v1",

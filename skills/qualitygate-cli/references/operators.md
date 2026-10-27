@@ -82,3 +82,10 @@ include their actual schema ID/digest. The family digest uses canonical compact
 JSON bytes from the exported parsed document. V1-only reports retain their
 existing schema identity. Generated candidates identify their actual v1 or v2
 schema. Neither validation nor examples constitute independent approval.
+
+## V3 extension
+
+For independently selected collections, lexical variables and outer capture,
+scalar projection/deduplication/set comparison, and string transforms, use the
+[separate V3 contract](operators-v3.md). V2 remains unchanged. Confirm
+`rules.operators.v3` and export `schema operator-rule-v3` before authoring.
