@@ -230,6 +230,12 @@ YAML 声明规则选择、参数和策略；复杂判定允许使用生态工具
 
 ## 5. 多语言支持
 
+PYTHON-METADATA-01：安装元数据采集在打开前验证普通文件类型和 2 MiB 上限，并复核打开的
+句柄；保留有界读取和累计预算。已有 FIFO、socket、目录和超限元数据不能使采集无期限停在
+打开阶段或产生完整事实。错误保留命令与安装报告证据并阻断依赖检查，普通元数据修复后恢复。
+证据见 `application::python_install::tests` 和 `tests/execution/python_metadata.rs`；
+真实 pip 验收仍由 `tests/python.rs` 单独提供。
+
 ### 5.1 统一结构视图（Canonical Structure View）
 
 结构视图统一可共享的概念，同时保留语言、框架、模块和能力信息。相似语法概念不意味着语义和检测成本相同：

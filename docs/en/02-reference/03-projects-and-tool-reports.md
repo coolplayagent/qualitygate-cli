@@ -9,6 +9,15 @@ distributions with declared requirements and retains environment/interpreter
 identity. Missing manifests, ambiguous module ownership, unresolved artifacts,
 or unsupported requirement syntax remain incomplete.
 
+Installed Python `METADATA` entries must be regular files of at most 2 MiB.
+Collection checks file type and size before opening, validates the opened handle,
+and keeps a bounded read to detect growth. An existing FIFO, socket, directory,
+or oversized entry makes the producer incomplete even after a successful install
+command. Collected command logs and the install report remain available; dependent
+checks stay blocked. This preflight does not provide an OS filesystem deadline or
+protection against every concurrent path replacement. Live pip acceptance is
+verified separately from synthetic malformed-output regressions.
+
 ## Unified report contract
 
 External checks declare a fixed command, working directory, timeout, accepted

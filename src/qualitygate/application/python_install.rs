@@ -91,9 +91,12 @@ fn read_metadata(workspace: &Path, target: &str) -> Result<Vec<(String, Vec<u8>)
         }
         let relative = paths::from_native(entry.path().join("METADATA").strip_prefix(workspace)?)?;
         let path = paths::confined(workspace, Path::new(&relative))?;
+        // Opening an existing FIFO can block before the scan deadline is checked.
+        validate_metadata_file(&std::fs::symlink_metadata(&path)?, &relative)?;
+        let file = std::fs::File::open(path)?;
+        validate_metadata_file(&file.metadata()?, &relative)?;
         let mut bytes = Vec::new();
-        std::fs::File::open(path)?
-            .take(snapshot::MAX_FILE_BYTES as u64 + 1)
+        file.take(snapshot::MAX_FILE_BYTES as u64 + 1)
             .read_to_end(&mut bytes)?;
         total += bytes.len();
         if bytes.len() > snapshot::MAX_FILE_BYTES
@@ -109,6 +112,16 @@ fn read_metadata(workspace: &Path, target: &str) -> Result<Vec<(String, Vec<u8>)
     }
     metadata.sort_by(|a, b| a.0.cmp(&b.0));
     Ok(metadata)
+}
+
+fn validate_metadata_file(metadata: &std::fs::Metadata, relative: &str) -> Result<()> {
+    if !metadata.is_file() {
+        bail!("Installed Python metadata must be a regular file: {relative}");
+    }
+    if metadata.len() > snapshot::MAX_FILE_BYTES as u64 {
+        bail!("Installed Python metadata exceeds size budget: {relative}");
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -174,12 +187,31 @@ mod tests {
         let inventory = read_metadata(root.path(), "target/python").unwrap();
         assert_eq!(inventory.len(), 1);
         assert_eq!(inventory[0].0, "target/python/pkg.dist-info/METADATA");
+        let boundary = vec![b'x'; snapshot::MAX_FILE_BYTES];
+        std::fs::write(info.join("METADATA"), &boundary).unwrap();
+        assert_eq!(
+            read_metadata(root.path(), "target/python").unwrap()[0].1,
+            boundary
+        );
         std::fs::write(
             info.join("METADATA"),
             vec![b'x'; snapshot::MAX_FILE_BYTES + 1],
         )
         .unwrap();
-        assert!(read_metadata(root.path(), "target/python").is_err());
+        assert!(
+            read_metadata(root.path(), "target/python")
+                .unwrap_err()
+                .to_string()
+                .contains("size budget")
+        );
+        std::fs::remove_file(info.join("METADATA")).unwrap();
+        std::fs::create_dir(info.join("METADATA")).unwrap();
+        assert!(
+            read_metadata(root.path(), "target/python")
+                .unwrap_err()
+                .to_string()
+                .contains("regular file")
+        );
     }
 
     #[cfg(unix)]

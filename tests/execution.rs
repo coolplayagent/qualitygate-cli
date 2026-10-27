@@ -3,6 +3,9 @@ mod common;
 mod output_aliases;
 #[path = "execution/preparation.rs"]
 mod preparation;
+#[cfg(unix)]
+#[path = "execution/python_metadata.rs"]
+mod python_metadata;
 #[path = "execution/report_counts.rs"]
 mod report_counts;
 use common::*;

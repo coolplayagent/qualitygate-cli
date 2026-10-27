@@ -33,6 +33,7 @@
 | 规则类别、修改、候选、推广与生命周期 | `tests/rule_management.rs`、`tests/policy_categories.rs`、`tests/policy_candidates.rs`、`tests/policy_promotion.rs`、`tests/policy_lifecycle.rs` |
 | 文件契约与独立测试反例 | `tests/file_contracts.rs`、`tests/test_effectiveness.rs` |
 | Maven、Python、兼容性、覆盖率与 SARIF | `tests/maven.rs`、`tests/python.rs`、`tests/compatibility.rs`、`tests/coverage.rs`、`tests/sarif.rs` 及显式 live 目标 |
+| PYTHON-METADATA-01 安装元数据为普通文件、有界读取与未完成 producer 证据 | `application::python_install::tests`：精确 2 MiB 边界、超大文件、目录与符号链接隔离；`tests/execution/python_metadata.rs`：有界子进程验证 FIFO/socket/目录/超大产物、证据保留、依赖阻断及普通文件恢复；真实 pip 仍由 `tests/python.rs` 验证 |
 | REPORT-COUNT-01 测试与覆盖率报告累计计数的溢出检查、证据保留与依赖阻塞 | `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`；`tests/execution/report_counts.rs` |
 | COVERAGE-THRESHOLD-01 精确计数判定、小数阈值相等、可选分支与空测量集合 | `domain::coverage::tests`；`tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages` |
 | OUTPUT-INPUT-01 报告及项目输出与输入冲突时准备前拒绝、静态预检、基线保护、报告新鲜度与命令启动完整性 | `tests/execution/preparation.rs`；`tests/cli.rs` 与 `tests/execution.rs` 的旧报告回归 |
@@ -45,7 +46,7 @@
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
 | AGENT-01 — 绑定来源的 Agent 义务、按范围投影 Prompt、过期/缺失证据与冲突处理 | `tests/agent_contracts.rs`；`domain/agent_contract.rs` 范围单元测试 |
-| AGENT-HOST-01 — Agent 注入、修复/恢复/切换、能力缺口、伪造报告、策略变化、不可变交付与规范路径边界 | `tests/agent_host.rs`；`tests/delivery.rs`，包括 `equivalent_repository_paths_cannot_bypass_delivery_confinement`；`tests/agent_loop.rs`；纯判定 `domain/agent_host_tests.rs` |
+| AGENT-HOST-01 — Agent 注入、修复/恢复/切换、能力缺口、伪造报告、策略变化、不可变交付与规范路径边界 | `tests/agent_host.rs`；`tests/delivery.rs`，包括 `equivalent_repository_paths_cannot_bypass_delivery_confinement`；`tests/agent_loop.rs` 验证修复 fixture 完整读取 Prompt；`runner::tests::closed_stdin_is_incomplete_even_when_the_child_exits_successfully` 保留输入交付失败语义；纯判定 `domain/agent_host_tests.rs` |
 | 任务、人工验收、provenance 与 Git trailer | `tests/manual.rs`、`tests/provenance.rs`、`tests/case_provenance.rs`、`tests/git_trailers.rs` |
 | Agent 反馈与有界修复闭环 | `tests/feedback.rs`、`tests/agent_loop.rs`、显式 repair/live 目标 |
 | 试点封存、授权、证据与接受 | `tests/pilot_*`、`tests/pilot_seal/v8.rs` 到 `v10.rs`、pilot domain 测试 |
