@@ -104,6 +104,36 @@ fn apply_data(
 }
 
 #[test]
+fn matched_entity_totals_reject_overflow_across_test_and_coverage_reports() {
+    for use_coverage in [false, true] {
+        let mut result = pending();
+        let tests = |executed, failures| Data {
+            tests: Some(Tests {
+                executed,
+                failures,
+                skipped: 0,
+            }),
+            ..Data::default()
+        };
+        apply_data(&mut result, &spec("full"), tests(usize::MAX - 1, 1), None).unwrap();
+        let (second_spec, second) = if use_coverage {
+            let mut data = coverage(&[("src/a.rs", 2, 1, 0, 0)]);
+            data.coverage_files = vec!["src/a.rs".into(), "src/b.rs".into()];
+            (coverage_spec("full"), data)
+        } else {
+            (spec("full"), tests(1, 0))
+        };
+        apply_data(&mut result, &second_spec, second.clone(), None).unwrap();
+        assert_eq!(result.matched_entities, usize::MAX);
+        let error = apply_data(&mut result, &second_spec, second, None).unwrap_err();
+        assert!(error.to_string().contains("Matched entity count overflow"));
+        assert_eq!(result.matched_entities, usize::MAX);
+        assert_eq!(result.diagnostics.len(), 1);
+        assert_eq!(result.diagnostics[0].message, "1 executed tests failed");
+    }
+}
+
+#[test]
 fn changed_lines_filters_old_issues_and_rejects_unlocated_diagnostics() {
     let mut result = pending();
     apply_data(

@@ -22,6 +22,13 @@ location, fingerprints, counts, raw report digest, command evidence, and
 completeness. Exit code and report content are evaluated together; an accepted
 producer exit code cannot override a fatal or incomplete report.
 
+Test counts and selected coverage-line counts contribute to a check's
+`matched_entities`. Each addition must fit the runtime's unsigned counter;
+overflow makes the check incomplete instead of wrapping or panicking. Earlier
+findings and raw report artifacts remain available, and dependent checks stay
+blocked until the producer supplies representable evidence. Debug and release
+builds apply the same rule.
+
 ## Coverage and static analysis
 
 Coverage producers support native coverage.py JSON, Cobertura XML, JaCoCo XML,

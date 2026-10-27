@@ -34,7 +34,10 @@ pub(super) fn apply(
         result
             .metadata
             .insert("tests".into(), serde_json::to_value(tests)?);
-        result.matched_entities += tests.executed;
+        result.matched_entities = result
+            .matched_entities
+            .checked_add(tests.executed)
+            .context("Matched entity count overflow while aggregating test reports")?;
         if tests.executed < minimum {
             result.diagnostics.push(diagnostic(
                 &result.id,

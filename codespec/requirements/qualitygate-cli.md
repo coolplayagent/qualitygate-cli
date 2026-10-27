@@ -111,6 +111,11 @@ Issue 20 增加十二条默认不启用的 Java 新增行文本审查规则，�
 
 外部报告必须提供可校验的代码快照、生成命令和工具版本关联。无法验证来源、报告格式错误或必需报告缺失时，该检查不能标记为通过。
 
+REPORT-COUNT-01：同一检查的测试报告与覆盖率报告累计匹配计数时，溢出必须报告未完成，
+不能在 release 中回绕后通过或在 debug 中触发 panic；保留先前违规和原始报告工件，阻塞依赖检查。
+证据见 `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`、
+`tests/execution/report_counts.rs` 及[工具报告契约](../../docs/zh/02-reference/03-projects-and-tool-reports.md)。
+
 ### 3.3 流程门禁
 
 | 功能 | 说明 |

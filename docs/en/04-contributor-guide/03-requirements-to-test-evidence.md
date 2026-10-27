@@ -33,6 +33,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | Rule categories, mutation, candidates, promotion, and lifecycle | `tests/rule_management.rs`, `tests/policy_categories.rs`, `tests/policy_candidates.rs`, `tests/policy_promotion.rs`, `tests/policy_lifecycle.rs` |
 | File contracts and independent test counterexamples | `tests/file_contracts.rs`, `tests/test_effectiveness.rs` |
 | Maven, Python, compatibility, coverage, and SARIF adapters | `tests/maven.rs`, `tests/python.rs`, `tests/compatibility.rs`, `tests/coverage.rs`, `tests/sarif.rs` and explicit live variants |
+| REPORT-COUNT-01: checked totals across test and coverage reports, retained evidence and blocked dependents | `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`; `tests/execution/report_counts.rs` |
 | Diagnostic ratchets | `tests/ratchet.rs`, language/tool-specific ratchet targets, `tests/c_family_ratchet.rs` |
 
 ## Agent and task acceptance

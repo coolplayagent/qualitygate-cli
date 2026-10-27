@@ -15,6 +15,10 @@
 归一化结果保留工具与规则 ID、严重级别、消息、URI、位置、指纹、计数、原报告摘要、命令证据和
 完整性。退出码与报告内容一起判定；认可的 producer 退出码不能覆盖 fatal 或 incomplete 报告。
 
+测试计数与选中的覆盖行数会累加到检查的 `matched_entities`。每次累加都必须能够用运行时的
+无符号计数表示；溢出使检查保持未完成，不发生计数回绕或 panic。先前的违规与原始报告工件继续
+保留，依赖检查保持阻塞，直到生产者提供可表示的证据。debug 与 release 构建采用相同判定。
+
 ## 覆盖率与静态分析
 
 覆盖率在声明 profile 内支持原生 coverage.py JSON、Cobertura XML、JaCoCo XML 与 LCOV。阈值基于

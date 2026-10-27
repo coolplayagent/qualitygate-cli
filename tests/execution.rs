@@ -1,4 +1,6 @@
 mod common;
+#[path = "execution/report_counts.rs"]
+mod report_counts;
 use common::*;
 use serde_json::{Value, json};
 use std::path::Path;

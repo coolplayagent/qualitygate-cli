@@ -6,7 +6,7 @@ use crate::{
     paths,
     snapshot::Snapshot,
 };
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -145,7 +145,10 @@ pub(super) fn apply(
     let line_percent = percentage(hit, total);
     let branch_percent = percentage(branches_hit, branches);
     let threshold = spec.minimum_coverage.unwrap_or(100.0);
-    result.matched_entities += total;
+    result.matched_entities = result
+        .matched_entities
+        .checked_add(total)
+        .context("Matched entity count overflow while aggregating coverage reports")?;
     let evidence = serde_json::json!({"coverage_paths":spec.coverage_paths,"source_files":expected,"lines":total,"lines_hit":hit,"line_percent":line_percent,"branches":branches,"branches_hit":branches_hit,"branch_percent":branch_percent,"require_branch_coverage":spec.require_branch_coverage,"threshold":threshold,"no_executable_lines_selected":total == 0,"excluded_lines":excluded_lines,"branch_measurement":data.branch_coverage,"producer":data.coverage_producer,"report_source_roots":data.coverage_roots});
     result
         .metadata
