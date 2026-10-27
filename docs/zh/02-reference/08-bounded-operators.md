@@ -58,6 +58,13 @@ expression:
 `rules.operators.v3` 提供独立的 `schema_version: 3` 契约，通过
 `schema operator-rule-v3` 导出。V1/V2 语义及 `schema operator-rule` 保持不变；
 family Schema 包含三个版本。使用匹配的预编译 qualitygate 即可，不需要安装 Rust、Node.js 或 Python。
+使用前通过 `qualitygate capabilities --format json` 确认包含 `rules.operators.v3`；
+版本号相同本身不能证明支持 V3。
+
+Python 与 Node.js 项目使用相同的 YAML/JSON 表达式，通过 `applies_to.paths`、来源选择器
+和字符串操作配置文件扩展名及对应约定。仓库快照仍需要 Git。Lambda 函数体是声明式表达式，
+不执行 JavaScript/Python 回调；配置的命令检查仍需要对应工具与运行时。
+Unix 集成测试在 `PATH` 仅保留 Git 时验证规则校验和 full 执行，覆盖缺失对应文件与规则来源过期。
 
 规则可以声明多个独立选择的事实集合、绑定变量、引用外层实体，并组合标量 `map`、`distinct`、
 `contains`、`subset`、`concat` 和字面量 `replace`。全部声明来源必须完整且绑定同一快照；

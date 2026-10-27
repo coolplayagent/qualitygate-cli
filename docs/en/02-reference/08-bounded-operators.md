@@ -72,6 +72,16 @@ workflow. V1 rejects `expression`; generation does not enable the rule.
 by `schema operator-rule-v3`. V1/V2 behavior and `schema operator-rule` stay
 unchanged. The family schema includes all three versions. Use the matching
 precompiled qualitygate binary; no Rust, Node.js or Python runtime is needed.
+Confirm `rules.operators.v3` in `qualitygate capabilities --format json` before
+using V3 rules; a matching version number alone does not establish support.
+
+Python and Node.js projects use the same YAML/JSON expressions. Select their
+file extensions and correspondence conventions in `applies_to.paths`, source
+selectors and string operations. Git remains required for repository snapshots.
+Lambda bodies are declarative expressions, not JavaScript/Python callbacks;
+configured command checks still need their declared tools and runtimes. The
+Unix integration suite verifies validation and full rule execution with only
+Git on `PATH`, including a missing counterpart and a stale rule-source binding.
 
 Rules can declare multiple independently selected fact collections, bind
 lexical variables, capture outer entities, and compose scalar `map`, `distinct`,

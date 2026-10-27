@@ -1,4 +1,9 @@
 use super::*;
+
+#[cfg(unix)]
+#[path = "portable.rs"]
+mod portable;
+
 fn rule(expression: Value) -> Value {
     let mut value = candidate(expression);
     value["schema_version"] = json!(3);
