@@ -60,6 +60,16 @@ worker. Both constructors inspect the materialized bytes, mode and file stamps
 before accepting the guard. Later verification still latches the first failure,
 even if a command restores the original content.
 
+On Windows the guard also retains handles that allow shared reads while denying
+data-write and delete/rename access. This prevents in-place writes from being
+hidden by restoring both bytes and modification time. Existing incompatible
+writers prevent guard construction; there is no unprotected fallback. Handle
+acquisition and initial validation share the 30-second work budget and the
+100,000-file limit. Construction failure and guard drop release the handles.
+Content, identity and attribute checks still apply; an observed attribute change
+remains invalid after restoration. The native selfcheck records rejected mutation
+as incomplete and retains the underlying prevention or detection error.
+
 Snapshot identity and policy/task digests flow into every plan and report.
 Before a result is accepted, the application confirms that produced evidence
 belongs to the same materialized snapshot. Mutation, missing objects, invalid

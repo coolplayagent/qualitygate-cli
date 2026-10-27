@@ -66,10 +66,8 @@ async fn parallel_materialization_and_input_guards_cover_every_file() {
     guard.verify().await.unwrap();
     let (name, original) = files.last_key_value().unwrap();
     let path = workspace.path().join(name);
-    std::fs::write(&path, b"edited").unwrap();
-    assert!(guard.verify().await.is_err());
-    std::fs::write(&path, &original.bytes).unwrap();
-    assert!(guard.verify().await.is_err());
+    assert_attributes_remain_invalid_after_restoration(&guard, &path).await;
+    assert_eq!(std::fs::read(&path).unwrap(), original.bytes);
     let mut unsafe_files = files;
     unsafe_files.insert(
         "../escape".into(),
@@ -79,6 +77,17 @@ async fn parallel_materialization_and_input_guards_cover_every_file() {
         },
     );
     assert!(materialize_files(&unsafe_files).is_err());
+}
+
+async fn assert_attributes_remain_invalid_after_restoration(guard: &InputGuard, path: &Path) {
+    let permissions = std::fs::metadata(path).unwrap().permissions();
+    let mut changed = permissions.clone();
+    changed.set_readonly(true);
+    std::fs::set_permissions(path, changed).unwrap();
+    let invalid = guard.verify().await;
+    std::fs::set_permissions(path, permissions).unwrap();
+    assert!(invalid.is_err());
+    assert!(guard.verify().await.is_err());
 }
 
 #[cfg(unix)]
@@ -218,10 +227,7 @@ async fn derived_baseline_preserves_binding_and_isolates_shared_execution_inputs
     assert_eq!(new_guard.digest, source.identity.content_digest);
     let old_file = old_workspace.path().join("file.txt");
     assert_eq!(std::fs::read(&old_file).unwrap(), b"old\n");
-    std::fs::write(&old_file, "tampered\n").unwrap();
-    assert!(old_guard.verify().await.is_err());
-    std::fs::write(&old_file, "old\n").unwrap();
-    assert!(old_guard.verify().await.is_err());
+    assert_attributes_remain_invalid_after_restoration(&old_guard, &old_file).await;
     new_guard.verify().await.unwrap();
     assert_eq!(
         std::fs::read(new_workspace.path().join("file.txt")).unwrap(),

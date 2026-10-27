@@ -13,10 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: rustup show
-      - name: Verify paired snapshot performance and isolation
+      - name: Verify input integrity and paired snapshot isolation
         env:
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
-        run: cargo test --locked --test policy_performance --all-features -- --nocapture
+        run: cargo test --locked --lib --test policy_performance --test selfcheck --all-features -- --nocapture
       - name: Verify inputs are unchanged
         run: git diff --exit-code

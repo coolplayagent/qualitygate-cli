@@ -84,10 +84,26 @@ pub(super) async fn snapshot(scenario: SnapshotScenario) -> Result<Value> {
     let observed = match snapshot::capture(&root, &selection).await {
         Ok(captured) if matches!(scenario, SnapshotScenario::ChangedInput) => {
             let guard = snapshot::InputGuard::new(&root, captured.files).await?;
-            std::fs::write(&file, b"changed\n")?;
-            match guard.verify().await {
-                Ok(()) => json!({"status":"completed"}),
-                Err(error) => json!({"status":"incomplete", "reason":format!("{error:#}")}),
+            let write = std::fs::write(&file, b"changed\n");
+            let rejected = if cfg!(windows)
+                && write
+                    .as_ref()
+                    .is_err_and(|error| error.raw_os_error() == Some(32))
+            {
+                guard.verify().await?;
+                Some(write.unwrap_err().to_string())
+            } else {
+                write?;
+                match guard.verify().await {
+                    Ok(()) => None,
+                    Err(error) => Some(format!("{error:#}")),
+                }
+            };
+            match rejected {
+                Some(detail) => {
+                    json!({"status":"incomplete", "reason":format!("Checked input mutation rejected: {path}"), "detail":detail})
+                }
+                None => json!({"status":"completed"}),
             }
         }
         Ok(captured) => {

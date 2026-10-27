@@ -44,6 +44,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | OUTPUT-PATH-01: canonical output-name uniqueness, separate baseline inventory, preserved aliases and no duplicate report counting | `config::tests::report_output_names_are_unique_after_normalization_without_rewriting_policy`; adjacent baseline/project unit tests; `tests/execution/output_aliases.rs` |
 | SHARED-EXECUTION-01: base-derived scope binding, shared immutable inputs/digests, isolated workspaces and replacement detection | `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`: base/current digest binding, rejection of equal-length content changes during guard creation and permanent invalidation; `snapshot::input_guard::tests`; `tests/ratchet.rs`; `tests/compatibility.rs` |
 | Diagnostic ratchets | `tests/ratchet.rs`, language/tool-specific ratchet targets, `tests/c_family_ratchet.rs` |
+| INPUT-PROTECTION-01: Windows shared readers, rejected in-place writes and replacements, permanent attribute invalidation, bounded handles and release on constructor failure/drop | `snapshot::input_guard::tests`: restored in-place write counterexample, sharing violations, overlapping guards, existing writers and failed initial inspection; `snapshot::tests`; `tests/selfcheck.rs`; `.github/workflows/windows-snapshot.yml` |
 
 ## Agent and task acceptance
 

@@ -80,7 +80,7 @@
   "snapshot-oversized": {"/status":"incomplete","/reason":"File exceeds 2097152 bytes: fixture.txt (2097153 bytes); snapshot acquisition limit, not a rule violation; retry with --snapshot-max-file-mib 3. --diff and --path retain unexcluded snapshot inputs; reviewed policy exclude entries can omit unrelated resources"},
   "snapshot-symlink": {"/status":"incomplete","/reason":"Unsupported Git mode 120000 at fixture.txt"},
   "snapshot-missing_object": {"/status":"incomplete","/reason":"Git object is not a blob: fixture.txt"},
-  "snapshot-changed_input": {"/status":"incomplete","/reason":"Checked input modified during execution: fixture.txt"},
+  "snapshot-changed_input": {"/status":"incomplete","/reason":"Checked input mutation rejected: fixture.txt"},
   "runner-timeout": {"/status":"incomplete","/timed_out":true,"/exit_code":null},
   "runner-overflow": {"/status":"incomplete","/timed_out":false,"/exit_code":null,"/stdout_bytes":16777217,"/capture_error":"Process output exceeded 16777216 bytes"},
   "runner-missing_tool": {"/status":"incomplete","/reason":{"$contains":"missing-fixture-tool"}},

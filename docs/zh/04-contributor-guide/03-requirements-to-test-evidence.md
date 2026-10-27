@@ -42,6 +42,7 @@
 | OUTPUT-PATH-01 规范化输出名唯一、基线清单独立、合法别名保留与报告计数不重复 | `config::tests::report_output_names_are_unique_after_normalization_without_rewriting_policy` 及相邻基线/项目单元测试；`tests/execution/output_aliases.rs` |
 | SHARED-EXECUTION-01 基线派生范围绑定、不可变执行输入/摘要共享、独立工作区与输入替换检测 | `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`：基线/当前摘要绑定、创建时拒绝等长内容篡改及永久失败；`snapshot::input_guard::tests`；`tests/ratchet.rs`；`tests/compatibility.rs` |
 | 诊断棘轮 | `tests/ratchet.rs`、各语言/工具 ratchet 目标、`tests/c_family_ratchet.rs` |
+| INPUT-PROTECTION-01 Windows 共享读取、阻止原地写入与替换、属性永久失效、句柄数量限制及创建失败/释放时关闭 | `snapshot::input_guard::tests`：原地改写恢复反例、共享冲突、并存校验器、已有写入句柄与初始检查失败；`snapshot::tests`；`tests/selfcheck.rs`；`.github/workflows/windows-snapshot.yml` |
 
 ## Agent 与任务验收
 
