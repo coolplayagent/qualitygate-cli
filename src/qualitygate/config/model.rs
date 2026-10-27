@@ -232,6 +232,24 @@ pub struct CommandCheck {
     pub test_effectiveness: Option<super::test_effectiveness::TestEffectivenessSpec>,
 }
 
+impl CommandCheck {
+    /// Files prepared for one producer execution; stdout paths are only labels.
+    /// Baseline preparation uses its explicit path or the current-path fallback.
+    pub fn file_outputs(&self, baseline: bool) -> impl Iterator<Item = &str> {
+        self.reports
+            .iter()
+            .filter(|report| !report.from_stdout)
+            .map(move |report| {
+                if baseline {
+                    report.baseline.as_deref().unwrap_or(&report.path)
+                } else {
+                    &report.path
+                }
+            })
+            .chain(self.projects.iter().flat_map(|project| project.outputs()))
+    }
+}
+
 /// Fresh Maven outputs from the same command, paths relative to the repository.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

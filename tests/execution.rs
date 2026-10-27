@@ -1,4 +1,6 @@
 mod common;
+#[path = "execution/output_aliases.rs"]
+mod output_aliases;
 #[path = "execution/preparation.rs"]
 mod preparation;
 #[path = "execution/report_counts.rs"]

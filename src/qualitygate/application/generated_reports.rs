@@ -10,27 +10,12 @@ use crate::{
 use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, sync::Arc, time::Duration};
 
-fn outputs(check: &CommandCheck, baseline: bool) -> impl Iterator<Item = &str> {
-    check
-        .reports
-        .iter()
-        .filter(|report| !report.from_stdout)
-        .map(move |report| {
-            if baseline {
-                report.baseline.as_deref().unwrap_or(&report.path)
-            } else {
-                &report.path
-            }
-        })
-        .chain(check.projects.iter().flat_map(|project| project.outputs()))
-}
-
 pub(super) fn validate_outputs(
     check: &CommandCheck,
     files: &BTreeMap<String, snapshot::File>,
     baseline: bool,
 ) -> Result<()> {
-    for name in outputs(check, baseline) {
+    for name in check.file_outputs(baseline) {
         let normalized = paths::relative(Path::new(name))?;
         if files.contains_key(&normalized) {
             bail!("Report output would overwrite a checked input: {name}");
@@ -66,7 +51,7 @@ pub(super) async fn prepare(
             .await?;
         }
     }
-    for name in outputs(check, baseline) {
+    for name in check.file_outputs(baseline) {
         let path = paths::confined(workspace, Path::new(name))?;
         match tokio::fs::remove_file(&path).await {
             Ok(()) => {}

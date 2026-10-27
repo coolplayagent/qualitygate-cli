@@ -110,7 +110,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             }
             for path in project.outputs() {
                 let normalized = crate::paths::relative(Path::new(path))?;
-                if normalized.is_empty() || normalized != path || !outputs.insert(path) {
+                if normalized.is_empty() || normalized != path || !outputs.insert(normalized) {
                     bail!("Project output paths must be distinct normalized files");
                 }
             }
@@ -166,10 +166,10 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             bail!("A command may declare only one stdout report");
         }
         for report in &check.reports {
-            if !outputs.insert(report.path.as_str()) {
-                bail!("Check output paths must be distinct");
+            let normalized = crate::paths::relative(Path::new(&report.path))?;
+            if !outputs.insert(normalized.clone()) {
+                bail!("Check output paths must be distinct after normalization: {normalized}");
             }
-            crate::paths::relative(Path::new(&report.path))?;
             if report.format == ReportFormat::CargoClippy && !report.from_stdout {
                 bail!("cargo_clippy reports require from_stdout: true");
             }
@@ -212,6 +212,23 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
                 && (report.format == ReportFormat::Junit || report.minimum_tests.is_some())
             {
                 bail!("ratchet requires diagnostic counts, not test statistics");
+            }
+        }
+        if check
+            .reports
+            .iter()
+            .any(|report| report.mode.needs_baseline())
+        {
+            // Baseline execution has its own workspace, but every file output
+            // within that execution must still have a distinct identity.
+            let mut baseline_outputs = BTreeSet::new();
+            for path in check.file_outputs(true) {
+                let normalized = crate::paths::relative(Path::new(path))?;
+                if !baseline_outputs.insert(normalized.clone()) {
+                    bail!(
+                        "Baseline output paths must be distinct after normalization: {normalized}"
+                    );
+                }
             }
         }
     }

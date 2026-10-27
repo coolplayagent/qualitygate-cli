@@ -36,6 +36,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | REPORT-COUNT-01: checked totals across test and coverage reports, retained evidence and blocked dependents | `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`; `tests/execution/report_counts.rs` |
 | COVERAGE-THRESHOLD-01: exact count decisions, inclusive decimal thresholds, optional branches and empty inventories | `domain::coverage::tests`; `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages` |
 | OUTPUT-INPUT-01: reject normalized report/project input collisions before preparation, static preflight, baseline protection, fresh reports and producer launch integrity | `tests/execution/preparation.rs`; stale-report regressions in `tests/cli.rs` and `tests/execution.rs` |
+| OUTPUT-PATH-01: canonical output-name uniqueness, separate baseline inventory, preserved aliases and no duplicate report counting | `config::tests::report_output_names_are_unique_after_normalization_without_rewriting_policy`; adjacent baseline/project unit tests; `tests/execution/output_aliases.rs` |
 | Diagnostic ratchets | `tests/ratchet.rs`, language/tool-specific ratchet targets, `tests/c_family_ratchet.rs` |
 
 ## Agent and task acceptance

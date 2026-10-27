@@ -32,6 +32,14 @@ outputs from earlier commands are still cleared, so each producer must supply
 fresh reports. Keep generated reports outside checked inputs, for example in an
 ignored build directory.
 
+Within a check, report paths (including stdout labels) and project-output paths
+must be distinct after repository-relative normalization: `target/report.json`
+and `./target//report.json` name the same output. Configuration loading rejects
+duplicates before probes or producers run. When baseline execution is required,
+its file outputs, including current-path fallbacks, are checked independently;
+current and baseline runs may use the same path in their separate workspaces.
+A single valid alias remains accepted, and declared paths are not rewritten.
+
 Test counts and selected coverage-line counts contribute to a check's
 `matched_entities`. Each addition must fit the runtime's unsigned counter;
 overflow makes the check incomplete instead of wrapping or panicking. Earlier

@@ -59,6 +59,121 @@ fn valid_command_config_roundtrips_and_dependencies_need_not_be_ordered() {
     parse(serde_norway::to_string(&config).unwrap().as_bytes()).unwrap();
 }
 
+fn output_config(
+    reports: serde_json::Value,
+    projects: serde_json::Value,
+) -> anyhow::Result<Config> {
+    parse(&serde_json::to_vec(
+        &serde_json::json!({"schema_version":1,"checks":[{
+            "id":"reports","argv":["echo"],"tools":[{"id":"tool","argv":["git","--version"]}],
+            "reports":reports,"projects":projects
+        }]}),
+    )?)
+}
+
+#[test]
+fn report_output_names_are_unique_after_normalization_without_rewriting_policy() {
+    use serde_json::json;
+    for alias in [
+        "./target/report.json",
+        "target//report.json",
+        "target/./report.json",
+        "target/report.json/",
+    ] {
+        let report = json!({"path":alias,"format":"diagnostics"});
+        let error = output_config(
+            json!([{"path":"target/report.json","format":"diagnostics"},report]),
+            json!([]),
+        )
+        .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Check output paths must be distinct after normalization")
+        );
+        let config = output_config(json!([report]), json!([])).unwrap();
+        assert_eq!(config.checks[0].reports[0].path, alias);
+        assert_eq!(
+            config.checks[0].file_outputs(false).collect::<Vec<_>>(),
+            [alias]
+        );
+    }
+    output_config(
+        json!([
+            {"path":"target/report.json","format":"diagnostics"},
+            {"path":"target/report.jsonl","format":"diagnostics"}
+        ]),
+        json!([]),
+    )
+    .unwrap();
+}
+
+#[test]
+fn baseline_output_identities_are_distinct_within_their_own_execution() {
+    use serde_json::json;
+    let first = json!({"path":"target/first.json","format":"diagnostics","mode":"new_diagnostics","baseline":"target/base.json"});
+    for second in [
+        json!({"path":"target/second.json","format":"diagnostics","mode":"new_diagnostics","baseline":"./target/base.json"}),
+        json!({"path":"./target/base.json","format":"diagnostics"}),
+    ] {
+        let error = output_config(json!([first, second]), json!([])).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Baseline output paths must be distinct after normalization")
+        );
+    }
+    let config = output_config(json!([
+        {"path":"./target/first.json","format":"diagnostics","mode":"new_diagnostics","baseline":"target/first.json"},
+        {"path":"target/second.json","format":"diagnostics","mode":"new_diagnostics","baseline":"./target/second.json"}
+    ]),json!([])).unwrap();
+    assert_eq!(
+        config.checks[0].file_outputs(true).collect::<Vec<_>>(),
+        ["target/first.json", "./target/second.json"]
+    );
+    // A baseline field is inert without baseline execution; stdout consumes no file.
+    for from_stdout in [false, true] {
+        let mode = if from_stdout {
+            "new_diagnostics"
+        } else {
+            "full"
+        };
+        let config = output_config(json!([
+            {"path":"stream","format":"diagnostics","mode":mode,"baseline":"target/base.json","from_stdout":from_stdout},
+            {"path":"target/current.json","format":"diagnostics","mode":mode,"baseline":"target/base.json"}
+        ]),json!([])).unwrap();
+        if from_stdout {
+            assert_eq!(
+                config.checks[0].file_outputs(true).collect::<Vec<_>>(),
+                ["target/base.json"]
+            );
+        }
+    }
+}
+
+#[test]
+fn project_and_report_output_names_share_the_normalized_namespace() {
+    use serde_json::json;
+    let projects = json!([{"root":".","effective_pom":"target/effective.xml","dependency_tree":"target/tree.json"}]);
+    for from_stdout in [false, true] {
+        let error = output_config(json!([{"path":"./target/effective.xml","format":"diagnostics","from_stdout":from_stdout}]),projects.clone()).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Check output paths must be distinct after normalization")
+        );
+    }
+    let config = output_config(
+        json!([{"path":"stream","format":"diagnostics","from_stdout":true}]),
+        projects,
+    )
+    .unwrap();
+    assert_eq!(
+        config.checks[0].file_outputs(false).collect::<Vec<_>>(),
+        ["target/effective.xml", "target/tree.json"]
+    );
+}
+
 #[test]
 fn packaged_rules_expose_archived_standard_inputs() {
     let config = Config {
