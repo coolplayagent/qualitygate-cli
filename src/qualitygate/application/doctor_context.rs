@@ -439,7 +439,11 @@ mod tests {
         );
         assert!(!report.checks[0].probes[0].attempted);
         report.diagnostics.clear();
-        std::fs::write(workspace.path().join("input"), "changed").unwrap();
+        let input = workspace.path().join("input");
+        let permissions = std::fs::metadata(&input).unwrap().permissions();
+        let mut changed = permissions.clone();
+        changed.set_readonly(true);
+        std::fs::set_permissions(&input, changed).unwrap();
         probe_until(
             &plan,
             workspace.path(),
@@ -450,6 +454,8 @@ mod tests {
         )
         .await
         .unwrap();
+        std::fs::set_permissions(&input, permissions).unwrap();
+        assert!(guard.verify().await.is_err());
         assert!(
             report
                 .diagnostics

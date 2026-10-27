@@ -141,8 +141,9 @@ INPUT-PROTECTION-01：Windows 输入校验器在整个生命周期持有允许�
 重命名访问的句柄，阻止原地改写恢复字节及修改时间后复用证据。已有不兼容写入句柄使创建失败，
 禁止无保护回退。句柄获取与初始校验共享 30 秒预算和 100,000 文件上限，创建失败或释放校验器时关闭
 句柄，正常读取和后续清理仍可执行。实际字节、文件身份及属性校验保持有效，属性变更恢复后仍永久失效。
-原生 selfcheck 对阻止或检测到的变更均给出未完成，保留底层错误。证据见 `snapshot::input_guard::tests`、
-`snapshot::tests`、`tests/selfcheck.rs` 与 `.github/workflows/windows-snapshot.yml`。
+预检对失效输入不启动工具探测。原生 selfcheck 对阻止或检测到的变更均给出未完成，保留底层错误。
+证据见 `snapshot::input_guard::tests`、`snapshot::tests`、`application::doctor_context::tests`、
+`tests/selfcheck.rs` 与 `.github/workflows/windows-snapshot.yml`。
 
 EXECUTABLE-FILE-01：可执行身份在打开前验证路径解析到普通文件及大小预算，打开后继续复核句柄，
 保留摘要、字节数与读取预算。普通文件符号链接继续可用；已存在的 FIFO、套接字和目录不得进入
