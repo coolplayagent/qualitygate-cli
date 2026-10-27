@@ -66,6 +66,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | --- | --- |
 | TEST-ISOLATION-01: fixture Cargo outputs cannot share the parent build cache | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory` replays real defect/repair/refactor assertions and verifies the parent cache remains untouched |
 | Architecture, documentation, site, and Skill release | `tests/quality/architecture.rs`, `documentation.rs`, `site.rs`, `skill_package.rs` |
+| CI-NODE-01: Node 24 action runtime with explicit npm cache opt-out | `eslint-project` in `.github/workflows/pr-checks.yml` runs the real ESLint ratchet and repair test; `.github/workflows/release.yml` uses the same setup inputs. `tests/quality/skill_package.rs` validates release packaging; it does not execute publication. |
 
 Rule regression tests retain positive, negative, malformed-input, boundary,
 and incomplete-evidence cases. Report-adapter tests separately cover parser

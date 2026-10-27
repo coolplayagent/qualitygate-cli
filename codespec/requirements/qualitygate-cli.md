@@ -800,6 +800,7 @@ OPERATOR-SET-01：v3 的去重与子集比较使用有界标量索引，在既�
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
 | TEST-ISOLATION-01 | CLI 集成测试的 Cargo 夹具独立使用物化快照内的构建目录，不继承父测试进程的 `CARGO_TARGET_DIR`，避免并行同名项目产物互串；父构建缓存保持不变，真实缺陷、修复、重构断言不得减弱；生产 CLI 的环境契约不变 | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory`；[自检与 fixtures](../../docs/zh/04-contributor-guide/02-selfcheck-and-fixtures.md) |
+| CI-NODE-01 | ESLint 验收与 ClawHub 发布使用原生 Node 24 action 运行时，并为工具选择 Node 24；显式关闭 npm 自动缓存，保持临时夹具及全局 CLI 安装的缓存边界 | `.github/workflows/pr-checks.yml` 的 `eslint-project` 实际执行证据；`.github/workflows/release.yml`；`tests/quality/skill_package.rs` 仅验证打包，不替代发布执行 |
 
 ## 18. 规则诊断输出预算
 

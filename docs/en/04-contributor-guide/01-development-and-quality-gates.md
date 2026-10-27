@@ -43,6 +43,12 @@ These independent [Cargo profile settings](https://doc.rust-lang.org/cargo/refer
 apply only to that Windows step. Local defaults, test selection, optimization
 levels, Miri and ASan stay unchanged. An interrupted job remains incomplete.
 
+The ESLint acceptance and ClawHub release steps use `actions/setup-node@v7`,
+whose action runtime is Node 24, and select Node 24 for their tools. Both set
+`package-manager-cache: false` to preserve v4's disabled workflow cache;
+dependencies are installed by the temporary fixture or global CLI step.
+See the [upstream migration notes](https://github.com/actions/setup-node/blob/v7/README.md).
+
 Every behavior change updates its relevant documentation and requirement-to-test
 evidence. Cover pass, violation, incomplete execution, timeout, policy change,
 and snapshot mismatch where applicable. Never weaken a failing check or its test

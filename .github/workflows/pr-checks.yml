@@ -209,9 +209,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
+          package-manager-cache: false
       - run: rustup show
       - name: Live ESLint JSON ratchet and repair acceptance
         run: cargo test --locked --test eslint_ratchet -- --ignored --nocapture

@@ -62,6 +62,7 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
+| CI-NODE-01：Node 24 action 运行时，显式关闭 npm 自动缓存 | `.github/workflows/pr-checks.yml` 的 `eslint-project` 实际执行 ESLint ratchet 与修复测试；`.github/workflows/release.yml` 使用相同 setup 输入。`tests/quality/skill_package.rs` 验证发布打包，不执行发布。 |
 | 架构、文档、站点与 Skill 发布 | `tests/quality/architecture.rs`、`documentation.rs`、`site.rs`、`skill_package.rs` |
 
 规则回归测试保留正例、反例、非法输入、边界和未完成证据。报告适配器分别测试解析归一化与真实

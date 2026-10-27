@@ -369,9 +369,10 @@ jobs:
           PY
       - name: Install ClawHub CLI
         if: steps.clawhub-token.outputs.publish == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
+          package-manager-cache: false
       - name: Publish skill
         if: steps.clawhub-token.outputs.publish == 'true'
         env:

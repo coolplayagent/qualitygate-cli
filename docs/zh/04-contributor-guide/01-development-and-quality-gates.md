@@ -36,6 +36,11 @@ Windows 原生 CI 在 30 分钟作业预算内执行同一条完整 Cargo 测试
 [Cargo profile 设置](https://doc.rust-lang.org/cargo/reference/profiles.html)只作用于该 Windows
 步骤；本地默认配置、测试清单、优化级别、Miri 和 ASan 保持不变。作业中断仍属于未完成。
 
+ESLint 验收与 ClawHub 发布步骤使用 action 运行时为 Node 24 的 `actions/setup-node@v7`，
+并为工具选择 Node 24。两处均显式设置 `package-manager-cache: false`，保留 v4 关闭工作流
+缓存的行为；依赖由临时夹具或全局 CLI 安装步骤准备。
+版本变化见[上游迁移说明](https://github.com/actions/setup-node/blob/v7/README.md)。
+
 每项行为变化都要更新相关文档和需求—测试证据。按适用情况覆盖通过、违规、未完成、超时、策略变化和
 快照不匹配。绝不能削弱失败检查或测试来宣称完成。
 
