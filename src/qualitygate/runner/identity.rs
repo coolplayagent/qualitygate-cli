@@ -32,15 +32,13 @@ pub async fn selected_evaluator(path: &Path) -> Result<Artifact> {
 
 fn identify(path: &Path, limit: u64) -> Result<Artifact> {
     let started = std::time::Instant::now();
+    // Opening a FIFO can block before any read or elapsed-time check. Follow
+    // executable symlinks, but reject an existing special file before opening.
+    validate_metadata(path, &std::fs::metadata(path)?, limit)?;
     let file = std::fs::File::open(path)?;
     let metadata = file.metadata()?;
-    if !metadata.is_file() || metadata.len() > limit {
-        bail!(
-            "Executable exceeds its {} MiB identity budget: {}",
-            limit / (1024 * 1024),
-            path.display()
-        );
-    }
+    // The path preflight does not replace validation of the opened handle.
+    validate_metadata(path, &metadata, limit)?;
     let mut file = file.take(limit + 1);
     let mut hash = Sha256::new();
     let mut bytes = 0;
@@ -70,4 +68,89 @@ fn identify(path: &Path, limit: u64) -> Result<Artifact> {
         digest: format!("sha256:{:x}", hash.finalize()),
         bytes,
     })
+}
+
+fn validate_metadata(path: &Path, metadata: &std::fs::Metadata, limit: u64) -> Result<()> {
+    if !metadata.is_file() {
+        bail!(
+            "Executable identity requires a regular file: {}",
+            path.display()
+        );
+    }
+    if metadata.len() > limit {
+        bail!(
+            "Executable exceeds its {} MiB identity budget: {}",
+            limit / (1024 * 1024),
+            path.display()
+        );
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn regular_file_identity_preserves_exact_bytes_digest_and_size_limits() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("executable");
+        let bytes = vec![0x81; 70_000];
+        std::fs::write(&path, &bytes).unwrap();
+        let artifact = identify(&path, bytes.len() as u64).unwrap();
+        assert_eq!(artifact.path, path.to_str().unwrap());
+        assert_eq!(artifact.bytes, bytes.len() as u64);
+        assert_eq!(
+            artifact.digest,
+            "sha256:7da259f5bcf72dc549a4e361c4a24d5829e878f1758c62b05fea01063a866495"
+        );
+        assert!(
+            identify(&path, bytes.len() as u64 - 1)
+                .unwrap_err()
+                .to_string()
+                .contains("identity budget")
+        );
+        std::fs::write(&path, []).unwrap();
+        assert_eq!(identify(&path, 0).unwrap().bytes, 0);
+    }
+
+    #[test]
+    fn missing_files_and_directories_cannot_supply_executable_identity() {
+        let root = tempfile::tempdir().unwrap();
+        assert!(identify(&root.path().join("missing"), 10).is_err());
+        assert!(
+            identify(root.path(), 10)
+                .unwrap_err()
+                .to_string()
+                .contains("regular file")
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn executable_symlinks_follow_regular_files_but_reject_special_targets() {
+        use std::os::unix::{fs::symlink, net::UnixListener};
+
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("executable");
+        let link = root.path().join("selected");
+        std::fs::write(&path, b"executable bytes").unwrap();
+        symlink(&path, &link).unwrap();
+        let actual = identify(&link, 100).unwrap();
+        assert_eq!(actual.path, link.to_str().unwrap());
+        assert_eq!(actual.digest, identify(&path, 100).unwrap().digest);
+
+        std::fs::remove_file(&link).unwrap();
+        let socket = root.path().join("socket");
+        let _listener = UnixListener::bind(&socket).unwrap();
+        symlink(&socket, &link).unwrap();
+        for candidate in [&socket, &link] {
+            assert!(
+                identify(candidate, 100)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("regular file")
+            );
+        }
+    }
 }

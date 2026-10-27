@@ -51,6 +51,12 @@ outside it, a task instruction file, and a JSON argv array for a command that
 accepts instructions on stdin. Both input files are UTF-8 and at most 16 KiB;
 the argv array contains 1–64 arguments. No shell interpolation is implied.
 
+The selected `--qualitygate` must resolve to a regular file within its
+[identity budget](05-exit-codes-and-resource-limits.md). An existing special file,
+such as a FIFO with no writer, is rejected before opening or launching the
+Agent. The host returns exit `2` with `execution_incomplete`, retaining the
+reason in its ledger and producing no delivery object.
+
 The following is an argument template; replace the placeholders before execution:
 
 ```text

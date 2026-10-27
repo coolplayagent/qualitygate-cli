@@ -34,6 +34,11 @@ pub(super) struct Inventory {
 
 fn read(root: &Path, path: &str, total: &mut usize) -> Result<String> {
     let path = crate::paths::confined(root, Path::new(path))?;
+    // Ignore files are read before directory entries are classified. A FIFO
+    // must be rejected here before its open can block discovery's work budget.
+    if !std::fs::metadata(&path)?.is_file() {
+        bail!("Discovery input must be a regular file: {}", path.display());
+    }
     let file = std::fs::File::open(&path)?;
     if !file.metadata()?.is_file() {
         bail!("Discovery input must be a regular file: {}", path.display());

@@ -135,6 +135,19 @@ SHARED-EXECUTION-01：基线派生由 snapshot 层在阻塞工作线程中完成
 `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`、
 `tests/ratchet.rs` 和 `tests/compatibility.rs`。
 
+EXECUTABLE-FILE-01：可执行身份在打开前验证路径解析到普通文件及大小预算，打开后继续复核句柄，
+保留摘要、字节数与读取预算。普通文件符号链接继续可用；已存在的 FIFO、套接字和目录不得进入
+阻塞打开。宿主选中 FIFO 时返回未完成，保留失败原因，不启动 Agent 或产生交付。
+此预检不提供恶意文件替换竞态防护。证据见 `runner::identity::tests` 与
+`tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent`。
+
+CONFIG-FILE-01：配置文件与发现阶段输入在打开前检查普通文件，打开后复核句柄。配置读取保持
+1 MiB 限制，读取期间增长也不能绕过字节预算；发现保持既有单文件与累计字节预算。配置或根目录/
+嵌套目录 `.gitignore` 是 FIFO 时明确返回未完成，不替换已有输入、不发布初始化候选，也不错误
+建议初始化。证据见 `config::tests::configuration_file_size_budget_is_inclusive_and_precedes_parsing`、
+`tests/init.rs::fifo_configuration_is_rejected_without_initialization_or_replacement` 与
+`fifo_ignore_file_blocks_discovery_before_candidate_publication`。
+
 ### 3.3 流程门禁
 
 | 功能 | 说明 |

@@ -74,12 +74,35 @@ pub fn parse(bytes: &[u8]) -> Result<Config> {
 }
 
 pub fn read(root: &Path, file: &Path) -> Result<Config> {
+    use std::io::Read;
+
     let file = crate::paths::confined(root, file)?;
     let metadata = std::fs::metadata(&file).map_err(|error| read_error(&file, error))?;
+    validate_file_metadata(&file, &metadata)?;
+    let input = std::fs::File::open(&file).map_err(|error| read_error(&file, error))?;
+    validate_file_metadata(
+        &file,
+        &input.metadata().map_err(|error| read_error(&file, error))?,
+    )?;
+    let mut bytes = Vec::new();
+    input
+        .take(MAX_CONFIG_BYTES as u64 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| read_error(&file, error))?;
+    parse(&bytes)
+}
+
+fn validate_file_metadata(file: &Path, metadata: &std::fs::Metadata) -> Result<()> {
+    if !metadata.is_file() {
+        bail!(
+            "Cannot read {}: configuration must be a regular file",
+            crate::paths::display(file)
+        );
+    }
     if metadata.len() > MAX_CONFIG_BYTES as u64 {
         bail!("Configuration exceeds {MAX_CONFIG_BYTES} bytes");
     }
-    parse(&std::fs::read(&file).map_err(|error| read_error(&file, error))?)
+    Ok(())
 }
 
 fn read_error(file: &Path, error: std::io::Error) -> anyhow::Error {

@@ -37,6 +37,10 @@
 仓库外已存在的证据目录、任务指令文件，以及从 stdin 接收指令的 Agent 命令 JSON 参数数组。
 两个输入文件均为 UTF-8，分别不超过 16 KiB；参数数组包含 1–64 个参数，不隐含 Shell 插值。
 
+`--qualitygate` 必须解析到满足[身份预算](05-exit-codes-and-resource-limits.md)的普通文件。
+对于已存在的特殊文件，例如没有写入端的命名管道，宿主会在打开或启动 Agent 前拒绝，
+退出 `2` 并返回 `execution_incomplete`；台账保留原因，不产生交付对象。
+
 以下是参数模板，执行前替换占位符：
 
 ```text

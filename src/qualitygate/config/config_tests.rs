@@ -15,6 +15,25 @@ fn rejects_unknown_fields_schemas_duplicates_and_empty_commands() {
 }
 
 #[test]
+fn configuration_file_size_budget_is_inclusive_and_precedes_parsing() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join(CONFIG_FILE);
+    let mut bytes = b"schema_version: 1\n".to_vec();
+    bytes.resize(MAX_CONFIG_BYTES, b' ');
+    std::fs::write(&path, &bytes).unwrap();
+    assert!(read(root.path(), Path::new(CONFIG_FILE)).is_ok());
+    bytes.push(b' ');
+    std::fs::write(&path, &bytes).unwrap();
+    assert!(
+        read(root.path(), Path::new(CONFIG_FILE))
+            .unwrap_err()
+            .to_string()
+            .contains("Configuration exceeds")
+    );
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+}
+
+#[test]
 fn validates_profiles_timeouts_thresholds_and_dependency_cycles() {
     for yaml in [
         "schema_version: 1\nrules: {format: {}}\nprofiles: {full: {include: []}}",

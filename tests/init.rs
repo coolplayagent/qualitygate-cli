@@ -2,6 +2,71 @@ mod common;
 use common::*;
 use std::path::Path;
 
+#[cfg(unix)]
+async fn fifo_input_error(root: &Path, name: &str, arguments: &[&str]) -> serde_json::Value {
+    use std::os::unix::fs::FileTypeExt;
+
+    let path = root.join(name);
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let created = std::process::Command::new("mkfifo")
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(created.status.success(), "{:?}", created.stderr);
+    let mut argv = vec![env!("CARGO_BIN_EXE_qualitygate").to_owned()];
+    argv.extend(arguments.iter().map(|arg| (*arg).to_owned()));
+    argv.extend(["--format".into(), "json".into()]);
+    // Bound the old-code counterexample as well as the expected rejection.
+    let output = qualitygate::runner::capture(&argv, root, None, std::time::Duration::from_secs(5))
+        .await
+        .unwrap();
+    assert!(!output.timed_out, "FIFO {name} blocked input validation");
+    assert_eq!(output.exit_code, Some(2));
+    assert!(output.capture_error.is_none());
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["gate"]["complete"], false);
+    assert_eq!(report["gate"]["decision"], "incomplete");
+    assert!(
+        report["gate"]["blockers"]
+            .to_string()
+            .contains("regular file")
+    );
+    assert!(
+        !report["next_steps"]
+            .to_string()
+            .contains("initialize_candidate_policy")
+    );
+    assert!(
+        std::fs::symlink_metadata(path)
+            .unwrap()
+            .file_type()
+            .is_fifo()
+    );
+    report
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn fifo_configuration_is_rejected_without_initialization_or_replacement() {
+    for name in ["qualitygate.yaml", "policy with spaces/custom.yaml"] {
+        let root = fixture();
+        fifo_input_error(root.path(), name, &["--config", name, "config", "--show"]).await;
+        if name != "qualitygate.yaml" {
+            assert!(!root.path().join("qualitygate.yaml").exists());
+        }
+    }
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn fifo_ignore_file_blocks_discovery_before_candidate_publication() {
+    for name in [".gitignore", "nested/.gitignore"] {
+        let root = fixture();
+        fifo_input_error(root.path(), name, &["init", "--with-checks"]).await;
+        assert!(!root.path().join("qualitygate.yaml").exists());
+    }
+}
+
 #[test]
 fn first_run_errors_honor_formats_and_show_an_action() {
     let root = fixture();

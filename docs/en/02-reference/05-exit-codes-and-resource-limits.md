@@ -34,6 +34,21 @@ also bound report bytes, selected files, source lines, diagnostics, parser work,
 subprocess time, and concurrency. The effective report records which limit was
 hit. Increasing a caller budget does not authorize broader paths or policy.
 
+Executable identity accepts regular files, including symlinks resolving to a
+regular file. It checks file type and size before opening, then rechecks the
+opened handle before hashing. Existing FIFOs, sockets and directories cannot
+supply executable evidence. Producer binaries are limited to 256 MiB; the
+Qualitygate evaluator allows 1 GiB for development debug sections. Hashing
+checks a 30-second budget between reads. This is not protection against hostile
+filesystem replacement races or a guarantee that OS filesystem calls terminate.
+
+Configuration loading and repository discovery also reject special files before
+opening and recheck the opened handle. Configuration reads are bounded to 1 MiB,
+including growth during reading; discovery retains its 2 MiB per-input and
+12 MiB aggregate limits. A FIFO configuration or root/nested `.gitignore`
+returns incomplete instead of hanging or publishing an initialization candidate.
+An existing unreadable input is not treated as a missing policy.
+
 ## Diagnostic output
 
 Each check retains at most 10,000 diagnostic records and 8 MiB of compact UTF-8

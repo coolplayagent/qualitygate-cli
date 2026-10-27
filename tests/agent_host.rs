@@ -28,6 +28,70 @@ static AGENT: LazyLock<(tempfile::TempDir, PathBuf)> = LazyLock::new(|| {
     (root, executable)
 });
 const SOURCE: &str = "# Host behavior\nHonor the current contract before delivery.\n";
+
+#[cfg(unix)]
+#[tokio::test]
+async fn fifo_evaluator_is_rejected_before_opening_or_launching_the_agent() {
+    let root = setup("immutable_delivery");
+    let external = tempfile::tempdir().unwrap();
+    let fifo = external.path().join("qualitygate-fifo");
+    let created = Command::new("mkfifo").arg(&fifo).output().unwrap();
+    assert!(created.status.success(), "{:?}", created.stderr);
+    let state = external.path().join("agent-state");
+    let command = external.path().join("agent.json");
+    std::fs::write(&command, json!([AGENT.1, "forge", state]).to_string()).unwrap();
+    let prompt = external.path().join("prompt.txt");
+    std::fs::write(&prompt, "Exercise runtime identity validation.").unwrap();
+    let args = vec![
+        env!("CARGO_BIN_EXE_qualitygate").to_owned(),
+        "agent-run".into(),
+        "--qualitygate".into(),
+        fifo.display().to_string(),
+        "--base".into(),
+        "HEAD".into(),
+        "--policy-ref".into(),
+        "HEAD".into(),
+        "--task".into(),
+        "task.yaml".into(),
+        "--prompt-file".into(),
+        prompt.display().to_string(),
+        "--agent-command".into(),
+        command.display().to_string(),
+        "--output-dir".into(),
+        external.path().display().to_string(),
+        "--max-attempts".into(),
+        "1".into(),
+        "--timeout-seconds".into(),
+        "1".into(),
+        "--format".into(),
+        "json".into(),
+    ];
+    // Bound the regression itself: old code blocks opening the FIFO before the
+    // identity timer can run; cancellation must not leave the child CLI alive.
+    let output =
+        qualitygate::runner::capture(&args, root.path(), None, std::time::Duration::from_secs(5))
+            .await
+            .unwrap();
+    assert!(
+        !output.timed_out,
+        "Evaluator FIFO stalled identity preflight"
+    );
+    assert_eq!(output.exit_code, Some(2));
+    assert!(output.capture_error.is_none());
+    let summary: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(summary["complete"], false);
+    assert_eq!(summary["termination"], "execution_incomplete");
+    let ledger: Value = serde_json::from_slice(
+        &std::fs::read(Path::new(summary["evidence"].as_str().unwrap()).join("index.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(ledger["error"].as_str().unwrap().contains("regular file"));
+    assert!(ledger["attempts"].as_array().unwrap().is_empty());
+    assert!(ledger["delivery"].is_null());
+    assert!(!state.with_extension("prompts").exists());
+}
+
 fn setup(control: &str) -> tempfile::TempDir {
     let root = fixture();
     std::fs::write(root.path().join("AGENTS.md"), SOURCE).unwrap();

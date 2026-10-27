@@ -14,6 +14,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | --- | --- |
 | Snapshot selectors, execution, reports, and exit semantics | `tests/cli.rs`, `tests/execution.rs`, `tests/policy.rs`, native domain tests |
 | Initialization and capability gaps | `tests/init.rs` |
+| CONFIG-FILE-01: bounded regular configuration/discovery inputs, preserved missing-policy semantics and no publication after invalid input | `config::tests::configuration_file_size_budget_is_inclusive_and_precedes_parsing`; `tests/init.rs::fifo_configuration_is_rejected_without_initialization_or_replacement`, `fifo_ignore_file_blocks_discovery_before_candidate_publication` (Unix); existing unreadable/malformed-policy regressions |
 | Large-file test overlays, protected capacity authorization, escaped human guidance | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`; `tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`; `interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |
 | Oversized acquisition stays incomplete and reports actual bytes plus the minimum retry budget | `fixtures/golden/stress.json`: `snapshot-oversized` pins the acquisition diagnostic; the incomplete outcome and 2 MiB default are unchanged |
 | First-run formats, advisory HEAD/worktree preflight, explicit large-file capacity and unchanged policy semantics | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`, `init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content`, `init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget`; `tests/large_repository.rs::legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes`, `raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering`; `snapshot::git::tests::explicitly_permitted_large_blobs_use_nonempty_bounded_batches` |
@@ -99,6 +100,7 @@ what was actually verified.
 | ENV-39-05: exact per-side budgets | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`: base-only oversize, 2/8 MiB, above maximum, total bytes, protected exclusions, index and truncation |
 | ENV-39-06: preflight protocol and executable next steps | `domain::doctor::tests` | `tests/doctor.rs` schema validation and replay of suggested argv |
 | ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` full native Windows test command with debug assertions/overflow checks enabled and debug symbols omitted; PowerShell/Git Bash steps with paths containing spaces |
+| EXECUTABLE-FILE-01: regular-file identity before open, retained size/digest checks and symlink compatibility | `runner::identity::tests` | `tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent` (Unix): bounded old-code counterexample, incomplete ledger, no Agent launch or delivery |
 
 Run `cargo test --test doctor --all-features` independently of native unit tests.
 The Windows CI result, full selfcheck, architecture source/line digest evidence,

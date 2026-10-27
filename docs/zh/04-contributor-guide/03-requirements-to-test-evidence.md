@@ -12,6 +12,7 @@
 | --- | --- |
 | 快照选择、执行、报告与退出语义 | `tests/cli.rs`、`tests/execution.rs`、`tests/policy.rs`、domain 单元测试 |
 | 初始化与能力缺口 | `tests/init.rs` |
+| CONFIG-FILE-01 配置与发现输入限于有界普通文件，保留缺失策略语义，非法输入后不发布候选 | `config::tests::configuration_file_size_budget_is_inclusive_and_precedes_parsing`；`tests/init.rs::fifo_configuration_is_rejected_without_initialization_or_replacement`、`fifo_ignore_file_blocks_discovery_before_candidate_publication`（Unix）；既有不可读/格式错误策略回归 |
 | 大文件测试 overlay、受保护容量授权、人读引导转义 | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`；`tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`；`interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |
 | 超大文件采集仍为 incomplete，并报告实际字节数与最小重试预算 | `fixtures/golden/stress.json` 的 `snapshot-oversized` 精确约束 采集诊断；incomplete 结论与默认 2 MiB 限制不变 |
 | 首次错误格式、HEAD/工作区建议性预检、大文件显式容量和策略约束 | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`、`init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content`、`init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget`；`tests/large_repository.rs::legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes`、`raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering`；`snapshot::git::tests::explicitly_permitted_large_blobs_use_nonempty_bounded_batches` |
@@ -92,6 +93,7 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 | ENV-39-05：分侧文件预算 | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`：仅 base 超限、2/8 MiB、最大容量、总量、受保护排除、index、计数与截断 |
 | ENV-39-06：预检协议与可执行建议 | `domain::doctor::tests` | `tests/doctor.rs`：Schema 校验与建议 argv 重放 |
 | ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：保留调试断言/溢出检查、关闭调试符号的完整 Windows 测试命令；带空格路径的 PowerShell/Git Bash 验证 |
+| EXECUTABLE-FILE-01：打开前校验普通文件，保留大小/摘要限制与符号链接兼容性 | `runner::identity::tests` | `tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent`（Unix）：有界旧代码反例、未完成台账、无 Agent 启动或交付 |
 
 `cargo test --test doctor --all-features` 是独立于原生单元测试的集成目标。
 Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Cargo/Bazel 和至少 90% 行覆盖率
