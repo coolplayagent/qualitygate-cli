@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::BTreeSet;
 
 #[cfg(windows)]
 #[test]
@@ -293,6 +294,57 @@ fn rename_is_not_new_content_and_digest_includes_path_and_mode() {
     let before = content_digest(&head);
     head.get_mut("new").unwrap().executable = true;
     assert_ne!(before, content_digest(&head));
+}
+
+#[test]
+fn rename_sources_are_consumed_once_in_path_order() {
+    for bytes in [b"same\nagain\n".as_slice(), b"", b"binary\0content"] {
+        let file = File {
+            bytes: bytes.to_vec(),
+            executable: false,
+        };
+        let mut base: BTreeMap<_, _> = (0..3)
+            .map(|index| (format!("old/{index}"), file.clone()))
+            .collect();
+        base.insert("unchanged".into(), file.clone());
+        for count in 0..=5 {
+            let mut head: BTreeMap<_, _> = (0..count)
+                .rev()
+                .map(|index| (format!("new/{index}"), file.clone()))
+                .collect();
+            head.insert("unchanged".into(), file.clone());
+            if let Some(first) = head.get_mut("new/0") {
+                first.executable = true;
+            }
+            let changes = changes::compare(&base, &head);
+            assert_eq!(changes.len(), count.max(3));
+            assert!(!changes.contains_key("unchanged"));
+            for index in 0..count {
+                let change = &changes[&format!("new/{index}")];
+                assert!(change.removed_lines.is_empty());
+                if index < 3 {
+                    assert_eq!(change.kind, "renamed");
+                    assert_eq!(change.old_path, Some(format!("old/{index}")));
+                    assert!(change.added_lines.is_empty());
+                } else {
+                    assert_eq!(change.kind, "added");
+                    assert_eq!(change.old_path, None);
+                    let lines = if bytes.contains(&0) || bytes.is_empty() {
+                        BTreeSet::new()
+                    } else {
+                        [1, 2].into()
+                    };
+                    assert_eq!(change.added_lines, lines);
+                }
+            }
+            for index in count..3 {
+                let change = &changes[&format!("old/{index}")];
+                assert_eq!(change.kind, "deleted");
+                assert_eq!(change.old_path, Some(format!("old/{index}")));
+                assert!(change.added_lines.is_empty());
+            }
+        }
+    }
 }
 
 #[tokio::test]

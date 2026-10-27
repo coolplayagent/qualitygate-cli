@@ -2,7 +2,7 @@ use super::File;
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use similar::{ChangeTag, TextDiff};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::time::Instant;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,14 +36,15 @@ pub(super) fn compare_until(
     check_deadline(deadline)?;
     let mut changes = BTreeMap::new();
     // Index only removed content once. A rename storm must not scan the entire
-    // baseline for each newly named file. BTreeMap order keeps tie-breaking stable.
-    let mut removed: BTreeMap<String, Vec<(&String, &File)>> = BTreeMap::new();
+    // baseline for each newly named file. Consume each old path once in lexical
+    // order; deque removal keeps identical-content buckets cheap to drain.
+    let mut removed: BTreeMap<String, VecDeque<(&String, &File)>> = BTreeMap::new();
     for (path, file) in base.iter().filter(|(path, _)| !head.contains_key(*path)) {
         check_deadline(deadline)?;
         removed
             .entry(super::digest(&file.bytes))
             .or_default()
-            .push((path, file));
+            .push_back((path, file));
     }
     let mut renamed = BTreeSet::new();
     for (path, file) in head {
@@ -54,12 +55,12 @@ pub(super) fn compare_until(
         }
         let moved = if old.is_none() {
             removed
-                .get(&super::digest(&file.bytes))
+                .get_mut(&super::digest(&file.bytes))
                 .and_then(|entries| {
-                    entries
+                    let index = entries
                         .iter()
-                        .copied()
-                        .find(|(_, old)| old.bytes == file.bytes)
+                        .position(|(_, old)| old.bytes == file.bytes)?;
+                    entries.remove(index)
                 })
         } else {
             None

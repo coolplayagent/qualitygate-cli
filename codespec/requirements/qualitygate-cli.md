@@ -742,6 +742,7 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | DEC-03 | warning 试点隔离校准与验证时间，使用独立标签计算校准与风险指标，对高优先级建议抽样审计；缺证据保持未完成，策略变更仍走外部批准流程 | `tests/judgment_provider.rs`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[策略演进](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
 
 | SNAP-33-DELIVERY | Selector-derived delivery-line checks without a separate CLI scope option, policy-bound pre-acquisition exclusions, preserved command failures and packaged Skill trimming/bootstrap workflows | `tests/delivery_scope.rs`, `tests/quality.rs`, `application::report_gate::tests` |
+| SNAP-RENAME-01 | 精确字节重命名按路径字典序一一配对，每个已删除路径最多使用一次；相同内容的多余副本仍为新增文件并参与新增行和新文件检查，未配对旧路径仍为删除；保留原文件、二进制、空文件和权限语义不变；大量重复内容不反复扫描已消耗候选，采集截止时间继续生效 | `snapshot::tests::rename_sources_are_consumed_once_in_path_order`；`tests/delivery_scope.rs::surplus_rename_copies_remain_added_and_subject_to_delivery_rules`；`tests/benchmarks.rs::duplicate_content_rename_storm_consumes_each_old_path_once` |
 
 ## 15. 能力契约与统一环境预检（issue #39）
 

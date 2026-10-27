@@ -39,3 +39,33 @@ fn rename_storm_preserves_lines_and_deterministic_old_paths() {
         assert_eq!(change.old_path, Some(name.replace("new/", "old/")));
     }
 }
+
+#[test]
+fn duplicate_content_rename_storm_consumes_each_old_path_once() {
+    use qualitygate::snapshot::{File, compare_files};
+    use std::collections::BTreeMap;
+    let file = File {
+        bytes: b"identical content\n".to_vec(),
+        executable: false,
+    };
+    let base: BTreeMap<_, _> = (0..18_000)
+        .map(|index| (format!("old/{index:05}"), file.clone()))
+        .collect();
+    let mut head: BTreeMap<_, _> = (0..18_000)
+        .map(|index| (format!("new/{index:05}"), file.clone()))
+        .collect();
+    head.insert("surplus".into(), file);
+    let started = std::time::Instant::now();
+    let changes = compare_files(&base, &head);
+    assert!(started.elapsed() < std::time::Duration::from_secs(10));
+    assert_eq!(changes.len(), 18_001);
+    for index in 0..18_000 {
+        let change = &changes[&format!("new/{index:05}")];
+        assert_eq!(change.kind, "renamed");
+        assert_eq!(change.old_path, Some(format!("old/{index:05}")));
+        assert!(change.added_lines.is_empty());
+    }
+    assert_eq!(changes["surplus"].kind, "added");
+    assert_eq!(changes["surplus"].old_path, None);
+    assert_eq!(changes["surplus"].added_lines, [1].into());
+}

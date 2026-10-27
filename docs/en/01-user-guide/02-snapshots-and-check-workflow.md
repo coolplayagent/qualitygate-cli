@@ -64,6 +64,13 @@ changed files, including deletions, renames, binary and mode changes. Unlocated
 command failures, timeouts and missing evidence remain gate inputs. An empty
 delivery does not prove repository-wide quality.
 
+Exact-content renames pair removed paths with new paths one-to-one in lexical
+path order. Each old path can supply only one rename: surplus identical copies
+are additions, with their text lines and new-file rules checked normally.
+Unmatched old paths remain deletions. A retained original is not a rename source;
+binary and empty files keep their normal changed-file semantics without invented
+line positions. Rename matching compares bytes, not executable mode.
+
 Retain the JSON report and referenced evidence together. Content identity and
 verification scope are distinct; see [evidence bindings](../02-reference/04-policy-task-and-signed-evidence.md).
 If files, policy, task or report inputs change, capture and check a new snapshot.

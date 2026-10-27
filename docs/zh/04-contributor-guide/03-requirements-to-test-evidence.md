@@ -11,6 +11,7 @@
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
 | 快照选择、执行、报告与退出语义 | `tests/cli.rs`、`tests/execution.rs`、`tests/policy.rs`、domain 单元测试 |
+| SNAP-RENAME-01：确定性一一配对重命名来源、多余副本为新增、未配对旧路径为删除 | `snapshot::tests::rename_sources_are_consumed_once_in_path_order`：文本/二进制/空内容、保留原文件及权限；`tests/delivery_scope.rs::surplus_rename_copies_remain_added_and_subject_to_delivery_rules`：worktree/staged/path/diff 诊断及修复；`tests/benchmarks.rs::duplicate_content_rename_storm_consumes_each_old_path_once`：18,000 个相同来源及多余副本；既有采集超时测试继续执行 |
 | 初始化与能力缺口 | `tests/init.rs` |
 | CONFIG-FILE-01 配置与发现输入限于有界普通文件，保留缺失策略语义，非法输入后不发布候选 | `config::tests::configuration_file_size_budget_is_inclusive_and_precedes_parsing`；`tests/init.rs::fifo_configuration_is_rejected_without_initialization_or_replacement`、`fifo_ignore_file_blocks_discovery_before_candidate_publication`（Unix）；既有不可读/格式错误策略回归 |
 | 大文件测试 overlay、受保护容量授权、人读引导转义 | `tests/test_effectiveness.rs::raised_file_budget_reaches_both_test_effectiveness_executions`；`tests/policy_validation.rs::protected_file_capacity_is_bounded_authorized_and_used_for_both_policies`；`interfaces::render::tests::preflight_guidance_escapes_controls_without_changing_json_paths` |

@@ -316,5 +316,68 @@ fn deleted_renamed_and_binary_changes_are_reported_without_invented_lines() {
     );
 }
 
+#[test]
+fn surplus_rename_copies_remain_added_and_subject_to_delivery_rules() {
+    let temp = fixture();
+    let root = temp.path();
+    write(
+        root,
+        "qualitygate.yaml",
+        json!({"schema_version":1,"rules":{
+            "line-ending":{}, "todo-marker":{"severity":"error"}
+        }})
+        .to_string(),
+    );
+    let content = "// TODO: review\r\nfn example() {}\r\n";
+    write(root, "old.rs", content);
+    commit(root);
+    std::fs::rename(root.join("old.rs"), root.join("a.rs")).unwrap();
+    write(root, "b.rs", content);
+    let mut binding = None;
+    for selector in [
+        vec!["--worktree"],
+        vec!["--staged"],
+        vec!["--path", "b.rs"],
+        vec!["--diff", "HEAD~1..HEAD"],
+    ] {
+        if selector[0] == "--staged" {
+            git(root, &["add", "."]);
+        } else if selector[0] == "--diff" {
+            commit(root);
+        }
+        let mut args = vec!["check", "--format", "json"];
+        args.extend(selector);
+        let checked = report(&cli(root, &args), 1);
+        assert_eq!(checked["gate"]["complete"], true);
+        assert_eq!(checked["selection"]["changed_lines"], 2);
+        for id in ["line-ending", "todo-marker"] {
+            let check = checked["checks"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|check| check["id"] == id)
+                .unwrap();
+            let diagnostics = check["diagnostics"].as_array().unwrap();
+            assert_eq!(diagnostics.len(), 1);
+            assert_eq!(diagnostics[0]["file"], "b.rs");
+            if id == "todo-marker" {
+                assert_eq!(diagnostics[0]["range"]["start_line"], 1);
+            }
+        }
+        binding = Some(checked["snapshot"]["content_digest"].clone());
+    }
+    write(root, "b.rs", "// reviewed\nfn example() {}\n");
+    let repaired = report(
+        &cli(root, &["check", "--base", "HEAD~1", "--format", "json"]),
+        0,
+    );
+    assert_eq!(repaired["gate"]["complete"], true);
+    assert_eq!(repaired["selection"]["changed_lines"], 2);
+    assert_ne!(
+        Some(repaired["snapshot"]["content_digest"].clone()),
+        binding
+    );
+}
+
 #[path = "delivery_scope/resources.rs"]
 mod resources;
