@@ -117,6 +117,54 @@ fn bounded_output_retains_member_references_and_reports_utf8_and_inventory_trunc
 }
 
 #[test]
+fn smaller_later_members_and_checks_survive_an_exhausted_inventory() {
+    let mut report = report();
+    let mut large = diagnostic(0);
+    large.id = "large".repeat(100);
+    large.fingerprint = "fingerprint".repeat(100);
+    large.message = "边界🚀".repeat(100);
+    large.fix = "repair".repeat(100);
+    large.file = Some("source".repeat(100));
+    let mut small = diagnostic(1);
+    small.id = "small-long-check".into();
+    small.fingerprint.clear();
+    small.message.clear();
+    small.fix.clear();
+    small.file = None;
+    small.range = None;
+    let mut long = CheckResult::pending("long-check".repeat(100), true, Severity::Error);
+    long.diagnostics = vec![large, small.clone(), small.clone()];
+    long.complete();
+    let mut short = CheckResult::pending("tests", true, Severity::Error);
+    small.id = "small-short-check".into();
+    short.diagnostics.push(small);
+    short.complete();
+    let mut gap = CheckResult::pending("gap", true, Severity::Warning);
+    gap.block(ExecutionStatus::TimedOut, "deadline");
+    report.checks = vec![long, short, gap];
+    report.gate = evaluate(&report.checks, &[], &[]);
+
+    // Leave room for one long-check member and one shorter check, but not
+    // two long-check members. Oversized earlier entries must not end the scan.
+    let output = decode(&report, 8500, None);
+    let items = output["findings"]["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2, "{output}");
+    assert_eq!(items[0]["id"]["text"], "small-long-check");
+    assert_eq!(items[0]["report_pointer"], "/checks/0/diagnostics/1");
+    assert_eq!(items[0]["acceptance_link_known"], false);
+    assert_eq!(items[1]["id"]["text"], "small-short-check");
+    assert_eq!(items[1]["report_pointer"], "/checks/1/diagnostics/0");
+    assert_eq!(items[1]["acceptance_link_known"], true);
+    assert_eq!(output["findings"]["total"], 4);
+    assert_eq!(output["findings"]["omitted"], 2);
+    assert_eq!(
+        output["execution_gaps"]["items"][0]["check_id"]["text"],
+        "gap"
+    );
+    assert_eq!(output["gate"]["decision"], "incomplete");
+}
+
+#[test]
 fn unavailable_rechecks_remain_omitted_without_hiding_delivery_commands() {
     for argv in [vec![], vec![String::new()]] {
         let mut report = report();

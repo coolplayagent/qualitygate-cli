@@ -88,6 +88,16 @@ contract; splitting work cannot bypass a global cap. Deterministic ordering is
 restored before serialization so parallel execution does not create unstable
 reports.
 
+Feedback projection measures borrowed, typed diagnostic previews before
+constructing owned JSON members. Acceptance lookup runs once per selected check.
+If the remaining category allowance cannot fit even that check's smallest member,
+only its diagnostic inventory stops; later checks with shorter identities and
+independent execution gaps remain eligible. Oversized members do not hide later
+smaller members. Totals, omissions, ordering, UTF-8 truncation, executable recheck
+arguments and the original gate decision retain their existing meaning. Scanning
+can still be necessary when a smaller later member might fit; output size alone
+does not bound the number of input diagnostics inspected.
+
 Network activity belongs to the remote adapter path and is never an implicit
 fallback for local evidence. Credentials are caller inputs and are not copied
 into reports. The CLI does not modify user Git configuration or the selected

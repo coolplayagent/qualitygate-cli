@@ -1,17 +1,27 @@
 //! A bounded, pure projection. The input report remains the sole gate authority.
-use super::{Artifact, ExecutionStatus, Report, Severity, Verdict};
+use super::{Artifact, CheckResult, Diagnostic, ExecutionStatus, Range, Report, Severity, Verdict};
 use anyhow::{Result, bail};
+use serde::Serialize;
 use serde_json::{Value, json};
 
 pub const MIN_BYTES: usize = 4096;
 pub const MAX_BYTES: usize = 256 * 1024;
 
-fn text(value: &str) -> Value {
+#[derive(Serialize)]
+struct Text<'a> {
+    text: &'a str,
+    truncated: bool,
+}
+
+fn text(value: &str) -> Text<'_> {
     let mut end = value.len().min(256);
     while !value.is_char_boundary(end) {
         end -= 1;
     }
-    json!({"text":&value[..end],"truncated":end < value.len()})
+    Text {
+        text: &value[..end],
+        truncated: end < value.len(),
+    }
 }
 
 fn section(total: usize, filtered: usize, reference: &str) -> Value {
@@ -19,11 +29,14 @@ fn section(total: usize, filtered: usize, reference: &str) -> Value {
         "report_pointer":reference,"items":[]})
 }
 
-fn append(section: &mut Value, item: Value, remaining: &mut usize) -> Result<()> {
+fn append(section: &mut Value, item: impl Serialize, remaining: &mut usize) -> Result<()> {
     let cost = serde_json::to_vec(&item)?.len() + 1;
     if cost <= *remaining {
         *remaining -= cost;
-        section["items"].as_array_mut().unwrap().push(item);
+        section["items"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::to_value(item)?);
         section["omitted"] = json!(section["omitted"].as_u64().unwrap() - 1);
     }
     Ok(())
@@ -36,6 +49,48 @@ fn has_truncated_text(value: &Value) -> bool {
         }
         Value::Array(values) => values.iter().any(has_truncated_text),
         _ => false,
+    }
+}
+
+#[derive(Serialize)]
+struct Finding<'a> {
+    check_id: Text<'a>,
+    severity: Severity,
+    id: Text<'a>,
+    fingerprint: Text<'a>,
+    file: Option<Text<'a>>,
+    range: Option<&'a Range>,
+    message: Text<'a>,
+    fix: Text<'a>,
+    report_pointer: String,
+    evidence_pointer: String,
+    acceptance_mapping_pointer: &'static str,
+    acceptance_link_known: bool,
+}
+
+// Missing diagnostic content gives the smallest member for this check. Real
+// text, optional locations and larger indices can only increase its byte cost.
+fn finding<'a>(
+    check: &'a CheckResult,
+    reference: &str,
+    index: usize,
+    diagnostic: Option<&'a Diagnostic>,
+    acceptance_link_known: bool,
+) -> Finding<'a> {
+    let pointer = format!("{reference}/diagnostics/{index}");
+    Finding {
+        check_id: text(&check.id),
+        severity: check.severity,
+        id: text(diagnostic.map_or("", |value| value.id.as_str())),
+        fingerprint: text(diagnostic.map_or("", |value| value.fingerprint.as_str())),
+        file: diagnostic.and_then(|value| value.file.as_deref()).map(text),
+        range: diagnostic.and_then(|value| value.range.as_ref()),
+        message: text(diagnostic.map_or("", |value| value.message.as_str())),
+        fix: text(diagnostic.map_or("", |value| value.fix.as_str())),
+        evidence_pointer: format!("{pointer}/evidence"),
+        report_pointer: pointer,
+        acceptance_mapping_pointer: "/plan/acceptance",
+        acceptance_link_known,
     }
 }
 
@@ -171,18 +226,25 @@ pub fn render(
                 "artifacts":{"count":check.execution.artifacts.len(),"report_pointer":format!("{reference}/execution/artifacts")}}),
                 &mut gap_budget,
             )?;
-        } else if completed(check) && selected(check) {
+        } else if completed(check) && selected(check) && !check.diagnostics.is_empty() {
+            let linked = report.plan.acceptance.values().any(|id| id == &check.id);
+            let minimum =
+                serde_json::to_vec(&finding(check, &reference, 0, None, linked))?.len() + 1;
             for (diagnostic_index, diagnostic) in check.diagnostics.iter().enumerate() {
-                let pointer = format!("{reference}/diagnostics/{diagnostic_index}");
+                if finding_budget < minimum {
+                    // A later check can have a shorter identity, and execution
+                    // gaps have their own budget, so only stop this inventory.
+                    break;
+                }
                 append(
                     &mut result["findings"],
-                    json!({"check_id":text(&check.id),"severity":check.severity,
-                    "id":text(&diagnostic.id),"fingerprint":text(&diagnostic.fingerprint),
-                    "file":diagnostic.file.as_deref().map(text),"range":diagnostic.range,
-                    "message":text(&diagnostic.message),"fix":text(&diagnostic.fix),
-                    "report_pointer":pointer,"evidence_pointer":format!("{pointer}/evidence"),
-                    "acceptance_mapping_pointer":"/plan/acceptance",
-                    "acceptance_link_known":report.plan.acceptance.values().any(|id|id == &check.id)}),
+                    finding(
+                        check,
+                        &reference,
+                        diagnostic_index,
+                        Some(diagnostic),
+                        linked,
+                    ),
                     &mut finding_budget,
                 )?;
             }

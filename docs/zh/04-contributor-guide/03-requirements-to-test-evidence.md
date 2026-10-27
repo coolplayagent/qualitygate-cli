@@ -54,6 +54,7 @@
 | AGENT-HOST-01 — Agent 注入、修复/恢复/切换、能力缺口、伪造报告、策略变化、不可变交付与规范路径边界 | `tests/agent_host.rs`；`tests/delivery.rs`，包括 `equivalent_repository_paths_cannot_bypass_delivery_confinement`；`tests/agent_loop.rs` 验证修复 fixture 完整读取 Prompt；`runner::tests::closed_stdin_is_incomplete_even_when_the_child_exits_successfully` 保留输入交付失败语义；纯判定 `domain/agent_host_tests.rs` |
 | 任务、人工验收、provenance 与 Git trailer | `tests/manual.rs`、`tests/provenance.rs`、`tests/case_provenance.rs`、`tests/git_trailers.rs` |
 | Agent 反馈与有界修复闭环 | `tests/feedback.rs`、`tests/agent_loop.rs`、显式 repair/live 目标 |
+| FEEDBACK-WORK-01：延后诊断 JSON 构建，保留按顺序容纳成员的语义 | `domain::feedback::tests::smaller_later_members_and_checks_survive_an_exhausted_inventory`：跳过超大成员后保留较小成员及标识更短的后续检查，独立超时证据与省略数不变；现有反馈单元/集成测试保持 UTF-8 截断、报告指针、完整命令、过滤及门禁权威。性能比较单独记录实际源码与测量范围。 |
 | 试点封存、授权、证据与接受 | `tests/pilot_*`、`tests/pilot_seal/v8.rs` 到 `v10.rs`、pilot domain 测试 |
 | Decision envelope 与可选判断 | `tests/decision_envelope.rs`、`tests/judgment_provider.rs` |
 
