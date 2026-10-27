@@ -57,6 +57,23 @@ async fn captures_both_streams_input_and_exit_status() {
 
 #[cfg(unix)]
 #[tokio::test]
+async fn closed_stdin_is_incomplete_even_when_the_child_exits_successfully() {
+    let root = tempfile::tempdir().unwrap();
+    let output = capture(
+        &["sh".into(), "-c".into(), "exec 0<&-; exit 0".into()],
+        root.path(),
+        Some(vec![b'x'; 2 * 1024 * 1024]),
+        Duration::from_secs(5),
+    )
+    .await
+    .unwrap();
+    assert!(!output.timed_out);
+    assert!(output.capture_error.is_some());
+    assert_eq!(output.exit_code, None);
+}
+
+#[cfg(unix)]
+#[tokio::test]
 async fn timeout_kills_descendants_and_does_not_wait_for_inherited_pipes_forever() {
     let root = tempfile::tempdir().unwrap();
     let output = capture(

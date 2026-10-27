@@ -11,10 +11,10 @@ use std::{
     sync::LazyLock,
 };
 
-static FAILED_AGENT: LazyLock<(tempfile::TempDir, PathBuf)> = LazyLock::new(|| {
+static AGENT: LazyLock<(tempfile::TempDir, PathBuf)> = LazyLock::new(|| {
     let root = tempfile::tempdir().unwrap();
     let source = root.path().join("agent.rs");
-    std::fs::write(&source, include_str!("fixtures/failing_agent.rs")).unwrap();
+    std::fs::write(&source, include_str!("fixtures/loop_agent.rs")).unwrap();
     let executable = root
         .path()
         .join(if cfg!(windows) { "agent.exe" } else { "agent" });
@@ -94,13 +94,7 @@ async fn harness_accepts_only_changed_full_snapshot_and_preserves_untracked_edit
     let root = setup();
     let evidence = tempfile::tempdir().unwrap();
     std::fs::write(root.path().join("new.txt"), "untracked evidence\n").unwrap();
-    let result = run(
-        root.path(),
-        evidence.path(),
-        json!(["git", "restore", "hello.txt"]),
-        3,
-    )
-    .await;
+    let result = run(root.path(), evidence.path(), json!([AGENT.1, "restore"]), 3).await;
     assert_eq!(result["termination"], "accepted", "{result}");
     assert_eq!(result["attempts"].as_array().unwrap().len(), 1);
     assert_eq!(result["initial"]["gate"]["decision"], "fail");
@@ -111,6 +105,15 @@ async fn harness_accepts_only_changed_full_snapshot_and_preserves_untracked_edit
         "new.txt"
     );
     assert_eq!(result["complete"], true);
+    let attempt = &result["attempts"][0];
+    assert_eq!(attempt["input_channel"], "stdin_provided");
+    assert!(attempt["agent"]["capture_error"].is_null());
+    assert_eq!(attempt["agent"]["exit_code"], 0);
+    let consumed = format!("consumed {} prompt bytes\n", attempt["prompt"]["bytes"]);
+    assert_eq!(
+        attempt["agent"]["stdout"]["digest"],
+        qualitygate::snapshot::digest(consumed.as_bytes())
+    );
 }
 
 #[tokio::test]
@@ -128,7 +131,7 @@ async fn harness_retains_failed_attempts_and_stops_at_progress_or_attempt_limits
             "attempt_budget",
             1,
         ),
-        (3, json!([FAILED_AGENT.1]), "agent_failed", 1),
+        (3, json!([AGENT.1, "fail"]), "agent_failed", 1),
     ] {
         let root = setup();
         let evidence = tempfile::tempdir().unwrap();
