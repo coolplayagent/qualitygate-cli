@@ -71,6 +71,8 @@ remains invalid after restoration. The native selfcheck records rejected mutatio
 as incomplete and retains the underlying prevention or detection error.
 Report producers that terminate after a denied write retain their nonzero exit
 and raw stderr as tool-error evidence while input integrity remains verified.
+If termination prevents report creation, the missing report remains the reason;
+the exit code and stderr still retain the denied-write evidence.
 An actual attribute mutation instead invalidates the input and blocks execution.
 Coverage, diagnostic baselines and paired test-effectiveness runs preserve this
 distinction; neither path establishes a rule verdict.

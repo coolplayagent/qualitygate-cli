@@ -244,7 +244,7 @@ fn real_assertions_prove_each_changed_file_and_retain_both_executions() {
 fn execution_gaps_and_non_assertion_failures_never_establish_effectiveness() {
     let mut fixture = Fixture::new();
     let mutation_reason = if cfg!(windows) {
-        "unexpected analyzer"
+        "Required report"
     } else {
         "invalid"
     };
