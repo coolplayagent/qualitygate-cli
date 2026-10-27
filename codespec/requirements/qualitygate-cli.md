@@ -801,6 +801,7 @@ OPERATOR-SET-01：v3 的去重与子集比较使用有界标量索引，在既�
 | --- | --- | --- |
 | TEST-ISOLATION-01 | CLI 集成测试的 Cargo 夹具独立使用物化快照内的构建目录，不继承父测试进程的 `CARGO_TARGET_DIR`，避免并行同名项目产物互串；父构建缓存保持不变，真实缺陷、修复、重构断言不得减弱；生产 CLI 的环境契约不变 | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory`；[自检与 fixtures](../../docs/zh/04-contributor-guide/02-selfcheck-and-fixtures.md) |
 | CI-NODE-01 | ESLint 验收与 ClawHub 发布使用原生 Node 24 action 运行时，并为工具选择 Node 24；显式关闭 npm 自动缓存，保持临时夹具及全局 CLI 安装的缓存边界 | `.github/workflows/pr-checks.yml` 的 `eslint-project` 实际执行证据；`.github/workflows/release.yml`；`tests/quality/skill_package.rs` 仅验证打包，不替代发布执行 |
+| CI-WINDOWS-01 | Windows 原生测试将核心目标与互补集成目标分组执行，保留完整目标与测试清单、所有功能、锁文件、调试断言、溢出检查及每作业 30 分钟预算；不得通过漏测或延长时限消除超时；三组与原生 Shell 预检均须通过，中断保持未完成 | `.github/workflows/pr-checks.yml` 实际三组运行及 PowerShell/Git Bash 证据；逐目标比较各组与 `--all-targets` 的 `cargo test ... -- --list` 清单，含空目标和忽略测试；[开发门禁](../../docs/zh/04-contributor-guide/01-development-and-quality-gates.md) |
 
 ## 18. 规则诊断输出预算
 

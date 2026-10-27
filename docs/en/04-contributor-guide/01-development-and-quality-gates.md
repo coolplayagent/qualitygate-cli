@@ -36,11 +36,21 @@ eligible for Miri; native unit tests are exercised separately under ASan. Live
 producer tests that need external toolchains or networks never count as though
 they ran in the stable local suite.
 
-Native Windows CI runs the same complete Cargo test command within its 30-minute
-job budget. Its dev/test profiles omit debug symbols to reduce PDB generation and
-linking costs; debug assertions and overflow checks remain explicitly enabled.
+Native Windows CI partitions the complete Cargo target inventory into three jobs:
+`--lib --bins --examples --benches`, `--test '[a-m]*'`, and `--test '[!a-m]*'`.
+The complementary, quoted Cargo globs include new integration targets without a
+maintained name list. Every job retains `--locked --all-features` and a 30-minute
+budget. PowerShell/Git Bash preflights run with the first integration group, which
+also builds the native CLI. macOS and local checks retain `--all-targets`.
+When changing the partition, compare each target's `cargo test ... -- --list`
+inventory against the complete command, including empty targets and ignored
+tests; their union must be identical and contain no duplicate targets.
+See [Cargo target selection](https://doc.rust-lang.org/cargo/commands/cargo-test.html#target-selection).
+
+Windows dev/test profiles omit debug symbols to reduce PDB generation and linking
+costs; debug assertions and overflow checks remain explicitly enabled.
 These independent [Cargo profile settings](https://doc.rust-lang.org/cargo/reference/profiles.html)
-apply only to that Windows step. Local defaults, test selection, optimization
+apply only to those Windows steps. Local defaults, test selection, optimization
 levels, Miri and ASan stay unchanged. An interrupted job remains incomplete.
 
 The ESLint acceptance and ClawHub release steps use `actions/setup-node@v7`,

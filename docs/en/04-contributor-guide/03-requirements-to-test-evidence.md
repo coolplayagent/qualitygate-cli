@@ -67,6 +67,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | TEST-ISOLATION-01: fixture Cargo outputs cannot share the parent build cache | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory` replays real defect/repair/refactor assertions and verifies the parent cache remains untouched |
 | Architecture, documentation, site, and Skill release | `tests/quality/architecture.rs`, `documentation.rs`, `site.rs`, `skill_package.rs` |
 | CI-NODE-01: Node 24 action runtime with explicit npm cache opt-out | `eslint-project` in `.github/workflows/pr-checks.yml` runs the real ESLint ratchet and repair test; `.github/workflows/release.yml` uses the same setup inputs. `tests/quality/skill_package.rs` validates release packaging; it does not execute publication. |
+| CI-WINDOWS-01: exhaustive Windows target partition within unchanged job budgets | `.github/workflows/pr-checks.yml` runs core targets and complementary integration globs in separate native jobs; compare per-target `cargo test ... -- --list` inventories with `--all-targets`, including ignored tests. All three jobs and PowerShell/Git Bash preflights must pass; cancellation remains incomplete. |
 
 Rule regression tests retain positive, negative, malformed-input, boundary,
 and incomplete-evidence cases. Report-adapter tests separately cover parser
@@ -108,7 +109,7 @@ what was actually verified.
 | ENV-39-04: static execution boundary and bounded probes | `application::doctor_context::tests` | `tests/doctor/probes.rs`: timeout, overflow, empty version, changed script/input/policy and secret output |
 | ENV-39-05: exact per-side budgets | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`: base-only oversize, 2/8 MiB, above maximum, total bytes, protected exclusions, index and truncation |
 | ENV-39-06: preflight protocol and executable next steps | `domain::doctor::tests` | `tests/doctor.rs` schema validation and replay of suggested argv |
-| ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` full native Windows test command with debug assertions/overflow checks enabled and debug symbols omitted; PowerShell/Git Bash steps with paths containing spaces |
+| ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` complete native Windows target partition with debug assertions/overflow checks enabled and debug symbols omitted; PowerShell/Git Bash steps with paths containing spaces |
 | EXECUTABLE-FILE-01: regular-file identity before open, retained size/digest checks and symlink compatibility | `runner::identity::tests` | `tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent` (Unix): bounded old-code counterexample, incomplete ledger, no Agent launch or delivery |
 
 Run `cargo test --test doctor --all-features` independently of native unit tests.

@@ -66,12 +66,25 @@ jobs:
         run: git diff --exit-code
 
   cross-platform:
+    name: ${{ matrix.os }} / ${{ matrix.suite }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            suite: core
+            targets: --lib --bins --examples --benches
+          - os: windows-latest
+            suite: integration-a-m
+            targets: --test '[a-m]*'
+          - os: windows-latest
+            suite: integration-other
+            targets: --test '[!a-m]*'
+          - os: macos-latest
+            suite: all
+            targets: --all-targets
     steps:
       - uses: actions/checkout@v6
       - run: rustup show
@@ -87,9 +100,9 @@ jobs:
           CARGO_PROFILE_TEST_DEBUG_ASSERTIONS: "true"
           CARGO_PROFILE_DEV_OVERFLOW_CHECKS: "true"
           CARGO_PROFILE_TEST_OVERFLOW_CHECKS: "true"
-        run: cargo test --locked --all-targets --all-features
+        run: cargo test --locked --all-features ${{ matrix.targets }}
       - name: Native PowerShell preflight in a path with spaces
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.suite == 'integration-a-m'
         shell: pwsh
         run: |
           $root = Join-Path $env:RUNNER_TEMP 'qualitygate preflight powershell'
@@ -104,7 +117,7 @@ jobs:
           & $bin doctor --root $root --worktree --probe-tools --format json
           if ($LASTEXITCODE -ne 0) { throw 'PowerShell doctor failed' }
       - name: Native Git Bash preflight with explicit path conversion
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.suite == 'integration-a-m'
         shell: bash
         run: |
           qualitygate_root="$(cygpath -u "$RUNNER_TEMP")/qualitygate preflight git bash"
@@ -120,7 +133,7 @@ jobs:
             "$qualitygate_bin" doctor --root "$(cygpath -m "$qualitygate_root")" --worktree --probe-tools --format json
       - name: Run macOS gates
         if: runner.os != 'Windows'
-        run: cargo test --locked --all-targets --all-features
+        run: cargo test --locked --all-features ${{ matrix.targets }}
 
   coverage:
     runs-on: ubuntu-latest

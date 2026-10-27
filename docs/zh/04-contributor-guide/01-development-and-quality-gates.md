@@ -31,8 +31,16 @@ cargo llvm-cov --all-targets --all-features --fail-under-lines 90
 单元与集成门禁保持分离。纯 domain 另用 Miri；native 单元测试单独用 ASan。依赖外部工具链或网络的
 live producer 测试，未实际运行时不能算入稳定本地套件。
 
-Windows 原生 CI 在 30 分钟作业预算内执行同一条完整 Cargo 测试命令。该步骤的 dev/test profile
-关闭调试符号生成以减少 PDB 生成和链接开销，同时显式启用调试断言与溢出检查。这些独立的
+Windows 原生 CI 将完整 Cargo 目标清单分成三个作业：`--lib --bins --examples --benches`、
+`--test '[a-m]*'` 和 `--test '[!a-m]*'`。带引号的互补 Cargo glob 自动纳入新增集成目标，
+无需维护名称列表。各作业保留 `--locked --all-features` 和 30 分钟预算。PowerShell/Git Bash
+预检随第一组集成测试执行，该组也会构建原生 CLI。macOS 与本地检查仍使用 `--all-targets`。
+调整分组时，逐目标比较各组与完整命令的 `cargo test ... -- --list` 清单，包含空目标与忽略的
+测试；并集必须相等，且目标不得重复。
+详见 [Cargo 目标选择](https://doc.rust-lang.org/cargo/commands/cargo-test.html#target-selection)。
+
+Windows 步骤的 dev/test profile 关闭调试符号生成以减少 PDB 生成和链接开销，同时显式启用
+调试断言与溢出检查。这些独立的
 [Cargo profile 设置](https://doc.rust-lang.org/cargo/reference/profiles.html)只作用于该 Windows
 步骤；本地默认配置、测试清单、优化级别、Miri 和 ASan 保持不变。作业中断仍属于未完成。
 

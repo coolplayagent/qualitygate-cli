@@ -63,6 +63,7 @@
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
 | CI-NODE-01：Node 24 action 运行时，显式关闭 npm 自动缓存 | `.github/workflows/pr-checks.yml` 的 `eslint-project` 实际执行 ESLint ratchet 与修复测试；`.github/workflows/release.yml` 使用相同 setup 输入。`tests/quality/skill_package.rs` 验证发布打包，不执行发布。 |
+| CI-WINDOWS-01：在原有作业预算内完整分组 Windows 目标 | `.github/workflows/pr-checks.yml` 在原生作业分别执行核心目标与互补的集成 glob；逐目标比较各组与 `--all-targets` 的 `cargo test ... -- --list` 清单，包含忽略测试。三组与 PowerShell/Git Bash 预检均须通过，取消仍属未完成。 |
 | 架构、文档、站点与 Skill 发布 | `tests/quality/architecture.rs`、`documentation.rs`、`site.rs`、`skill_package.rs` |
 
 规则回归测试保留正例、反例、非法输入、边界和未完成证据。报告适配器分别测试解析归一化与真实
@@ -101,7 +102,7 @@ v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 
 | ENV-39-04：静态边界与有界探针 | `application::doctor_context::tests` | `tests/doctor/probes.rs`：超时、超限、空版本、脚本/输入/策略变化、敏感输出 |
 | ENV-39-05：分侧文件预算 | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`：仅 base 超限、2/8 MiB、最大容量、总量、受保护排除、index、计数与截断 |
 | ENV-39-06：预检协议与可执行建议 | `domain::doctor::tests` | `tests/doctor.rs`：Schema 校验与建议 argv 重放 |
-| ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：保留调试断言/溢出检查、关闭调试符号的完整 Windows 测试命令；带空格路径的 PowerShell/Git Bash 验证 |
+| ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：保留调试断言/溢出检查、关闭调试符号的完整 Windows 目标分组；带空格路径的 PowerShell/Git Bash 验证 |
 | EXECUTABLE-FILE-01：打开前校验普通文件，保留大小/摘要限制与符号链接兼容性 | `runner::identity::tests` | `tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent`（Unix）：有界旧代码反例、未完成台账、无 Agent 启动或交付 |
 
 `cargo test --test doctor --all-features` 是独立于原生单元测试的集成目标。
