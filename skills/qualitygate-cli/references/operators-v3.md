@@ -122,8 +122,18 @@ including retained primary marker subjects and sources unused by the expression.
 Syntax structures retain their separate parser bounds. Intermediate
 collections have at most 50,000 items and a shared cumulative 32 MiB materialized
 budget. Strings and collection entries are charged before allocation; borrowed
-references may be charged conservatively. Boolean/set membership operations do
-not short circuit away work; large nested scans may exhaust the shared budget.
+references may be charged conservatively. Boolean branches, quantifier
+predicates and both set operands are evaluated fully; large nested scans may
+exhaust the shared budget. An empty left subset still evaluates its right
+operand, but does not build an unused lookup index.
+
+`distinct` and `subset` use bounded scalar indexes. Few distinct values keep a
+linear path; general indexes use fallible stable ordering and indexed lookups.
+Few subset lookups scan directly to avoid sorting a large right operand.
+All comparisons remain exact, including UTF-8 strings. Buffer reservation,
+comparisons, scanned strings and index moves use the existing shared budgets;
+an exhausted index operation leaves the expression incomplete. `distinct`
+retains the first occurrence order and original source locations.
 
 `metadata.expression` includes source counts, operations, scans, materialized
 bytes and at most 64 false observations. Each observation locates the current

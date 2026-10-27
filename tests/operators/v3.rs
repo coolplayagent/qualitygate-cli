@@ -75,6 +75,43 @@ fn v3_multisource_rules_include_unchanged_tests_and_bind_selected_snapshots() {
     std::fs::write(root.join("AGENTS.md"), "# Tests\nChanged requirement\n").unwrap();
     check(root, 2);
 }
+
+#[test]
+fn v3_file_correspondence_scales_without_relaxing_shared_budgets() {
+    let dir = setup();
+    let root = dir.path();
+    std::fs::create_dir(root.join("tests")).unwrap();
+    install(root, &rule(correspondence()));
+    for index in 0..1000 {
+        std::fs::write(root.join(format!("src/f{index}.rs")), "fn f() {}\n").unwrap();
+        std::fs::write(
+            root.join(format!("tests/f{index}_test.rs")),
+            "#[test] fn test_f() {}\n",
+        )
+        .unwrap();
+    }
+    let passed = check(root, 0);
+    let expression = &passed["checks"][0]["metadata"]["expression"];
+    assert_eq!(expression["sources"]["entities"], 1000);
+    assert_eq!(expression["sources"]["tests"], 1000);
+    assert!(expression["operations"].as_u64().unwrap() < 100_000);
+    assert!(expression["scanned_bytes"].as_u64().unwrap() < 32 * 1024 * 1024);
+    assert!(expression["materialized_bytes"].as_u64().unwrap() < 32 * 1024 * 1024);
+
+    std::fs::remove_file(root.join("tests/f999_test.rs")).unwrap();
+    let failed = check(root, 1);
+    assert_eq!(failed["gate"]["complete"], true);
+    assert_eq!(
+        failed["checks"][0]["metadata"]["expression"]["passed"],
+        false
+    );
+    assert_eq!(
+        failed["checks"][0]["metadata"]["expression"]["sources"]["tests"],
+        999
+    );
+    std::fs::write(root.join("tests/f999_test.rs"), "#[test] fn test_f() {}\n").unwrap();
+    check(root, 0);
+}
 #[test]
 fn v3_authoring_schemas_and_mixed_packages_preserve_legacy_protocols() {
     let dir = setup();

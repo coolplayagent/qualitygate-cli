@@ -86,6 +86,15 @@ define types, source selectors, scopes, allocation budgets and diagnostics.
 Correspondence checks prove only file relationships; behavioral evidence still
 requires configured tests and, when appropriate, `test_effectiveness`.
 
+V3 `distinct` and `subset` use bounded scalar indexes to avoid repeated pairwise
+comparisons. Collections with few distinct values retain a linear path; general
+indexes use stable ordering and exact comparisons. Index storage, comparisons,
+scanned strings and index moves consume the existing shared budgets. `distinct`
+preserves first occurrence order and source origins. Few subset lookups scan
+directly to avoid sorting a large right operand. Both set operands are fully
+evaluated; an empty left subset needs no lookup index. Larger inputs can still
+exhaust a budget and remain incomplete.
+
 ---
 
 [Previous: Constraint coverage](07-constraint-coverage.md) · [Contents](../README.md) · [Next: Consuming-agent contracts](09-agent-contracts.md)

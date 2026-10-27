@@ -8,6 +8,7 @@ use crate::domain::{
 use anyhow::{Result, bail, ensure};
 use serde::Serialize;
 use std::{
+    cmp::Ordering,
     collections::BTreeMap,
     sync::Arc,
     time::{Duration, Instant},
@@ -57,6 +58,10 @@ struct Item {
 enum Value {
     Item(Item),
     Collection(Vec<Item>),
+}
+enum ScalarIndex {
+    Small(Vec<usize>),
+    Ordered(Vec<usize>),
 }
 impl Value {
     fn item(self) -> Result<Item> {
@@ -291,9 +296,9 @@ impl Engine<'_> {
                 .collect(),
         });
     }
-    fn compare(&mut self, a: &Item, relation: Relation, b: &Item) -> Result<bool> {
+    fn order(&mut self, a: &Item, b: &Item) -> Result<Ordering> {
         self.step(1)?;
-        let order = match (&a.atom, &b.atom) {
+        Ok(match (&a.atom, &b.atom) {
             (Atom::Bool(a), Atom::Bool(b)) => a.cmp(b),
             (Atom::Number(a), Atom::Number(b)) => a.cmp(b),
             (Atom::String(a), Atom::String(b)) => {
@@ -301,7 +306,10 @@ impl Engine<'_> {
                 a.cmp(b)
             }
             _ => bail!("Inconsistent scalar comparison"),
-        };
+        })
+    }
+    fn compare(&mut self, a: &Item, relation: Relation, b: &Item) -> Result<bool> {
+        let order = self.order(a, b)?;
         Ok(match relation {
             Relation::Eq => order.is_eq(),
             Relation::Ne => !order.is_eq(),
@@ -317,6 +325,130 @@ impl Engine<'_> {
             found |= self.compare(item, Relation::Eq, value)?;
         }
         Ok(found)
+    }
+
+    fn contains_indices(
+        &mut self,
+        items: &[Item],
+        indices: &[usize],
+        value: &Item,
+    ) -> Result<bool> {
+        self.deadline()?;
+        let mut found = false;
+        for &index in indices {
+            found |= self.compare(&items[index], Relation::Eq, value)?;
+        }
+        Ok(found)
+    }
+
+    fn scalar_index(&mut self, items: &[Item]) -> Result<ScalarIndex> {
+        // Few distinct values need only linear work, even with many duplicates.
+        // Bound this probe before choosing the general ordered index.
+        let mut indices = Vec::new();
+        for index in 0..items.len() {
+            if !self.contains_indices(items, &indices, &items[index])? {
+                if indices.len() == 16 {
+                    return Ok(ScalarIndex::Ordered(self.ordered_indices(items)?));
+                }
+                self.allocate(std::mem::size_of::<usize>())?;
+                indices.push(index);
+            }
+        }
+        Ok(ScalarIndex::Small(indices))
+    }
+
+    /// Stable merge ordering permits each comparison and index move to fail at
+    /// the shared budget boundary. Sorting indices leaves values and origins intact.
+    fn ordered_indices(&mut self, items: &[Item]) -> Result<Vec<usize>> {
+        let len = items.len();
+        self.allocate(len.saturating_mul(2 * std::mem::size_of::<usize>()))?;
+        self.step(len)?;
+        let mut indices: Vec<_> = (0..len).collect();
+        let mut scratch = vec![0; len];
+        let mut width = 1;
+        while width < len {
+            for start in (0..len).step_by(2 * width) {
+                let middle = (start + width).min(len);
+                let end = (middle + width).min(len);
+                let (mut left, mut right) = (start, middle);
+                for slot in &mut scratch[start..end] {
+                    self.step(1)?;
+                    let take_left = right == end
+                        || left < middle
+                            && self.order(&items[indices[left]], &items[indices[right]])?
+                                != Ordering::Greater;
+                    *slot = if take_left {
+                        let index = indices[left];
+                        left += 1;
+                        index
+                    } else {
+                        let index = indices[right];
+                        right += 1;
+                        index
+                    };
+                }
+            }
+            std::mem::swap(&mut indices, &mut scratch);
+            width *= 2;
+        }
+        Ok(indices)
+    }
+
+    fn distinct(&mut self, items: Vec<Item>) -> Result<Vec<Item>> {
+        let indices = match self.scalar_index(&items)? {
+            ScalarIndex::Ordered(indices) => indices,
+            ScalarIndex::Small(indices) => {
+                let mut output = Vec::new();
+                for index in indices {
+                    self.push(&mut output, items[index].clone())?;
+                }
+                return Ok(output);
+            }
+        };
+        self.allocate(items.len())?;
+        let mut keep = vec![false; items.len()];
+        let mut previous: Option<usize> = None;
+        for index in indices {
+            self.step(1)?;
+            let unique = match previous {
+                Some(previous) => self.order(&items[previous], &items[index])? != Ordering::Equal,
+                None => true,
+            };
+            if unique {
+                keep[index] = true;
+                previous = Some(index);
+            }
+        }
+        let mut output = Vec::new();
+        for (index, item) in items.into_iter().enumerate() {
+            self.step(1)?;
+            if keep[index] {
+                self.push(&mut output, item)?;
+            }
+        }
+        Ok(output)
+    }
+
+    fn indexed_contains(
+        &mut self,
+        items: &[Item],
+        index: &ScalarIndex,
+        value: &Item,
+    ) -> Result<bool> {
+        let indices = match index {
+            ScalarIndex::Small(indices) => return self.contains_indices(items, indices, value),
+            ScalarIndex::Ordered(indices) => indices,
+        };
+        let (mut start, mut end) = (0, indices.len());
+        while start < end {
+            let middle = start + (end - start) / 2;
+            match self.order(&items[indices[middle]], value)? {
+                Ordering::Equal => return Ok(true),
+                Ordering::Less => start = middle + 1,
+                Ordering::Greater => end = middle,
+            }
+        }
+        Ok(false)
     }
     fn eval(&mut self, expression: &Expr, current: Option<&Item>, pointer: &str) -> Result<Value> {
         self.step(1)?;
@@ -450,13 +582,7 @@ impl Engine<'_> {
                 let items = self
                     .eval(input, current, &format!("{pointer}/input"))?
                     .collection()?;
-                let mut output = Vec::new();
-                for item in items {
-                    if !self.contains(&output, &item)? {
-                        self.push(&mut output, item)?;
-                    }
-                }
-                Value::Collection(output)
+                Value::Collection(self.distinct(items)?)
             }
             Contains { input, value } => {
                 let items = self
@@ -475,8 +601,18 @@ impl Engine<'_> {
                     .eval(right, current, &format!("{pointer}/right"))?
                     .collection()?;
                 let mut result = true;
-                for item in &left {
-                    result &= self.contains(&right, item)?;
+                // A few full scans cost less than building the ordered index.
+                // Estimate its comparison and move passes before indexing.
+                let scan_limit = 2 * right.len().max(1).ilog2() as usize + 1;
+                if left.len() <= scan_limit {
+                    for item in &left {
+                        result &= self.contains(&right, item)?;
+                    }
+                } else {
+                    let index = self.scalar_index(&right)?;
+                    for item in &left {
+                        result &= self.indexed_contains(&right, &index, item)?;
+                    }
                 }
                 Value::scalar(Atom::Bool(result), current)
             }

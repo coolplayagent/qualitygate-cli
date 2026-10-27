@@ -754,6 +754,13 @@ ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际
 
 ## 16. 自然语言条款覆盖
 
+OPERATOR-SET-01：v3 的去重与子集比较使用有界标量索引，在既有预算内完成 1,000 组文件对应检查；
+不同值较少的重复集合保持线性处理；少量子集查询直接扫描，避免为大右集合额外排序。
+索引按精确标量值比较，去重保留首次出现顺序及来源。
+全部操作数完整求值，空左集合不构造无用索引。索引比较、扫描、移动和缓冲区计入共享预算，
+耗尽仍为未完成。证据见 `adapters::operators_v3::tests` 及
+`tests/operators/v3.rs::v3_file_correspondence_scales_without_relaxing_shared_budgets`。
+
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
 | CONSTRAINT-01 | 有界严格条款清单绑定规范章节、解释、例子、有效检查定义及采用记录；来源保护、策略冻结、快照范围保持一致；未采用、过期、不支持、未运行和超时保留缺口；必需条款违规阻断，可选缺口可见，不能宣称自然语言提取已穷尽或标签提供了宿主强制能力 | `tests/constraint_coverage.rs`；`domain::constraint::tests`；[条款覆盖](../../docs/zh/02-reference/07-constraint-coverage.md) |
