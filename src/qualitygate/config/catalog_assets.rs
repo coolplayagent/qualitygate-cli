@@ -1,7 +1,10 @@
 //! Skill-owned built-in rule asset discovery, isolated from policy snapshots.
 
 use anyhow::{Context, Result, bail};
-use std::path::{Path, PathBuf};
+use std::{
+    io::Read,
+    path::{Path, PathBuf},
+};
 const PACKAGES: &[&str] = &[
     "core",
     "shared",
@@ -54,7 +57,7 @@ fn canonical_rule_directory(path: PathBuf, source: &str) -> Result<PathBuf> {
 
 fn packaged_rules_from(root: &Path) -> Result<Vec<PackagedRule>> {
     let mut result = Vec::new();
-    let mut total = 0u64;
+    let mut total = 0;
     for package in PACKAGES {
         let directory = root.join(package);
         let metadata = std::fs::symlink_metadata(&directory).with_context(|| {
@@ -74,18 +77,16 @@ fn packaged_rules_from(root: &Path) -> Result<Vec<PackagedRule>> {
             if file_type.is_dir() || !(name.ends_with(".yaml") || name.ends_with(".yml")) {
                 bail!("Built-in rules accept only YAML files: {package}/{name}");
             }
-            // Bazel materializes declared data as runfile symlinks. Skill
-            // installation is the trust boundary for this explicit asset root;
-            // require the resolved target to be a bounded regular file.
-            let metadata = std::fs::metadata(entry.path())?;
-            if !metadata.is_file() {
-                bail!("Built-in rules accept only regular files: {package}/{name}");
-            }
-            total = total.saturating_add(metadata.len());
-            if result.len() + files.len() >= 256 || total > super::MAX_CONFIG_BYTES as u64 {
+            if result.len() + files.len() >= 256 {
                 bail!("Built-in rule assets exceed 256 files or 1 MiB");
             }
-            files.push((name, std::fs::read(entry.path())?));
+            let bytes = read_asset(
+                &entry.path(),
+                &format!("{package}/{name}"),
+                super::MAX_CONFIG_BYTES - total,
+            )?;
+            total += bytes.len();
+            files.push((name, bytes));
         }
         if files.is_empty() {
             bail!("Built-in rule package is empty: references/rules/{package}");
@@ -100,6 +101,29 @@ fn packaged_rules_from(root: &Path) -> Result<Vec<PackagedRule>> {
     Ok(result)
 }
 
+fn read_asset(path: &Path, name: &str, remaining: usize) -> Result<Vec<u8>> {
+    // Bazel materializes declared data as runfile symlinks. Skill installation
+    // is the trust boundary for this root; resolved targets must be regular.
+    let validate = |metadata: std::fs::Metadata| -> Result<()> {
+        if !metadata.is_file() {
+            bail!("Built-in rules accept only regular files: {name}");
+        }
+        if metadata.len() > remaining as u64 {
+            bail!("Built-in rule assets exceed 256 files or 1 MiB");
+        }
+        Ok(())
+    };
+    validate(std::fs::metadata(path)?)?;
+    let file = std::fs::File::open(path)?;
+    validate(file.metadata()?)?;
+    let mut bytes = Vec::new();
+    file.take(remaining as u64 + 1).read_to_end(&mut bytes)?;
+    if bytes.len() > remaining {
+        bail!("Built-in rule assets exceed 256 files or 1 MiB");
+    }
+    Ok(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,5 +133,106 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let error = packaged_rules_from(root.path()).unwrap_err().to_string();
         assert!(error.contains("Built-in skill rule package is missing"));
+    }
+
+    #[test]
+    fn asset_byte_and_file_limits_are_inclusive() {
+        let root = tempfile::tempdir().unwrap();
+        for package in PACKAGES {
+            std::fs::create_dir(root.path().join(package)).unwrap();
+            std::fs::write(root.path().join(package).join("rule.yaml"), b"{}\n").unwrap();
+        }
+        let large = root.path().join("core/large.yaml");
+        let remaining = super::super::MAX_CONFIG_BYTES - PACKAGES.len() * 3;
+        std::fs::write(&large, vec![b' '; remaining]).unwrap();
+        assert_eq!(
+            packaged_rules_from(root.path())
+                .unwrap()
+                .iter()
+                .map(|rule| rule.bytes.len())
+                .sum::<usize>(),
+            super::super::MAX_CONFIG_BYTES
+        );
+        std::fs::write(&large, vec![b' '; remaining + 1]).unwrap();
+        assert!(
+            packaged_rules_from(root.path())
+                .unwrap_err()
+                .to_string()
+                .contains("1 MiB")
+        );
+        std::fs::remove_file(large).unwrap();
+        for index in PACKAGES.len()..256 {
+            std::fs::write(root.path().join(format!("core/{index:03}.yaml")), b"{}\n").unwrap();
+        }
+        let rules = packaged_rules_from(root.path()).unwrap();
+        assert_eq!(rules.len(), 256);
+        assert!(
+            rules
+                .windows(2)
+                .all(|pair| { pair[0].package != pair[1].package || pair[0].path < pair[1].path })
+        );
+        std::fs::write(root.path().join("core/extra.yaml"), b"{}\n").unwrap();
+        assert!(
+            packaged_rules_from(root.path())
+                .unwrap_err()
+                .to_string()
+                .contains("256 files")
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn asset_symlinks_allow_regular_targets_and_reject_special_targets() {
+        let root = tempfile::tempdir().unwrap();
+        let regular = root.path().join("regular");
+        let link = root.path().join("rule.yaml");
+        std::fs::write(&regular, b"{}\n").unwrap();
+        std::os::unix::fs::symlink(&regular, &link).unwrap();
+        assert_eq!(read_asset(&link, "rule.yaml", 3).unwrap(), b"{}\n");
+        assert!(read_asset(&link, "rule.yaml", 2).is_err());
+        std::fs::remove_file(&link).unwrap();
+        let socket = root.path().join("socket");
+        let _listener = std::os::unix::net::UnixListener::bind(&socket).unwrap();
+        std::os::unix::fs::symlink(socket, &link).unwrap();
+        assert!(
+            read_asset(&link, "rule.yaml", 3)
+                .unwrap_err()
+                .to_string()
+                .contains("regular files")
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn actual_asset_bytes_count_toward_the_aggregate_budget() {
+        let root = tempfile::tempdir().unwrap();
+        for package in PACKAGES {
+            std::fs::create_dir(root.path().join(package)).unwrap();
+            std::fs::write(root.path().join(package).join("rule.yaml"), b"{}\n").unwrap();
+        }
+        std::fs::write(
+            root.path().join("core/rule.yaml"),
+            vec![b' '; super::super::MAX_CONFIG_BYTES - (PACKAGES.len() - 1) * 3],
+        )
+        .unwrap();
+        let rules = packaged_rules_from(root.path()).unwrap();
+        assert_eq!(
+            rules.iter().map(|rule| rule.bytes.len()).sum::<usize>(),
+            super::super::MAX_CONFIG_BYTES
+        );
+        // procfs reports a regular file with length zero; its actual bytes are
+        // nonempty. This exercises accounting independently of a growth race.
+        let source = Path::new("/proc/version");
+        let metadata = std::fs::metadata(source).unwrap();
+        assert!(metadata.is_file());
+        assert_eq!(metadata.len(), 0);
+        std::os::unix::fs::symlink(source, root.path().join("core/extra.yaml")).unwrap();
+        match packaged_rules_from(root.path()) {
+            Ok(rules) => panic!(
+                "Catalog accepted {} actual bytes despite its 1 MiB budget",
+                rules.iter().map(|rule| rule.bytes.len()).sum::<usize>()
+            ),
+            Err(error) => assert!(error.to_string().contains("1 MiB"), "{error:#}"),
+        }
     }
 }

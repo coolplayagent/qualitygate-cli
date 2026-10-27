@@ -49,6 +49,14 @@ including growth during reading; discovery retains its 2 MiB per-input and
 returns incomplete instead of hanging or publishing an initialization candidate.
 An existing unreadable input is not treated as a missing policy.
 
+Built-in rule assets share a 256-file and 1 MiB limit across all packages. The
+byte allowance is charged against actual reads, including growth or regular
+files whose metadata understates their size. Each read is limited to the
+remaining allowance plus one byte to detect overflow; excess assets make
+catalog loading incomplete before YAML parsing. Exact limits are inclusive.
+Asset symlinks, including Bazel runfiles, may resolve to regular files; type and
+size are checked both before opening and on the opened handle.
+
 ## Diagnostic output
 
 Each check retains at most 10,000 diagnostic records and 8 MiB of compact UTF-8

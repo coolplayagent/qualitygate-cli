@@ -148,6 +148,13 @@ CONFIG-FILE-01：配置文件与发现阶段输入在打开前检查普通文件
 `tests/init.rs::fifo_configuration_is_rejected_without_initialization_or_replacement` 与
 `fifo_ignore_file_blocks_discovery_before_candidate_publication`。
 
+RULE-ASSET-01：内置规则资产跨包共享含边界值的 256 文件、1 MiB 预算；按实际读取字节累计，
+每次读入不超过剩余预算加一个探测字节，元数据低报和读取增长不能绕过预算。打开前及句柄上检查
+普通文件类型与大小，保留 Bazel 规则资产符号链接支持。超限在解析前保持未完成，修复后可重检恢复。
+证据见 `config::catalog_assets::tests` 与
+`tests/selfcheck.rs::underestimated_asset_lengths_are_incomplete_before_parsing_and_recover_after_repair`
+（Linux procfs 反例）；边界见[资源限制](../../docs/zh/02-reference/05-exit-codes-and-resource-limits.md)。
+
 ### 3.3 流程门禁
 
 | 功能 | 说明 |

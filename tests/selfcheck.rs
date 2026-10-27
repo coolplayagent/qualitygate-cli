@@ -369,6 +369,54 @@ fn missing_rule_assets_are_structured_incomplete_evidence() {
     );
 }
 
+#[cfg(target_os = "linux")]
+#[test]
+fn underestimated_asset_lengths_are_incomplete_before_parsing_and_recover_after_repair() {
+    let root = tempfile::tempdir().unwrap();
+    let assets = root.path().join("rules");
+    rule_assets(&assets);
+    let original = report(&with_assets(root.path(), &assets, "json"), 0);
+    let mut total = 0;
+    for package in std::fs::read_dir(&assets).unwrap() {
+        for file in std::fs::read_dir(package.unwrap().path()).unwrap() {
+            total += file.unwrap().metadata().unwrap().len() as usize;
+        }
+    }
+    let rule = assets.join("core/commit-message.yaml");
+    let bytes = std::fs::read(&rule).unwrap();
+    let mut padded = bytes.clone();
+    padded.resize(
+        bytes.len() + qualitygate::config::MAX_CONFIG_BYTES - total,
+        b' ',
+    );
+    std::fs::write(&rule, padded).unwrap();
+    report(&with_assets(root.path(), &assets, "json"), 0);
+    let source = Path::new("/proc/version");
+    let metadata = std::fs::metadata(source).unwrap();
+    assert!(metadata.is_file());
+    assert_eq!(metadata.len(), 0);
+    let extra = assets.join("core/extra.yaml");
+    std::os::unix::fs::symlink(source, &extra).unwrap();
+    let incomplete = report(&with_assets(root.path(), &assets, "json"), 2);
+    assert_eq!(incomplete["complete"], false);
+    assert!(
+        incomplete["errors"].to_string().contains("1 MiB"),
+        "{}",
+        incomplete["errors"]
+    );
+    assert!(
+        !incomplete["errors"]
+            .to_string()
+            .contains("Invalid built-in")
+    );
+    std::fs::remove_file(extra).unwrap();
+    std::fs::write(rule, bytes).unwrap();
+    let repaired = report(&with_assets(root.path(), &assets, "json"), 0);
+    assert_eq!(repaired["complete"], true);
+    assert_eq!(repaired["rules_digest"], original["rules_digest"]);
+    assert_eq!(repaired["corpus_digest"], original["corpus_digest"]);
+}
+
 #[test]
 fn weakening_the_policy_workflow_evaluator_is_falsified_by_unchanged_independent_goldens() {
     let root = tempfile::tempdir().unwrap();
