@@ -41,8 +41,8 @@ async fn build(
     baseline: bool,
     result: &mut CheckResult,
 ) -> Result<inputs::Captured> {
-    let workspace = snapshot::materialize(snapshot).await?;
-    let guard = snapshot::InputGuard::new(workspace.path(), snapshot.files.clone()).await?;
+    let workspace = snapshot::materialize_shared(Arc::clone(snapshot)).await?;
+    let guard = snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(snapshot)).await?;
     let spec = check
         .compatibility
         .as_ref()
@@ -128,20 +128,7 @@ async fn run(
         )
         .await?,
     );
-    let source = snapshot.clone();
-    let base = tokio::task::spawn_blocking(move || {
-        let mut base = source.as_ref().clone();
-        base.files = source.base_files.clone();
-        base.base_files = base.files.clone();
-        base.identity.head = base.identity.base.clone();
-        base.identity.mode = "baseline".into();
-        base.identity.merge_request = None;
-        snapshot::bind_derived(&mut base.identity, snapshot::content_digest(&base.files));
-        base.changes.clear();
-        base.commits.clear();
-        base
-    })
-    .await?;
+    let base = snapshot::baseline(Arc::clone(snapshot)).await?;
     let baseline = build(check, artifacts, &Arc::new(base), true, result).await?;
     let current = build(check, artifacts, snapshot, false, result).await?;
     result
@@ -179,18 +166,24 @@ async fn run(
     }
     let source = snapshot.clone();
     let comparison = tokio::task::spawn_blocking(move || {
-        let mut comparison = source.as_ref().clone();
-        comparison.identity.mode = "compatibility_inputs".into();
-        snapshot::bind_derived(&mut comparison.identity, snapshot::content_digest(&files));
-        comparison.files = files;
-        comparison.base_files.clear();
-        comparison.changes.clear();
-        comparison.commits.clear();
-        comparison
+        let mut identity = source.identity.clone();
+        identity.mode = "compatibility_inputs".into();
+        snapshot::bind_derived(&mut identity, snapshot::content_digest(&files));
+        Arc::new(Snapshot {
+            scope_evidence: source.scope_evidence.clone(),
+            root: source.root.clone(),
+            identity,
+            files,
+            base_files: BTreeMap::new(),
+            changes: BTreeMap::new(),
+            path_filter: source.path_filter.clone(),
+            commits: Vec::new(),
+        })
     })
     .await?;
-    let workspace = snapshot::materialize(&comparison).await?;
-    let guard = snapshot::InputGuard::new(workspace.path(), comparison.files.clone()).await?;
+    let workspace = snapshot::materialize_shared(Arc::clone(&comparison)).await?;
+    let guard =
+        snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(&comparison)).await?;
     let paths = |names: &[String], separator: &str| -> Result<String> {
         names
             .iter()
@@ -250,7 +243,6 @@ async fn run(
         inputs: vec![],
         timeout_seconds: 30,
     }];
-    let comparison = Arc::new(comparison);
     let mut expected_classes = baseline.classes.union(&current.classes).cloned().collect();
     let level = spec.level;
     for (inventory, suffix, access) in [(true, "inventory", "private"), (false, "api", "protected")]

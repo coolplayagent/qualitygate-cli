@@ -46,6 +46,14 @@ expected artifacts. The runner drains stdout and stderr without unbounded
 buffers, terminates timed-out process trees, and preserves partial evidence.
 Blocking operations do not hold asynchronous orchestration resources.
 
+Baseline execution derives its identity and files directly from the captured
+base in a blocking worker, retaining the parent scope binding and clearing
+target change/history context. Report and compatibility executions share each
+immutable execution snapshot between materialization and input guards. The
+compatibility comparison takes ownership of its captured archives without
+copying the source trees. Independent workspaces and input-mutation checks still
+apply to every execution, including replacement with identical bytes.
+
 Snapshot identity and policy/task digests flow into every plan and report.
 Before a result is accepted, the application confirms that produced evidence
 belongs to the same materialized snapshot. Mutation, missing objects, invalid

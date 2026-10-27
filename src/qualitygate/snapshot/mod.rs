@@ -65,6 +65,31 @@ pub struct Snapshot {
     pub commits: Vec<(String, String)>,
 }
 
+/// Derives execution inputs from the captured base without copying current files.
+/// Preserve the parent's scope binding, but clear target change/history context.
+/// Copying and hashing stay off the asynchronous orchestration thread.
+pub async fn baseline(snapshot: std::sync::Arc<Snapshot>) -> Result<Snapshot> {
+    tokio::task::spawn_blocking(move || {
+        let mut identity = snapshot.identity.clone();
+        identity.head = identity.base.clone();
+        identity.mode = "baseline".into();
+        identity.merge_request = None;
+        bind_derived(&mut identity, content_digest(&snapshot.base_files));
+        Snapshot {
+            scope_evidence: snapshot.scope_evidence.clone(),
+            root: snapshot.root.clone(),
+            identity,
+            files: snapshot.base_files.clone(),
+            base_files: snapshot.base_files.clone(),
+            changes: BTreeMap::new(),
+            path_filter: snapshot.path_filter.clone(),
+            commits: Vec::new(),
+        }
+    })
+    .await
+    .map_err(Into::into)
+}
+
 pub fn digest(bytes: &[u8]) -> String {
     format!("sha256:{:x}", Sha256::digest(bytes))
 }

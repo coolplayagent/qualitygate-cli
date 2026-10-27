@@ -129,6 +129,99 @@ async fn repository() -> tempfile::TempDir {
 }
 
 #[tokio::test]
+async fn derived_baseline_preserves_binding_and_isolates_shared_execution_inputs() {
+    use std::sync::Arc;
+    let root = repository().await;
+    std::fs::write(root.path().join("retired.txt"), "base only\n").unwrap();
+    run_git(root.path(), &["add", "."], None).await.unwrap();
+    run_git(root.path(), &["commit", "-qm", "base inventory"], None)
+        .await
+        .unwrap();
+    let base_commit = resolve_commit(root.path(), "HEAD").await.unwrap();
+    std::fs::remove_file(root.path().join("retired.txt")).unwrap();
+    std::fs::write(root.path().join("current.txt"), "current only\n").unwrap();
+    std::fs::write(root.path().join("file.txt"), "current\n").unwrap();
+    run_git(root.path(), &["add", "."], None).await.unwrap();
+    run_git(root.path(), &["commit", "-qm", "current inventory"], None)
+        .await
+        .unwrap();
+    let mut captured = capture(
+        root.path(),
+        &Selection::Diff {
+            base: base_commit.clone(),
+            head: "HEAD".into(),
+        },
+    )
+    .await
+    .unwrap();
+    captured.path_filter = Some("file.txt".into());
+    captured.identity.merge_request = Some(crate::domain::MergeRequest {
+        provider: "github".into(),
+        url: "https://example.invalid/repo/pull/1".into(),
+        repository: "fixture/repo".into(),
+        number: 1,
+        source_branch: "topic".into(),
+        target_branch: "main".into(),
+        source_head: captured.identity.head.clone(),
+        target_head: base_commit.clone(),
+        merge_base: base_commit.clone(),
+        api_response_digests: vec![digest(b"fixture metadata")],
+    });
+    let source = Arc::new(captured);
+    let original = serde_json::to_value(&source.identity).unwrap();
+    assert!(!source.changes.is_empty() && !source.commits.is_empty());
+    let base = Arc::new(baseline(Arc::clone(&source)).await.unwrap());
+    assert_eq!(base.identity.mode, "baseline");
+    assert_eq!(base.identity.head, base_commit);
+    assert_eq!(base.identity.base, base_commit);
+    assert!(base.identity.merge_request.is_none());
+    assert_ne!(
+        base.identity.verification_digest,
+        source.identity.verification_digest
+    );
+    assert_eq!(
+        base.identity.content_digest,
+        content_digest(&source.base_files)
+    );
+    assert!(base.changes.is_empty() && base.commits.is_empty());
+    assert_eq!(base.root, source.root);
+    assert_eq!(base.path_filter, source.path_filter);
+    assert_eq!(
+        serde_json::to_value(&base.scope_evidence).unwrap(),
+        serde_json::to_value(&source.scope_evidence).unwrap()
+    );
+    assert_eq!(
+        content_digest(&base.base_files),
+        base.identity.content_digest
+    );
+    assert_eq!(base.files["file.txt"].bytes, b"old\n");
+    assert!(base.files.contains_key("retired.txt"));
+    assert!(!base.files.contains_key("current.txt"));
+    let old_workspace = materialize_shared(Arc::clone(&base)).await.unwrap();
+    let old_guard = InputGuard::for_snapshot(old_workspace.path(), Arc::clone(&base))
+        .await
+        .unwrap();
+    let new_workspace = materialize_shared(Arc::clone(&source)).await.unwrap();
+    let new_guard = InputGuard::for_snapshot(new_workspace.path(), Arc::clone(&source))
+        .await
+        .unwrap();
+    assert_eq!(old_guard.digest, base.identity.content_digest);
+    let old_file = old_workspace.path().join("file.txt");
+    assert_eq!(std::fs::read(&old_file).unwrap(), b"old\n");
+    std::fs::write(&old_file, "tampered\n").unwrap();
+    assert!(old_guard.verify().await.is_err());
+    std::fs::write(&old_file, "old\n").unwrap();
+    assert!(old_guard.verify().await.is_err());
+    new_guard.verify().await.unwrap();
+    assert_eq!(
+        std::fs::read(new_workspace.path().join("file.txt")).unwrap(),
+        b"current\n"
+    );
+    assert_eq!(serde_json::to_value(&source.identity).unwrap(), original);
+    assert_eq!(source.base_files["file.txt"].bytes, b"old\n");
+}
+
+#[tokio::test]
 async fn staged_snapshot_uses_index_bytes_and_worktree_includes_untracked_files() {
     let root = repository().await;
     std::fs::write(root.path().join("file.txt"), "staged\n").unwrap();

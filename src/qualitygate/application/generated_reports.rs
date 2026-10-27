@@ -139,17 +139,12 @@ pub(super) async fn collect(
 async fn baseline(
     check: &CommandCheck,
     artifacts: &Path,
-    snapshot: &Snapshot,
+    snapshot: &Arc<Snapshot>,
     result: &mut CheckResult,
 ) -> Result<BTreeMap<usize, Data>> {
-    let mut base = snapshot.clone();
-    base.files = snapshot.base_files.clone();
-    base.identity.head = snapshot.identity.base.clone();
-    base.identity.mode = "baseline".into();
-    base.identity.merge_request = None;
-    snapshot::bind_derived(&mut base.identity, snapshot::content_digest(&base.files));
-    let workspace = snapshot::materialize(&base).await?;
-    let inputs = snapshot::InputGuard::new(workspace.path(), base.files.clone()).await?;
+    let base = Arc::new(snapshot::baseline(Arc::clone(snapshot)).await?);
+    let workspace = snapshot::materialize_shared(Arc::clone(&base)).await?;
+    let inputs = snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(&base)).await?;
     result
         .metadata
         .insert("baseline_snapshot".into(), serde_json::json!(base.identity));

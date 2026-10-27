@@ -18,6 +18,13 @@ fn main() {
             "skip-base" => return,
             "timeout-base" => std::thread::sleep(std::time::Duration::from_secs(30)),
             "mutate-base" => std::fs::write("a.rs", "changed after capture\n").unwrap(),
+            "restore-base" => {
+                let modified = std::fs::metadata("a.rs").unwrap().modified().unwrap();
+                std::fs::rename("a.rs", "a-held").unwrap();
+                std::fs::copy("a-held", "a.rs").unwrap();
+                std::fs::File::options().write(true).open("a.rs").unwrap()
+                    .set_times(std::fs::FileTimes::new().set_modified(modified)).unwrap();
+            }
             _ => {}
         }
     }
@@ -124,6 +131,15 @@ fn ratchet_reexecutes_both_snapshots_and_does_not_trade_between_rule_counts() {
         result["metadata"]["baseline_snapshot"]["content_digest"],
         failed["snapshot"]["content_digest"]
     );
+    for digest in [
+        &result["metadata"]["baseline_tools"][0]["snapshot_digest"],
+        &result["metadata"]["baseline_input_integrity"]["snapshot_digest"],
+    ] {
+        assert_eq!(
+            digest,
+            &result["metadata"]["baseline_snapshot"]["content_digest"]
+        );
+    }
     let artifacts = result["execution"]["artifacts"].as_array().unwrap();
     assert!(artifacts.iter().any(|artifact| {
         artifact["path"]
@@ -160,6 +176,7 @@ fn ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete(
         ("skip-base", "Required report was not produced"),
         ("timeout-base", "did not complete"),
         ("mutate-base", "changed its checked inputs"),
+        ("restore-base", "changed its checked inputs"),
         ("crash-base", "unexpected exit code"),
     ] {
         fixture.policy["checks"][0]["argv"][1] = json!(mode);
