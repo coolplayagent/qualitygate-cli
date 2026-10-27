@@ -119,19 +119,38 @@ mod tests {
     async fn preparation_creates_report_parent_and_rejects_existing_installation() {
         let root = tempfile::tempdir().unwrap();
         let check:CommandCheck=serde_json::from_value(serde_json::json!({"id":"python","argv":["python"],"projects":[{"ecosystem":"python","root":".","source_root":"src","test_source_root":"tests","install_target":"target/python","install_report":"target/pip.json"}]})).unwrap();
-        super::super::generated_reports::prepare(&check, root.path(), false)
+        let inputs = std::collections::BTreeMap::new();
+        super::super::generated_reports::prepare(&check, root.path(), &inputs, false)
             .await
             .unwrap();
         assert!(root.path().join("target").is_dir());
         assert!(!root.path().join("target/python").exists());
         std::fs::write(root.path().join("target/pip.json"), "stale").unwrap();
-        super::super::generated_reports::prepare(&check, root.path(), false)
+        let checked_report = std::collections::BTreeMap::from([(
+            "target/pip.json".into(),
+            snapshot::File {
+                bytes: b"stale".to_vec(),
+                executable: false,
+            },
+        )]);
+        assert!(
+            super::super::generated_reports::prepare(&check, root.path(), &checked_report, false)
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("would overwrite a checked input")
+        );
+        assert_eq!(
+            std::fs::read(root.path().join("target/pip.json")).unwrap(),
+            b"stale"
+        );
+        super::super::generated_reports::prepare(&check, root.path(), &inputs, false)
             .await
             .unwrap();
         assert!(!root.path().join("target/pip.json").exists());
         std::fs::create_dir_all(root.path().join("target/python")).unwrap();
         assert!(
-            super::super::generated_reports::prepare(&check, root.path(), false)
+            super::super::generated_reports::prepare(&check, root.path(), &inputs, false)
                 .await
                 .is_err()
         );

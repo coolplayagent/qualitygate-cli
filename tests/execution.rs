@@ -1,4 +1,6 @@
 mod common;
+#[path = "execution/preparation.rs"]
+mod preparation;
 #[path = "execution/report_counts.rs"]
 mod report_counts;
 use common::*;
@@ -135,7 +137,7 @@ mod unix {
                     .contains("Prerequisite facts")
             );
         }
-        // Even a syntactically valid preexisting pair is removed before this run.
+        // Reports selected as checked inputs must not be overwritten by the producer.
         std::fs::create_dir_all(root.join("target")).unwrap();
         std::fs::write(root.join("target/effective.xml"), "<project/>").unwrap();
         std::fs::copy(
@@ -150,8 +152,9 @@ mod unix {
             failed["checks"][0]["execution"]["reason"]
                 .as_str()
                 .unwrap()
-                .contains("not produced")
+                .contains("would overwrite a checked input")
         );
+        assert!(failed["checks"][0]["execution"]["started_at_ms"].is_null());
     }
 
     #[test]

@@ -22,6 +22,16 @@ location, fingerprints, counts, raw report digest, command evidence, and
 completeness. Exit code and report content are evaluated together; an accepted
 producer exit code cannot override a fatal or incomplete report.
 
+Declared report and project-output files must not overlap checked snapshot
+inputs. Normalized path conflicts, including `./` aliases and baseline outputs,
+are rejected before report preparation changes files; `doctor` reports the
+corresponding current or baseline conflict. A stdout report's path is only an
+evidence label and does not reserve a writable file. Input integrity is verified
+after tool probes and report preparation, before the producer starts. Generated
+outputs from earlier commands are still cleared, so each producer must supply
+fresh reports. Keep generated reports outside checked inputs, for example in an
+ignored build directory.
+
 Test counts and selected coverage-line counts contribute to a check's
 `matched_entities`. Each addition must fit the runtime's unsigned counter;
 overflow makes the check incomplete instead of wrapping or panicking. Earlier

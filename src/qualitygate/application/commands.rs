@@ -179,13 +179,6 @@ async fn execute_checked(
             return result;
         }
     };
-    if let Err(error) = inputs.verify().await {
-        result.block(
-            ExecutionStatus::Blocked,
-            format!("Tool version probes changed checked inputs: {error:#}"),
-        );
-        return result;
-    }
     if let Err(error) = async {
         let current = runner::identity::executable(&check.argv[0], &cwd).await?;
         if current.path != executable.path || current.digest != executable.digest {
@@ -198,8 +191,17 @@ async fn execute_checked(
         result.block(ExecutionStatus::ToolError, format!("{error:#}"));
         return result;
     }
-    if let Err(error) = super::generated_reports::prepare(check, workspace, false).await {
+    if let Err(error) =
+        super::generated_reports::prepare(check, workspace, &snapshot.files, false).await
+    {
         result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+        return result;
+    }
+    if let Err(error) = inputs.verify().await {
+        result.block(
+            ExecutionStatus::Blocked,
+            format!("Tool probes or report preparation changed checked inputs: {error:#}"),
+        );
         return result;
     }
     let remaining = deadline

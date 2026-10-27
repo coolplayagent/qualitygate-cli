@@ -107,6 +107,27 @@ pub(super) async fn inspect(
                 vec![command.id.clone()],
             ));
         }
+        for (baseline, files, code) in [
+            (false, &snapshot.files, "command.output_overwrites_input"),
+            (
+                true,
+                &snapshot.base_files,
+                "command.baseline_output_overwrites_input",
+            ),
+        ] {
+            if (!baseline
+                || command
+                    .reports
+                    .iter()
+                    .any(|report| report.mode.needs_baseline()))
+                && let Err(error) =
+                    super::generated_reports::validate_outputs(command, files, baseline)
+            {
+                report
+                    .diagnostics
+                    .push(diagnostic(code, &error, vec![command.id.clone()]));
+            }
+        }
         for tool in &command.tools {
             let mut probe = Probe {
                 id: tool.id.clone(),

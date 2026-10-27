@@ -120,6 +120,10 @@ COVERAGE-THRESHOLD-01：覆盖率阈值按配置值的规范化十进制表示�
 舍入而误放行；小数阈值相等时通过，可选分支与空测量集合语义保持一致。
 证据见 `domain::coverage::tests` 与 `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages`。
 
+OUTPUT-INPUT-01：规范化的报告与项目输出路径不能覆盖已选输入；当前与基线冲突必须在准备修改文件前
+拒绝，并在静态预检可见。stdout 报告路径仅作证据标签；前序命令生成的报告仍需清理重产。
+生产命令仅在工具探测和报告准备后输入完整性验证通过时启动。证据见 `tests/execution/preparation.rs`。
+
 ### 3.3 流程门禁
 
 | 功能 | 说明 |

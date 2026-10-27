@@ -283,8 +283,9 @@ fn zero_test_success_exit_and_stale_reports_cannot_pass() {
         missing["checks"][0]["execution"]["reason"]
             .as_str()
             .unwrap()
-            .contains("not produced")
+            .contains("would overwrite a checked input")
     );
+    assert!(missing["checks"][0]["execution"]["started_at_ms"].is_null());
 }
 
 #[cfg(unix)]

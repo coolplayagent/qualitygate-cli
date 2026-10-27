@@ -10,18 +10,43 @@ use crate::{
 use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, sync::Arc, time::Duration};
 
-pub(super) async fn prepare(check: &CommandCheck, workspace: &Path, baseline: bool) -> Result<()> {
-    let reports = check
+fn outputs(check: &CommandCheck, baseline: bool) -> impl Iterator<Item = &str> {
+    check
         .reports
         .iter()
         .filter(|report| !report.from_stdout)
-        .map(|report| {
+        .map(move |report| {
             if baseline {
                 report.baseline.as_deref().unwrap_or(&report.path)
             } else {
                 &report.path
             }
-        });
+        })
+        .chain(check.projects.iter().flat_map(|project| project.outputs()))
+}
+
+pub(super) fn validate_outputs(
+    check: &CommandCheck,
+    files: &BTreeMap<String, snapshot::File>,
+    baseline: bool,
+) -> Result<()> {
+    for name in outputs(check, baseline) {
+        let normalized = paths::relative(Path::new(name))?;
+        if files.contains_key(&normalized) {
+            bail!("Report output would overwrite a checked input: {name}");
+        }
+    }
+    Ok(())
+}
+
+pub(super) async fn prepare(
+    check: &CommandCheck,
+    workspace: &Path,
+    files: &BTreeMap<String, snapshot::File>,
+    baseline: bool,
+) -> Result<()> {
+    // Validate the entire inventory before creating directories or deleting files.
+    validate_outputs(check, files, baseline)?;
     for project in &check.projects {
         if let crate::config::ProjectSpec::Python(project) = project {
             let target = paths::confined(workspace, Path::new(&project.install_target))?;
@@ -41,8 +66,7 @@ pub(super) async fn prepare(check: &CommandCheck, workspace: &Path, baseline: bo
             .await?;
         }
     }
-    let projects = check.projects.iter().flat_map(|project| project.outputs());
-    for name in reports.chain(projects) {
+    for name in outputs(check, baseline) {
         let path = paths::confined(workspace, Path::new(name))?;
         match tokio::fs::remove_file(&path).await {
             Ok(()) => {}
@@ -154,7 +178,7 @@ async fn baseline(
             .context("Current analyzer version evidence is missing")?,
         &tools,
     )?;
-    prepare(check, workspace.path(), true).await?;
+    prepare(check, workspace.path(), &base.files, true).await?;
     inputs
         .verify()
         .await

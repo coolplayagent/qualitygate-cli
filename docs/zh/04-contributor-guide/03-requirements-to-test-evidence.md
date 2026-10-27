@@ -33,6 +33,7 @@
 | Maven、Python、兼容性、覆盖率与 SARIF | `tests/maven.rs`、`tests/python.rs`、`tests/compatibility.rs`、`tests/coverage.rs`、`tests/sarif.rs` 及显式 live 目标 |
 | REPORT-COUNT-01 测试与覆盖率报告累计计数的溢出检查、证据保留与依赖阻塞 | `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`；`tests/execution/report_counts.rs` |
 | COVERAGE-THRESHOLD-01 精确计数判定、小数阈值相等、可选分支与空测量集合 | `domain::coverage::tests`；`tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages` |
+| OUTPUT-INPUT-01 报告及项目输出与输入冲突时准备前拒绝、静态预检、基线保护、报告新鲜度与命令启动完整性 | `tests/execution/preparation.rs`；`tests/cli.rs` 与 `tests/execution.rs` 的旧报告回归 |
 | 诊断棘轮 | `tests/ratchet.rs`、各语言/工具 ratchet 目标、`tests/c_family_ratchet.rs` |
 
 ## Agent 与任务验收
