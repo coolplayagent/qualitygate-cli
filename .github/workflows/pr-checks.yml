@@ -55,7 +55,7 @@ jobs:
         run: ${{ matrix.command }}
       - name: Upload architecture dependency evidence
         if: always() && matrix.gate == 'architecture'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: architecture
           path: |
@@ -147,7 +147,7 @@ jobs:
         run: cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90 --lcov --output-path target/coverage.lcov
       - name: Upload coverage evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage
           path: target/coverage.lcov

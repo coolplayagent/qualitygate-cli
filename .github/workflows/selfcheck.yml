@@ -23,7 +23,7 @@ jobs:
         run: cargo run --locked -- selfcheck --format json > selfcheck-report.json
       - name: Preserve fixture assertions and execution gaps
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: selfcheck-${{ matrix.os }}
           path: selfcheck-report.json

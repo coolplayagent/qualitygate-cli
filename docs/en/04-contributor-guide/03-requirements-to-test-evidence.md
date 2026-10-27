@@ -68,6 +68,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 | Architecture, documentation, site, and Skill release | `tests/quality/architecture.rs`, `documentation.rs`, `site.rs`, `skill_package.rs` |
 | CI-NODE-01: Node 24 action runtime with explicit npm cache opt-out | `eslint-project` in `.github/workflows/pr-checks.yml` runs the real ESLint ratchet and repair test; `.github/workflows/release.yml` uses the same setup inputs. `tests/quality/skill_package.rs` validates release packaging; it does not execute publication. |
 | CI-WINDOWS-01: exhaustive Windows target partition within unchanged job budgets | `.github/workflows/pr-checks.yml` runs core targets and complementary integration globs in separate native jobs; compare per-target `cargo test ... -- --list` inventories with `--all-targets`, including ignored tests. All three jobs and PowerShell/Git Bash preflights must pass; cancellation remains incomplete. |
+| CI-ARTIFACT-01: Node 24 evidence uploads and static Pages delivery | `tests/quality/site.rs::pages_workflow_deploys_only_the_static_site_from_main` binds the site path and hidden-file exclusion; `tests/quality/skill_package.rs` checks packaging. Actual architecture/coverage uploads, three-platform `.github/workflows/selfcheck.yml` artifacts and `.github/workflows/pages.yml` deployment require separate execution evidence. |
 
 Rule regression tests retain positive, negative, malformed-input, boundary,
 and incomplete-evidence cases. Report-adapter tests separately cover parser

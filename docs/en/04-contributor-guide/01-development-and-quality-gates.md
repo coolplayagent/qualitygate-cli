@@ -59,6 +59,14 @@ whose action runtime is Node 24, and select Node 24 for their tools. Both set
 dependencies are installed by the temporary fixture or global CLI step.
 See the [upstream migration notes](https://github.com/actions/setup-node/blob/v7/README.md).
 
+Architecture, coverage and full-selfcheck evidence use `actions/upload-artifact@v6`,
+matching the release workflow's Node 24 runtime. Missing evidence still fails
+uploads, including uploads after a failed check. The static Pages workflow uses
+`configure-pages@v6`, `upload-pages-artifact@v5` and `deploy-pages@v5`;
+its upload keeps `path: site` and explicitly excludes hidden files. Validate
+the site/package contracts locally and inspect the actual artifact and Pages
+workflow results separately; local tests do not prove remote upload or deployment.
+
 Every behavior change updates its relevant documentation and requirement-to-test
 evidence. Cover pass, violation, incomplete execution, timeout, policy change,
 and snapshot mismatch where applicable. Never weaken a failing check or its test

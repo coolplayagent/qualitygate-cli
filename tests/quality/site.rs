@@ -59,8 +59,15 @@ fn pages_workflow_deploys_only_the_static_site_from_main() {
     );
     assert_eq!(parsed["permissions"]["pages"], "write");
     assert_eq!(parsed["permissions"]["id-token"], "write");
-    assert!(workflow.contains("actions/configure-pages@v5"));
-    assert!(workflow.contains("actions/upload-pages-artifact@v4"));
-    assert!(workflow.contains("actions/deploy-pages@v4"));
-    assert!(workflow.contains("path: site"));
+    assert!(workflow.contains("actions/configure-pages@v6"));
+    assert!(workflow.contains("actions/upload-pages-artifact@v5"));
+    assert!(workflow.contains("actions/deploy-pages@v5"));
+    let upload = parsed["jobs"]["deploy"]["steps"]
+        .as_sequence()
+        .unwrap()
+        .iter()
+        .find(|step| step["uses"] == "actions/upload-pages-artifact@v5")
+        .unwrap();
+    assert_eq!(upload["with"]["path"], "site");
+    assert_eq!(upload["with"]["include-hidden-files"], false);
 }

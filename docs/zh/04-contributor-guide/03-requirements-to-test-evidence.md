@@ -64,6 +64,7 @@
 | --- | --- |
 | CI-NODE-01：Node 24 action 运行时，显式关闭 npm 自动缓存 | `.github/workflows/pr-checks.yml` 的 `eslint-project` 实际执行 ESLint ratchet 与修复测试；`.github/workflows/release.yml` 使用相同 setup 输入。`tests/quality/skill_package.rs` 验证发布打包，不执行发布。 |
 | CI-WINDOWS-01：在原有作业预算内完整分组 Windows 目标 | `.github/workflows/pr-checks.yml` 在原生作业分别执行核心目标与互补的集成 glob；逐目标比较各组与 `--all-targets` 的 `cargo test ... -- --list` 清单，包含忽略测试。三组与 PowerShell/Git Bash 预检均须通过，取消仍属未完成。 |
+| CI-ARTIFACT-01：Node 24 证据上传与静态 Pages 交付 | `tests/quality/site.rs::pages_workflow_deploys_only_the_static_site_from_main` 绑定站点路径及隐藏文件排除；`tests/quality/skill_package.rs` 校验打包。架构/覆盖率实际上传、`.github/workflows/selfcheck.yml` 三平台产物及 `.github/workflows/pages.yml` 部署需分别保留执行证据。 |
 | 架构、文档、站点与 Skill 发布 | `tests/quality/architecture.rs`、`documentation.rs`、`site.rs`、`skill_package.rs` |
 
 规则回归测试保留正例、反例、非法输入、边界和未完成证据。报告适配器分别测试解析归一化与真实

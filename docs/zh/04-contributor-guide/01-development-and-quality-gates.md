@@ -49,6 +49,12 @@ ESLint 验收与 ClawHub 发布步骤使用 action 运行时为 Node 24 的 `act
 缓存的行为；依赖由临时夹具或全局 CLI 安装步骤准备。
 版本变化见[上游迁移说明](https://github.com/actions/setup-node/blob/v7/README.md)。
 
+架构、覆盖率和完整 selfcheck 证据使用 `actions/upload-artifact@v6`，与发布工作流的 Node 24
+运行时一致。检查失败后的证据上传仍执行，证据文件缺失仍使上传失败。静态 Pages 工作流使用
+`configure-pages@v6`、`upload-pages-artifact@v5` 和 `deploy-pages@v5`；上传保留 `path: site`，
+并显式排除隐藏文件。本地验证站点/打包契约后，还需分别检查实际 artifact 和 Pages 工作流结果；
+本地测试不能证明远程上传或部署成功。
+
 每项行为变化都要更新相关文档和需求—测试证据。按适用情况覆盖通过、违规、未完成、超时、策略变化和
 快照不匹配。绝不能削弱失败检查或测试来宣称完成。
 
