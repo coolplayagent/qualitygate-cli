@@ -34,6 +34,24 @@ also bound report bytes, selected files, source lines, diagnostics, parser work,
 subprocess time, and concurrency. The effective report records which limit was
 hit. Increasing a caller budget does not authorize broader paths or policy.
 
+## Diagnostic output
+
+Each check retains at most 10,000 diagnostic records and 8 MiB of compact UTF-8
+JSON in its diagnostics array, including escaped strings and replay arguments.
+Project rules v1/v2/v3 share this allowance across file inventory, fixed
+assertions, dependency findings and expressions. Records are charged before
+being retained. The application checks the allowance again when binding replay
+arguments, on its blocking worker pool.
+
+Exhaustion leaves the affected check incomplete and preserves the retained
+prefix of findings. `metadata.diagnostic_output` identifies the limit, phase
+and retained count; it does not claim a complete count of omitted violations.
+An earlier timeout or execution-gap reason is preserved. Narrow the check's
+scope or shorten repeated repair instructions, then rerun the original scope
+after resolving the findings. Existing policy authority and required-check
+semantics still apply. Clause coverage uses the final bounded check results;
+a diagnostic-output gap remains pending coverage.
+
 ## Failure boundaries
 
 Path confinement rejects traversal and symlink escapes. Git conflicts,

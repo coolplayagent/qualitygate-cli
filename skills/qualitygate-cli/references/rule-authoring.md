@@ -165,3 +165,12 @@ triggered entities, not retained marker obligations. Keep text-match claims
 separate from semantic ownership or actual test effectiveness. Validate the
 schema and source binding and exercise compliant, violating and incomplete
 fixtures; a changed source hash alone is not a renewed review.
+
+## Diagnostic budgets
+
+Project rules v1/v2/v3 retain at most 10,000 diagnostics and 8 MiB of compact UTF-8 diagnostic
+JSON per check, including replay arguments and string escaping. File inventory,
+fixed assertions, dependency findings and expressions share the allowance.
+Exhaustion preserves available findings and makes the check incomplete;
+`metadata.diagnostic_output` identifies the limit and evaluation/recheck phase.
+Keep repair instructions concise and rerun the original scope after repairs.

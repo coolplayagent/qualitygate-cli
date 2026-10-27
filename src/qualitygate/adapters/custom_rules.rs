@@ -1,6 +1,6 @@
-//! Finite DSL version 1 over snapshot, Git and language facts.
+//! Versioned project rules over snapshot, Git and language facts.
 
-use super::{markers, rules::diagnostic, syntax};
+use super::{diagnostic_budget, markers, rules::diagnostic, syntax};
 use crate::{
     config::{CustomRule, RuleSetting},
     domain::*,
@@ -108,14 +108,12 @@ fn run(
     facts: &super::facts::RuleFacts<'_>,
     result: &mut CheckResult,
 ) -> Result<()> {
+    let mut output = diagnostic_budget::Budget::default();
     let mut budget = (rule.schema_version == 3).then(selection::Budget::new);
     requirements(rule, snapshot, facts)?;
     let projects = facts.projects;
     let subjects = selection::collect(rule, snapshot, facts, false, budget.as_mut())?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
-    if rule.when.entity == "file" && rule.when.change.as_deref() == Some("all") {
-        file_inventory::assert(rule, snapshot, &subjects, result)?;
-    }
     result.matched_entities = subjects.len();
     result.metadata.insert(
         "retained_marker_entities".into(),
@@ -137,6 +135,9 @@ fn run(
         "requires_capabilities".into(),
         serde_json::json!(rule.requires_capabilities),
     );
+    if rule.when.entity == "file" && rule.when.change.as_deref() == Some("all") {
+        file_inventory::assert(rule, snapshot, &subjects, result, &mut output)?;
+    }
     let name = rule
         .then
         .name_pattern
@@ -222,9 +223,9 @@ fn run(
             }
         }
         for (kind, message) in violations {
-            result.diagnostics.push(diagnostic(&rule.id, subject.file.as_deref(), subject.range.clone(), message,
+            output.push(result, diagnostic(&rule.id, subject.file.as_deref(), subject.range.clone(), message,
                 serde_json::json!({"symbol":subject.identity,"assertion":kind,"entity":rule.when.entity,"declaration_only":rule.then.require_marker}),
-                &rule.fix, &format!("{}:{kind}", subject.identity)));
+                &rule.fix, &format!("{}:{kind}", subject.identity)))?;
         }
     }
     if rule.then.require_dependency.is_some() {
@@ -235,32 +236,36 @@ fn run(
             &subjects,
             result,
             facts.git_trailers,
+            &mut output,
         )?;
     }
     if !(rule.when.entity == "file" && rule.when.change.as_deref() == Some("all"))
         && let Some(minimum) = rule.then.min_count
         && triggered < minimum
     {
-        result.diagnostics.push(diagnostic(&rule.id, None, None,
+        output.push(result, diagnostic(&rule.id, None, None,
             format!("{triggered} matching entities is below min_count {minimum}"),
             serde_json::json!({"assertion":"min_count", "count":triggered,"limit":minimum,"entity":rule.when.entity}),
-            &rule.fix, "min_count"));
+            &rule.fix, "min_count"))?;
     }
     if let Some(maximum) = rule.then.max_count
         && triggered > maximum
     {
-        result.diagnostics.push(diagnostic(
-            &rule.id,
-            None,
-            None,
-            format!(
-                "{} matching entities exceeds max_count {maximum}",
-                triggered
+        output.push(
+            result,
+            diagnostic(
+                &rule.id,
+                None,
+                None,
+                format!(
+                    "{} matching entities exceeds max_count {maximum}",
+                    triggered
+                ),
+                serde_json::json!({"count":triggered,"maximum":maximum,"entity":rule.when.entity}),
+                &rule.fix,
+                "max_count",
             ),
-            serde_json::json!({"count":triggered,"maximum":maximum,"entity":rule.when.entity}),
-            &rule.fix,
-            "max_count",
-        ));
+        )?;
     }
     if rule.schema_version == 3 {
         expression_v3::evaluate(
@@ -270,6 +275,7 @@ fn run(
             &subjects,
             result,
             budget.as_mut().expect("v3 acquisition budget"),
+            &mut output,
         )?;
     } else if let Some(expression) = &rule.expression {
         let entities: Vec<_> = subjects
@@ -290,15 +296,19 @@ fn run(
             },
         )?;
         if !outcome.passed {
-            result.diagnostics.push(diagnostic(
-                &rule.id,
-                None,
-                None,
-                "Typed expression did not hold for the complete selected entity collection".into(),
-                serde_json::json!({"assertion":"expression","outcome":outcome}),
-                &rule.fix,
-                "expression",
-            ));
+            output.push(
+                result,
+                diagnostic(
+                    &rule.id,
+                    None,
+                    None,
+                    "Typed expression did not hold for the complete selected entity collection"
+                        .into(),
+                    serde_json::json!({"assertion":"expression","outcome":outcome}),
+                    &rule.fix,
+                    "expression",
+                ),
+            )?;
         }
         result
             .metadata
@@ -368,6 +378,7 @@ fn dependencies(
     subjects: &[Subject],
     result: &mut CheckResult,
     git: Option<&super::git_trailers::GitFacts>,
+    output: &mut diagnostic_budget::Budget,
 ) -> Result<()> {
     let required = rule
         .then
@@ -486,10 +497,10 @@ fn dependencies(
             )
         };
         if !project.has_test_dependency(group, &artifact) {
-            result.diagnostics.push(diagnostic(&rule.id, Some(&path), range,
+            output.push(result, diagnostic(&rule.id, Some(&path), range,
                 format!("Required test dependency {group}:{artifact} is not declared and resolved in the test environment of {}", project.coordinate),
                 serde_json::json!({"assertion":"require_dependency", "symbol":symbol, "project":project.coordinate, "manifest":project.manifest, "producer":project.producer_check, "group":group,"artifact":required.artifact}),
-                &rule.fix, &format!("{symbol}:require_dependency")));
+                &rule.fix, &format!("{symbol}:require_dependency")))?;
         }
     }
     Ok(())

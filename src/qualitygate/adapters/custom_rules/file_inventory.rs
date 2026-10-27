@@ -1,7 +1,7 @@
 //! Explicit file contracts over captured inputs, including unchanged files.
 
 use super::{CustomRule, Result, Snapshot, Subject, diagnostic, syntax};
-use crate::domain::CheckResult;
+use crate::{adapters::diagnostic_budget, domain::CheckResult};
 use anyhow::bail;
 use serde_json::json;
 use std::time::{Duration, Instant};
@@ -99,6 +99,7 @@ pub(super) fn assert(
     snapshot: &Snapshot,
     subjects: &[Subject],
     result: &mut CheckResult,
+    output: &mut diagnostic_budget::Budget,
 ) -> Result<()> {
     measure(
         rule,
@@ -106,6 +107,7 @@ pub(super) fn assert(
         subjects,
         result,
         Instant::now() + Duration::from_secs(30),
+        output,
     )
 }
 
@@ -115,6 +117,7 @@ fn measure(
     subjects: &[Subject],
     result: &mut CheckResult,
     deadline: Instant,
+    output: &mut diagnostic_budget::Budget,
 ) -> Result<()> {
     deadline_check(deadline)?;
     let mut words = 0usize;
@@ -127,15 +130,18 @@ fn measure(
         if let Some(maximum) = rule.then.max_lines
             && count > maximum
         {
-            result.diagnostics.push(diagnostic(
-                &rule.id,
-                subject.file.as_deref(),
-                None,
-                format!("File has {count} lines; max_lines is {maximum}"),
-                json!({"assertion":"max_lines", "count":count,"maximum":maximum}),
-                &rule.fix,
-                "max_lines",
-            ));
+            output.push(
+                result,
+                diagnostic(
+                    &rule.id,
+                    subject.file.as_deref(),
+                    None,
+                    format!("File has {count} lines; max_lines is {maximum}"),
+                    json!({"assertion":"max_lines", "count":count,"maximum":maximum}),
+                    &rule.fix,
+                    "max_lines",
+                ),
+            )?;
         }
     }
     for (assertion, count, limit, fails) in [
@@ -157,31 +163,37 @@ fn measure(
         ),
     ] {
         if fails {
-            result.diagnostics.push(diagnostic(
-                &rule.id,
-                None,
-                None,
-                format!(
-                    "File inventory {assertion} failed: observed {count}, limit {}",
-                    limit.unwrap()
+            output.push(
+                result,
+                diagnostic(
+                    &rule.id,
+                    None,
+                    None,
+                    format!(
+                        "File inventory {assertion} failed: observed {count}, limit {}",
+                        limit.unwrap()
+                    ),
+                    json!({"assertion":assertion,"count":count,"limit":limit}),
+                    &rule.fix,
+                    assertion,
                 ),
-                json!({"assertion":assertion,"count":count,"limit":limit}),
-                &rule.fix,
-                assertion,
-            ));
+            )?;
         }
     }
     for path in &rule.then.required_paths {
         if !snapshot.files.contains_key(path) {
-            result.diagnostics.push(diagnostic(
-                &rule.id,
-                Some(path),
-                None,
-                format!("Required file is missing from the selected snapshot: {path}"),
-                json!({"assertion":"required_paths","path":path}),
-                &rule.fix,
-                "required_paths",
-            ));
+            output.push(
+                result,
+                diagnostic(
+                    &rule.id,
+                    Some(path),
+                    None,
+                    format!("Required file is missing from the selected snapshot: {path}"),
+                    json!({"assertion":"required_paths","path":path}),
+                    &rule.fix,
+                    "required_paths",
+                ),
+            )?;
         }
     }
     result.metadata.insert("file_inventory".into(), json!({
@@ -232,7 +244,8 @@ mod tests {
                 &snapshot,
                 &[],
                 &mut CheckResult::pending("inventory", true, Severity::Error),
-                expired
+                expired,
+                &mut diagnostic_budget::Budget::default()
             )
             .is_err()
         );

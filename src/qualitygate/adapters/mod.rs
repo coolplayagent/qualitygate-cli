@@ -4,6 +4,7 @@ pub mod attestation;
 mod builtin_conventions;
 pub mod compatibility;
 pub mod custom_rules;
+pub mod diagnostic_budget;
 mod entity_changes;
 pub mod facts;
 pub mod git_trailers;

@@ -443,25 +443,6 @@ async fn check_prepared(
     {
         invalid.push(format!("Active policy authorization is invalid: {error:#}"));
     }
-    if !plan.constraints.is_empty() {
-        let (constraints, snapshot, policy) = (
-            plan.constraints.clone(),
-            Arc::clone(&snapshot),
-            policy.clone(),
-        );
-        results = tokio::task::spawn_blocking(move || {
-            let coverage = constraint_coverage::evaluate(
-                &constraints,
-                &constraint_bindings,
-                &snapshot,
-                &policy,
-                &results,
-            )?;
-            results.push(coverage);
-            Ok::<_, anyhow::Error>(results)
-        })
-        .await??;
-    }
     let recheck = recheck_argv.unwrap_or_else(|| {
         recheck(
             &options,
@@ -473,10 +454,35 @@ async fn check_prepared(
             },
         )
     });
-    for result in &mut results {
-        for diagnostic in &mut result.diagnostics {
-            diagnostic.recheck.argv = recheck.clone();
+    let diagnostic_recheck = recheck.clone();
+    results = tokio::task::spawn_blocking(move || {
+        for result in &mut results {
+            crate::adapters::diagnostic_budget::attach_recheck(result, &diagnostic_recheck);
         }
+        results
+    })
+    .await?;
+    // Clause evidence must observe any incompleteness introduced by output bounds.
+    if !plan.constraints.is_empty() {
+        let (constraints, snapshot, policy, recheck) = (
+            plan.constraints.clone(),
+            Arc::clone(&snapshot),
+            policy.clone(),
+            recheck.clone(),
+        );
+        results = tokio::task::spawn_blocking(move || {
+            let mut coverage = constraint_coverage::evaluate(
+                &constraints,
+                &constraint_bindings,
+                &snapshot,
+                &policy,
+                &results,
+            )?;
+            crate::adapters::diagnostic_budget::attach_recheck(&mut coverage, &recheck);
+            results.push(coverage);
+            Ok::<_, anyhow::Error>(results)
+        })
+        .await??;
     }
     let summary = Summary::from_checks(&results);
     let gate = evaluate(&results, &plan.required, &invalid);

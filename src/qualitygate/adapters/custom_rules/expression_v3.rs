@@ -12,6 +12,7 @@ pub(super) fn evaluate(
     primary: &[Subject],
     result: &mut CheckResult,
     budget: &mut selection::Budget,
+    output: &mut diagnostic_budget::Budget,
 ) -> Result<()> {
     budget.check()?;
     let mut owned = BTreeMap::new();
@@ -52,15 +53,18 @@ pub(super) fn evaluate(
         .ok_or_else(|| anyhow::anyhow!("Missing v3 expression"))?;
     let outcome = operators_v3::evaluate(expression, &collections)?;
     if !outcome.passed {
-        result.diagnostics.push(diagnostic(
-            &rule.id,
-            None,
-            None,
-            "Typed expression did not hold for the complete named collections".into(),
-            serde_json::json!({"assertion":"expression","outcome":outcome}),
-            &rule.fix,
-            "expression",
-        ));
+        output.push(
+            result,
+            diagnostic(
+                &rule.id,
+                None,
+                None,
+                "Typed expression did not hold for the complete named collections".into(),
+                serde_json::json!({"assertion":"expression","outcome":outcome}),
+                &rule.fix,
+                "expression",
+            ),
+        )?;
     }
     result
         .metadata

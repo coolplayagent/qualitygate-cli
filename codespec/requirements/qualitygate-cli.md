@@ -730,3 +730,9 @@ ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
 | TEST-ISOLATION-01 | CLI 集成测试的 Cargo 夹具独立使用物化快照内的构建目录，不继承父测试进程的 `CARGO_TARGET_DIR`，避免并行同名项目产物互串；父构建缓存保持不变，真实缺陷、修复、重构断言不得减弱；生产 CLI 的环境契约不变 | `tests/pilot_baseline.rs::cargo_fixture_builds_ignore_parent_target_directory`；[自检与 fixtures](../../docs/zh/04-contributor-guide/02-selfcheck-and-fixtures.md) |
+
+## 18. 规则诊断输出预算
+
+| 编号 | 要求 | 验收证据 |
+| --- | --- | --- |
+| RULE-OUTPUT-01 | 每项检查保留诊断最多 10,000 条及 UTF-8 紧凑 JSON 8 MiB，包含转义和复验参数；项目规则各版本的文件清单、固定断言、依赖和表达式共享预算，追加前计量；复验绑定在阻塞线程中复核；超限保留既有违规并保持未完成，不覆盖早先的执行缺口原因，不伪造省略总数；条款覆盖基于施加输出限制后的最终状态 | `adapters::diagnostic_budget::tests`；`tests/custom_rules/output_budget.rs`；[退出码与资源限制](../../docs/zh/02-reference/05-exit-codes-and-resource-limits.md) |

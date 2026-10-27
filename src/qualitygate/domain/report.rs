@@ -3,6 +3,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+/// Retained diagnostics per check; byte size uses compact UTF-8 JSON with replay arguments.
+pub const MAX_DIAGNOSTICS: usize = 10_000;
+pub const MAX_DIAGNOSTIC_BYTES: usize = 8 * 1024 * 1024;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SnapshotIdentity {
     #[serde(default, skip_serializing_if = "Option::is_none")]

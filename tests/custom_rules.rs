@@ -695,3 +695,6 @@ fn retained_marker_obligations_do_not_satisfy_minimum_added_test_count() {
         "min_count"
     );
 }
+
+#[path = "custom_rules/output_budget.rs"]
+mod output_budget;
