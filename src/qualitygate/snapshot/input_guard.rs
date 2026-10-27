@@ -243,6 +243,37 @@ mod tests {
         assert!(guard.verify().await.is_err());
     }
 
+    #[tokio::test]
+    async fn in_place_writes_cannot_be_hidden_by_restoring_contents_and_modified_time() {
+        use std::io::{Seek, SeekFrom, Write};
+
+        let (root, guard) = fixture().await;
+        let path = root.path().join("source.txt");
+        let original = std::fs::metadata(&path).unwrap();
+        {
+            let mut file = std::fs::File::options().write(true).open(&path).unwrap();
+            file.write_all(b"changed\n").unwrap();
+            file.seek(SeekFrom::Start(0)).unwrap();
+            file.write_all(b"initial\n").unwrap();
+            file.flush().unwrap();
+        }
+        // Close the writer before restoring its timestamp, and close that
+        // handle too before observing metadata or validating the guard.
+        std::fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(original.modified().unwrap()))
+            .unwrap();
+        let restored = std::fs::metadata(&path).unwrap();
+        assert_eq!(restored.modified().unwrap(), original.modified().unwrap());
+        assert_eq!(std::fs::read(&path).unwrap(), b"initial\n");
+        assert!(
+            guard.verify().await.is_err(),
+            "in-place writes with restored bytes and modification time reused input evidence"
+        );
+    }
+
     #[cfg(unix)]
     #[tokio::test]
     async fn executable_bit_and_symlink_replacement_are_invalid() {
