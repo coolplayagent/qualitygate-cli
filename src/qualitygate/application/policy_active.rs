@@ -25,7 +25,7 @@ fn authenticate(root: &Path) -> Result<Option<Authenticated>> {
     };
     if let Authorization::Rollback(approved) = &active.authority {
         let file = ProtectedFile::read(root, approved.trust_source.as_ref())?;
-        let trust: EvolutionTrust = crate::config::parse_yaml(&file.bytes)?;
+        let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&file.bytes)?;
         if trust.repository != dunce::canonicalize(root)?.to_string_lossy() {
             bail!("Rollback belongs to another repository");
         }
@@ -50,7 +50,7 @@ fn authenticate(root: &Path) -> Result<Option<Authenticated>> {
         unreachable!("rollback handled above")
     };
     let file = ProtectedFile::read(root, approved.trust_source.as_ref())?;
-    let trust: EvolutionTrust = crate::config::parse_yaml(&file.bytes)?;
+    let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&file.bytes)?;
     config::policy_acceptance::validate_trust(&trust)?;
     let subject = &approved.approval.subject;
     if trust.repository != dunce::canonicalize(root)?.to_string_lossy()

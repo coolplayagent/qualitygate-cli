@@ -74,8 +74,10 @@ path access have dedicated owners so capability review is explicit.
 `config::yaml_budget` owns the shared YAML expansion preflight. It visits values
 without materializing their collections or copying alias strings, before the
 existing duplicate-key and typed decoders. Configuration, tasks, rules and
-validation suites share this boundary; application policy-trust loading calls
-the configuration decoder inside its existing blocking work.
+validation suites share this boundary. Application policy-trust loading calls
+the public, typed `config::policy_acceptance::parse_trust` entry point inside its
+existing blocking work. This boundary also works when Bazel compiles owners as
+separate crates; the generic YAML decoder remains private to configuration.
 
 `domain::xml_budget` owns pure namespace-work accounting shared by configuration
 discovery and adapters. It consumes counts, bounds its scope stack and checks

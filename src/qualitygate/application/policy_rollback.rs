@@ -20,7 +20,7 @@ pub async fn subject(
     let evaluator = super::evaluator_digest().await?;
     tokio::task::spawn_blocking(move || {
         let file = ProtectedFile::read(&root, &trust_path)?;
-        let trust: EvolutionTrust = crate::config::parse_yaml(&file.bytes)?;
+        let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&file.bytes)?;
         config::policy_acceptance::validate_trust(&trust)?;
         policy_approval::validate_keys(&trust)?;
         let repository = dunce::canonicalize(&root)?.to_string_lossy().to_string();
@@ -43,7 +43,7 @@ pub async fn rollback(
     tokio::task::spawn_blocking(move || {
         let file = ProtectedFile::read(&root, &trust_path)?;
         let envelope = ProtectedFile::read(&root, &approval_path)?;
-        let trust: EvolutionTrust = crate::config::parse_yaml(&file.bytes)?;
+        let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&file.bytes)?;
         // Parse only after DSSE authentication; bind the authenticated request to current state below.
         let approval = policy_rollback::read_signed(&envelope.bytes, &trust)?;
         let expected = config::policy_rollback::subject(

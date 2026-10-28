@@ -69,7 +69,8 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 
 `config::yaml_budget` 统一负责 YAML 展开预检，在既有重复键和类型化解码前访问值，
 不物化集合，也不复制别名字符串。配置、任务、规则和验证套件共享该边界；application
-的策略信任加载在既有阻塞工作中调用配置解码器。
+的策略信任加载在既有阻塞工作中调用公开、类型化的 `config::policy_acceptance::parse_trust`。
+Bazel 将 owner 编译为独立 crate 时也使用该边界，通用 YAML 解码器保持在配置层内部。
 
 `adapters` 内的 `xml_document` 统一负责报告、Maven 模型和兼容性证据的有界 XML 树解析。
 调用方执行各自的字节预算，报告特有的 DOCTYPE 归一化留在 `reports`。迭代预检在树解析器比较

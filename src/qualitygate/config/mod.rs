@@ -56,7 +56,7 @@ pub const MAX_CONFIG_BYTES: usize = 1_048_576;
 
 /// Validate mapping uniqueness before deserializing typed maps, whose visitors
 /// would otherwise accept a later value for the same YAML key.
-pub(crate) fn parse_yaml<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
+pub(super) fn parse_yaml<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     let _: serde_norway::Value = yaml_budget::value(bytes)?;
     Ok(serde_norway::from_slice(bytes)?)
 }

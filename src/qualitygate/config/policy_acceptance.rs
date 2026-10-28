@@ -75,6 +75,12 @@ pub struct EvolutionTrust {
     pub max_age_seconds: u64,
 }
 
+/// Decode external trust with the shared YAML budgets and strict field checks.
+/// Signature verification and authorization remain in the consuming workflows.
+pub fn parse_trust(bytes: &[u8]) -> Result<EvolutionTrust> {
+    super::parse_yaml(bytes)
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct Stamp {
     modified: Option<SystemTime>,

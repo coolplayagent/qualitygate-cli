@@ -16,7 +16,7 @@ pub async fn subject(root: PathBuf, id: String, trust_path: PathBuf) -> Result<s
     let evaluator = super::evaluator_digest().await?;
     tokio::task::spawn_blocking(move || {
         let trust_file = ProtectedFile::read(&root, &trust_path)?;
-        let trust: EvolutionTrust = crate::config::parse_yaml(&trust_file.bytes)?;
+        let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&trust_file.bytes)?;
         let store = Store::open(&root)?;
         let subject = config::policy_promotion::subject(&store, &id, &dunce::canonicalize(&root)?.to_string_lossy(), false)?;
         config::policy_promotion::authorize_trust(&trust, &trust_file.bytes, &subject, &evaluator)?;
@@ -35,7 +35,7 @@ pub async fn approve(
     tokio::task::spawn_blocking(move || {
         let trust_file = ProtectedFile::read(&root, &trust_path)?;
         let envelope = ProtectedFile::read(&root, &approval_path)?;
-        let trust: EvolutionTrust = crate::config::parse_yaml(&trust_file.bytes)?;
+        let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&trust_file.bytes)?;
         let expected = config::policy_promotion::subject(
             &Store::open(&root)?,
             &id,
@@ -86,7 +86,7 @@ pub async fn promote(root: PathBuf, id: String) -> Result<serde_json::Value> {
             .context("Candidate has no trusted approval")?;
         let approved: ApprovedPolicy = store.record(reference, "policy_approval")?;
         let trust_file = ProtectedFile::read(&root, approved.trust_source.as_ref())?;
-        let trust: EvolutionTrust = crate::config::parse_yaml(&trust_file.bytes)?;
+        let trust: EvolutionTrust = config::policy_acceptance::parse_trust(&trust_file.bytes)?;
         let expected = config::policy_promotion::subject(
             &store,
             &id,

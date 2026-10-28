@@ -143,10 +143,7 @@ mod tests {
             vec!["*a"; 32].join(",")
         );
         let suite = crate::config::policy_acceptance::parse_suite(input.as_bytes()).unwrap_err();
-        let trust = crate::config::parse_yaml::<crate::config::policy_acceptance::EvolutionTrust>(
-            input.as_bytes(),
-        )
-        .unwrap_err();
+        let trust = crate::config::policy_acceptance::parse_trust(input.as_bytes()).unwrap_err();
         for error in [suite, trust] {
             assert!(error.to_string().contains("strings exceed 4194304 bytes"));
         }
