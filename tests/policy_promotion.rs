@@ -99,7 +99,11 @@ fn promote(fixture: &Fixture, code: i32) -> Value {
 fn external_yaml_trust_expansion_is_rejected_before_policy_store_access() {
     let repo = common::fixture();
     let external = tempfile::tempdir().unwrap();
-    let path = external.path().join("trust.yaml");
+    // macOS temporary roots may traverse /var -> /private/var. Supply a valid
+    // protected path so this regression reaches the YAML budget boundary.
+    let path = dunce::canonicalize(external.path())
+        .unwrap()
+        .join("trust.yaml");
     let input = format!(
         "repository: &a '{}'\nsuites: [{}]\n",
         "x".repeat(131_072),
