@@ -152,8 +152,8 @@ pub(super) fn sarif(text: &str) -> Result<Data> {
         bail!("SARIF contains no analysis runs");
     }
     let mut data = Data::default();
-    let mut expanded_bytes = 0;
-    let mut location_budget = 200_000;
+    let mut expanded = super::sarif_budget::Budget::new("results");
+    let mut location_budget = super::sarif_locations::Budget::new(200_000);
     for run in runs {
         object(run)?;
         let driver = &run["tool"]["driver"];
@@ -212,10 +212,7 @@ pub(super) fn sarif(text: &str) -> Result<Data> {
                 tool: Some(tool.into()),
                 locations,
             };
-            expanded_bytes += serde_json::to_vec(&normalized)?.len();
-            if expanded_bytes > 16 * 1024 * 1024 {
-                bail!("Expanded SARIF results exceed 16 MiB");
-            }
+            expanded.charge(&normalized)?;
             match kind {
                 "fail" => {}
                 "pass" | "notApplicable" | "informational" => {

@@ -871,6 +871,14 @@ OPERATOR-SET-01：v3 的去重与子集比较使用有界标量索引，在既�
 | CI-ARTIFACT-01 | 架构、覆盖率、selfcheck 及 Pages 使用 Node 24 action 运行时；检查失败仍上传证据，缺失产物不静默成功；Pages 保留静态站点路径、隐藏文件排除及既有 main 触发与权限边界 | `tests/quality/site.rs::pages_workflow_deploys_only_the_static_site_from_main`、`tests/quality/skill_package.rs`；PR Checks 与三平台 selfcheck 的实际上传记录；Pages 实际部署记录 |
 | CI-INVENTORY-01 | 仓库 full 策略与 CI 的集成测试由 Cargo 自动发现全部集成目标；单元目标保持独立，禁止通过测试名过滤漏掉回归；保留原有时限、功能选择及忽略测试的独立执行边界；仓库策略须与 Cargo 实际目标清单一致 | `tests/quality/gates.rs::documentation_repository_integration_gate_covers_cargo_targets`，在旧手工清单上失败、修复后通过；策略与 CI 的 `--list` 清单及实际执行结果；[开发门禁](../../docs/zh/04-contributor-guide/01-development-and-quality-gates.md) |
 
+SARIF-EXPANSION-01：SARIF 所有 run 共享 200,000 次引用步骤和 16 MiB 访问文本预算，
+重复逻辑名、原始/解析 URI 及 URI 基础标识在去重前累计；借用逻辑名，保留位置前计量
+紧凑 JSON，归一化结果通过有界序列化计数器维持既有 16 MiB 上限，避免先分配完整输出再拒绝。
+引用深度 32、每结果主位置 256 及报告输入限制继续有效。超限报告未完成，保留原始报告和
+策略/源输入，修复后可以恢复。证据见 `adapters::reports::json::tests`、
+`adapters::reports::sarif_budget::tests` 和
+`tests/sarif.rs::excessive_location_expansion_is_incomplete_preserves_inputs_and_recovers`。
+
 ## 18. 规则诊断输出预算
 
 | 编号 | 要求 | 验收证据 |

@@ -39,6 +39,7 @@
 | 规则类别、修改、候选、推广与生命周期 | `tests/rule_management.rs`、`tests/policy_categories.rs`、`tests/policy_candidates.rs`、`tests/policy_promotion.rs`、`tests/policy_lifecycle.rs` |
 | 文件契约与独立测试反例 | `tests/file_contracts.rs`、`tests/test_effectiveness.rs` |
 | Maven、Python、兼容性、覆盖率与 SARIF | `tests/maven.rs`、`tests/python.rs`、`tests/compatibility.rs`、`tests/coverage.rs`、`tests/sarif.rs` 及显式 live 目标 |
+| SARIF-EXPANSION-01：累计引用文本、借用逻辑名、有界位置保留与结果序列化 | `adapters::reports::json::tests`：重复/跨 run 逻辑引用、转义符号、重复 URI 表；`adapters::reports::sarif_budget::tests`：精确与转义 JSON 预算；`tests/sarif.rs::excessive_location_expansion_is_incomplete_preserves_inputs_and_recovers`：交付未完成、原始证据保留、输入不变及修复恢复 |
 | PYTHON-METADATA-01 安装元数据为普通文件、有界读取与未完成 producer 证据 | `application::python_install::tests`：精确 2 MiB 边界、超大文件、目录与符号链接隔离；`tests/execution/python_metadata.rs`：有界子进程验证 FIFO/socket/目录/超大产物、证据保留、依赖阻断及普通文件恢复；真实 pip 仍由 `tests/python.rs` 验证 |
 | REPORT-COUNT-01 测试与覆盖率报告累计计数的溢出检查、证据保留与依赖阻塞 | `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`；`tests/execution/report_counts.rs` |
 | JUNIT-EVIDENCE-01 共享套件/结果校验、普通报告可选元数据、矛盾报告保留与依赖阻塞 | `adapters::reports::tests::junit_validates_optional_counters_in_every_suite`、`junit_rejects_contradictory_outcomes_and_detached_records`、`junit_nested_summaries_count_each_case_once`；`adapters::reports::test_cases::tests`；`tests/execution/junit_counts.rs`：未完成与违规区分、原始字节/摘要保留及修复恢复 |

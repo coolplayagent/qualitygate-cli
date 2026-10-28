@@ -10,6 +10,7 @@ mod json;
 mod junit_validation;
 mod lcov;
 mod ruff_json;
+mod sarif_budget;
 mod sarif_locations;
 mod xml;
 mod xml_header;

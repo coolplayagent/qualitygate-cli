@@ -91,6 +91,12 @@ discovery and adapters. It consumes counts, bounds its scope stack and checks
 arithmetic; XML tokenization, tree parsing and profile-specific errors remain in
 the consuming owners.
 
+`adapters::reports::sarif_locations` owns reference-step, text-work and retained
+location budgets. It borrows logical names while resolving tables and charges
+locations before retention. `adapters::reports::sarif_budget` meters compact JSON
+through a counter with no filesystem access; normalized results use the same
+meter before append, avoiding an allocation merely to measure serialized size.
+
 Within `adapters`, `xml_document` owns bounded XML tree parsing for reports,
 Maven models and compatibility evidence. Callers enforce their byte budgets;
 report-specific DOCTYPE normalization stays in `reports`. Iterative preflight also

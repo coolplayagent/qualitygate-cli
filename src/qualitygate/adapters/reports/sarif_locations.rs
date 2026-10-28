@@ -11,6 +11,30 @@ use url::Url;
 const RELATIVE_ROOT: &str = "file:///__qualitygate_relative__/";
 const MAX_DEPTH: usize = 32;
 
+pub(super) struct Budget {
+    steps: usize,
+    text_bytes: usize,
+    retained: super::sarif_budget::Budget,
+}
+
+impl Budget {
+    pub(super) fn new(steps: usize) -> Self {
+        Self {
+            steps,
+            text_bytes: super::sarif_budget::MAX_BYTES,
+            retained: super::sarif_budget::Budget::new("locations"),
+        }
+    }
+
+    fn text(&mut self, text: &str) -> Result<()> {
+        self.text_bytes = self
+            .text_bytes
+            .checked_sub(text.len())
+            .context("SARIF location resolution text exceeds 16 MiB")?;
+        Ok(())
+    }
+}
+
 #[derive(PartialEq)]
 struct ResolvedUri {
     url: Url,
@@ -33,17 +57,23 @@ fn entry<'a>(run: &'a Value, table: &str, index: usize) -> Result<&'a Value> {
         .with_context(|| format!("SARIF {table} index is out of bounds"))
 }
 
-fn step(depth: usize, budget: &mut usize) -> Result<()> {
+fn step(depth: usize, budget: &mut Budget) -> Result<()> {
     if depth > MAX_DEPTH {
         bail!("SARIF location reference depth exceeds 32; cyclic or excessive references");
     }
-    *budget = budget
+    budget.steps = budget
+        .steps
         .checked_sub(1)
         .context("SARIF location resolution work budget exhausted")?;
     Ok(())
 }
 
-fn resolve(run: &Value, location: &Value, depth: usize, budget: &mut usize) -> Result<ResolvedUri> {
+fn resolve(
+    run: &Value,
+    location: &Value,
+    depth: usize,
+    budget: &mut Budget,
+) -> Result<ResolvedUri> {
     step(depth, budget)?;
     object(location)?;
     let referenced = index(location, "index")?
@@ -56,6 +86,7 @@ fn resolve(run: &Value, location: &Value, depth: usize, budget: &mut usize) -> R
         .transpose()?;
     let own = optional_text(location, "uri")?
         .map(|uri| {
+            budget.text(uri)?;
             if uri.len() > 16 * 1024 {
                 bail!("SARIF URI exceeds 16 KiB");
             }
@@ -76,6 +107,7 @@ fn resolve(run: &Value, location: &Value, depth: usize, budget: &mut usize) -> R
                 bail!("SARIF locations require portable file URIs");
             }
             let base = if let Some(id) = optional_text(location, "uriBaseId")? {
+                budget.text(id)?;
                 let bases = run
                     .get("originalUriBaseIds")
                     .context("SARIF URI base table is missing")?;
@@ -93,6 +125,7 @@ fn resolve(run: &Value, location: &Value, depth: usize, budget: &mut usize) -> R
             if url.as_str().len() > 16 * 1024 {
                 bail!("Resolved SARIF URI exceeds 16 KiB");
             }
+            budget.text(url.as_str())?;
             if url.scheme() != "file"
                 || url.host_str().is_some_and(|host| host != "localhost")
                 || url.query().is_some()
@@ -119,7 +152,7 @@ fn resolve(run: &Value, location: &Value, depth: usize, budget: &mut usize) -> R
     }
 }
 
-fn file(run: &Value, location: &Value, budget: &mut usize) -> Result<String> {
+fn file(run: &Value, location: &Value, budget: &mut Budget) -> Result<String> {
     let resolved = resolve(run, location, 0, budget)?;
     let decoded = percent_encoding::percent_decode_str(resolved.url.path()).decode_utf8()?;
     if decoded.contains(['\\', '\0', '\r', '\n']) {
@@ -145,10 +178,18 @@ fn file(run: &Value, location: &Value, budget: &mut usize) -> Result<String> {
     Ok(path)
 }
 
-fn logical(run: &Value, value: &Value, depth: usize, budget: &mut usize) -> Result<Option<String>> {
+fn logical<'a>(
+    run: &'a Value,
+    value: &'a Value,
+    depth: usize,
+    budget: &mut Budget,
+) -> Result<Option<&'a str>> {
     step(depth, budget)?;
     object(value)?;
-    let own = optional_text(value, "fullyQualifiedName")?.map(str::to_owned);
+    let own = optional_text(value, "fullyQualifiedName")?;
+    if let Some(text) = own {
+        budget.text(text)?;
+    }
     let referenced = index(value, "index")?
         .map(|index| {
             logical(
@@ -169,7 +210,7 @@ fn logical(run: &Value, value: &Value, depth: usize, budget: &mut usize) -> Resu
 pub(super) fn locations(
     run: &Value,
     issue: &Value,
-    budget: &mut usize,
+    budget: &mut Budget,
 ) -> Result<Vec<IssueLocation>> {
     if array(issue, "locations")?.len() > 256 {
         bail!("SARIF result exceeds 256 primary locations");
@@ -186,7 +227,7 @@ pub(super) fn locations(
         let symbol = if symbols.is_empty() {
             None
         } else if symbols.len() == 1 {
-            symbols.into_iter().next()
+            symbols.into_iter().next().map(str::to_owned)
         } else {
             Some(serde_json::to_string(&symbols)?)
         };
@@ -231,6 +272,7 @@ pub(super) fn locations(
             symbol,
         };
         if !result.contains(&location) {
+            budget.retained.charge(&location)?;
             result.push(location);
         }
     }

@@ -52,6 +52,89 @@ fn successful_runs_resolve_rule_messages_file_tables_and_uri_bases() {
 use std::path::Path;
 use url::Url;
 
+fn logical_document(symbol: &str, primary: usize, references: usize) -> Value {
+    let mut finding = issue();
+    finding["locations"] = json!((0..primary).map(|i| json!({
+        "logicalLocations": vec![json!({"index": 0}); references],
+        "physicalLocation": {"artifactLocation": {"uri": "src/a.rs"}, "region": {"startLine": i + 1}}
+    })).collect::<Vec<_>>());
+    let mut document = report(json!([finding]));
+    document["runs"][0]["logicalLocations"] = json!([{"fullyQualifiedName": symbol}]);
+    document
+}
+
+#[test]
+fn logical_reference_text_is_charged_before_deduplication_and_across_runs() {
+    let symbol = "x".repeat(1_000_000);
+    let control = parse_value(&logical_document(&symbol, 1, 16)).unwrap();
+    assert_eq!(control.issues[0].symbol.as_deref(), Some(symbol.as_str()));
+    for references in [17, 1_000] {
+        assert!(
+            parse_value(&logical_document(&symbol, 1, references))
+                .unwrap_err()
+                .to_string()
+                .contains("resolution text exceeds 16 MiB")
+        );
+    }
+    let mut document = logical_document(&symbol, 1, 9);
+    let second = document["runs"][0].clone();
+    document["runs"].as_array_mut().unwrap().push(second);
+    assert!(
+        parse_value(&document)
+            .unwrap_err()
+            .to_string()
+            .contains("resolution text exceeds 16 MiB")
+    );
+}
+
+#[test]
+fn expanded_locations_are_bounded_before_retaining_the_full_result() {
+    assert!(
+        parse_value(&logical_document(&"x".repeat(1_000_000), 256, 1))
+            .unwrap_err()
+            .to_string()
+            .contains("resolution text exceeds 16 MiB")
+    );
+    let mut document = logical_document(&"\u{0001}".repeat(65_536), 64, 1);
+    document["runs"][0]["logicalLocations"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"fullyQualifiedName": "tail"}));
+    for location in document["runs"][0]["results"][0]["locations"]
+        .as_array_mut()
+        .unwrap()
+    {
+        location["logicalLocations"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"index": 1}));
+    }
+    assert!(
+        parse_value(&document)
+            .unwrap_err()
+            .to_string()
+            .contains("Expanded SARIF locations exceed 16 MiB")
+    );
+}
+
+#[test]
+fn uri_reference_text_is_charged_even_when_locations_deduplicate() {
+    let mut finding = issue();
+    finding["locations"][0]["physicalLocation"]["artifactLocation"] = json!({"index": 0});
+    finding["locations"] = json!(vec![finding["locations"][0].clone(); 256]);
+    let mut document = report(json!([finding.clone()]));
+    document["runs"][0]["artifacts"] =
+        json!([{"location": {"uri": format!("{}/a.rs", "a".repeat(12_000))}}]);
+    assert_eq!(parse_value(&document).unwrap().issues[0].locations.len(), 1);
+    document["runs"][0]["results"] = json!(vec![finding; 3]);
+    assert!(
+        parse_value(&document)
+            .unwrap_err()
+            .to_string()
+            .contains("resolution text exceeds 16 MiB")
+    );
+}
+
 #[test]
 fn malformed_invocations_external_results_and_unresolved_analysis_are_incomplete() {
     for (key, value) in [
@@ -266,7 +349,14 @@ fn message_catalogs_and_expansion_are_bounded_and_not_silently_replaced() {
 fn location_resolution_budget_bounds_shared_references_and_expanded_paths() {
     let finding = issue();
     let value = report(json!([finding.clone()]));
-    assert!(super::super::sarif_locations::locations(&value["runs"][0], &finding, &mut 0).is_err());
+    assert!(
+        super::super::sarif_locations::locations(
+            &value["runs"][0],
+            &finding,
+            &mut super::super::sarif_locations::Budget::new(0)
+        )
+        .is_err()
+    );
     let mut finding = finding;
     finding["locations"][0]["physicalLocation"]["artifactLocation"] =
         json!({"uri":"a".repeat(16 * 1024 + 1)});

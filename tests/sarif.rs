@@ -294,3 +294,69 @@ fn result_kinds_and_producer_identity_do_not_hide_or_invent_violations() {
     fixture.input(&changed_tool);
     fixture.run(1);
 }
+
+#[test]
+fn excessive_location_expansion_is_incomplete_preserves_inputs_and_recovers() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.path().join("src/b.rs"), "changed\n").unwrap();
+    let config = std::fs::read(fixture.root.path().join("qualitygate.yaml")).unwrap();
+    for (primary, references, symbol) in [
+        (1, 1_000, "x".repeat(1_000_000)),
+        (256, 1, "x".repeat(1_000_000)),
+        (128, 1, "\u{0001}".repeat(65_536)),
+    ] {
+        let locations = (0..primary)
+            .map(|line| {
+                json!({
+                    "logicalLocations": vec![json!({"index": 0}); references],
+                    "physicalLocation": {"region": {"startLine": line + 1}}
+                })
+            })
+            .collect();
+        let mut result = finding("Completed analysis", locations);
+        result["kind"] = json!("pass");
+        let mut data = document(vec![result]);
+        data["runs"][0]["logicalLocations"] = json!([{"fullyQualifiedName": symbol}]);
+        fixture.input(&data);
+        let input = std::fs::read(fixture.root.path().join("input.json")).unwrap();
+        let output = report(
+            &cli(
+                fixture.root.path(),
+                &["check", "--worktree", "--format", "json"],
+            ),
+            2,
+        );
+        assert_eq!(output["gate"]["complete"], false);
+        assert_eq!(output["checks"][0]["verdict"], Value::Null);
+        assert!(
+            output["checks"][0]["execution"]["reason"]
+                .as_str()
+                .unwrap()
+                .contains("16 MiB")
+        );
+        assert!(
+            output["checks"][0]["execution"]["artifacts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|artifact| artifact["path"].as_str().unwrap().ends_with("report-0"))
+        );
+        assert_eq!(
+            std::fs::read(fixture.root.path().join("input.json")).unwrap(),
+            input
+        );
+        assert_eq!(
+            std::fs::read(fixture.root.path().join("qualitygate.yaml")).unwrap(),
+            config
+        );
+    }
+    fixture.input(&document(vec![]));
+    let repaired = report(
+        &cli(
+            fixture.root.path(),
+            &["check", "--worktree", "--format", "json"],
+        ),
+        0,
+    );
+    assert_eq!(repaired["gate"]["complete"], true);
+}

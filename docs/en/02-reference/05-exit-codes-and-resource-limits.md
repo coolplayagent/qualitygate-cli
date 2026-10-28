@@ -87,6 +87,18 @@ element name plus prefixed attribute names. Preflight charges `S * L`, plus
 refunding work. This conservative accounting bounds namespace amplification;
 it is not a wall-clock prediction or a replacement for the other XML limits.
 
+SARIF location resolution shares 200,000 reference steps and 16 MiB of visited
+text across all runs. Text includes logical names, source URIs, URI base IDs and
+resolved URIs; repeated references count again even when their locations later
+deduplicate. Reference depth remains limited to 32 and each result to 256 primary
+locations. Logical references borrow source strings until materialization.
+Retained locations and normalized results each have a cumulative 16 MiB compact
+JSON limit, including escaping. Locations are charged before append; results are
+serialized into a bounded counter instead of a temporary JSON allocation.
+Non-violation results also consume these budgets. Excessive expansion produces
+incomplete evidence and retains raw report artifacts for repair and rechecking;
+the budgets do not guarantee process memory or elapsed time.
+
 Built-in rule assets share a 256-file and 1 MiB limit across all packages. The
 byte allowance is charged against actual reads, including growth or regular
 files whose metadata understates their size. Each read is limited to the

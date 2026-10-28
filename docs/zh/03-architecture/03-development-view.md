@@ -67,6 +67,10 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 `domain::xml_budget` 负责配置发现与适配器共享的纯命名空间工作量计数，只接收计数、限制作用域
 栈并检查算术。XML token 化、树解析和各 profile 的错误语义仍归各自的消费层负责。
 
+`adapters::reports::sarif_locations` 负责引用步骤、文本工作量和保留位置预算，解析表引用时借用
+逻辑名称，位置保留前先计量。`adapters::reports::sarif_budget` 用无文件系统访问的计数器测量
+紧凑 JSON；归一化结果在追加前复用该计数器，避免仅为测量序列化大小而分配 JSON 副本。
+
 `config::yaml_budget` 统一负责 YAML 展开预检，在既有重复键和类型化解码前访问值，
 不物化集合，也不复制别名字符串。配置、任务、规则和验证套件共享该边界；application
 的策略信任加载在既有阻塞工作中调用公开、类型化的 `config::policy_acceptance::parse_trust`。
