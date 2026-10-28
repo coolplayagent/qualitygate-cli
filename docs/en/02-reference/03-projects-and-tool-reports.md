@@ -26,8 +26,9 @@ are read only from the materialized snapshot execution and have bounded size,
 file count, diagnostics, and parse time. Missing, stale, malformed, truncated,
 or snapshot-mismatched reports never pass silently.
 
-XML reports have a maximum element depth of 128, counting the root. An iterative
-token preflight enforces this before the recursive tree parser runs, so excessive
+JUnit, Checkstyle, PMD, SpotBugs, Cobertura and JaCoCo XML reports have a maximum
+element depth of 32, counting the root. An iterative token preflight enforces
+this before the recursive tree parser runs, so excessive
 nesting returns incomplete evidence instead of aborting the process. Comments,
 CDATA, processing instructions and escaped attribute values do not add depth.
 The existing 2 MiB file and 100,000-node limits also apply. This includes ordinary

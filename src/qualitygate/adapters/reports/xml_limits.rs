@@ -3,7 +3,9 @@
 use anyhow::{Context, Result, bail};
 use xmlparser::{ElementEnd, Token, Tokenizer};
 
-pub(super) const MAX_DEPTH: usize = 128;
+// The recursive parser's debug stack frames vary by platform; 128 levels
+// overflow on macOS. Leave headroom for smaller thread stacks.
+pub(super) const MAX_DEPTH: usize = 32;
 
 pub(super) fn parse(text: &str) -> Result<roxmltree::Document<'_>> {
     validate(text)?;
@@ -50,7 +52,7 @@ mod tests {
     fn xml_depth_counts_elements_without_counting_attributes_or_literal_markup() {
         let nested = |depth| format!("{}{}", "<a>".repeat(depth), "</a>".repeat(depth));
         assert!(validate(&nested(MAX_DEPTH)).is_ok());
-        for depth in [MAX_DEPTH + 1, 2_000, 50_000] {
+        for depth in [MAX_DEPTH + 1, 128, 2_000, 50_000] {
             assert!(
                 validate(&nested(depth))
                     .unwrap_err()

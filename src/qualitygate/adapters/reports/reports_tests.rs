@@ -100,22 +100,20 @@ fn junit_rejects_contradictory_outcomes_and_detached_records() {
 
 #[test]
 fn junit_nested_summaries_count_each_case_once() {
-    let input = |depth| {
+    let input = |element_depth| {
         format!(
             "{}<testcase/>{}",
-            "<testsuite tests='1' failures='0' errors='0' skipped='0'>".repeat(depth),
-            "</testsuite>".repeat(depth)
+            "<testsuite tests='1' failures='0' errors='0' skipped='0'>".repeat(element_depth - 1),
+            "</testsuite>".repeat(element_depth - 1)
         )
     };
-    let tests = parse(
-        ReportFormat::Junit,
-        input(xml_limits::MAX_DEPTH - 1).as_bytes(),
-    )
-    .unwrap()
-    .tests
-    .unwrap();
+    let tests = parse(ReportFormat::Junit, input(32).as_bytes())
+        .unwrap()
+        .tests
+        .unwrap();
     assert_eq!((tests.executed, tests.failures, tests.skipped), (1, 0, 0));
-    for depth in [xml_limits::MAX_DEPTH, 2_000] {
+    // Preserve the macOS abort case and the original 2,000-suite abort case.
+    for depth in [33, 128, 2_001] {
         assert!(
             parse(ReportFormat::Junit, input(depth).as_bytes())
                 .unwrap_err()
