@@ -7,11 +7,13 @@ mod eslint_json;
 mod golangci_json;
 mod jacoco;
 mod json;
+mod junit_validation;
 mod lcov;
 mod ruff_json;
 mod sarif_locations;
 mod xml;
 mod xml_header;
+mod xml_limits;
 
 use crate::config::ReportFormat;
 use anyhow::{Result, bail};

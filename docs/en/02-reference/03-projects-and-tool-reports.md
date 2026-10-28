@@ -26,6 +26,13 @@ are read only from the materialized snapshot execution and have bounded size,
 file count, diagnostics, and parse time. Missing, stale, malformed, truncated,
 or snapshot-mismatched reports never pass silently.
 
+XML reports have a maximum element depth of 128, counting the root. An iterative
+token preflight enforces this before the recursive tree parser runs, so excessive
+nesting returns incomplete evidence instead of aborting the process. Comments,
+CDATA, processing instructions and escaped attribute values do not add depth.
+The existing 2 MiB file and 100,000-node limits also apply. This includes ordinary
+and paired JUnit reports.
+
 The normalized result retains tool and rule IDs, severity, message, URI,
 location, fingerprints, counts, raw report digest, command evidence, and
 completeness. Exit code and report content are evaluated together; an accepted
@@ -55,6 +62,17 @@ overflow makes the check incomplete instead of wrapping or panicking. Earlier
 findings and raw report artifacts remain available, and dependent checks stay
 blocked until the producer supplies representable evidence. Debug and release
 builds apply the same rule.
+
+JUnit validates every supplied `tests`, `failures`, `errors` and `skipped`
+counter against the testcase records in that suite, including nested suites.
+Counters remain optional. A testcase must belong directly to a testsuite and
+have one outcome kind; multiple failure records count as one failed testcase.
+Contradictory counts or outcomes, duplicate errors/skips and detached outcome
+records make validation incomplete (exit 2), retain the raw report and block
+dependents. Consistent failing cases remain violations (exit 1 when all required
+checks complete; a blocked required dependent still yields exit 2). Ordinary JUnit
+still accepts missing file, classname, name and failure-type metadata; paired
+test-effectiveness evidence keeps its additional identity and source requirements.
 
 ## Coverage and static analysis
 

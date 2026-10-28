@@ -120,6 +120,16 @@ COVERAGE-THRESHOLD-01：覆盖率阈值按配置值的规范化十进制表示�
 舍入而误放行；小数阈值相等时通过，可选分支与空测量集合语义保持一致。
 证据见 `domain::coverage::tests` 与 `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages`。
 
+JUNIT-EVIDENCE-01：普通与配对 JUnit 共用套件计数和结果结构校验。每层可选 tests/failures/errors/
+skipped 必须与后代用例一致；结果种类冲突、重复 error/skipped、游离结果或非法父节点使验证
+未完成，保留原报告并阻塞依赖。同一用例可包含多个 failure，但只计为一个失败用例；一致的失败
+明细属于违规。普通报告不新增文件、类名、用例名或失败类型要求，配对证据继续保留独立身份要求。
+回归必须覆盖嵌套计数、深层套件、退出码 2/1/0、原始字节与摘要及修复后依赖恢复。
+
+XML-DEPTH-01：XML 工具报告（含配对 JUnit）在递归树解析前用迭代 token 检查限制元素深度为
+128，根元素计入；超限返回未完成并保留报告，不能导致栈溢出或进程中止。注释、CDATA、处理
+指令与转义属性不计为嵌套元素。回归覆盖精确边界、2,000/50,000 层、普通/配对解析及依赖阻塞。
+
 LCOV-SUMMARY-01：LCOV 的 `LF`、`LH`、`BRF` 或 `BRH` 与明细矛盾时，诊断必须包含对应 `SF`
 源文件、声明值和观测值；仍报告未完成并保留原始产物，不能忽略计数或用阈值掩盖矛盾。
 证据见 `adapters::reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 与

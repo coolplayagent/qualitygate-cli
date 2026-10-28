@@ -1,16 +1,10 @@
 use super::*;
 use anyhow::{Context, Result, bail};
-use roxmltree::{Document, Node};
+use roxmltree::Node;
 
 pub(super) fn parse(format: ReportFormat, text: &str) -> Result<Data> {
     let text = super::xml_header::normalize(format, text)?;
-    let document = Document::parse_with_options(
-        &text,
-        roxmltree::ParsingOptions {
-            nodes_limit: 100_000,
-            ..Default::default()
-        },
-    )?;
+    let document = super::xml_limits::parse(&text)?;
     let root = document.root_element();
     let mut data = Data::default();
     let valid_root = match format {
@@ -38,21 +32,21 @@ pub(super) fn parse(format: ReportFormat, text: &str) -> Result<Data> {
 }
 
 fn junit(root: Node<'_, '_>, data: &mut Data) -> Result<()> {
+    super::junit_validation::validate(root)?;
     let mut tests = Tests::default();
-    let cases: Vec<_> = root
+    for case in root
         .descendants()
         .filter(|node| node.has_tag_name("testcase"))
-        .collect();
-    for case in &cases {
-        if case.children().any(|node| node.has_tag_name("skipped")) {
+    {
+        let failures = super::junit_validation::outcomes(case)?;
+        if failures
+            .first()
+            .is_some_and(|node| node.has_tag_name("skipped"))
+        {
             tests.skipped += 1;
             continue;
         }
         tests.executed += 1;
-        let failures: Vec<_> = case
-            .children()
-            .filter(|node| node.has_tag_name("failure") || node.has_tag_name("error"))
-            .collect();
         if failures.is_empty() {
             continue;
         }
@@ -62,7 +56,7 @@ fn junit(root: Node<'_, '_>, data: &mut Data) -> Result<()> {
             locations: vec![],
             rule: "test-failure".into(),
             file: case.attribute("file").map(Into::into),
-            line: optional_number(*case, "line")?,
+            line: optional_number(case, "line")?,
             message: failures
                 .iter()
                 .map(|node| {
@@ -78,19 +72,6 @@ fn junit(root: Node<'_, '_>, data: &mut Data) -> Result<()> {
                 case.attribute("name").unwrap_or("")
             )),
         });
-    }
-    if let Some(total) = optional_number(root, "tests")?
-        && total != cases.len()
-    {
-        bail!("JUnit total does not match testcase records");
-    }
-    if root.descendants().any(|node| {
-        node.has_tag_name("error")
-            && node
-                .parent()
-                .is_some_and(|parent| !parent.has_tag_name("testcase"))
-    }) {
-        bail!("JUnit suite contains an execution error outside a test case");
     }
     data.tests = Some(tests);
     Ok(())

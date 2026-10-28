@@ -18,6 +18,139 @@ fn junit_counts_executed_tests_instead_of_skipped_and_surfaces_assertions() {
 }
 
 #[test]
+fn junit_validates_optional_counters_in_every_suite() {
+    let cases = "<testcase/><testcase><failure message='first'/><failure message='second'/></testcase><testcase><error/></testcase><testcase><skipped/></testcase>";
+    let counters = "tests='4' failures='1' errors='1' skipped='1'";
+    let valid = format!(
+        "<testsuites {counters}><testsuite tests='0'/><testsuite {counters}>{cases}</testsuite></testsuites>"
+    );
+    let data = parse(ReportFormat::Junit, valid.as_bytes()).unwrap();
+    let tests = data.tests.unwrap();
+    assert_eq!((tests.executed, tests.failures, tests.skipped), (3, 2, 1));
+    assert_eq!(data.issues.len(), 2);
+    assert_eq!(data.issues[0].message, "first; second");
+    assert!(data.issues.iter().all(|issue| issue.file.is_none()));
+
+    for (attribute, count) in [("tests", 4), ("failures", 1), ("errors", 1), ("skipped", 1)] {
+        for declared in [
+            (count - 1).to_string(),
+            (count + 1).to_string(),
+            "invalid".into(),
+            "-1".into(),
+            "18446744073709551616".into(),
+        ] {
+            let suite = format!("<testsuite {attribute}='{declared}'>{cases}</testsuite>");
+            for input in [
+                suite.clone(),
+                format!("<testsuites {counters}>{suite}</testsuites>"),
+                format!(
+                    "<testsuites {attribute}='{declared}'><testsuite>{cases}</testsuite></testsuites>"
+                ),
+            ] {
+                let error = parse(ReportFormat::Junit, input.as_bytes())
+                    .unwrap_err()
+                    .to_string();
+                assert!(error.contains(attribute), "{input}: {error}");
+                if let Ok(value) = declared.parse::<usize>() {
+                    assert!(error.contains(&format!("declared {value}, observed {count}")));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn junit_rejects_contradictory_outcomes_and_detached_records() {
+    for outcomes in [
+        "<failure/><skipped/>",
+        "<skipped/><error/>",
+        "<failure/><error/>",
+        "<error/><error/>",
+        "<skipped/><skipped/>",
+    ] {
+        let input = format!("<testsuite><testcase>{outcomes}</testcase></testsuite>");
+        assert!(
+            parse(ReportFormat::Junit, input.as_bytes())
+                .unwrap_err()
+                .to_string()
+                .contains("contradictory outcomes"),
+            "{input}"
+        );
+    }
+    for input in [
+        "<testsuite><failure/></testsuite>",
+        "<testsuite><error/></testsuite>",
+        "<testsuite><skipped/></testsuite>",
+        "<testsuite><testcase><testcase/></testcase></testsuite>",
+        "<testsuites><testcase/></testsuites>",
+        "<testsuite><properties><testsuite/></properties></testsuite>",
+        "<testsuite><testcase><properties><failure/></properties></testcase></testsuite>",
+    ] {
+        assert!(
+            parse(ReportFormat::Junit, input.as_bytes()).is_err(),
+            "{input}"
+        );
+    }
+    // Producer extension records describe earlier attempts, not the final outcome.
+    let rerun = b"<testsuite tests='1' failures='0'><testcase><flakyFailure/><rerunFailure/><system-out>retry succeeded</system-out></testcase></testsuite>";
+    let data = parse(ReportFormat::Junit, rerun).unwrap();
+    assert_eq!(data.tests.unwrap().failures, 0);
+    assert!(data.issues.is_empty());
+}
+
+#[test]
+fn junit_nested_summaries_count_each_case_once() {
+    let input = |depth| {
+        format!(
+            "{}<testcase/>{}",
+            "<testsuite tests='1' failures='0' errors='0' skipped='0'>".repeat(depth),
+            "</testsuite>".repeat(depth)
+        )
+    };
+    let tests = parse(
+        ReportFormat::Junit,
+        input(xml_limits::MAX_DEPTH - 1).as_bytes(),
+    )
+    .unwrap()
+    .tests
+    .unwrap();
+    assert_eq!((tests.executed, tests.failures, tests.skipped), (1, 0, 0));
+    for depth in [xml_limits::MAX_DEPTH, 2_000] {
+        assert!(
+            parse(ReportFormat::Junit, input(depth).as_bytes())
+                .unwrap_err()
+                .to_string()
+                .contains("nesting exceeds")
+        );
+    }
+}
+
+#[test]
+fn xml_reports_reject_excessive_nesting_before_tree_parsing() {
+    for (format, root) in [
+        (ReportFormat::Junit, "testsuite"),
+        (ReportFormat::Checkstyle, "checkstyle"),
+        (ReportFormat::Pmd, "pmd"),
+        (ReportFormat::Spotbugs, "BugCollection"),
+        (ReportFormat::Cobertura, "coverage"),
+        (ReportFormat::Jacoco, "report"),
+    ] {
+        let input = format!(
+            "<{root}>{}{}</{root}>",
+            "<nested>".repeat(2_000),
+            "</nested>".repeat(2_000)
+        );
+        assert!(
+            parse(format, input.as_bytes())
+                .unwrap_err()
+                .to_string()
+                .contains("nesting exceeds"),
+            "{format:?}"
+        );
+    }
+}
+
+#[test]
 fn static_xml_formats_keep_real_locations_and_reject_analyzer_errors() {
     let checkstyle = parse(ReportFormat::Checkstyle, br#"<checkstyle><file name="src/A.java"><error line="12" source="Naming" message="bad name"/></file></checkstyle>"#).unwrap();
     assert_eq!(checkstyle.issues[0].line, Some(12));

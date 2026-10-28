@@ -1,4 +1,6 @@
 mod common;
+#[path = "execution/junit_counts.rs"]
+mod junit_counts;
 #[path = "execution/output_aliases.rs"]
 mod output_aliases;
 #[path = "execution/preparation.rs"]
