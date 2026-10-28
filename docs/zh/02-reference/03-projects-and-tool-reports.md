@@ -54,6 +54,11 @@ SARIF 保留 run、工具版本、规则、result kind、消息、位置与 part
 不可变快照上重新运行相同分析器，再按配置比较 `(tool, rule)` 计数或稳定身份。抑制、缺失和仅基线
 存在的结果保持可区分。
 
+基线执行、输入验证或报告解析失败时，仍按原有字节限制采集当前文件与 stdout 报告并保留原始工件。
+不会把失败基线当作空基线进行比较：检查仍为未完成，依赖检查保持阻塞。若当前报告采集也失败，
+会同时保留采集错误与基线失败原因；错误发生前已成功采集的报告仍可查看。
+这一行为同时适用于 `ratchet` 与 `new_diagnostics` 检查。
+
 参考棘轮覆盖 Clippy、ESLint、golangci-lint、Ruff、GCC/Clang analyzer SARIF、Checkstyle、PMD 与
 SpotBugs。各 producer 的完成标志、文件清单、错误记录、路径映射和版本一致性属于完整性契约。
 

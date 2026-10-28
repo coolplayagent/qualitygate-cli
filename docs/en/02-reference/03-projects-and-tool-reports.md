@@ -84,6 +84,14 @@ locations, and partial fingerprints. A ratchet reruns the same analyzer against
 both immutable snapshots and compares `(tool, rule)` counts or stable identities
 as configured. Suppressed, absent, or baseline-only findings stay distinguishable.
 
+If baseline execution, input validation or report parsing fails, current file
+and stdout reports are still collected within the usual byte limits and retained
+as raw artifacts. They are not compared against an empty baseline: the check
+remains incomplete and dependents remain blocked. If current report collection
+also fails, its error is retained together with the baseline failure. Reports
+successfully collected before that error remain available. This applies to both
+`ratchet` and `new_diagnostics` checks.
+
 Reference ratchets cover Clippy, ESLint, golangci-lint, Ruff, GCC/Clang analyzer
 SARIF, Checkstyle, PMD, and SpotBugs. Their producer-specific completion markers,
 file inventories, error records, path mappings, and version agreement are part

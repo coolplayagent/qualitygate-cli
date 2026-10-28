@@ -77,10 +77,38 @@ pub(super) async fn collect(
         .iter()
         .any(|report| report.mode.needs_baseline())
     {
-        baseline(check, artifacts, snapshot, result).await?
+        baseline(check, artifacts, snapshot, result).await
     } else {
-        BTreeMap::new()
+        Ok(BTreeMap::new())
     };
+    let current = collect_current(
+        check,
+        workspace,
+        artifacts,
+        snapshot,
+        result,
+        stdout,
+        &mut baseline,
+    )
+    .await;
+    match (baseline, current) {
+        (Err(baseline), Err(current)) => Err(baseline.context(format!(
+            "Current report collection also failed: {current:#}"
+        ))),
+        (Err(baseline), Ok(_)) => Err(baseline),
+        (Ok(_), current) => current,
+    }
+}
+
+async fn collect_current(
+    check: &CommandCheck,
+    workspace: &Path,
+    artifacts: &Path,
+    snapshot: &Arc<Snapshot>,
+    result: &mut CheckResult,
+    stdout: &[u8],
+    baseline: &mut Result<BTreeMap<usize, Data>>,
+) -> Result<bool> {
     let mut findings = false;
     for (index, spec) in check.reports.iter().enumerate() {
         let bytes = if spec.from_stdout {
@@ -89,6 +117,11 @@ pub(super) async fn collect(
             read_report(workspace, &spec.path).await?
         };
         persist(artifacts, &format!("report-{index}"), &bytes, result).await?;
+        // Retain current evidence even when the independent baseline failed.
+        // The caller propagates that failure; no comparison uses an empty base.
+        let Ok(baseline) = baseline else {
+            continue;
+        };
         let previous = baseline.remove(&index);
         let effectiveness = check.test_effectiveness.is_some();
         let spec = spec.clone();

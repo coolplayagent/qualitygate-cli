@@ -125,6 +125,11 @@ LCOV-SUMMARY-01：LCOV 的 `LF`、`LH`、`BRF` 或 `BRH` 与明细矛盾时，�
 证据见 `adapters::reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 与
 `tests/coverage_llvm_live.rs::rust_lcov_reports_require_measured_branches_and_consistent_source_summaries`。
 
+RATCHET-EVIDENCE-01：基线失败不能丢失当前分析已生成且可采集的原始文件与 stdout 报告。
+`ratchet` 与 `new_diagnostics` 仍保持未完成并阻塞依赖，不使用空基线计算比较结果；当前采集也失败时
+须保留双方错误及此前已归档的报告，继续逐份有界读取。证据见
+`tests/ratchet.rs::ratchet_retains_current_file_and_stdout_reports_when_baseline_fails` 及同文件的基线失败回归。
+
 OUTPUT-INPUT-01：规范化的报告与项目输出路径不能覆盖已选输入；当前与基线冲突必须在准备修改文件前
 拒绝，并在静态预检可见。stdout 报告路径仅作证据标签；前序命令生成的报告仍需清理重产。
 生产命令仅在工具探测和报告准备后输入完整性验证通过时启动。证据见 `tests/execution/preparation.rs`。

@@ -44,6 +44,7 @@
 | OUTPUT-PATH-01 规范化输出名唯一、基线清单独立、合法别名保留与报告计数不重复 | `config::tests::report_output_names_are_unique_after_normalization_without_rewriting_policy` 及相邻基线/项目单元测试；`tests/execution/output_aliases.rs` |
 | SHARED-EXECUTION-01 基线派生范围绑定、不可变执行输入/摘要共享、独立工作区与输入替换检测 | `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`：基线/当前摘要绑定、创建时拒绝等长内容篡改及永久失败；`snapshot::input_guard::tests`；`tests/ratchet.rs`；`tests/compatibility.rs` |
 | 诊断棘轮 | `tests/ratchet.rs`、各语言/工具 ratchet 目标、`tests/c_family_ratchet.rs` |
+| RATCHET-EVIDENCE-01 基线失败后保留当前文件/stdout 报告、双方错误与依赖阻塞 | `tests/ratchet.rs::ratchet_retains_current_file_and_stdout_reports_when_baseline_fails`：两种依赖基线的模式、多份当前报告、组合失败与修复；`ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete`：基线执行及身份验证失败后的原始字节/摘要保留 |
 | INPUT-PROTECTION-01 Windows 共享读取、阻止原地写入与替换、属性永久失效、句柄数量限制及创建失败/释放时关闭 | `snapshot::input_guard::tests`：原地改写恢复反例、共享冲突、并存校验器、已有写入句柄与初始检查失败；`snapshot::tests`；`application::doctor_context::tests::exhausted_shared_budget_and_invalid_guard_never_start_another_probe`；`tests/selfcheck.rs`；`.github/workflows/windows-snapshot.yml` |
 | INPUT-PROTECTION-01 写入被拒绝保留输入已验证状态、非零退出码和原始共享冲突错误；实际属性变化使覆盖率、基线和成对测试执行失效 | `tests/coverage.rs::native_coverage_repairs_preserve_raw_reports_and_reject_inconsistent_or_absent_evidence`；`tests/ratchet.rs::ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete`；`tests/test_effectiveness.rs::execution_gaps_and_non_assertion_failures_never_establish_effectiveness` |
 

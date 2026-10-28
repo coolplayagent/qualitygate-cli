@@ -3,7 +3,7 @@ mod common;
 mod repository;
 use common::*;
 use serde_json::{Value, json};
-use std::process::Command;
+use std::{path::Path, process::Command};
 
 const DRIVER: &str = r#"
 fn main() {
@@ -35,6 +35,7 @@ fn main() {
     }
     std::fs::create_dir_all("target").unwrap();
     std::fs::copy("input.report", "target/report.json").unwrap();
+    print!("{}", std::fs::read_to_string("input.report").unwrap());
     if base && args[1] == "crash-base" { std::process::exit(9); }
 }
 "#;
@@ -110,6 +111,34 @@ impl Fixture {
     }
     fn run(&self, code: i32, args: &[&str]) -> Value {
         report(&repository::check(self.root.path(), args), code)
+    }
+    fn assert_current_reports(&self, value: &Value, indexes: &[usize]) {
+        let bytes = std::fs::read(self.root.path().join("input.report")).unwrap();
+        let identity = qualitygate::snapshot::digest(b"debt");
+        let artifacts = value["checks"][0]["execution"]["artifacts"]
+            .as_array()
+            .unwrap();
+        for index in indexes {
+            let name = format!(
+                "check-{}-report-{index}",
+                identity.trim_start_matches("sha256:")
+            );
+            let artifact = artifacts
+                .iter()
+                .find(|artifact| {
+                    Path::new(artifact["path"].as_str().unwrap())
+                        .file_name()
+                        .unwrap()
+                        == name.as_str()
+                })
+                .unwrap_or_else(|| panic!("Missing current report {index}: {value}"));
+            assert_eq!(
+                std::fs::read(artifact["path"].as_str().unwrap()).unwrap(),
+                bytes
+            );
+            assert_eq!(artifact["bytes"], bytes.len());
+            assert_eq!(artifact["digest"], qualitygate::snapshot::digest(&bytes));
+        }
     }
 }
 
@@ -193,6 +222,7 @@ fn ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete(
         fixture.policy["checks"][0]["argv"][1] = json!(mode);
         fixture.configure();
         let incomplete = fixture.run(2, &[]);
+        fixture.assert_current_reports(&incomplete, &[0]);
         assert!(incomplete["checks"][0]["verdict"].is_null());
         assert!(
             incomplete["checks"][0]["execution"]["reason"]
@@ -235,6 +265,7 @@ fn ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete(
         .push(json!("different"));
     fixture.configure();
     let mismatch = fixture.run(2, &[]);
+    fixture.assert_current_reports(&mismatch, &[0]);
     assert!(
         mismatch["checks"][0]["execution"]["reason"]
             .as_str()
@@ -243,6 +274,65 @@ fn ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete(
     );
     // Selected policy protects the mode and command just like other report checks.
     fixture.run(2, &["--policy-ref", "HEAD"]);
+}
+
+#[test]
+fn ratchet_retains_current_file_and_stdout_reports_when_baseline_fails() {
+    for mode in ["ratchet", "new_diagnostics"] {
+        let mut fixture = Fixture::new();
+        fixture.input(vec![]);
+        fixture.policy["checks"][0]["argv"][1] = json!("crash-base");
+        fixture.policy["checks"][0]["reports"][0]["mode"] = json!(mode);
+        fixture.policy["checks"][0]["reports"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"path":"stdout.json","baseline":"stdout.json",
+            "format":"diagnostics","mode":mode,"from_stdout":true}));
+        fixture.policy["checks"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"id":"after","argv":["git","--version"],"depends_on":["debt"]}));
+        for missing_current in [false, true] {
+            if missing_current {
+                fixture.policy["checks"][0]["reports"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(
+                        json!({"path":"target/missing.json","format":"diagnostics","mode":"full"}),
+                    );
+            }
+            fixture.configure();
+            let incomplete = fixture.run(2, &[]);
+            assert_eq!(incomplete["gate"]["complete"], false);
+            let check = &incomplete["checks"][0];
+            assert!(check["verdict"].is_null());
+            assert_eq!(check["execution"]["status"], "tool_error");
+            assert_eq!(check["execution"]["exit_code"], 0);
+            assert_eq!(check["metadata"]["baseline_execution"]["exit_code"], 9);
+            let reason = check["execution"]["reason"].as_str().unwrap();
+            assert!(reason.contains("Baseline analyzer returned unexpected exit code"));
+            if missing_current {
+                assert!(reason.contains("Current report collection also failed"));
+                assert!(reason.contains("Required report was not produced: target/missing.json"));
+            }
+            assert!(check["metadata"].as_object().unwrap().keys().all(|key| {
+                !key.starts_with("target/report.json:") && !key.starts_with("stdout.json:")
+            }));
+            fixture.assert_current_reports(&incomplete, &[0, 1]);
+            assert_eq!(incomplete["checks"][1]["execution"]["status"], "blocked");
+            assert!(incomplete["checks"][1]["execution"]["started_at_ms"].is_null());
+        }
+        fixture.policy["checks"][0]["reports"]
+            .as_array_mut()
+            .unwrap()
+            .pop();
+        fixture.policy["checks"][0]["argv"][1] = json!("normal");
+        fixture.configure();
+        let repaired = fixture.run(0, &[]);
+        fixture.assert_current_reports(&repaired, &[0, 1]);
+        assert_eq!(repaired["checks"][0]["verdict"], "pass");
+        assert_eq!(repaired["checks"][1]["verdict"], "pass");
+    }
 }
 
 #[test]
