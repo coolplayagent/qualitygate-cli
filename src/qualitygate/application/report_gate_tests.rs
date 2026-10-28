@@ -298,6 +298,7 @@ fn affected_scope_includes_unchanged_files_and_requires_explicit_impact_evidence
 #[test]
 fn report_locations_must_map_uniquely_to_checked_sources() {
     let snapshot = snapshot();
+    let mut sources = Sources::new(&snapshot, Path::new("/checked"));
     for value in [
         "a.rs",
         "src/a.rs",
@@ -305,18 +306,19 @@ fn report_locations_must_map_uniquely_to_checked_sources() {
         "file:///checked/src/a.rs",
         "/repo/src/a.rs",
     ] {
-        assert_eq!(
-            map_file(value, &snapshot, Path::new("/checked"), false).unwrap(),
-            "src/a.rs"
-        );
+        assert_eq!(sources.map(value, false).unwrap(), "src/a.rs");
     }
-    assert!(map_file("../a.rs", &snapshot, Path::new("/checked"), false).is_err());
+    assert!(sources.map("../a.rs", false).is_err());
     let mut ambiguous = snapshot.clone();
     ambiguous
         .files
         .insert("other/a.rs".into(), ambiguous.files["src/a.rs"].clone());
-    assert!(map_file("a.rs", &ambiguous, Path::new("/checked"), false).is_err());
-    assert!(map_file("missing.rs", &snapshot, Path::new("/checked"), false).is_err());
+    assert!(
+        Sources::new(&ambiguous, Path::new("/checked"))
+            .map("a.rs", false)
+            .is_err()
+    );
+    assert!(sources.map("missing.rs", false).is_err());
 }
 
 #[test]

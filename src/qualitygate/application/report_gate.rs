@@ -1,5 +1,6 @@
 //! Applies explicit incremental policies to parsed tool results.
 
+use super::report_sources::Sources;
 use crate::{
     adapters::{
         reports::{Data, Issue, IssueLocation},
@@ -67,8 +68,10 @@ pub(super) fn apply(
         bail!("Configured minimum_tests requires a test-count report");
     }
     let mut effective_mode = spec.mode;
+    let mut sources = Sources::new(snapshot, workspace);
     if !data.coverage.is_empty() || !data.coverage_files.is_empty() {
-        effective_mode = super::coverage_gate::apply(result, spec, &data, snapshot, workspace)?;
+        effective_mode =
+            super::coverage_gate::apply(result, spec, &data, snapshot, workspace, &mut sources)?;
         result.metadata.insert(
             format!("{}:configured_mode", spec.path),
             serde_json::to_value(spec.mode)?,
@@ -89,7 +92,7 @@ pub(super) fn apply(
             require_diagnostics(&data)?;
         }
         for mut issue in baseline.issues {
-            normalize_issue(&mut issue, snapshot, workspace, true, &mut line_counts)?;
+            normalize_issue(&mut issue, snapshot, &mut sources, true, &mut line_counts)?;
             if snapshot.delivery() {
                 let selected = if is_ratchet {
                     delivery_issue(&issue, snapshot, true)
@@ -114,7 +117,7 @@ pub(super) fn apply(
     }
     if snapshot.delivery() {
         for issue in &mut data.issues {
-            normalize_issue(issue, snapshot, workspace, false, &mut line_counts)?;
+            normalize_issue(issue, snapshot, &mut sources, false, &mut line_counts)?;
         }
         // Retained historical occurrences must consume baseline credit before
         // filtering, regardless of producer order. Otherwise an identical new
@@ -160,7 +163,7 @@ pub(super) fn apply(
                 .as_ref()
                 .context("Analyzer did not supply affected_files")?
                 .iter()
-                .map(|file| map_file(file, snapshot, workspace, false))
+                .map(|file| sources.map(file, false))
                 .collect::<Result<Vec<_>>>()?,
         )
     } else {
@@ -168,7 +171,7 @@ pub(super) fn apply(
     };
     let mut filtered = 0;
     for mut issue in data.issues {
-        normalize_issue(&mut issue, snapshot, workspace, false, &mut line_counts)?;
+        normalize_issue(&mut issue, snapshot, &mut sources, false, &mut line_counts)?;
         let identity = fingerprint(&issue);
         let mut displayed = IssueLocation {
             file: issue.file.clone(),
@@ -359,12 +362,12 @@ fn fingerprint(issue: &Issue) -> String {
 fn normalize_issue(
     issue: &mut Issue,
     snapshot: &Snapshot,
-    workspace: &Path,
+    sources: &mut Sources<'_>,
     base: bool,
     line_counts: &mut BTreeMap<(bool, String), usize>,
 ) -> Result<()> {
     for location in &mut issue.locations {
-        normalize_location(location, snapshot, workspace, base, line_counts)?;
+        normalize_location(location, snapshot, sources, base, line_counts)?;
     }
     let mut location = IssueLocation {
         file: issue.file.clone(),
@@ -372,7 +375,7 @@ fn normalize_issue(
         end_line: None,
         symbol: issue.symbol.clone(),
     };
-    normalize_location(&mut location, snapshot, workspace, base, line_counts)?;
+    normalize_location(&mut location, snapshot, sources, base, line_counts)?;
     issue.file = location.file;
     Ok(())
 }
@@ -380,12 +383,12 @@ fn normalize_issue(
 fn normalize_location(
     location: &mut IssueLocation,
     snapshot: &Snapshot,
-    workspace: &Path,
+    sources: &mut Sources<'_>,
     base: bool,
     line_counts: &mut BTreeMap<(bool, String), usize>,
 ) -> Result<()> {
     if let Some(file) = &location.file {
-        let mapped = map_file(file, snapshot, workspace, base)?;
+        let mapped = sources.map(file, base)?;
         if let Some(line) = location.line {
             let key = (base, mapped.clone());
             let count = if let Some(count) = line_counts.get(&key) {
@@ -454,35 +457,4 @@ fn select_location(
         return Err(error);
     }
     Ok(false)
-}
-
-pub(super) fn map_file(
-    file: &str,
-    snapshot: &Snapshot,
-    workspace: &Path,
-    base: bool,
-) -> Result<String> {
-    let files = if base {
-        &snapshot.base_files
-    } else {
-        &snapshot.files
-    };
-    let path = Path::new(file.strip_prefix("file://").unwrap_or(file));
-    let path = path
-        .strip_prefix(workspace)
-        .or_else(|_| path.strip_prefix(&snapshot.root))
-        .unwrap_or(path);
-    let relative = crate::paths::from_native(path)?;
-    if files.contains_key(&relative) {
-        return Ok(relative);
-    }
-    let suffix = format!("/{relative}");
-    let matches: Vec<_> = files
-        .keys()
-        .filter(|name| name.ends_with(&suffix))
-        .collect();
-    match matches.as_slice() {
-        [name] => Ok((*name).clone()),
-        _ => bail!("Report path cannot be mapped uniquely to checked sources: {file}"),
-    }
 }

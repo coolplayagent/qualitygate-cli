@@ -100,6 +100,14 @@ The report adapters share its checked append operation for ordinary lint and
 test diagnostics. Each report shares one budget across all files; the counter
 does not alter producer validation, source mapping or execution ownership.
 
+`application::report_sources` resolves diagnostic, affected-scope and coverage
+paths against captured inputs. Exact paths use the snapshot map directly.
+Suffix lookup builds a separate lazy index for current and baseline paths,
+borrowing strings and ordering them by reversed bytes. Binary search finds the
+first component-boundary match; a second match rejects ambiguity. Coverage and
+diagnostic gates depend on this leaf instead of calling each other's helpers.
+Source confinement, case sensitivity and baseline rename handling stay intact.
+
 Within `adapters`, `xml_document` owns bounded XML tree parsing for reports,
 Maven models and compatibility evidence. Callers enforce their byte budgets;
 report-specific DOCTYPE normalization stays in `reports`. Iterative preflight also

@@ -108,6 +108,13 @@ paths before source mapping or delivery filtering. Excess reports remain
 incomplete, with raw artifacts retained for repair and rechecking. The input
 byte limits and final diagnostic-output limits still apply separately.
 
+Report paths first try an exact captured path. A shortened path must uniquely
+match a directory-boundary suffix across the captured inventory, including
+files outside the selected delivery or coverage scope. Each report application
+builds current and baseline suffix indexes only when needed, retaining one
+borrowed path reference per file and sharing resolution across its diagnostics
+and coverage. Path text and captured file contents are not copied into the index.
+
 Built-in rule assets share a 256-file and 1 MiB limit across all packages. The
 byte allowance is charged against actual reads, including growth or regular
 files whose metadata understates their size. Each read is limited to the

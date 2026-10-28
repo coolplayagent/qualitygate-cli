@@ -886,6 +886,12 @@ REPORT-EXPANSION-01：普通静态检查与 JUnit 报告在追加归一化诊断
 `adapters::reports::json_budget::tests::rejected_values_are_not_appended_to_retained_evidence` 和
 `tests/diagnostic_expansion.rs::excessive_diagnostics_are_incomplete_preserve_raw_evidence_and_recover`。
 
+REPORT-SOURCE-01：诊断、受影响范围和覆盖率共用捕获路径解析器。完整路径优先；简写路径以目录
+边界匹配，必须唯一，保留路径限制与大小写语义。当前/基线分别按需构建借用字符串的反向字节索引，
+避免对每条诊断穷举整个快照；不复制快照内容或路径文本，基线重命名和行范围校验继续有效。
+证据见 `application::report_sources::tests`、既有 `application::report_gate::tests`，以及
+`tests/report_sources.rs::diagnostics_and_coverage_share_unique_source_resolution_and_recover_from_ambiguity`。
+
 ## 18. 规则诊断输出预算
 
 | 编号 | 要求 | 验收证据 |

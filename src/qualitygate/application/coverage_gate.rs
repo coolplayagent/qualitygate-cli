@@ -1,4 +1,4 @@
-use super::report_gate::map_file;
+use super::report_sources::Sources;
 use crate::{
     adapters::{reports::Data, rules::diagnostic},
     config::{IncrementMode, ReportSpec},
@@ -18,6 +18,7 @@ pub(super) fn apply(
     data: &Data,
     snapshot: &Snapshot,
     workspace: &Path,
+    sources: &mut Sources<'_>,
 ) -> Result<IncrementMode> {
     let mut spec = spec.clone();
     if snapshot.delivery() {
@@ -58,7 +59,10 @@ pub(super) fn apply(
         .chain(data.coverage.iter().map(|record| &record.file))
     {
         if !mapped.contains_key(file) {
-            mapped.insert(file.clone(), map_source(file, data, snapshot, workspace)?);
+            mapped.insert(
+                file.clone(),
+                map_source(file, data, snapshot, workspace, sources)?,
+            );
         }
     }
     let mut inventory = BTreeSet::new();
@@ -171,9 +175,15 @@ pub(super) fn apply(
     Ok(spec.mode)
 }
 
-fn map_source(file: &str, data: &Data, snapshot: &Snapshot, workspace: &Path) -> Result<String> {
+fn map_source(
+    file: &str,
+    data: &Data,
+    snapshot: &Snapshot,
+    workspace: &Path,
+    sources: &mut Sources<'_>,
+) -> Result<String> {
     if data.coverage_roots.is_empty() || Path::new(file).is_absolute() {
-        return map_file(file, snapshot, workspace, false);
+        return sources.map(file, false);
     }
     let mut candidates = BTreeSet::new();
     for root in &data.coverage_roots {
