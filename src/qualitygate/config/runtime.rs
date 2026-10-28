@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 pub fn decode<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     let _: serde_norway::Value =
-        serde_norway::from_slice(bytes).map_err(|error| parser_error(error, "config.syntax"))?;
+        super::yaml_budget::value(bytes).map_err(|error| parser_error(error, "config.syntax"))?;
     Ok(serde_norway::from_slice(bytes).map_err(|error| parser_error(error, "config.type"))?)
 }
 

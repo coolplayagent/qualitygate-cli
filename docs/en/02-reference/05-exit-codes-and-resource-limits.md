@@ -17,6 +17,17 @@ validation. Warning filters affect display, not the computed gate.
 
 ## Default snapshot bounds
 
+YAML policy, task, project-rule, validation-suite, packaged-rule and external
+policy-trust inputs are limited to 1 MiB before parsing. A shared preflight
+limits expansion to 100,000 visited values (including mapping keys and tag
+names), 4 MiB of UTF-8 string content and 64 levels beneath the root. Every
+alias visit is charged again, before constructing YAML Values or typed
+collections; quoted alias-like text is ordinary content. These are deterministic
+input budgets, not a process-memory or elapsed-time guarantee. Project rules
+retain their additional 50,000-node shape limit. Oversized configuration or task
+inputs produce incomplete validation; `rules validate` reports an invalid YAML
+rule and generation refuses it. Inputs are preserved for repair and rechecking.
+
 The normal acquisition envelope supports up to 100,000 files, 256 MiB total
 contents per tree, 2 MiB per file, four content readers, and 120 seconds. Git
 objects normally use batches no larger than 4 MiB and 1,024 objects; explicitly

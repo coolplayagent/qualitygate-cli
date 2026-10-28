@@ -99,6 +99,15 @@ Issue 20 增加十二条默认不启用的 Java 新增行文本审查规则，�
 
 规则优先级由试点仓库的历史违规、影响和检测可靠性决定。AI 标记、注释语言、相似测试建议不作为所有仓库默认启用的强制规范。
 
+YAML-EXPANSION-01：策略、任务、项目规则、验证套件、打包规则及外部策略信任 YAML 输入
+在构造 Value 或类型化集合前执行共享预检：原文最多 1 MiB，展开后最多 100,000 个访问值
+（包含映射键、标签名）、4 MiB UTF-8 字符串和根下 64 层。别名重复访问必须累计，保留普通
+别名、字面文本、重复键拒绝和格式错误语义；错误不得降级为通过或修改原始输入。
+项目规则既有 50,000 节点限制保留。配置/任务超限为未完成，规则静态验证保留 YAML 问题且
+不能生成或加载该规则；外部信任超限不访问或修改策略状态。证据见 `config::yaml_budget::tests`、
+`tests/doctor/yaml.rs`、`tests/rule_authoring.rs::expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs`
+与 `tests/policy_promotion.rs::external_yaml_trust_expansion_is_rejected_before_policy_store_access`。
+
 ### 3.2 构建 / 静态质量聚合
 
 | 检查项 | 检测逻辑 | 说明 |

@@ -182,7 +182,7 @@ pub fn inspect_versioned(bytes: &[u8]) -> Result<(u32, Option<CustomRule>, Vec<R
     }
     let parsed = (|| -> Result<Value> {
         // Value rejects duplicate keys before typed maps or JSON conversion.
-        let yaml: serde_norway::Value = serde_norway::from_slice(bytes)?;
+        let yaml = super::yaml_budget::value(bytes)?;
         yaml_shape(&yaml, 0, &mut 0)?;
         Ok(serde_json::to_value(yaml)?)
     })();

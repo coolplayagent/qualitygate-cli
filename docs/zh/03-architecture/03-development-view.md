@@ -67,6 +67,10 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 `domain::xml_budget` 负责配置发现与适配器共享的纯命名空间工作量计数，只接收计数、限制作用域
 栈并检查算术。XML token 化、树解析和各 profile 的错误语义仍归各自的消费层负责。
 
+`config::yaml_budget` 统一负责 YAML 展开预检，在既有重复键和类型化解码前访问值，
+不物化集合，也不复制别名字符串。配置、任务、规则和验证套件共享该边界；application
+的策略信任加载在既有阻塞工作中调用配置解码器。
+
 `adapters` 内的 `xml_document` 统一负责报告、Maven 模型和兼容性证据的有界 XML 树解析。
 调用方执行各自的字节预算，报告特有的 DOCTYPE 归一化留在 `reports`。迭代预检在树解析器比较
 重复名称之前，限制每个元素 1,024 个属性、整个文档 100,000 个属性，命名空间声明计入。

@@ -312,6 +312,68 @@ fn invalid_fields_have_schema_locations_and_cannot_bypass_snapshot_loading() {
 }
 
 #[test]
+fn expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs() {
+    let repo = fixture();
+    let root = repo.path();
+    let valid = candidate(root, "bounded", &["python"]);
+    let prefix = serde_norway::to_string(&valid).unwrap();
+    let excessive = format!(
+        "{prefix}large: &a '{}'\nextra: [{}]\n",
+        "x".repeat(131_072),
+        vec!["*a"; 32].join(",")
+    );
+    fs::write(root.join("candidate.yaml"), &excessive).unwrap();
+    let result = report(
+        &cli(
+            root,
+            &["rules", "validate", "candidate.yaml", "--format", "json"],
+        ),
+        1,
+    );
+    assert_eq!(result["complete"], true);
+    assert_eq!(result["files"][0]["issues"][0]["stage"], "yaml");
+    assert!(
+        result["files"][0]["issues"]
+            .to_string()
+            .contains("strings exceed 4194304 bytes")
+    );
+    assert!(
+        rule_authoring::generate(root, "candidate.yaml")
+            .unwrap_err()
+            .to_string()
+            .contains("strings exceed 4194304 bytes")
+    );
+    assert_eq!(
+        fs::read(root.join("candidate.yaml")).unwrap(),
+        excessive.as_bytes()
+    );
+    assert!(!root.join("qualitygate/rules/bounded.yaml").exists());
+    let config = config::Config {
+        custom_rules: Some("qualitygate/rules".into()),
+        ..Default::default()
+    };
+    let error = config::catalog::Catalog::load(
+        &config,
+        [("qualitygate/rules/bounded.yaml", excessive.as_bytes())],
+    )
+    .unwrap_err();
+    assert!(
+        format!("{error:#}").contains("strings exceed 4194304 bytes"),
+        "{error:#}"
+    );
+    save(root, "candidate.yaml", &valid);
+    report(
+        &cli(
+            root,
+            &["rules", "validate", "candidate.yaml", "--format", "json"],
+        ),
+        0,
+    );
+    rule_authoring::generate(root, "candidate.yaml").unwrap();
+    assert!(root.join("qualitygate/rules/bounded.yaml").is_file());
+}
+
+#[test]
 fn conditional_schema_accepts_every_supported_entity_and_marker_shape() {
     let repo = fixture();
     let root = repo.path();

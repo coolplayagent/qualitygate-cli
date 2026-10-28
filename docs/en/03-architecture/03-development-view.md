@@ -71,6 +71,12 @@ Interfaces do not perform external I/O directly. Blocking filesystem and parser
 work stays isolated from asynchronous orchestration. Network, environment, and
 path access have dedicated owners so capability review is explicit.
 
+`config::yaml_budget` owns the shared YAML expansion preflight. It visits values
+without materializing their collections or copying alias strings, before the
+existing duplicate-key and typed decoders. Configuration, tasks, rules and
+validation suites share this boundary; application policy-trust loading calls
+the configuration decoder inside its existing blocking work.
+
 `domain::xml_budget` owns pure namespace-work accounting shared by configuration
 discovery and adapters. It consumes counts, bounds its scope stack and checks
 arithmetic; XML tokenization, tree parsing and profile-specific errors remain in

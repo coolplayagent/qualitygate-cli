@@ -96,6 +96,44 @@ fn promote(fixture: &Fixture, code: i32) -> Value {
 }
 
 #[test]
+fn external_yaml_trust_expansion_is_rejected_before_policy_store_access() {
+    let repo = common::fixture();
+    let external = tempfile::tempdir().unwrap();
+    let path = external.path().join("trust.yaml");
+    let input = format!(
+        "repository: &a '{}'\nsuites: [{}]\n",
+        "x".repeat(131_072),
+        vec!["*a"; 32].join(",")
+    );
+    std::fs::write(&path, &input).unwrap();
+    let result = run(
+        repo.path(),
+        &[
+            "policy",
+            "candidate",
+            "approval-subject",
+            "absent",
+            "--trust-store",
+            path.to_str().unwrap(),
+        ],
+        2,
+    );
+    assert!(
+        result["gate"]["blockers"]
+            .to_string()
+            .contains("strings exceed 4194304 bytes"),
+        "{result}"
+    );
+    assert_eq!(result["gate"]["complete"], false);
+    assert_eq!(std::fs::read(&path).unwrap(), input.as_bytes());
+    assert!(
+        qualitygate::config::policy_store::Store::optional(repo.path())
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[test]
 fn only_independent_signed_exact_validation_can_activate_a_policy_and_history_is_immutable() {
     let mut fixture = Fixture::new();
     fixture.enable();

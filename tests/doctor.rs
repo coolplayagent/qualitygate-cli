@@ -3,6 +3,8 @@ mod budgets;
 mod common;
 #[path = "doctor/probes.rs"]
 mod probes;
+#[path = "doctor/yaml.rs"]
+mod yaml;
 
 use common::{cli, fixture, git, report};
 use serde_json::{Value, json};

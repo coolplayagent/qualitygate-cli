@@ -43,6 +43,7 @@ pub mod selfcheck_policy;
 pub mod source_reviews;
 pub mod test_effectiveness;
 mod validation;
+mod yaml_budget;
 pub use initialization::{Initialization, initialize_at};
 pub use model::*;
 pub use plan::{Plan, parse_task};
@@ -55,8 +56,8 @@ pub const MAX_CONFIG_BYTES: usize = 1_048_576;
 
 /// Validate mapping uniqueness before deserializing typed maps, whose visitors
 /// would otherwise accept a later value for the same YAML key.
-pub(super) fn parse_yaml<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
-    let _: serde_norway::Value = serde_norway::from_slice(bytes)?;
+pub(crate) fn parse_yaml<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
+    let _: serde_norway::Value = yaml_budget::value(bytes)?;
     Ok(serde_norway::from_slice(bytes)?)
 }
 
