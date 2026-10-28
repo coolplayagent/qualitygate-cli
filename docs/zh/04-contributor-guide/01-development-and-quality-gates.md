@@ -36,7 +36,7 @@ live producer 测试，未实际运行时不能算入稳定本地套件。
 由 Cargo 展开带引号的目标 glob，使新增集成目标自动进入门禁。单元门禁保持 `--lib --bins`，
 benchmark、文档与架构门禁仍分别报告结果。仓库质量测试通过有界、离线的 `cargo metadata`
 输出核对策略选择器，拒绝漏选目标、混入单元目标或按测试名过滤。默认运行仍跳过忽略测试，
-其执行证据由专门的 live producer 作业提供。
+这些测试需要在文档规定的环境中单独执行。现有 live producer CI 作业继续提供各自工具的执行证据。
 
 Windows 原生 CI 将完整 Cargo 目标清单分成三个作业：`--lib --bins --examples --benches`、
 `--test '[a-m]*'` 和 `--test '[!a-m]*'`。带引号的互补 Cargo glob 自动纳入新增集成目标，

@@ -43,8 +43,9 @@ targets enter the gate automatically. The unit gate keeps `--lib --bins`, and
 benchmark, documentation and architecture gates continue reporting separately.
 The repository quality test compares the policy's selectors with bounded, offline
 `cargo metadata` output and rejects missing targets, unit selectors or test-name
-filters. Ignored tests remain excluded from the default run; their dedicated live
-producer jobs supply execution evidence.
+filters. Ignored tests remain excluded from the default run and require separate
+execution in their documented environments. Existing live producer CI jobs
+continue to provide their tool-specific evidence.
 
 Native Windows CI partitions the complete Cargo target inventory into three jobs:
 `--lib --bins --examples --benches`, `--test '[a-m]*'`, and `--test '[!a-m]*'`.
