@@ -2,13 +2,14 @@
 
 use crate::{paths, snapshot::Snapshot};
 use anyhow::{Result, bail};
-use std::{cmp::Ordering, path::Path};
+use std::{cmp::Ordering, collections::BTreeMap, path::Path};
 
 pub(super) struct Sources<'a> {
     snapshot: &'a Snapshot,
     workspace: &'a Path,
     current: Option<Vec<&'a str>>,
     baseline: Option<Vec<&'a str>>,
+    renames: Option<BTreeMap<&'a str, &'a str>>,
 }
 
 impl<'a> Sources<'a> {
@@ -18,6 +19,7 @@ impl<'a> Sources<'a> {
             workspace,
             current: None,
             baseline: None,
+            renames: None,
         }
     }
 
@@ -59,6 +61,26 @@ impl<'a> Sources<'a> {
             return Ok((*name).to_owned());
         }
         bail!("Report path cannot be mapped uniquely to checked sources: {file}")
+    }
+
+    /// Call after validating the location against its original baseline source.
+    pub(super) fn remap_baseline(&mut self, file: String) -> String {
+        let renames = self.renames.get_or_insert_with(|| {
+            let mut renames = BTreeMap::new();
+            for (path, change) in &self.snapshot.changes {
+                if change.kind == "renamed"
+                    && let Some(old) = change.old_path.as_deref()
+                {
+                    // Preserve the first target in snapshot order if old paths repeat.
+                    renames.entry(old).or_insert(path.as_str());
+                }
+            }
+            renames
+        });
+        renames
+            .get(file.as_str())
+            .map(|path| (*path).to_owned())
+            .unwrap_or(file)
     }
 }
 

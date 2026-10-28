@@ -277,6 +277,28 @@ fn new_diagnostics_match_multiplicity_and_survive_line_and_file_moves() {
 }
 
 #[test]
+fn baseline_line_validation_precedes_rename_mapping_to_a_longer_current_source() {
+    let mut snapshot = snapshot();
+    snapshot.files.get_mut("src/a.rs").unwrap().bytes = b"one\ntwo\nthree\nfour\n".to_vec();
+    snapshot.files.remove("src/b.rs");
+    let change = snapshot.changes.get_mut("src/a.rs").unwrap();
+    change.kind = "renamed".into();
+    change.old_path = Some("src/b.rs".into());
+    for line in [0, 4] {
+        let error = apply(
+            &mut pending(),
+            &spec("new_diagnostics"),
+            data(vec![issue("src/a.rs", 4)]),
+            Some(data(vec![issue("src/b.rs", line)])),
+            &snapshot,
+            Path::new("/checked"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("outside the selected source"));
+    }
+}
+
+#[test]
 fn affected_scope_includes_unchanged_files_and_requires_explicit_impact_evidence() {
     let mut findings = data(vec![issue("src/a.rs", 2), issue("src/b.rs", 3)]);
     assert!(

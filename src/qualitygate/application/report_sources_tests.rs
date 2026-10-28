@@ -1,5 +1,5 @@
 use super::*;
-use crate::snapshot::{File, Identity};
+use crate::snapshot::{Change, File, Identity};
 use std::collections::BTreeMap;
 
 fn snapshot(current: &[&str], baseline: &[&str]) -> Snapshot {
@@ -124,5 +124,64 @@ fn indexed_suffix_results_match_exhaustive_resolution_across_path_shapes() {
                 _ => assert!(actual.is_err(), "{query}"),
             }
         }
+    }
+}
+
+fn change(kind: &str, old: Option<&str>) -> Change {
+    Change {
+        kind: kind.into(),
+        old_path: old.map(str::to_owned),
+        removed_lines: Default::default(),
+        added_lines: Default::default(),
+    }
+}
+
+#[test]
+fn baseline_rename_mapping_preserves_nonrename_sources_and_unicode_paths() {
+    let empty = snapshot(&[], &[]);
+    assert_eq!(
+        Sources::new(&empty, Path::new("/checked")).remap_baseline("stable.rs".into()),
+        "stable.rs"
+    );
+    let mut snapshot = snapshot(&["new/子.rs", "copy.rs"], &["old/子.rs", "stable.rs"]);
+    snapshot.changes = (0..200)
+        .map(|i| {
+            (
+                format!("modified/{i}.rs"),
+                change("modified", Some("stable.rs")),
+            )
+        })
+        .collect();
+    snapshot.changes.extend([
+        ("new/子.rs".into(), change("renamed", Some("old/子.rs"))),
+        ("copy.rs".into(), change("copied", Some("stable.rs"))),
+        ("missing-old.rs".into(), change("renamed", None)),
+    ]);
+    let mut sources = Sources::new(&snapshot, Path::new("/checked"));
+    for _ in 0..2 {
+        let original = sources.map("子.rs", true).unwrap();
+        assert_eq!(original, "old/子.rs");
+        assert_eq!(sources.remap_baseline(original), "new/子.rs");
+        for name in ["stable.rs", "OLD/子.rs", "missing.rs"] {
+            assert_eq!(sources.remap_baseline(name.into()), name);
+        }
+    }
+}
+
+#[test]
+fn baseline_rename_index_keeps_first_target_without_following_chains() {
+    let mut snapshot = snapshot(&["a.rs", "b.rs", "c.rs"], &["old.rs", "a.rs"]);
+    snapshot.changes = [
+        ("0-copy.rs".into(), change("copied", Some("old.rs"))),
+        ("a.rs".into(), change("renamed", Some("old.rs"))),
+        ("b.rs".into(), change("renamed", Some("a.rs"))),
+        ("c.rs".into(), change("renamed", Some("old.rs"))),
+    ]
+    .into();
+    let mut sources = Sources::new(&snapshot, Path::new("/checked"));
+    for _ in 0..2 {
+        assert_eq!(sources.remap_baseline("old.rs".into()), "a.rs");
+        assert_eq!(sources.remap_baseline("a.rs".into()), "b.rs");
+        assert_eq!(sources.remap_baseline("b.rs".into()), "b.rs");
     }
 }

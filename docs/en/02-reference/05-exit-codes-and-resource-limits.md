@@ -114,6 +114,9 @@ files outside the selected delivery or coverage scope. Each report application
 builds current and baseline suffix indexes only when needed, retaining one
 borrowed path reference per file and sharing resolution across its diagnostics
 and coverage. Path text and captured file contents are not copied into the index.
+Baseline locations are validated against their original source before rename
+mapping. A lazy index borrows old and current paths only for rename changes;
+even an empty index is reused instead of scanning all changes per location.
 
 Built-in rule assets share a 256-file and 1 MiB limit across all packages. The
 byte allowance is charged against actual reads, including growth or regular

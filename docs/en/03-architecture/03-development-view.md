@@ -107,6 +107,10 @@ borrowing strings and ordering them by reversed bytes. Binary search finds the
 first component-boundary match; a second match rejects ambiguity. Coverage and
 diagnostic gates depend on this leaf instead of calling each other's helpers.
 Source confinement, case sensitivity and baseline rename handling stay intact.
+The same resolver lazily indexes baseline renames after original-source line
+validation. It borrows old and current paths, ignores other change kinds and
+reuses empty results. Duplicate old paths retain the first snapshot-ordered
+target; rename chains are not followed recursively.
 
 Within `adapters`, `xml_document` owns bounded XML tree parsing for reports,
 Maven models and compatibility evidence. Callers enforce their byte budgets;

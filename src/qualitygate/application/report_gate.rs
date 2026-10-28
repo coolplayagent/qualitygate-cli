@@ -416,14 +416,7 @@ fn normalize_location(
             }
         }
         location.file = Some(if base {
-            snapshot
-                .changes
-                .iter()
-                .find(|(_, change)| {
-                    change.kind == "renamed" && change.old_path.as_deref() == Some(&mapped)
-                })
-                .map(|(path, _)| path.clone())
-                .unwrap_or(mapped)
+            sources.remap_baseline(mapped)
         } else {
             mapped
         });

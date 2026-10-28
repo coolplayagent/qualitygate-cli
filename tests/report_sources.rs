@@ -26,9 +26,7 @@ fn unmapped(root: &Path, input: &[u8], policy: &[u8]) {
     assert_eq!(fs::read(root.join("qualitygate.yaml")).unwrap(), policy);
 }
 
-#[test]
-fn diagnostics_and_coverage_share_unique_source_resolution_and_recover_from_ambiguity() {
-    let root = fixture();
+fn driver() -> (tempfile::TempDir, std::path::PathBuf) {
     let external = tempfile::tempdir().unwrap();
     let source = external.path().join("driver.rs");
     let driver = external.path().join(if cfg!(windows) {
@@ -57,6 +55,13 @@ fn main() {
         "{}",
         String::from_utf8_lossy(&built.stderr)
     );
+    (external, driver)
+}
+
+#[test]
+fn diagnostics_and_coverage_share_unique_source_resolution_and_recover_from_ambiguity() {
+    let root = fixture();
+    let (_external, driver) = driver();
     fs::create_dir(root.path().join("src")).unwrap();
     fs::create_dir(root.path().join("tests")).unwrap();
     for name in ["one.rs", "two.rs"] {
@@ -127,6 +132,102 @@ fn main() {
     fs::write(
         root.path().join("input.txt"),
         b"SF:src/one.rs\nDA:1,1\nLF:1\nLH:1\nend_of_record\n",
+    )
+    .unwrap();
+    assert_eq!(run(0)["gate"]["decision"], "pass");
+}
+
+#[test]
+fn renamed_baselines_validate_original_lines_preserve_evidence_and_recover() {
+    let root = fixture();
+    let (_external, driver) = driver();
+    fs::create_dir(root.path().join("src")).unwrap();
+    fs::write(root.path().join("src/old.rs"), "old\nstable\nlast\n").unwrap();
+    fs::write(root.path().join("src/untouched.rs"), "stable\n").unwrap();
+    let policy = serde_json::to_vec(&json!({"schema_version":1,"checks":[{
+        "id":"static","argv":[driver],"tools":[{"id":"scan","argv":[driver,"--version"]}],
+        "reports":[{"path":"report.out","baseline":"report.out","format":"diagnostics","mode":"new_diagnostics"}]
+    }]})).unwrap();
+    fs::write(root.path().join("qualitygate.yaml"), &policy).unwrap();
+    let finding =
+        |file: &str, line| json!({"rule":"R","file":file,"line":line,"message":"finding"});
+    let baseline = |line| {
+        serde_json::to_vec(
+            &json!({"issues":[finding("src/old.rs",line),finding("src/untouched.rs",1)]}),
+        )
+        .unwrap()
+    };
+    let invalid = baseline(4);
+    fs::write(root.path().join("input.txt"), &invalid).unwrap();
+    git(root.path(), &["add", "."]);
+    git(root.path(), &["commit", "-qm", "baseline source range"]);
+    git(root.path(), &["mv", "src/old.rs", "src/new.rs"]);
+    // Exact renames add no lines; file-level findings still belong to delivery.
+    let renamed = json!({"rule":"R","file":"src/new.rs","message":"finding"});
+    let current =
+        serde_json::to_vec(&json!({"issues":[renamed,renamed,finding("src/untouched.rs",1)]}))
+            .unwrap();
+    fs::write(root.path().join("input.txt"), &current).unwrap();
+    let run = |code| {
+        report(
+            &cli(root.path(), &["check", "--worktree", "--format", "json"]),
+            code,
+        )
+    };
+    let incomplete = run(2);
+    assert_eq!(incomplete["gate"]["decision"], "incomplete");
+    assert_eq!(incomplete["checks"][0]["verdict"], Value::Null);
+    let check = &incomplete["checks"][0];
+    assert!(
+        check["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("outside the selected source")
+    );
+    let raw = check["execution"]["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["path"].as_str().unwrap().ends_with("baseline-report-0"))
+        .unwrap();
+    assert_eq!(fs::read(raw["path"].as_str().unwrap()).unwrap(), invalid);
+    assert_eq!(raw["digest"], qualitygate::snapshot::digest(&invalid));
+    assert_eq!(
+        check["metadata"]["baseline_input_integrity"]["status"],
+        "verified"
+    );
+    assert_eq!(fs::read(root.path().join("input.txt")).unwrap(), current);
+    assert_eq!(
+        fs::read(root.path().join("qualitygate.yaml")).unwrap(),
+        policy
+    );
+
+    // Commit only the repaired baseline report input, keeping the rename staged.
+    fs::write(root.path().join("input.txt"), baseline(1)).unwrap();
+    git(
+        root.path(),
+        &[
+            "commit",
+            "--only",
+            "-qm",
+            "repair baseline range",
+            "--",
+            "input.txt",
+        ],
+    );
+    fs::write(root.path().join("input.txt"), &current).unwrap();
+    let checked = run(1);
+    let changed = checked["selection"]["changed_files"].as_array().unwrap();
+    assert!(changed.contains(&json!("src/new.rs")));
+    assert!(!changed.contains(&json!("src/old.rs")));
+    let check = &checked["checks"][0];
+    assert_eq!(check["metadata"]["report.out:delivery_filtered"], 1);
+    assert_eq!(check["diagnostics"].as_array().unwrap().len(), 1);
+    assert_eq!(check["diagnostics"][0]["file"], "src/new.rs");
+    assert_eq!(check["diagnostics"][0]["range"], Value::Null);
+    fs::write(
+        root.path().join("input.txt"),
+        serde_json::to_vec(&json!({"issues":[renamed,finding("src/untouched.rs",1)]})).unwrap(),
     )
     .unwrap();
     assert_eq!(run(0)["gate"]["decision"], "pass");

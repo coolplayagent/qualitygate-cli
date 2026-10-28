@@ -892,6 +892,13 @@ REPORT-SOURCE-01：诊断、受影响范围和覆盖率共用捕获路径解析�
 证据见 `application::report_sources::tests`、既有 `application::report_gate::tests`，以及
 `tests/report_sources.rs::diagnostics_and_coverage_share_unique_source_resolution_and_recover_from_ambiguity`。
 
+REPORT-RENAME-01：基线位置先校验原始源文件及行范围，再映射到当前重命名目标。每次报告判定按需
+建立借用路径的重命名索引；仅纳入带旧路径的 `renamed` 变更，空索引也复用，避免逐条扫描全部变更。
+重复旧路径保持快照顺序首个目标，不递归追踪重命名链；未重命名路径保持原值。
+证据见 `application::report_sources::tests::baseline_rename_*`、
+`application::report_gate::tests::baseline_line_validation_precedes_rename_mapping_to_a_longer_current_source` 和
+`tests/report_sources.rs::renamed_baselines_validate_original_lines_preserve_evidence_and_recover`。
+
 ## 18. 规则诊断输出预算
 
 | 编号 | 要求 | 验收证据 |
