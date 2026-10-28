@@ -100,7 +100,7 @@ fn junit_rejects_contradictory_outcomes_and_detached_records() {
 
 #[test]
 fn junit_nested_summaries_count_each_case_once() {
-    let input = |element_depth| {
+    let input = |element_depth: usize| {
         format!(
             "{}<testcase/>{}",
             "<testsuite tests='1' failures='0' errors='0' skipped='0'>".repeat(element_depth - 1),
