@@ -120,6 +120,11 @@ COVERAGE-THRESHOLD-01：覆盖率阈值按配置值的规范化十进制表示�
 舍入而误放行；小数阈值相等时通过，可选分支与空测量集合语义保持一致。
 证据见 `domain::coverage::tests` 与 `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages`。
 
+LCOV-SUMMARY-01：LCOV 的 `LF`、`LH`、`BRF` 或 `BRH` 与明细矛盾时，诊断必须包含对应 `SF`
+源文件、声明值和观测值；仍报告未完成并保留原始产物，不能忽略计数或用阈值掩盖矛盾。
+证据见 `adapters::reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 与
+`tests/coverage_llvm_live.rs::rust_lcov_reports_require_measured_branches_and_consistent_source_summaries`。
+
 OUTPUT-INPUT-01：规范化的报告与项目输出路径不能覆盖已选输入；当前与基线冲突必须在准备修改文件前
 拒绝，并在静态预检可见。stdout 报告路径仅作证据标签；前序命令生成的报告仍需清理重产。
 生产命令仅在工具探测和报告准备后输入完整性验证通过时启动。证据见 `tests/execution/preparation.rs`。

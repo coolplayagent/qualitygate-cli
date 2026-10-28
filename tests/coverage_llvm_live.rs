@@ -38,7 +38,7 @@ fn output(program: &str, args: &[&str]) -> String {
 
 #[test]
 #[ignore = "requires pinned Rust LLVM tools; mandatory coverage-producers CI job"]
-fn rust_lcov_zero_counters_do_not_claim_branch_measurement() {
+fn rust_lcov_reports_require_measured_branches_and_consistent_source_summaries() {
     let root = fixture();
     let external = tempfile::tempdir().unwrap();
     let source = external.path().join("driver.rs");
@@ -120,4 +120,37 @@ fn rust_lcov_zero_counters_do_not_claim_branch_measurement() {
     assert_eq!(evidence["line_percent"], 100.0);
     assert_eq!(evidence["branch_percent"], Value::Null);
     assert_eq!(evidence["branch_measurement"], false);
+
+    // The pinned LLVM exporter can count an overlapping closure body twice in
+    // LF/LH while emitting one DA record per physical line. Preserve the raw
+    // contradiction and incomplete verdict, with enough context to locate it.
+    std::fs::write(
+        root.path().join("src/main.rs"),
+        "fn main() {\n    let increment = |value: u32| value + 1;\n    assert_eq!(increment(1), 2);\n}\n",
+    )
+    .unwrap();
+    let inconsistent = run(&policy, 2);
+    assert_eq!(inconsistent["gate"]["complete"], false);
+    let check = &inconsistent["checks"][0];
+    assert!(check["verdict"].is_null());
+    let artifact = check["execution"]["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|artifact| artifact["path"].as_str().unwrap().ends_with("report-0"))
+        .unwrap();
+    let raw = std::fs::read_to_string(artifact["path"].as_str().unwrap()).unwrap();
+    let source = raw
+        .lines()
+        .find_map(|line| line.strip_prefix("SF:"))
+        .unwrap();
+    assert!(raw.contains("LF:5\nLH:5\n"), "{raw}");
+    assert_eq!(
+        raw.lines().filter(|line| line.starts_with("DA:")).count(),
+        4
+    );
+    let reason = check["execution"]["reason"].as_str().unwrap();
+    assert!(reason.contains("LCOV LF does not match source records"));
+    assert!(reason.contains(&format!("{source:?}")), "{reason}");
+    assert!(reason.contains("declared 5, observed 4"), "{reason}");
 }

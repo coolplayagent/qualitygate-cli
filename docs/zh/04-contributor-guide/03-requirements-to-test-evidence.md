@@ -39,6 +39,7 @@
 | PYTHON-METADATA-01 安装元数据为普通文件、有界读取与未完成 producer 证据 | `application::python_install::tests`：精确 2 MiB 边界、超大文件、目录与符号链接隔离；`tests/execution/python_metadata.rs`：有界子进程验证 FIFO/socket/目录/超大产物、证据保留、依赖阻断及普通文件恢复；真实 pip 仍由 `tests/python.rs` 验证 |
 | REPORT-COUNT-01 测试与覆盖率报告累计计数的溢出检查、证据保留与依赖阻塞 | `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`；`tests/execution/report_counts.rs` |
 | COVERAGE-THRESHOLD-01 精确计数判定、小数阈值相等、可选分支与空测量集合 | `domain::coverage::tests`；`tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages` |
+| LCOV-SUMMARY-01 源文件与声明/观测计数诊断、原始证据保留和未完成判定 | `adapters::reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 在合法源文件段之后验证四种计数器；`tests/coverage_llvm_live.rs::rust_lcov_reports_require_measured_branches_and_consistent_source_summaries` 在独立 `coverage-producers` 作业中执行锁定的 LLVM 导出器。 |
 | OUTPUT-INPUT-01 报告及项目输出与输入冲突时准备前拒绝、静态预检、基线保护、报告新鲜度与命令启动完整性 | `tests/execution/preparation.rs`；`tests/cli.rs` 与 `tests/execution.rs` 的旧报告回归 |
 | OUTPUT-PATH-01 规范化输出名唯一、基线清单独立、合法别名保留与报告计数不重复 | `config::tests::report_output_names_are_unique_after_normalization_without_rewriting_policy` 及相邻基线/项目单元测试；`tests/execution/output_aliases.rs` |
 | SHARED-EXECUTION-01 基线派生范围绑定、不可变执行输入/摘要共享、独立工作区与输入替换检测 | `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`：基线/当前摘要绑定、创建时拒绝等长内容篡改及永久失败；`snapshot::input_guard::tests`；`tests/ratchet.rs`；`tests/compatibility.rs` |

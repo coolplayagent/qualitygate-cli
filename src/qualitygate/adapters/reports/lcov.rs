@@ -135,12 +135,13 @@ impl Section {
             ("BRF", self.branches.len()),
             ("BRH", self.branches.values().filter(|hit| **hit).count()),
         ] {
-            if self
-                .counters
-                .get(key)
-                .is_some_and(|expected| *expected != observed)
+            if let Some(expected) = self.counters.get(key)
+                && *expected != observed
             {
-                bail!("LCOV {key} does not match source records");
+                bail!(
+                    "LCOV {key} does not match source records for {:?}: declared {expected}, observed {observed}",
+                    self.file
+                );
             }
         }
         if self

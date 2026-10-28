@@ -92,9 +92,22 @@ fn lcov_sections_merge_by_identity_and_validate_source_summaries() {
     assert_eq!(merged.coverage[0].branches_found, 2);
     assert_eq!(merged.coverage[0].branches_hit, 2);
     assert!(merged.branch_coverage);
+    for (key, declared, observed) in [("LF", 2, 1), ("LH", 0, 1), ("BRF", 3, 2), ("BRH", 2, 1)] {
+        let inconsistent = first.replace("src/a.rs", "src/b.rs").replace(
+            &format!("{key}:{observed}\n"),
+            &format!("{key}:{declared}\n"),
+        );
+        let error = parse(
+            ReportFormat::Lcov,
+            format!("{first}{inconsistent}").as_bytes(),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains(&format!("LCOV {key} does not match source records")));
+        assert!(error.contains("\"src/b.rs\""), "{error}");
+        assert!(error.contains(&format!("declared {declared}, observed {observed}")));
+    }
     for broken in [
-        first.replace("LF:1", "LF:2"),
-        first.replace("BRF:2", "BRF:3"),
         first.replace("DA:1,1", "DA:1,1\nDA:1,1"),
         first.replace("BRDA:1,0,1,-", "BRDA:1,0,0,1"),
         first.replace("DA:1,1", "DA:2,1"),

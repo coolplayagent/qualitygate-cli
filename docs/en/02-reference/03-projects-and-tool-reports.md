@@ -64,6 +64,14 @@ facts; zero counters are retained. Empty or internally inconsistent reports,
 missing source mappings, duplicate incompatible entries, and parse limits are
 incomplete. A high percentage is not proof of behavior.
 
+LCOV summary mismatches identify the `SF` source, counter (`LF`, `LH`, `BRF`
+or `BRH`), declared value and value derived from the detailed records. The raw
+report is retained and the check remains incomplete. This also applies to real
+producer inconsistencies: the pinned Rust/LLVM exporter can report `LF:5` for
+four `DA` records when a closure overlaps its enclosing function. Inspect the
+named source section and regenerate consistent producer evidence; changing a
+coverage threshold does not resolve a contradictory report.
+
 Coverage decisions compare exact covered/total counts with the configured
 threshold's canonical decimal value before rounding display percentages. A
 100% threshold requires every measured item to be covered; a 99.9% threshold
