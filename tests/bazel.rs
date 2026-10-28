@@ -201,5 +201,6 @@ fn bazel_exposes_cached_domain_libraries_and_dependency_contract_test() {
     assert!(QUALITYGATE_POLICY.contains("id: bazel-module-lock"));
     assert!(QUALITYGATE_POLICY.contains("id: bazel-build"));
     assert!(QUALITYGATE_POLICY.contains("id: bazel-test"));
-    assert!(QUALITYGATE_POLICY.contains("--test, bazel"));
+    // Cargo's complete integration selector includes this contract target.
+    assert!(QUALITYGATE_POLICY.contains("--test, \"*\""));
 }

@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 mod architecture;
 #[path = "quality/documentation.rs"]
 mod documentation;
+#[path = "quality/gates.rs"]
+mod gates;
 #[path = "quality/rust_references.rs"]
 mod rust_references;
 #[path = "quality/site.rs"]

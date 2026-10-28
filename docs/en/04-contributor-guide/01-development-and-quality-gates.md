@@ -36,6 +36,16 @@ eligible for Miri; native unit tests are exercised separately under ASan. Live
 producer tests that need external toolchains or networks never count as though
 they ran in the stable local suite.
 
+The repository's `integration` command check and CI's `rust-integration` job
+select `cargo test --locked --test '*' --all-features`; CI also retains
+`--no-fail-fast`. Cargo expands the quoted target glob, so newly added integration
+targets enter the gate automatically. The unit gate keeps `--lib --bins`, and
+benchmark, documentation and architecture gates continue reporting separately.
+The repository quality test compares the policy's selectors with bounded, offline
+`cargo metadata` output and rejects missing targets, unit selectors or test-name
+filters. Ignored tests remain excluded from the default run; their dedicated live
+producer jobs supply execution evidence.
+
 Native Windows CI partitions the complete Cargo target inventory into three jobs:
 `--lib --bins --examples --benches`, `--test '[a-m]*'`, and `--test '[!a-m]*'`.
 The complementary, quoted Cargo globs include new integration targets without a

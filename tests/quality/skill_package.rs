@@ -727,10 +727,11 @@ fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
         );
     }
     let ci = read(root, ".github/workflows/pr-checks.yml");
-    assert!(ci.contains("--test doctor"));
+    // The complete integration selector includes the doctor target in both gates.
+    assert!(ci.contains("--test '*'"));
     assert!(ci.contains("Native PowerShell preflight"));
     assert!(ci.contains("Native Git Bash preflight"));
-    assert!(read(root, "qualitygate.yaml").contains("--test, doctor"));
+    assert!(read(root, "qualitygate.yaml").contains("--test, \"*\""));
     for (name, schema) in [
         (
             "capabilities",
