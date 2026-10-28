@@ -56,6 +56,7 @@ pub(super) fn parse(text: &str) -> Result<Data> {
         .as_array()
         .context("golangci-lint report has no Issues array")?;
     let mut data = Data::default();
+    let mut budget = super::json_budget::Budget::new("Normalized diagnostics");
     for issue in issues {
         let linter = issue["FromLinter"]
             .as_str()
@@ -90,15 +91,18 @@ pub(super) fn parse(text: &str) -> Result<Data> {
                     && prefix.bytes().any(|byte| byte.is_ascii_digit())
             })
             .unwrap_or(linter);
-        data.issues.push(Issue {
-            rule: rule.into(),
-            file: Some(file.into()),
-            line: Some(line),
-            message: message.into(),
-            symbol: None,
-            tool: Some(linter.into()),
-            locations: Vec::new(),
-        });
+        budget.push(
+            &mut data.issues,
+            Issue {
+                rule: rule.into(),
+                file: Some(file.into()),
+                line: Some(line),
+                message: message.into(),
+                symbol: None,
+                tool: Some(linter.into()),
+                locations: Vec::new(),
+            },
+        )?;
     }
     Ok(data)
 }

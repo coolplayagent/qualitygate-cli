@@ -14,15 +14,15 @@ const MAX_DEPTH: usize = 32;
 pub(super) struct Budget {
     steps: usize,
     text_bytes: usize,
-    retained: super::sarif_budget::Budget,
+    retained: super::json_budget::Budget,
 }
 
 impl Budget {
     pub(super) fn new(steps: usize) -> Self {
         Self {
             steps,
-            text_bytes: super::sarif_budget::MAX_BYTES,
-            retained: super::sarif_budget::Budget::new("locations"),
+            text_bytes: super::json_budget::MAX_BYTES,
+            retained: super::json_budget::Budget::new("Expanded SARIF locations"),
         }
     }
 

@@ -876,8 +876,15 @@ SARIF-EXPANSION-01：SARIF 所有 run 共享 200,000 次引用步骤和 16 MiB �
 紧凑 JSON，归一化结果通过有界序列化计数器维持既有 16 MiB 上限，避免先分配完整输出再拒绝。
 引用深度 32、每结果主位置 256 及报告输入限制继续有效。超限报告未完成，保留原始报告和
 策略/源输入，修复后可以恢复。证据见 `adapters::reports::json::tests`、
-`adapters::reports::sarif_budget::tests` 和
+`adapters::reports::json_budget::tests` 和
 `tests/sarif.rs::excessive_location_expansion_is_incomplete_preserves_inputs_and_recovers`。
+
+REPORT-EXPANSION-01：普通静态检查与 JUnit 报告在追加归一化诊断前计量紧凑 JSON，包含转义；
+同一报告所有文件共享 16 MiB 额度，避免文件级路径在大量诊断中无界复制。复用 SARIF 的有界计数器，
+不分配用于测量的 JSON 副本，不绕过生产者错误校验。超限保持未完成，保留原始报告字节/摘要与输入，
+修复后正常违规和通过均可恢复。证据见 `adapters::reports::diagnostic_budget_tests`、
+`adapters::reports::json_budget::tests::rejected_values_are_not_appended_to_retained_evidence` 和
+`tests/diagnostic_expansion.rs::excessive_diagnostics_are_incomplete_preserve_raw_evidence_and_recover`。
 
 ## 18. 规则诊断输出预算
 

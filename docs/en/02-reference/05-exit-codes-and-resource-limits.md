@@ -99,6 +99,15 @@ Non-violation results also consume these budgets. Excessive expansion produces
 incomplete evidence and retains raw report artifacts for repair and rechecking;
 the budgets do not guarantee process memory or elapsed time.
 
+Cargo Clippy, ESLint, golangci-lint, Ruff, JUnit, Checkstyle, PMD and SpotBugs
+normalization also limits the cumulative compact JSON diagnostic records to
+16 MiB per report, including string escaping. All files share the allowance;
+each record is measured before appending it to the retained diagnostics. The
+counter allocates no JSON copy. This bounds amplification from repeated file
+paths before source mapping or delivery filtering. Excess reports remain
+incomplete, with raw artifacts retained for repair and rechecking. The input
+byte limits and final diagnostic-output limits still apply separately.
+
 Built-in rule assets share a 256-file and 1 MiB limit across all packages. The
 byte allowance is charged against actual reads, including growth or regular
 files whose metadata understates their size. Each read is limited to the

@@ -11,6 +11,7 @@ pub(super) fn parse(text: &str) -> Result<Data> {
         bail!("ESLint report has no analyzed files");
     }
     let mut data = Data::default();
+    let mut budget = super::json_budget::Budget::new("Normalized diagnostics");
     let mut seen = BTreeSet::new();
     for file in files {
         let path = file["filePath"]
@@ -56,15 +57,18 @@ pub(super) fn parse(text: &str) -> Result<Data> {
                 .as_str()
                 .filter(|message| !message.trim().is_empty())
                 .context("ESLint message text is empty")?;
-            data.issues.push(Issue {
-                rule: rule.into(),
-                file: Some(path.into()),
-                line: Some(line),
-                message: message.into(),
-                symbol: None,
-                tool: Some("eslint".into()),
-                locations: Vec::new(),
-            });
+            budget.push(
+                &mut data.issues,
+                Issue {
+                    rule: rule.into(),
+                    file: Some(path.into()),
+                    line: Some(line),
+                    message: message.into(),
+                    symbol: None,
+                    tool: Some("eslint".into()),
+                    locations: Vec::new(),
+                },
+            )?;
         }
         let reported_errors = file["errorCount"]
             .as_u64()

@@ -93,9 +93,12 @@ the consuming owners.
 
 `adapters::reports::sarif_locations` owns reference-step, text-work and retained
 location budgets. It borrows logical names while resolving tables and charges
-locations before retention. `adapters::reports::sarif_budget` meters compact JSON
+locations before retention. `adapters::reports::json_budget` meters compact JSON
 through a counter with no filesystem access; normalized results use the same
 meter before append, avoiding an allocation merely to measure serialized size.
+The report adapters share its checked append operation for ordinary lint and
+test diagnostics. Each report shares one budget across all files; the counter
+does not alter producer validation, source mapping or execution ownership.
 
 Within `adapters`, `xml_document` owns bounded XML tree parsing for reports,
 Maven models and compatibility evidence. Callers enforce their byte budgets;

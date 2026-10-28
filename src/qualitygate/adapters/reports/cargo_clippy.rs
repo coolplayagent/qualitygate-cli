@@ -6,6 +6,7 @@ use serde_json::Value;
 
 pub(super) fn parse(text: &str) -> Result<Data> {
     let mut data = Data::default();
+    let mut budget = super::json_budget::Budget::new("Normalized diagnostics");
     let mut finished = None;
     let mut compiler_errors = false;
     let mut denied_lints = 0usize;
@@ -73,15 +74,18 @@ pub(super) fn parse(text: &str) -> Result<Data> {
                     .as_str()
                     .filter(|value| !value.trim().is_empty())
                     .context("Cargo lint message is empty")?;
-                data.issues.push(Issue {
-                    rule: rule.into(),
-                    file: Some(file.into()),
-                    line: Some(line),
-                    message: message.into(),
-                    symbol: None,
-                    tool: Some("clippy".into()),
-                    locations: Vec::new(),
-                });
+                budget.push(
+                    &mut data.issues,
+                    Issue {
+                        rule: rule.into(),
+                        file: Some(file.into()),
+                        line: Some(line),
+                        message: message.into(),
+                        symbol: None,
+                        tool: Some("clippy".into()),
+                        locations: Vec::new(),
+                    },
+                )?;
             }
             "compiler-artifact" | "build-script-executed" | "text-line" => {}
             other => bail!("Unsupported Cargo JSON record: {other}"),

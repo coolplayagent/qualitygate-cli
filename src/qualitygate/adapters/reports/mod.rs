@@ -7,10 +7,10 @@ mod eslint_json;
 mod golangci_json;
 mod jacoco;
 mod json;
+mod json_budget;
 mod junit_validation;
 mod lcov;
 mod ruff_json;
-mod sarif_budget;
 mod sarif_locations;
 mod xml;
 mod xml_header;
@@ -190,5 +190,8 @@ mod tests;
 
 #[cfg(test)]
 mod coverage_tests;
+
+#[cfg(test)]
+mod diagnostic_budget_tests;
 
 pub mod test_cases;

@@ -7,6 +7,7 @@ use serde_json::Value;
 pub(super) fn parse(text: &str) -> Result<Data> {
     let findings: Vec<Value> = serde_json::from_str(text).context("Invalid Ruff JSON report")?;
     let mut data = Data::default();
+    let mut budget = super::json_budget::Budget::new("Normalized diagnostics");
     for finding in findings {
         let code = finding["code"]
             .as_str()
@@ -42,15 +43,18 @@ pub(super) fn parse(text: &str) -> Result<Data> {
         if end_row < line as u64 || (end_row == line as u64 && end_column < column) {
             bail!("Ruff finding has an inverted source range");
         }
-        data.issues.push(Issue {
-            rule: code.into(),
-            file: Some(file.into()),
-            line: Some(line),
-            message: message.into(),
-            symbol: None,
-            tool: Some("ruff".into()),
-            locations: Vec::new(),
-        });
+        budget.push(
+            &mut data.issues,
+            Issue {
+                rule: code.into(),
+                file: Some(file.into()),
+                line: Some(line),
+                message: message.into(),
+                symbol: None,
+                tool: Some("ruff".into()),
+                locations: Vec::new(),
+            },
+        )?;
     }
     Ok(data)
 }

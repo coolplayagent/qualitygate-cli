@@ -1,4 +1,4 @@
-//! Account for serialized SARIF evidence without allocating a JSON copy.
+//! Bound serialized report evidence without allocating a JSON copy.
 
 use anyhow::Result;
 use serde::Serialize;
@@ -23,13 +23,20 @@ impl Budget {
         serde_json::to_writer(self, value)?;
         Ok(())
     }
+
+    pub(super) fn push<T: Serialize>(&mut self, retained: &mut Vec<T>, value: T) -> Result<()> {
+        self.charge(&value)?;
+        retained.push(value);
+        Ok(())
+    }
 }
 
 impl Write for Budget {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.remaining = self.remaining.checked_sub(bytes.len()).ok_or_else(|| {
-            io::Error::other(format!("Expanded SARIF {} exceed 16 MiB", self.subject))
-        })?;
+        self.remaining = self
+            .remaining
+            .checked_sub(bytes.len())
+            .ok_or_else(|| io::Error::other(format!("{} exceed 16 MiB", self.subject)))?;
         Ok(bytes.len())
     }
 
@@ -62,5 +69,17 @@ mod tests {
         budget.charge(&"x".repeat(MAX_BYTES - 2)).unwrap();
         assert_eq!(budget.remaining, 0);
         assert!(budget.charge(&0).is_err());
+    }
+
+    #[test]
+    fn rejected_values_are_not_appended_to_retained_evidence() {
+        let mut budget = Budget {
+            remaining: 8,
+            subject: "Normalized diagnostics",
+        };
+        let mut retained = Vec::new();
+        budget.push(&mut retained, "1234").unwrap();
+        assert!(budget.push(&mut retained, "abc").is_err());
+        assert_eq!(retained, ["1234"]);
     }
 }

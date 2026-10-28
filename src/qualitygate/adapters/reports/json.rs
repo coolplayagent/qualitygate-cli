@@ -152,7 +152,7 @@ pub(super) fn sarif(text: &str) -> Result<Data> {
         bail!("SARIF contains no analysis runs");
     }
     let mut data = Data::default();
-    let mut expanded = super::sarif_budget::Budget::new("results");
+    let mut expanded = super::json_budget::Budget::new("Expanded SARIF results");
     let mut location_budget = super::sarif_locations::Budget::new(200_000);
     for run in runs {
         object(run)?;
