@@ -11,6 +11,7 @@
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
 | YAML-EXPANSION-01：分配前展开预算、UTF-8、别名、映射键、深度、错误保留与恢复 | `config::yaml_budget::tests`；`tests/doctor/yaml.rs`；`tests/rule_authoring.rs::expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs`；`tests/policy_promotion.rs::external_yaml_trust_expansion_is_rejected_before_policy_store_access` |
+| YAML-SCALAR-WORK-01：类型解析前的标量文本预算、数值别名、嵌套锚点成本、键/标签、编码与诊断位置 | `config::yaml_scalar_work::tests`；上述 YAML-EXPANSION-01 配置、任务、规则和外部信任回归中的数值场景 |
 | 快照选择、执行、报告与退出语义 | `tests/cli.rs`、`tests/execution.rs`、`tests/policy.rs`、domain 单元测试 |
 | SNAP-RENAME-01：确定性一一配对重命名来源、多余副本为新增、未配对旧路径为删除 | `snapshot::tests::rename_sources_are_consumed_once_in_path_order`：文本/二进制/空内容、保留原文件及权限；`tests/delivery_scope.rs::surplus_rename_copies_remain_added_and_subject_to_delivery_rules`：worktree/staged/path/diff 诊断及修复；`tests/benchmarks.rs::duplicate_content_rename_storm_consumes_each_old_path_once`：18,000 个相同来源及多余副本；既有采集超时测试继续执行 |
 | 初始化与能力缺口 | `tests/init.rs` |

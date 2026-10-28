@@ -79,6 +79,13 @@ the public, typed `config::policy_acceptance::parse_trust` entry point inside it
 existing blocking work. This boundary also works when Bazel compiles owners as
 separate crates; the generic YAML decoder remains private to configuration.
 
+`config::yaml_scalar_work` runs first, using Saphyr parser events to account for
+scalar text before numeric resolution. It caches completed anchor costs and
+tracks open collections, rejects recursive aliases, and retains source locations.
+It builds no YAML Value tree. The existing Serde decoder still owns value and
+typed semantics, including duplicate-key rejection; its errors and the event
+budget errors share the configuration diagnostic boundary.
+
 `domain::xml_budget` owns pure namespace-work accounting shared by configuration
 discovery and adapters. It consumes counts, bounds its scope stack and checks
 arithmetic; XML tokenization, tree parsing and profile-specific errors remain in

@@ -8,10 +8,50 @@ const MAX_NODES: usize = 100_000;
 const MAX_STRING_BYTES: usize = 4 * 1024 * 1024;
 const MAX_DEPTH: usize = 64;
 
-pub(super) fn value(bytes: &[u8]) -> Result<serde_norway::Value, serde_norway::Error> {
+#[derive(Debug)]
+pub(super) enum Error {
+    Syntax(serde_norway::Error),
+    Work(super::yaml_scalar_work::Error),
+}
+
+impl Error {
+    pub(super) fn location(&self) -> Option<(usize, usize)> {
+        match self {
+            Self::Syntax(error) => error.location().map(|mark| (mark.line(), mark.column())),
+            Self::Work(error) => error.location,
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Syntax(error) => error.fmt(formatter),
+            Self::Work(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(match self {
+            Self::Syntax(error) => error,
+            Self::Work(error) => error,
+        })
+    }
+}
+
+impl From<serde_norway::Error> for Error {
+    fn from(error: serde_norway::Error) -> Self {
+        Self::Syntax(error)
+    }
+}
+
+pub(super) fn value(bytes: &[u8]) -> Result<serde_norway::Value, Error> {
+    super::yaml_scalar_work::validate(bytes).map_err(Error::Work)?;
     validate(bytes)?;
     // Retain the existing Value visitor's duplicate-key and YAML semantics.
-    serde_norway::from_slice(bytes)
+    serde_norway::from_slice(bytes).map_err(Error::Syntax)
 }
 
 fn validate(bytes: &[u8]) -> Result<(), serde_norway::Error> {

@@ -76,7 +76,8 @@ pub fn validate(requirements: &Requirements) -> Result<()> {
     Ok(())
 }
 
-fn parser_error(error: serde_norway::Error, fallback: &str) -> ConfigurationError {
+fn parser_error(error: impl Into<super::yaml_budget::Error>, fallback: &str) -> ConfigurationError {
+    let error = error.into();
     let message = error.to_string();
     let field = message
         .split_once("unknown field `")
@@ -92,8 +93,8 @@ fn parser_error(error: serde_norway::Error, fallback: &str) -> ConfigurationErro
         .into(),
         field,
         message,
-        line: location.as_ref().map(|location| location.line()),
-        column: location.as_ref().map(|location| location.column()),
+        line: location.map(|(line, _)| line),
+        column: location.map(|(_, column)| column),
     }
 }
 

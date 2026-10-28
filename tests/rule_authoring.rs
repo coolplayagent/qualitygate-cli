@@ -317,50 +317,55 @@ fn expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs() {
     let root = repo.path();
     let valid = candidate(root, "bounded", &["python"]);
     let prefix = serde_norway::to_string(&valid).unwrap();
-    let excessive = format!(
-        "{prefix}large: &a '{}'\nextra: [{}]\n",
-        "x".repeat(131_072),
-        vec!["*a"; 32].join(",")
-    );
-    fs::write(root.join("candidate.yaml"), &excessive).unwrap();
-    let result = report(
-        &cli(
-            root,
-            &["rules", "validate", "candidate.yaml", "--format", "json"],
+    for (scalar, aliases, reason) in [
+        (
+            format!("'{}'", "x".repeat(131_072)),
+            32,
+            "strings exceed 4194304 bytes",
         ),
-        1,
-    );
-    assert_eq!(result["complete"], true);
-    assert_eq!(result["files"][0]["issues"][0]["stage"], "yaml");
-    assert!(
-        result["files"][0]["issues"]
-            .to_string()
-            .contains("strings exceed 4194304 bytes")
-    );
-    assert!(
-        rule_authoring::generate(root, "candidate.yaml")
-            .unwrap_err()
-            .to_string()
-            .contains("strings exceed 4194304 bytes")
-    );
-    assert_eq!(
-        fs::read(root.join("candidate.yaml")).unwrap(),
-        excessive.as_bytes()
-    );
-    assert!(!root.join("qualitygate/rules/bounded.yaml").exists());
-    let config = config::Config {
-        custom_rules: Some("qualitygate/rules".into()),
-        ..Default::default()
-    };
-    let error = config::catalog::Catalog::load(
-        &config,
-        [("qualitygate/rules/bounded.yaml", excessive.as_bytes())],
-    )
-    .unwrap_err();
-    assert!(
-        format!("{error:#}").contains("strings exceed 4194304 bytes"),
-        "{error:#}"
-    );
+        (
+            format!("-0x{}1", "0".repeat(131_072)),
+            128,
+            "scalar text exceeds 16777216 bytes",
+        ),
+    ] {
+        let excessive = format!(
+            "{prefix}large: &a {scalar}\nextra: [{}]\n",
+            vec!["*a"; aliases].join(",")
+        );
+        fs::write(root.join("candidate.yaml"), &excessive).unwrap();
+        let result = report(
+            &cli(
+                root,
+                &["rules", "validate", "candidate.yaml", "--format", "json"],
+            ),
+            1,
+        );
+        assert_eq!(result["complete"], true);
+        assert_eq!(result["files"][0]["issues"][0]["stage"], "yaml");
+        assert!(result["files"][0]["issues"].to_string().contains(reason));
+        assert!(
+            rule_authoring::generate(root, "candidate.yaml")
+                .unwrap_err()
+                .to_string()
+                .contains(reason)
+        );
+        assert_eq!(
+            fs::read(root.join("candidate.yaml")).unwrap(),
+            excessive.as_bytes()
+        );
+        assert!(!root.join("qualitygate/rules/bounded.yaml").exists());
+        let config = config::Config {
+            custom_rules: Some("qualitygate/rules".into()),
+            ..Default::default()
+        };
+        let error = config::catalog::Catalog::load(
+            &config,
+            [("qualitygate/rules/bounded.yaml", excessive.as_bytes())],
+        )
+        .unwrap_err();
+        assert!(format!("{error:#}").contains(reason), "{error:#}");
+    }
     save(root, "candidate.yaml", &valid);
     report(
         &cli(

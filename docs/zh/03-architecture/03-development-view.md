@@ -72,6 +72,11 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 的策略信任加载在既有阻塞工作中调用公开、类型化的 `config::policy_acceptance::parse_trust`。
 Bazel 将 owner 编译为独立 crate 时也使用该边界，通用 YAML 解码器保持在配置层内部。
 
+`config::yaml_scalar_work` 先通过 Saphyr 解析器事件累计标量文本，再进入数值解析。它缓存
+已完成锚点的成本并跟踪尚未关闭的集合，拒绝递归别名，保留源码位置，不构建 YAML Value 树。
+既有 Serde 解码器继续负责值和类型化语义（包括重复键拒绝）；解析错误和事件预算错误统一进入
+配置诊断边界。
+
 `adapters` 内的 `xml_document` 统一负责报告、Maven 模型和兼容性证据的有界 XML 树解析。
 调用方执行各自的字节预算，报告特有的 DOCTYPE 归一化留在 `reports`。迭代预检在树解析器比较
 重复名称之前，限制每个元素 1,024 个属性、整个文档 100,000 个属性，命名空间声明计入。

@@ -28,6 +28,14 @@ retain their additional 50,000-node shape limit. Oversized configuration or task
 inputs produce incomplete validation; `rules validate` reports an invalid YAML
 rule and generation refuses it. Inputs are preserved for repair and rechecking.
 
+Before scalar type resolution, an event preflight also limits expanded scalar
+text to 16 MiB, including numeric spelling, mapping keys and resolved tag text.
+Each alias charges its referenced subtree's text again; anchor costs are cached
+without expanding collections or repeatedly parsing numeric values. UTF-8 and
+its optional BOM retain the existing decoder's encoding contract. This work
+budget supplements the string, node and depth bounds above; it is not a wall
+clock deadline. Budget diagnostics retain the offending event's line and column.
+
 The normal acquisition envelope supports up to 100,000 files, 256 MiB total
 contents per tree, 2 MiB per file, four content readers, and 120 seconds. Git
 objects normally use batches no larger than 4 MiB and 1,024 objects; explicitly

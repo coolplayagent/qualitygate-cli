@@ -44,6 +44,7 @@ pub mod source_reviews;
 pub mod test_effectiveness;
 mod validation;
 mod yaml_budget;
+mod yaml_scalar_work;
 pub use initialization::{Initialization, initialize_at};
 pub use model::*;
 pub use plan::{Plan, parse_task};

@@ -24,6 +24,14 @@ fn expanded_yaml_is_incomplete_before_config_or_task_execution_and_recovers() {
             format!("extra: {}null{}\n", "[".repeat(64), "]".repeat(64)),
             "nesting exceeds 64 levels",
         ),
+        (
+            format!(
+                "large: &a -0x{}1\nextra: [{}]\n",
+                "0".repeat(131_072),
+                vec!["*a"; 128].join(",")
+            ),
+            "scalar text exceeds 16777216 bytes",
+        ),
     ];
     for (body, reason) in cases {
         let invalid = format!("schema_version: 1\n{body}");

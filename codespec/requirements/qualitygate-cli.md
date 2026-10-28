@@ -108,6 +108,13 @@ YAML-EXPANSION-01：策略、任务、项目规则、验证套件、打包规则
 `tests/doctor/yaml.rs`、`tests/rule_authoring.rs::expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs`
 与 `tests/policy_promotion.rs::external_yaml_trust_expansion_is_rejected_before_policy_store_access`。
 
+YAML-SCALAR-WORK-01：上述 YAML 入口在数值类型解析前额外限制展开后的标量文本为 16 MiB，
+包含数值写法、映射键及解析后的标签文本；重复别名按引用子树成本累计，不反复解析数值。
+预检使用有界集合栈和已完成锚点成本，不构造 Value 树；保持 UTF-8/BOM、标签、普通别名与
+锚点重绑定的既有语义，拒绝递归别名、无效编码和多文档输入。错误保留行列、原始输入及既有
+未完成/规则无效语义。证据见 `config::yaml_scalar_work::tests` 和 YAML-EXPANSION-01 的
+配置、任务、规则生成及外部信任回归；工作量预算不等同于实际耗时保证。
+
 ### 3.2 构建 / 静态质量聚合
 
 | 检查项 | 检测逻辑 | 说明 |

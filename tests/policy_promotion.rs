@@ -104,37 +104,47 @@ fn external_yaml_trust_expansion_is_rejected_before_policy_store_access() {
     let path = dunce::canonicalize(external.path())
         .unwrap()
         .join("trust.yaml");
-    let input = format!(
-        "repository: &a '{}'\nsuites: [{}]\n",
-        "x".repeat(131_072),
-        vec!["*a"; 32].join(",")
-    );
-    std::fs::write(&path, &input).unwrap();
-    let result = run(
-        repo.path(),
-        &[
-            "policy",
-            "candidate",
-            "approval-subject",
-            "absent",
-            "--trust-store",
-            path.to_str().unwrap(),
-        ],
-        2,
-    );
-    assert!(
-        result["gate"]["blockers"]
-            .to_string()
-            .contains("strings exceed 4194304 bytes"),
-        "{result}"
-    );
-    assert_eq!(result["gate"]["complete"], false);
-    assert_eq!(std::fs::read(&path).unwrap(), input.as_bytes());
-    assert!(
-        qualitygate::config::policy_store::Store::optional(repo.path())
-            .unwrap()
-            .is_none()
-    );
+    for (scalar, aliases, reason) in [
+        (
+            format!("'{}'", "x".repeat(131_072)),
+            32,
+            "strings exceed 4194304 bytes",
+        ),
+        (
+            format!("-0x{}1", "0".repeat(131_072)),
+            128,
+            "scalar text exceeds 16777216 bytes",
+        ),
+    ] {
+        let input = format!(
+            "repository: &a {scalar}\nsuites: [{}]\n",
+            vec!["*a"; aliases].join(",")
+        );
+        std::fs::write(&path, &input).unwrap();
+        let result = run(
+            repo.path(),
+            &[
+                "policy",
+                "candidate",
+                "approval-subject",
+                "absent",
+                "--trust-store",
+                path.to_str().unwrap(),
+            ],
+            2,
+        );
+        assert!(
+            result["gate"]["blockers"].to_string().contains(reason),
+            "{result}"
+        );
+        assert_eq!(result["gate"]["complete"], false);
+        assert_eq!(std::fs::read(&path).unwrap(), input.as_bytes());
+        assert!(
+            qualitygate::config::policy_store::Store::optional(repo.path())
+                .unwrap()
+                .is_none()
+        );
+    }
 }
 
 #[test]
