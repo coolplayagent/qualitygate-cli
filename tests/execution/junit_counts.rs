@@ -45,8 +45,29 @@ fn main() {
         "<testsuite>".repeat(2_000),
         "</testsuite>".repeat(2_000)
     );
+    let attributes = format!(
+        "<testsuite {}><testcase/></testsuite>",
+        (0..1_025).map(|i| format!("a{i}='v' ")).collect::<String>()
+    );
+    let document_attributes = format!(
+        "<testsuite>{}</testsuite>",
+        "<testcase a='1' b='2'/>".repeat(50_001)
+    );
+    let namespace_work = format!(
+        "<testsuite {}>{}</testsuite>",
+        (0..1_000)
+            .map(|i| format!("xmlns:p{i}='urn:{i}' "))
+            .collect::<String>(),
+        "<testcase xmlns:q='urn:q'/>".repeat(10)
+    );
     for (xml, reason) in [
         (deep.as_str(), "nesting exceeds"),
+        (attributes.as_str(), "element exceeds 1024 attributes"),
+        (namespace_work.as_str(), "namespace resolution exceeds"),
+        (
+            document_attributes.as_str(),
+            "document exceeds 100000 attributes",
+        ),
         (
             "<testsuite tests='1' failures='1'><testcase/></testsuite>",
             "failures counter",

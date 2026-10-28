@@ -49,6 +49,25 @@ including growth during reading; discovery retains its 2 MiB per-input and
 returns incomplete instead of hanging or publishing an initialization candidate.
 An existing unreadable input is not treated as a missing policy.
 
+XML reports, Maven/project models, compatibility evidence and Maven discovery
+limit element depth to 32, tree nodes to 100,000, attributes per element to 1,024,
+and attributes per document to 100,000. Root elements, document root nodes and
+namespace declarations count toward their respective limits. Iterative token
+preflight checks depth and attributes before recursive tree parsing and duplicate
+attribute comparisons. Attribute-like text in comments, CDATA, processing
+instructions or attribute values does not consume attribute counts. Caller byte
+limits and format-specific DTD handling still apply. Oversized execution evidence
+is incomplete and retains collected raw artifacts; advisory discovery records a
+manifest gap without rewriting an existing policy.
+
+Namespace scope expansion and name lookup share 10,000,000 work units per
+document. For each element, let `P` count ancestor declarations (including
+shadowed prefixes), `D` count its declarations, `S = P + D`, and `L` count its
+element name plus prefixed attribute names. Preflight charges `S * L`, plus
+`P * S` when `D > 0`. Closing an element restores the parent scope without
+refunding work. This conservative accounting bounds namespace amplification;
+it is not a wall-clock prediction or a replacement for the other XML limits.
+
 Built-in rule assets share a 256-file and 1 MiB limit across all packages. The
 byte allowance is charged against actual reads, including growth or regular
 files whose metadata understates their size. Each read is limited to the

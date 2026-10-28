@@ -156,6 +156,37 @@ mod tests {
                 .to_string()
                 .contains("nesting exceeds")
         );
+        let attributes = (0..1_025).map(|i| format!("a{i}='v' ")).collect::<String>();
+        let declarations = (0..1_000)
+            .map(|i| format!("xmlns:p{i}='urn:{i}' "))
+            .collect::<String>();
+        for (document, reason) in [
+            (
+                format!(
+                    "<testsuite {declarations}>{}{good}</testsuite>",
+                    "<n xmlns:q='urn:q'/>".repeat(10)
+                ),
+                "namespace resolution exceeds",
+            ),
+            (
+                format!("<testsuite {attributes}>{good}</testsuite>"),
+                "element exceeds 1024 attributes",
+            ),
+            (
+                format!(
+                    "<testsuite>{}{good}</testsuite>",
+                    "<n a='1' b='2'/>".repeat(50_001)
+                ),
+                "document exceeds 100000 attributes",
+            ),
+        ] {
+            assert!(
+                parse(document.as_bytes(), &input, workspace)
+                    .unwrap_err()
+                    .to_string()
+                    .contains(reason)
+            );
+        }
         // Empty and opaque failure types remain visible for the pure domain to reject.
         let missing_type = good.replace(" type='AssertionError'", "");
         assert!(

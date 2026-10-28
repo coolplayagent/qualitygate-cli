@@ -145,6 +145,35 @@ fn xml_reports_reject_excessive_nesting_before_tree_parsing() {
                 .contains("nesting exceeds"),
             "{format:?}"
         );
+        let attributes = (0..1_025).map(|i| format!("a{i}='v' ")).collect::<String>();
+        let declarations = (0..1_000)
+            .map(|i| format!("xmlns:p{i}='urn:{i}' "))
+            .collect::<String>();
+        for (input, reason) in [
+            (
+                format!(
+                    "<{root} {declarations}>{}</{root}>",
+                    "<n xmlns:q='urn:q'/>".repeat(10)
+                ),
+                "namespace resolution exceeds",
+            ),
+            (
+                format!("<{root} {attributes}/>"),
+                "element exceeds 1024 attributes",
+            ),
+            (
+                format!("<{root}>{}</{root}>", "<n a='1' b='2'/>".repeat(50_001)),
+                "document exceeds 100000 attributes",
+            ),
+        ] {
+            assert!(
+                parse(format, input.as_bytes())
+                    .unwrap_err()
+                    .to_string()
+                    .contains(reason),
+                "{format:?}"
+            );
+        }
     }
 }
 

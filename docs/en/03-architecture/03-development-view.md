@@ -71,13 +71,20 @@ Interfaces do not perform external I/O directly. Blocking filesystem and parser
 work stays isolated from asynchronous orchestration. Network, environment, and
 path access have dedicated owners so capability review is explicit.
 
+`domain::xml_budget` owns pure namespace-work accounting shared by configuration
+discovery and adapters. It consumes counts, bounds its scope stack and checks
+arithmetic; XML tokenization, tree parsing and profile-specific errors remain in
+the consuming owners.
+
 Within `adapters`, `xml_document` owns bounded XML tree parsing for reports,
 Maven models and compatibility evidence. Callers enforce their byte budgets;
-report-specific DOCTYPE normalization stays in `reports`. Project and compatibility
+report-specific DOCTYPE normalization stays in `reports`. Iterative preflight also
+limits attributes to 1,024 per element and 100,000 per document, including namespace
+declarations, before the tree parser's duplicate-name comparisons. Project and compatibility
 adapters depend on this shared leaf without importing report-format machinery.
 
 Configuration discovery owns its advisory Maven manifest validation in
-`config::discovery::maven_manifest`. It bounds XML depth and nodes before deriving
+`config::discovery::maven_manifest`. It bounds XML depth, nodes and attributes before deriving
 command candidates, and reports unsupported manifests as discovery gaps. This
 profile stays within `config`; it neither imports adapters nor produces resolved
 project facts. Adapter report failures retain their separate execution semantics.

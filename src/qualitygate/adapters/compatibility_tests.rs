@@ -46,6 +46,27 @@ fn compatibility_and_inventory_obey_xml_depth_and_node_limits() {
             "nesting exceeds",
         ),
         ("<n/>".repeat(100_000), "nodes limit reached"),
+        (
+            format!(
+                "<n {}>{}</n>",
+                (0..1_000)
+                    .map(|i| format!("xmlns:p{i}='urn:{i}' "))
+                    .collect::<String>(),
+                "<n xmlns:q='urn:q'/>".repeat(10)
+            ),
+            "namespace resolution exceeds",
+        ),
+        (
+            format!(
+                "<n {}/>",
+                (0..1_025).map(|i| format!("a{i}='v' ")).collect::<String>()
+            ),
+            "element exceeds 1024 attributes",
+        ),
+        (
+            "<n a='1' b='2'/>".repeat(50_001),
+            "document exceeds 100000 attributes",
+        ),
     ] {
         let report = valid.replace("</japicmp>", &format!("{padding}</japicmp>"));
         let error = compare(&report, CompatibilityLevel::Both).unwrap_err();

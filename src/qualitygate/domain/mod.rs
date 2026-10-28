@@ -31,6 +31,7 @@ pub mod selfcheck;
 pub mod snapshot_budget;
 mod source_review;
 mod verification;
+pub mod xml_budget;
 
 pub use attestation::*;
 pub use category::*;

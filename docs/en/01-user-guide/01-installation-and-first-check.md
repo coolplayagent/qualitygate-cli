@@ -38,12 +38,16 @@ An existing valid policy can be inspected directly without another initializatio
 
 Maven manifest discovery accepts at most 32 element levels (including the root)
 and 100,000 XML nodes (including the document root), within its existing 2 MiB
-file budget. Excessive depth, node counts or malformed XML mark that manifest
+file budget. Attribute limits are 1,024 per element and 100,000 per document,
+including namespace declarations. Excessive depth, node or attribute counts,
+or malformed XML mark that manifest
 `invalid_or_unsupported` with a `manifest_metadata` gap and omit its command
 suggestions. Other projects remain discoverable. `init` can still succeed in
 creating or inspecting a candidate; this is advisory discovery, not a gate pass.
 After repairing the POM, rerun `init` to review fresh suggestions. Existing policy
 bytes are preserved, including when `--with-checks` is specified.
+Namespace scope expansion and lookup also share the documented conservative
+[resource budget](../02-reference/05-exit-codes-and-resource-limits.md).
 
 Candidate creation is not policy approval. In particular, a pass only covers
 configured checks: initialization alone does not guarantee that your tests or

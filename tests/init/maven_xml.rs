@@ -54,9 +54,27 @@ fn oversized_maven_xml_is_an_advisory_gap_and_recovers_without_rewriting_policy(
         "</n>".repeat(2_000)
     );
     let wide = format!("<project>{}</project>", "<n/>".repeat(99_999));
+    let attributes = format!(
+        "<project {}/>",
+        (0..1_025).map(|i| format!("a{i}='v' ")).collect::<String>()
+    );
+    let document_attributes = format!("<project>{}</project>", "<n a='1' b='2'/>".repeat(50_001));
+    let namespace_work = format!(
+        "<project {}>{}</project>",
+        (0..1_000)
+            .map(|i| format!("xmlns:p{i}='urn:{i}' "))
+            .collect::<String>(),
+        "<n xmlns:q='urn:q'/>".repeat(10)
+    );
     for (xml, reason) in [
         (deep.as_str(), "nesting exceeds"),
         (wide.as_str(), "nodes limit reached"),
+        (attributes.as_str(), "element exceeds 1024 attributes"),
+        (
+            document_attributes.as_str(),
+            "document exceeds 100000 attributes",
+        ),
+        (namespace_work.as_str(), "namespace resolution exceeds"),
         ("<project><n></project>", "Invalid Maven XML"),
     ] {
         let root = fixture();
