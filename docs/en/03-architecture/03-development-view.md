@@ -71,6 +71,11 @@ Interfaces do not perform external I/O directly. Blocking filesystem and parser
 work stays isolated from asynchronous orchestration. Network, environment, and
 path access have dedicated owners so capability review is explicit.
 
+Within `adapters`, `xml_document` owns bounded XML tree parsing for reports,
+Maven models and compatibility evidence. Callers enforce their byte budgets;
+report-specific DOCTYPE normalization stays in `reports`. Project and compatibility
+adapters depend on this shared leaf without importing report-format machinery.
+
 The architecture test parses every production Rust source, resolves module and
 import paths (including grouped, aliased, macro, and conditional references),
 checks owner edges and forbidden capabilities, detects cycles, and writes a

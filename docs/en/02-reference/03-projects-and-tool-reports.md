@@ -26,13 +26,17 @@ are read only from the materialized snapshot execution and have bounded size,
 file count, diagnostics, and parse time. Missing, stale, malformed, truncated,
 or snapshot-mismatched reports never pass silently.
 
-JUnit, Checkstyle, PMD, SpotBugs, Cobertura and JaCoCo XML reports have a maximum
-element depth of 32, counting the root. An iterative token preflight enforces
-this before the recursive tree parser runs, so excessive
-nesting returns incomplete evidence instead of aborting the process. Comments,
-CDATA, processing instructions and escaped attribute values do not add depth.
-The existing 2 MiB file and 100,000-node limits also apply. This includes ordinary
-and paired JUnit reports.
+All XML adapter entrypoints share a maximum element depth of 32, counting the
+root, and a 100,000-node limit, including the document root. This covers JUnit,
+Checkstyle, PMD, SpotBugs, Cobertura, JaCoCo, paired JUnit, Maven snapshot manifests,
+effective models and usage analysis, and japicmp comparison and API inventory.
+An iterative token preflight checks depth before the recursive tree parser runs.
+Comments, CDATA, processing instructions and escaped attribute values do not add
+depth. Each caller retains its byte budget: generated reports/models are limited
+to 2 MiB; snapshot manifests use the selected snapshot acquisition budget.
+Excessive depth or node counts return incomplete evidence (exit 2); collected
+raw reports remain available and dependent checks stay blocked. Report-specific
+DOCTYPE handling remains with the report profile.
 
 The normalized result retains tool and rule IDs, severity, message, URI,
 location, fingerprints, counts, raw report digest, command evidence, and

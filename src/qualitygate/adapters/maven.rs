@@ -51,8 +51,8 @@ pub fn parse(
         .files
         .get(&manifest)
         .context("Maven project manifest is absent from snapshot")?;
-    let input = roxmltree::Document::parse(std::str::from_utf8(&input.bytes)?)?;
-    let model = roxmltree::Document::parse(std::str::from_utf8(model)?)?;
+    let input = super::xml_document::parse(std::str::from_utf8(&input.bytes)?)?;
+    let model = super::xml_document::parse(std::str::from_utf8(model)?)?;
     let project = model.root_element();
     if !project.has_tag_name("project") || text(project, "modelVersion")? != "4.0.0" {
         bail!("Expected one Maven 4.0.0 effective project, not a reactor or raw report");

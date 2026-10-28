@@ -34,6 +34,38 @@ fn compare(report: &str, level: CompatibilityLevel) -> Result<Comparison> {
 }
 
 #[test]
+fn compatibility_and_inventory_obey_xml_depth_and_node_limits() {
+    let class = CLASS.replace(
+        "/>",
+        "><modifiers><modifier oldValue='PUBLIC' newValue='PUBLIC'/></modifiers></class>",
+    );
+    let valid = xml(&class);
+    for (padding, reason) in [
+        (
+            format!("{}{}", "<n>".repeat(2_000), "</n>".repeat(2_000)),
+            "nesting exceeds",
+        ),
+        ("<n/>".repeat(100_000), "nodes limit reached"),
+    ] {
+        let report = valid.replace("</japicmp>", &format!("{padding}</japicmp>"));
+        let error = compare(&report, CompatibilityLevel::Both).unwrap_err();
+        assert!(error.to_string().contains(reason), "{error}");
+        let error = api_inventory(report.as_bytes()).unwrap_err();
+        assert!(error.to_string().contains(reason), "{error}");
+    }
+    assert_eq!(
+        compare(&valid, CompatibilityLevel::Both)
+            .unwrap()
+            .classes_compared,
+        1
+    );
+    assert_eq!(
+        api_inventory(valid.as_bytes()).unwrap(),
+        BTreeSet::from(["Api".into()])
+    );
+}
+
+#[test]
 fn complete_inventory_and_unfiltered_report_are_required() {
     let report = xml(CLASS);
     assert_eq!(

@@ -168,7 +168,7 @@ pub fn parse(
     if bytes.len() > snapshot::MAX_FILE_BYTES {
         bail!("Compatibility report exceeds its byte budget");
     }
-    let document = roxmltree::Document::parse(std::str::from_utf8(bytes)?)?;
+    let document = super::xml_document::parse(std::str::from_utf8(bytes)?)?;
     let root = document.root_element();
     if !root.has_tag_name("japicmp")
         || attribute(root, "oldJar")? != old
@@ -268,7 +268,7 @@ pub fn api_inventory(bytes: &[u8]) -> Result<BTreeSet<String>> {
     if bytes.len() > snapshot::MAX_FILE_BYTES {
         bail!("Compatibility report exceeds its byte budget");
     }
-    let document = roxmltree::Document::parse(std::str::from_utf8(bytes)?)?;
+    let document = super::xml_document::parse(std::str::from_utf8(bytes)?)?;
     let classes = document
         .root_element()
         .children()

@@ -27,3 +27,4 @@ pub mod rules;
 mod shell_conventions;
 mod structure_rules;
 pub mod syntax;
+mod xml_document;

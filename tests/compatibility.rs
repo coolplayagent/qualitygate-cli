@@ -1,4 +1,6 @@
 mod common;
+#[path = "compatibility/xml_limits.rs"]
+mod xml_limits;
 use common::*;
 use serde_json::{Value, json};
 use std::{
@@ -61,8 +63,14 @@ fn main() {
         )};
         format!("<class fullyQualifiedName=\"Api\" binaryCompatible=\"{binary}\" sourceCompatible=\"{source}\"><modifiers><modifier oldValue=\"PUBLIC\" newValue=\"PUBLIC\"/></modifiers>{changes}</class>")
     };
+    let stage = if access == "PRIVATE" { "inventory" } else { "comparison" };
+    let padding = if contains(&format!("deep-{stage}")) {
+        format!("{}{}", "<nested>".repeat(2_000), "</nested>".repeat(2_000))
+    } else if contains(&format!("wide-{stage}")) {
+        "<n/>".repeat(100_000)
+    } else { String::new() };
     fs::write(arg("--xml-file"),format!(
-        "<japicmp oldJar=\"{old}\" newJar=\"{new}\" accessModifier=\"{access}\" packagesInclude=\"all\" packagesExclude=\"n.a.\" ignoreMissingClasses=\"false\" ignoreMissingClassesByRegularExpressions=\"\" onlyModifications=\"false\" onlyBinaryIncompatibleModifications=\"false\"><classes>{classes}</classes></japicmp>"
+        "<japicmp oldJar=\"{old}\" newJar=\"{new}\" accessModifier=\"{access}\" packagesInclude=\"all\" packagesExclude=\"n.a.\" ignoreMissingClasses=\"false\" ignoreMissingClassesByRegularExpressions=\"\" onlyModifications=\"false\" onlyBinaryIncompatibleModifications=\"false\"><classes>{classes}</classes>{padding}</japicmp>"
     )).unwrap();
 }
 "#;

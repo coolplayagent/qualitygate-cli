@@ -131,6 +131,12 @@ XML-DEPTH-01：六种归一化 XML 工具报告（含配对 JUnit）在递归树
 CDATA、处理指令与转义属性不计为嵌套元素。回归覆盖精确边界、128/2,000/50,000 层、
 普通/配对解析及依赖阻塞；macOS 的 128 层栈溢出样本必须保留为明确拒绝的回归输入。
 
+XML-ADAPTER-01：Maven 快照清单、effective model、依赖使用模型及 japicmp 比较/API 清单
+必须与归一化报告共用适配器层的有界 XML 树解析器，限制 32 层元素与 100,000 节点（含文档根节点）。
+调用方原有字节预算与格式专属 DOCTYPE 处理不变。超限必须报告未完成，保留已采集的原始产物，
+不能产生有效项目/兼容性结论；依赖检查保持阻断，合法输入恢复后可通过。回归覆盖五个独立入口、
+深层与宽层输入、精确节点边界、CLI 原始字节/摘要保留和修复恢复。
+
 LCOV-SUMMARY-01：LCOV 的 `LF`、`LH`、`BRF` 或 `BRH` 与明细矛盾时，诊断必须包含对应 `SF`
 源文件、声明值和观测值；仍报告未完成并保留原始产物，不能忽略计数或用阈值掩盖矛盾。
 证据见 `adapters::reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 与

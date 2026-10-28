@@ -4,7 +4,7 @@ use roxmltree::Node;
 
 pub(super) fn parse(format: ReportFormat, text: &str) -> Result<Data> {
     let text = super::xml_header::normalize(format, text)?;
-    let document = super::xml_limits::parse(&text)?;
+    let document = crate::adapters::xml_document::parse(&text)?;
     let root = document.root_element();
     let mut data = Data::default();
     let valid_root = match format {

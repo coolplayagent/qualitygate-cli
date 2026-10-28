@@ -202,7 +202,7 @@ fn coordinate(value: &str) -> Result<DependencyFact> {
 }
 
 fn validate_model(model: &[u8]) -> Result<()> {
-    let model = roxmltree::Document::parse(std::str::from_utf8(model)?)?;
+    let model = super::xml_document::parse(std::str::from_utf8(model)?)?;
     for plugin in model
         .descendants()
         .filter(|node| node.has_tag_name("plugin"))

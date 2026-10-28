@@ -64,6 +64,10 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 共享契约应放在 `domain`，而不是 CLI 或具体适配器中。接口层不直接执行外部 I/O。阻塞的文件系统与
 解析工作和异步编排隔离；网络、环境和路径访问各有专门 owner，便于能力审核。
 
+`adapters` 内的 `xml_document` 统一负责报告、Maven 模型和兼容性证据的有界 XML 树解析。
+调用方执行各自的字节预算，报告特有的 DOCTYPE 归一化留在 `reports`；项目和兼容性适配器
+依赖这个共享叶模块，无需导入报告格式处理代码。
+
 架构测试解析全部生产 Rust 源码，解析模块与 import 路径（含分组、别名、宏和条件引用），检查 owner
 边、禁止能力和环，并输出可审核的源码摘要/行号报告及 DOT 图。隐藏根导出、歧义模块文件、未知 owner、
 宽泛外部 glob 和纯 domain 中的 I/O 都会被拒绝。

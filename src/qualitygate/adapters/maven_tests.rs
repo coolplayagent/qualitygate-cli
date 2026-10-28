@@ -51,6 +51,44 @@ fn inputs(root: &Path) -> (Snapshot, MavenProject, String, Value) {
 }
 
 #[test]
+fn manifest_and_effective_model_obey_xml_depth_and_node_limits() {
+    let root = tempfile::tempdir().unwrap();
+    for (padding, reason) in [
+        (
+            format!("{}{}", "<n>".repeat(2_000), "</n>".repeat(2_000)),
+            "nesting exceeds",
+        ),
+        ("<n/>".repeat(100_000), "nodes limit reached"),
+    ] {
+        for manifest in [true, false] {
+            let (mut snapshot, spec, mut model, tree) = inputs(root.path());
+            if manifest {
+                let input = &mut snapshot.files.get_mut("module/pom.xml").unwrap().bytes;
+                *input = String::from_utf8(input.clone())
+                    .unwrap()
+                    .replace("</project>", &format!("{padding}</project>"))
+                    .into_bytes();
+            } else {
+                model = model.replace("</project>", &format!("{padding}</project>"));
+            }
+            let error = parse(
+                &spec,
+                model.as_bytes(),
+                &serde_json::to_vec(&tree).unwrap(),
+                root.path(),
+                &snapshot,
+                "facts",
+            )
+            .unwrap_err();
+            assert!(
+                error.to_string().contains(reason),
+                "manifest={manifest}: {error}"
+            );
+        }
+    }
+}
+
+#[test]
 fn effective_model_resolution_and_test_classpath_are_distinct_facts() {
     let root = tempfile::tempdir().unwrap();
     let (snapshot, spec, model, tree) = inputs(root.path());

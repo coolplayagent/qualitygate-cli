@@ -1,4 +1,5 @@
-//! Iterative depth preflight before the recursive XML tree parser.
+//! Bounded XML tree parsing shared by report and project adapters.
+//! Callers retain their input byte budgets and format-specific header handling.
 
 use anyhow::{Context, Result, bail};
 use xmlparser::{ElementEnd, Token, Tokenizer};
@@ -68,5 +69,16 @@ mod tests {
         for input in ["<a>", "<a></a></a>", "<a value='unterminated>"] {
             assert!(parse(input).is_err(), "{input}");
         }
+    }
+
+    #[test]
+    fn xml_node_limit_counts_the_document_root_and_rejects_wide_inputs() {
+        let document = format!("<root>{}</root>", "<n/>".repeat(99_998));
+        assert_eq!(parse(&document).unwrap().descendants().count(), 100_000);
+        let oversized = document.replace("</root>", "<n/></root>");
+        assert!(matches!(
+            parse(&oversized).unwrap_err().downcast_ref(),
+            Some(roxmltree::Error::NodesLimitReached)
+        ));
     }
 }

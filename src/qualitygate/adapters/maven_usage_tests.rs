@@ -47,6 +47,24 @@ fn fixture() -> (Snapshot, ProjectFacts) {
 }
 
 #[test]
+fn usage_model_obeys_xml_depth_and_node_limits() {
+    let (snapshot, facts) = fixture();
+    let log = format!("{PREFIX}{MISSING}{SUFFIX}");
+    for (padding, reason) in [
+        (
+            format!("{}{}", "<n>".repeat(2_000), "</n>".repeat(2_000)),
+            "nesting exceeds",
+        ),
+        ("<n/>".repeat(100_000), "nodes limit reached"),
+    ] {
+        let model = format!("<project>{padding}</project>");
+        let error = parse(model.as_bytes(), log.as_bytes(), &facts, &snapshot).unwrap_err();
+        assert!(error.to_string().contains(reason), "{error}");
+    }
+    assert!(parse(b"<project/>", log.as_bytes(), &facts, &snapshot).is_ok());
+}
+
+#[test]
 fn bytecode_usage_is_cross_checked_and_drives_repairable_diagnostics() {
     let (snapshot, mut facts) = fixture();
     let log = format!("{PREFIX}{MISSING}{SUFFIX}");

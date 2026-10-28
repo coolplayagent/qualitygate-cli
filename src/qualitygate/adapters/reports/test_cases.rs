@@ -14,7 +14,7 @@ pub fn parse(bytes: &[u8], snapshot: &Snapshot, workspace: &Path) -> Result<Vec<
         bail!("Test report exceeds size budget");
     }
     let text = super::xml_header::normalize(ReportFormat::Junit, std::str::from_utf8(bytes)?)?;
-    let doc = super::xml_limits::parse(&text)?;
+    let doc = crate::adapters::xml_document::parse(&text)?;
     let root = doc.root_element();
     if !["testsuite", "testsuites"].contains(&root.tag_name().name()) {
         bail!("Unexpected JUnit root");
