@@ -76,6 +76,12 @@ Maven models and compatibility evidence. Callers enforce their byte budgets;
 report-specific DOCTYPE normalization stays in `reports`. Project and compatibility
 adapters depend on this shared leaf without importing report-format machinery.
 
+Configuration discovery owns its advisory Maven manifest validation in
+`config::discovery::maven_manifest`. It bounds XML depth and nodes before deriving
+command candidates, and reports unsupported manifests as discovery gaps. This
+profile stays within `config`; it neither imports adapters nor produces resolved
+project facts. Adapter report failures retain their separate execution semantics.
+
 The architecture test parses every production Rust source, resolves module and
 import paths (including grouped, aliased, macro, and conditional references),
 checks owner edges and forbidden capabilities, detects cycles, and writes a

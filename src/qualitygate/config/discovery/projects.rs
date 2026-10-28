@@ -41,11 +41,7 @@ pub(super) fn analyze(inventory: &Inventory, project: &Project, text: &str) -> R
             )
         }
         "maven" => {
-            let data = roxmltree::Document::parse(text)
-                .map_err(|_| anyhow::anyhow!("Invalid Maven XML"))?;
-            if data.root_element().tag_name().name() != "project" {
-                bail!("Maven manifest root must be project")
-            }
+            super::maven_manifest::validate(text)?;
             gaps.push(gap(project, "project_facts_configuration", "Configure effective-POM/dependency-tree producer outputs before dependency assertions; compiled usage and module directions need their explicit producer contracts"));
             (
                 vec![

@@ -36,6 +36,15 @@ profiles. To include discovered command candidates, run `init --with-checks`
 within your team's policy adoption process; it does not install or run those tools.
 An existing valid policy can be inspected directly without another initialization.
 
+Maven manifest discovery accepts at most 32 element levels (including the root)
+and 100,000 XML nodes (including the document root), within its existing 2 MiB
+file budget. Excessive depth, node counts or malformed XML mark that manifest
+`invalid_or_unsupported` with a `manifest_metadata` gap and omit its command
+suggestions. Other projects remain discoverable. `init` can still succeed in
+creating or inspecting a candidate; this is advisory discovery, not a gate pass.
+After repairing the POM, rerun `init` to review fresh suggestions. Existing policy
+bytes are preserved, including when `--with-checks` is specified.
+
 Candidate creation is not policy approval. In particular, a pass only covers
 configured checks: initialization alone does not guarantee that your tests or
 coverage tools are selected. Continue with [rule configuration](03-rule-configuration.md)

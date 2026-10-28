@@ -1,6 +1,7 @@
 //! Bounded candidate-policy discovery. No repository command is executed here.
 
 mod inventory;
+mod maven_manifest;
 mod projects;
 mod suggestions;
 #[cfg(test)]

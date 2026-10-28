@@ -30,6 +30,12 @@ qualitygate --root /path/to/repository config --show --format json
 检查选中的规则和 profile。需要加入发现的命令候选时，在团队策略采用流程内运行
 `init --with-checks`；该命令不会安装或执行这些工具。已有有效配置时可直接查看，无需再次初始化。
 
+Maven 清单发现最多接受 32 层元素（根元素计入）和 100,000 个 XML 节点（文档根节点计入），
+原有 2 MiB 文件预算继续适用。超深、节点过多或 XML 格式错误时，该清单标为
+`invalid_or_unsupported`，产生 `manifest_metadata` 缺口并省略对应命令建议；其他项目仍可被发现。
+`init` 仍可成功创建或查看候选配置，这属于建议性发现，不代表门禁通过。修复 POM 后可再次运行
+`init` 查看新建议；已有策略的字节保持不变，即使指定了 `--with-checks`。
+
 生成候选不等于批准策略。通过结论只覆盖已配置检查：初始化本身不能保证项目测试或覆盖率工具已被
 选中。需要适配仓库时，继续阅读[规则配置](03-rule-configuration.md)。
 

@@ -68,6 +68,10 @@ interfaces 调用 application 用例，application 不解析 CLI 参数。
 调用方执行各自的字节预算，报告特有的 DOCTYPE 归一化留在 `reports`；项目和兼容性适配器
 依赖这个共享叶模块，无需导入报告格式处理代码。
 
+配置发现的建议性 Maven 清单校验由 `config::discovery::maven_manifest` 负责，在生成命令
+候选前限制 XML 深度和节点数，并把不支持的清单记录为发现缺口。该 profile 位于 `config` 内，
+不导入适配器，也不产生已解析的项目事实；适配器报告失败继续使用独立的执行状态语义。
+
 架构测试解析全部生产 Rust 源码，解析模块与 import 路径（含分组、别名、宏和条件引用），检查 owner
 边、禁止能力和环，并输出可审核的源码摘要/行号报告及 DOT 图。隐藏根导出、歧义模块文件、未知 owner、
 宽泛外部 glob 和纯 domain 中的 I/O 都会被拒绝。
