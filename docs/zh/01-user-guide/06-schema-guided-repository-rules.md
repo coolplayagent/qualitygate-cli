@@ -23,8 +23,11 @@ flowchart LR
 
 ## 阅读规则契约
 
-编写前先导出匹配的 `rules schema`。[规则参考](../02-reference/02-rules.md)统一说明字段和验证边界。
+编写前先运行 `qualitygate capabilities --format json`，再导出目标规则格式的 Schema：
+v1 使用 `rules schema`，v2 使用 `schema operator-rule`，1.0.0 的 V3 命名集合与词法 lambda
+使用 `schema operator-rule-v3`。[统一规则参考](../02-reference/02-rules.md)说明字段、运行时要求和验证边界。
 从一条明确、可测试的约束开始；无法表达的义务保留为缺口，不猜测或扩张规则含义。
+以下文件行数示例使用 v1，1.0.0 继续支持这一格式。
 
 ## 在不编造策略的前提下转换 `AGENTS.md`
 

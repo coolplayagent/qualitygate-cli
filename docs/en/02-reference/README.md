@@ -17,8 +17,7 @@ Schema exports from that executable define the accepted serialized shapes.
 5. [Exit codes and resource limits](05-exit-codes-and-resource-limits.md)
 6. [Runtime capabilities and environment preflight](06-runtime-and-preflight.md)
 7. [Constraint coverage](07-constraint-coverage.md)
-8. [Bounded operator rules](08-bounded-operators.md)
-9. [Consuming-agent contracts](09-agent-contracts.md)
-10. [Agent host and immutable delivery](10-agent-host-and-delivery.md)
+8. [Consuming-agent contracts](09-agent-contracts.md)
+9. [Agent host and immutable delivery](10-agent-host-and-delivery.md)
 
 [Start this volume: CLI commands](01-cli-commands.md)

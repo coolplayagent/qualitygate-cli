@@ -67,4 +67,4 @@ adoption record cannot grant Agent permissions or override host instructions.
 
 ---
 
-[Previous: Bounded operator rules](08-bounded-operators.md) · [Contents](../README.md) · [Next: Agent host and immutable delivery](10-agent-host-and-delivery.md)
+[Previous: Constraint coverage](07-constraint-coverage.md) · [Contents](../README.md) · [Next: Agent host and immutable delivery](10-agent-host-and-delivery.md)

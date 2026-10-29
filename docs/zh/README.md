@@ -38,9 +38,8 @@ Qualitygate 根据仓库策略和任务验收要求检查 Git 快照。本书从
 5. [退出码与资源限制](02-reference/05-exit-codes-and-resource-limits.md)
 6. [运行时能力与环境预检](02-reference/06-runtime-and-preflight.md)
 7. [条款覆盖](02-reference/07-constraint-coverage.md)
-8. [有界算子规则](02-reference/08-bounded-operators.md)
-9. [面向使用者 Agent 的行为契约](02-reference/09-agent-contracts.md)
-10. [Agent 宿主与不可变交付](02-reference/10-agent-host-and-delivery.md)
+8. [面向使用者 Agent 的行为契约](02-reference/09-agent-contracts.md)
+9. [Agent 宿主与不可变交付](02-reference/10-agent-host-and-delivery.md)
 
 ### [3. 架构——4+1 视图](03-architecture/README.md)
 

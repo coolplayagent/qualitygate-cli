@@ -904,3 +904,7 @@ REPORT-RENAME-01：基线位置先校验原始源文件及行范围，再映射�
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
 | RULE-OUTPUT-01 | 每项检查保留诊断最多 10,000 条及 UTF-8 紧凑 JSON 8 MiB，包含转义和复验参数；项目规则各版本的文件清单、固定断言、依赖和表达式共享预算，追加前计量；复验绑定在阻塞线程中复核；超限保留既有违规并保持未完成，不覆盖早先的执行缺口原因，不伪造省略总数；条款覆盖基于施加输出限制后的最终状态 | `adapters::diagnostic_budget::tests`；`tests/custom_rules/output_budget.rs`；[退出码与资源限制](../../docs/zh/02-reference/05-exit-codes-and-resource-limits.md) |
+
+## RELEASE-1.0：规则文档与发布一致性
+
+Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一发布版本。1.0.0 的中英文规则参考统一说明 v1/v2/V3、运行时能力和 lambda 边界，移除重复旧章节并修复目录与链接；仍受支持的规则协议和规范来源保留。验收由 `tests/quality/site.rs`、`tests/quality/skill_package.rs`、`tests/quality/documentation.rs` 及 release workflow 的版本、打包和跨平台二进制检查提供。发布记录需包含 tag 对应提交、资产校验和和 Pages 部署结果。

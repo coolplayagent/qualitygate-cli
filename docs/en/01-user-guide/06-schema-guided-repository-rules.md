@@ -27,9 +27,13 @@ flowchart LR
 
 ## Read the rule contract
 
-Export the matching `rules schema` before authoring. The [rule reference](../02-reference/02-rules.md)
-defines the fields and validation boundary. Start with one explicit, testable
+Query `qualitygate capabilities --format json`, then export the schema for the
+intended rule format: `rules schema` for v1, `schema operator-rule` for v2, or
+`schema operator-rule-v3` for V3 named collections and lexical lambdas in 1.0.0.
+The [unified rule reference](../02-reference/02-rules.md) defines the fields,
+runtime requirements and validation boundary. Start with one explicit, testable
 clause; keep unsupported obligations visible instead of guessing a broader rule.
+The following file-limit example uses v1, which remains supported in 1.0.0.
 
 ## Convert `AGENTS.md` without inventing policy
 

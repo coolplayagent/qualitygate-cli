@@ -42,7 +42,7 @@ flowchart LR
 来源绑定确认选中的字节，采用记录表达策略接受；任何一项都不能单独证明翻译充分。
 
 [条款覆盖](../02-reference/07-constraint-coverage.md)将声明条款关联到配置检查，记录不支持或失效的映射。
-[有界算子](../02-reference/08-bounded-operators.md)在共享预算内组合完整事实：缺失事实不能变为空集合，
+[有界算子](../02-reference/02-rules.md)在共享预算内组合完整事实：缺失事实不能变为空集合，
 否定和布尔求值不能把未完成证据变成通过。
 [Agent 契约](../02-reference/09-agent-contracts.md)向实际执行任务的 Agent 投影已采用义务，投影就绪与
 检查完成分别判定。

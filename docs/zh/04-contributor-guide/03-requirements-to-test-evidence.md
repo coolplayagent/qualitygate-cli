@@ -10,6 +10,7 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
+| 发布版本、Skill 包与网站链接一致性 | `tests/quality/site.rs::pages_site_links_resolve_and_match_the_release_version`、`pages_workflow_deploys_only_the_static_site_from_main`；`tests/quality/skill_package.rs::skill_package_contract_is_complete_and_matches_the_cli_version`；`tests/quality/documentation.rs` 文档链接和双语目录门禁 |
 | YAML-EXPANSION-01：分配前展开预算、UTF-8、别名、映射键、深度、错误保留与恢复 | `config::yaml_budget::tests`；`tests/doctor/yaml.rs`；`tests/rule_authoring.rs::expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs`；`tests/policy_promotion.rs::external_yaml_trust_expansion_is_rejected_before_policy_store_access` |
 | YAML-SCALAR-WORK-01：类型解析前的标量文本预算、数值别名、嵌套锚点成本、键/标签、编码与诊断位置 | `config::yaml_scalar_work::tests`；上述 YAML-EXPANSION-01 配置、任务、规则和外部信任回归中的数值场景 |
 | 快照选择、执行、报告与退出语义 | `tests/cli.rs`、`tests/execution.rs`、`tests/policy.rs`、domain 单元测试 |

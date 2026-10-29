@@ -51,7 +51,7 @@ adoption records policy acceptance; none alone proves the translation sufficient
 
 [Constraint coverage](../02-reference/07-constraint-coverage.md) links declared
 clauses to configured checks and records unsupported or stale mappings.
-[Operators](../02-reference/08-bounded-operators.md) combine complete facts under
+[Operators](../02-reference/02-rules.md) combine complete facts under
 shared budgets. Missing facts never become an empty collection, and negation or
 boolean evaluation cannot convert incomplete evidence into pass.
 [Agent contracts](../02-reference/09-agent-contracts.md) project adopted obligations

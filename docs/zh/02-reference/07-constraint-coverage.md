@@ -32,7 +32,7 @@ project-rule v1 DSL。通过 `rules source` 获取来源，通过 `qualitygate s
 
 限制为 256 条条款、每条 64 项检查、每种正反例各 16 项，以及现有 1 MiB 策略预算。
 未知字段、重复项、空映射、未知策略检查、自引用及非法来源会被拒绝。覆盖只描述声明的清单，
-不能证明自然语言提取已穷尽或解释充分。[有界算子协议](08-bounded-operators.md)已单独提供；
+不能证明自然语言提取已穷尽或解释充分。[有界算子协议](02-rules.md)已单独提供；
 [Agent 契约](09-agent-contracts.md)和 [Rust 宿主](10-agent-host-and-delivery.md)分别通过能力声明提供对应接口。
 
 
@@ -59,4 +59,4 @@ qualitygate check --worktree --profile full --format json
 
 ---
 
-[上一章：运行时能力与环境预检](06-runtime-and-preflight.md) · [全书目录](../README.md) · [下一章：有界算子规则](08-bounded-operators.md)
+[上一章：运行时能力与环境预检](06-runtime-and-preflight.md) · [全书目录](../README.md) · [下一章：面向使用者 Agent 的行为契约](09-agent-contracts.md)

@@ -46,7 +46,7 @@ Limits: 256 clauses, 64 checks per clause, 16 example references per polarity,
 and the existing 1 MiB policy budget. Unknown fields, duplicates, empty mappings,
 unknown policy checks, self-reference and malformed sources are rejected.
 Coverage describes the declared inventory, not proof of exhaustive prose
-extraction or sufficiency of its interpretation. The [bounded operator protocol](08-bounded-operators.md)
+extraction or sufficiency of its interpretation. The [bounded operator protocol](02-rules.md)
 is available separately. [Agent contracts](09-agent-contracts.md) and the
 [Rust host](10-agent-host-and-delivery.md) provide their own capability-gated interfaces.
 
@@ -75,4 +75,4 @@ check's `metadata.constraint_coverage` in the report.
 
 ---
 
-[Previous: Runtime capabilities and environment preflight](06-runtime-and-preflight.md) · [Contents](../README.md) · [Next: Bounded operator rules](08-bounded-operators.md)
+[Previous: Runtime capabilities and environment preflight](06-runtime-and-preflight.md) · [Contents](../README.md) · [Next: Consuming-agent contracts](09-agent-contracts.md)

@@ -25,7 +25,7 @@
         <h1 id="page-title">Qualitygate CLI</h1>
         <p>Repository policy and task acceptance checks for software development. Each result is bound to the code and policy snapshot it checked, with violations and incomplete execution reported separately.</p>
         <div class="intro-links">
-          <a class="primary-link" href="https://github.com/coolplayagent/qualitygate-cli/releases/tag/v0.5.9">Download v0.5.9</a>
+          <a class="primary-link" href="https://github.com/coolplayagent/qualitygate-cli/releases/tag/v1.0.0">Download v1.0.0</a>
           <a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/README.md">Read the README</a>
         </div>
       </section>
@@ -33,9 +33,9 @@
       <section id="install" aria-labelledby="install-title">
         <h2 id="install-title">Install the Agent Skill</h2>
         <p>The release archive contains the Skill instructions, rule references, schemas, and matching Linux and Windows binaries for x86_64 and ARM64. For Codex on Linux, download and extract it into your skills directory:</p>
-        <pre><code>gh release download v0.5.9 --repo coolplayagent/qualitygate-cli --pattern 'qualitygate-cli-skill-v0.5.9.tar.gz'
+        <pre><code>gh release download v1.0.0 --repo coolplayagent/qualitygate-cli --pattern 'qualitygate-cli-skill-v1.0.0.tar.gz'
 mkdir -p ~/.codex/skills/qualitygate-cli
-tar -xzf qualitygate-cli-skill-v0.5.9.tar.gz --strip-components=1 -C ~/.codex/skills/qualitygate-cli</code></pre>
+tar -xzf qualitygate-cli-skill-v1.0.0.tar.gz --strip-components=1 -C ~/.codex/skills/qualitygate-cli</code></pre>
         <p>Windows users can extract the same archive and use its matching <code>assets/windows-*/qualitygate.exe</code> binary. Review the <a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/skills/qualitygate-cli/README.md">package layout and runtime rules</a> before using it.</p>
       </section>
 
@@ -56,7 +56,7 @@ tar -xzf qualitygate-cli-skill-v0.5.9.tar.gz --strip-components=1 -C ~/.codex/sk
           </article>
           <article>
             <h3>Repository rules</h3>
-            <p>Turn enforceable AGENTS.md and policy clauses into source-bound, schema-validated rules. Typed bounded operators compose existing text and AST facts alongside native lints, ratchets, and command evidence.</p>
+            <p>Turn enforceable AGENTS.md and policy clauses into source-bound, schema-validated rules. Version 1.0.0 adds V3 named collections and lexical lambdas written in YAML or JSON. The precompiled CLI evaluates these rules without Rust, Node.js, or Python; command checks still need their configured tools.</p>
           </article>
           <article>
             <h3>Constraint coverage</h3>
@@ -88,7 +88,7 @@ qualitygate --root /path/to/repository check --worktree --profile full --format 
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/04-policy-task-and-signed-evidence.md">Policy and resource exclusions</a><span>Default document/media exclusions, retention, and verification evidence</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/01-user-guide/06-schema-guided-repository-rules.md">Structured repository rules</a><span>Convert policy prose through Schema, source binding, validation, and review</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/07-constraint-coverage.md">Constraint coverage</a><span>Clause adoption, execution evidence, and unsupported gaps</span></li>
-          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/08-bounded-operators.md">Bounded operator rules</a><span>Typed expressions over existing text and AST facts</span></li>
+          <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/02-rules.md">Rules and lambda operators</a><span>Unified v1/v2/v3 protocols, named collections, runtime requirements, and bounded execution</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/02-reference/10-agent-host-and-delivery.md">Agent contracts and delivery</a><span>Current instructions, guarded full checks, and immutable artifacts</span></li>
           <li><a href="https://github.com/coolplayagent/qualitygate-cli/blob/main/docs/en/01-user-guide/04-agent-repair-and-acceptance.md">Agent repair</a><span>Bounded feedback, rechecks, and acceptance evidence</span></li>
         </ul>

@@ -278,7 +278,7 @@ interpretation into runtime authority.
 
 V2 adds a typed expression evaluator over the selected complete facts, sharing
 one budget across nested operations. Fixed assertions remain additive. See the
-[operator reference](../02-reference/08-bounded-operators.md) for evaluation and
+[operator reference](../02-reference/02-rules.md) for evaluation and
 incomplete-evidence semantics.
 
 ## External lint/report implementation

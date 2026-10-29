@@ -12,6 +12,7 @@ repeatable repository evidence, not production deployment or pilot acceptance.
 
 | Requirement area | Principal repeatable evidence |
 | --- | --- |
+| Release version, packaged Skill and published website links | `tests/quality/site.rs::pages_site_links_resolve_and_match_the_release_version`, `pages_workflow_deploys_only_the_static_site_from_main`; `tests/quality/skill_package.rs::skill_package_contract_is_complete_and_matches_the_cli_version`; documentation link and bilingual-book gates in `tests/quality/documentation.rs` |
 | Snapshot selectors, execution, reports, and exit semantics | `tests/cli.rs`, `tests/execution.rs`, `tests/policy.rs`, native domain tests |
 | YAML-EXPANSION-01: pre-allocation expansion budgets, UTF-8 accounting, aliases, mapping keys, depth, preserved failures and recovery | `config::yaml_budget::tests`; `tests/doctor/yaml.rs`; `tests/rule_authoring.rs::expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs`; `tests/policy_promotion.rs::external_yaml_trust_expansion_is_rejected_before_policy_store_access` |
 | YAML-SCALAR-WORK-01: pre-resolution scalar text budget, numeric aliases, nested anchor costs, keys/tags, encodings and diagnostic locations | `config::yaml_scalar_work::tests`; numeric cases in the YAML-EXPANSION-01 configuration, task, rule and external-trust regressions above |

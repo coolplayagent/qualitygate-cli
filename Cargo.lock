@@ -1484,7 +1484,7 @@ dependencies = [
 
 [[package]]
 name = "qualitygate-cli"
-version = "0.5.9"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "base64",

@@ -53,4 +53,4 @@ qualitygate agent-contract --worktree --role implementer --format json
 
 ---
 
-[上一章：有界算子规则](08-bounded-operators.md) · [全书目录](../README.md) · [下一章：Agent 宿主与不可变交付](10-agent-host-and-delivery.md)
+[上一章：条款覆盖](07-constraint-coverage.md) · [全书目录](../README.md) · [下一章：Agent 宿主与不可变交付](10-agent-host-and-delivery.md)

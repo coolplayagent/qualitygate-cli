@@ -39,9 +39,8 @@ Look up commands, rule protocols, reports, policy authority, runtime limits and 
 5. [Exit codes and resource limits](02-reference/05-exit-codes-and-resource-limits.md)
 6. [Runtime capabilities and environment preflight](02-reference/06-runtime-and-preflight.md)
 7. [Constraint coverage](02-reference/07-constraint-coverage.md)
-8. [Bounded operator rules](02-reference/08-bounded-operators.md)
-9. [Consuming-agent contracts](02-reference/09-agent-contracts.md)
-10. [Agent host and immutable delivery](02-reference/10-agent-host-and-delivery.md)
+8. [Consuming-agent contracts](02-reference/09-agent-contracts.md)
+9. [Agent host and immutable delivery](02-reference/10-agent-host-and-delivery.md)
 
 ### [3. Architecture — 4+1 views](03-architecture/README.md)
 
