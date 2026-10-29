@@ -840,6 +840,7 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | ENV-39-05 | 分别检查实际 base/target/policy 元数据；工作区、index、diff 相互隔离；保护输入、总量、2/8 MiB、最大容量与明细截断明确 | `tests/doctor/budgets.rs`；`snapshot::selected_preflight::tests` |
 | ENV-39-06 | scope 固定 preflight，0 只代表请求范围通过，2 表示受阻或未完成；保留未执行项、修复 argv，不能替代正式交付门禁 | `tests/doctor.rs`；[协议说明](../../docs/en/02-reference/06-runtime-and-preflight.md) |
 | ENV-39-07 | Skill 依次解析运行时、能力/版本、配置、doctor、check；保留初始化约束，提供历史兼容表、大仓库、PowerShell/Git Bash/Linux/WSL 指引 | `tests/quality/skill_package.rs`；[Windows 验证流程](../../.github/workflows/pr-checks.yml) 的实际运行证据 |
+| DOCTOR-56 | doctor 默认人类输出/显式 JSON summary 有界；完整报告保存在独立私有临时目录并返回路径/摘要/字节数；保留 0/2 语义，写入失败明确未完成，原 JSON 协议兼容 | `tests/doctor/output.rs`；`application::doctor_output::tests`；`interfaces::doctor_summary::tests` |
 
 本变更不安装工具、不修改项目外的 RelayAgent，也不发布新版本。Windows 原生实测、Miri、
 ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际运行。

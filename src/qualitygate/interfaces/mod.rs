@@ -4,6 +4,7 @@ mod agent_contract;
 pub mod agent_run;
 pub mod cli;
 mod doctor;
+mod doctor_summary;
 mod pilot;
 mod policy;
 mod render;

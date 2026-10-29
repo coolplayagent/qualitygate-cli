@@ -15,6 +15,7 @@ mod coverage_gate;
 pub mod delivery;
 pub mod doctor;
 mod doctor_context;
+pub mod doctor_output;
 mod doctor_plan;
 mod evidence;
 mod external;

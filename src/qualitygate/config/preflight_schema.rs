@@ -7,12 +7,17 @@ const CAPABILITIES: &str =
     include_str!("../../../skills/qualitygate-cli/references/schemas/capabilities.schema.json");
 const DOCTOR: &str =
     include_str!("../../../skills/qualitygate-cli/references/schemas/doctor.schema.json");
+const DOCTOR_SUMMARY: &str =
+    include_str!("../../../skills/qualitygate-cli/references/schemas/doctor-summary.schema.json");
 
 pub fn capabilities_document() -> Result<Value> {
     document(CAPABILITIES)
 }
 pub fn doctor_document() -> Result<Value> {
     document(DOCTOR)
+}
+pub fn doctor_summary_document() -> Result<Value> {
+    document(DOCTOR_SUMMARY)
 }
 
 fn document(source: &str) -> Result<Value> {
@@ -26,6 +31,9 @@ pub fn validate_capabilities(value: &Value) -> Result<()> {
 }
 pub fn validate_doctor(value: &Value) -> Result<()> {
     validate(DOCTOR, value)
+}
+pub fn validate_doctor_summary(value: &Value) -> Result<()> {
+    validate(DOCTOR_SUMMARY, value)
 }
 
 fn validate(source: &str, value: &Value) -> Result<()> {

@@ -26,6 +26,10 @@ pub(super) struct DoctorArgs {
     /// Execute only declared tool version probes; never formal check commands.
     #[arg(long)]
     pub probe_tools: bool,
+    /// Save the full report in temporary storage and print a bounded summary.
+    /// This is the default for table/Markdown; JSON otherwise retains the full report.
+    #[arg(long)]
+    pub summary: bool,
     #[command(flatten)]
     snapshot: SnapshotArgs,
 }
