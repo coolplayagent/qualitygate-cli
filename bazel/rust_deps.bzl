@@ -8,7 +8,7 @@ load(
 )
 
 _CARGO_ROOT_PACKAGE = ""
-_CARGO_PACKAGE_VERSION = "0.5.9"
+_CARGO_PACKAGE_VERSION = "1.0.0"
 
 def aliases(
         normal = False,
