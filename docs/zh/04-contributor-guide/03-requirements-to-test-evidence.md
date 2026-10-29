@@ -24,6 +24,7 @@
 | 首次错误格式、HEAD/工作区建议性预检、大文件显式容量和策略约束 | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`、`init_preflights_tracked_ignored_and_untracked_large_files_without_reading_content`、`init_retains_incomplete_preflight_and_cannot_recommend_an_unsupported_budget`；`tests/large_repository.rs::legacy_large_blobs_are_acquired_explicitly_without_hiding_policy_or_source_changes`、`raised_file_budget_preserves_full_snapshot_bytes_and_digest_under_path_filtering`；`snapshot::git::tests::explicitly_permitted_large_blobs_use_nonempty_bounded_batches` |
 | 缺失策略引导、原始命令参数、显式策略引用和 Windows 路径安全展示 | `tests/init.rs::first_run_errors_honor_formats_and_show_an_action`、`missing_custom_configuration_is_carried_into_the_command`（直接执行包含空格和单引号的返回参数）、`explicit_policy_reference_never_suggests_local_initialization`、`snapshot_guidance_depends_on_local_policy_and_selection`、`unreadable_or_malformed_configuration_does_not_suggest_init`；`paths::tests::displays_ordinary_windows_paths_without_verbatim_prefix`（Windows） |
 | DIST-04 Skill 配置前置检查、自动初始化、失败停止与初始化后复查 | `tests/quality/skill_package.rs::skill_initialization_contract_requires_auto_init_stop_and_recheck` 验证入口元数据、只读启动示例、初始化边界和操作说明 |
+| DIST-05 Skill 路径、原生运行时选择和只读启动 | `tests/quality/skill_startup.rs` 对真实 CLI 执行打包的 Bash/PowerShell 示例，覆盖含空格路径、自定义配置、PATH 回退、保留/无效资产覆盖及缺失/损坏配置；Linux 额外验证非 Linux 平台不会选择 Linux 资产。初始化和发布契约继续由 `tests/quality/skill_package.rs` 验证。 |
 | 大仓库获取和性能边界 | `tests/large_repository.rs`、`tests/benchmarks.rs`、`tests/policy_performance.rs` |
 
 ## 规则、策略与工具证据

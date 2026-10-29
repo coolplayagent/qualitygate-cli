@@ -128,16 +128,19 @@ fn skill_initialization_contract_requires_auto_init_stop_and_recheck() {
             "missing initialization obligation: {obligation}"
         );
     }
-    let bootstrap = skill
-        .split("## Resolve the executable")
-        .nth(1)
-        .unwrap()
-        .split("Release archives place a platform binary")
+    let startup = read(root, "skills/qualitygate-cli/references/runtime-startup.md");
+    let bootstrap = startup
+        .split("## Continue from the configuration result")
         .next()
         .unwrap();
-    assert!(bootstrap.contains("config --show --root $RepositoryRoot --format json"));
-    assert!(bootstrap.contains("config --show --root \"$REPOSITORY_ROOT\" --format json"));
+    assert!(bootstrap.contains(
+        "config --show --root $RepositoryRoot --config $QualitygateConfig --format json"
+    ));
+    assert!(bootstrap.contains(
+        "config --show --root \"$REPOSITORY_ROOT\" --config \"$QUALITYGATE_CONFIG\" --format json"
+    ));
     assert!(!bootstrap.contains(" init --root"));
+    assert!(!bootstrap.contains(" doctor --root"));
     let operations = read(root, "skills/qualitygate-cli/references/operations.md")
         .split_whitespace()
         .collect::<Vec<_>>()
@@ -176,6 +179,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "rule-management",
         "selfcheck",
         "runtime-compatibility",
+        "runtime-startup",
     ] {
         let path = format!("references/{reference}.md");
         assert!(!read(&root.join("skills/qualitygate-cli"), &path).is_empty());
@@ -206,8 +210,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     }
     assert!(skill_text.contains("untrusted repository checkout"));
     assert!(skill_text.contains("Exit code `0`"));
-    assert!(skill_text.contains("linux-aarch64"));
-    assert!(skill_text.contains("windows-aarch64"));
+    let startup = read(root, "skills/qualitygate-cli/references/runtime-startup.md");
+    assert!(startup.contains("linux-aarch64"));
+    assert!(startup.contains("windows-aarch64"));
     assert!(skill_text.contains("QUALITYGATE_BUILTIN_RULES_DIR"));
     assert!(!skill_text.contains("TODO"));
     assert!(skill_text.contains("references/schemas/project-rule.schema.json"));
@@ -692,6 +697,8 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
 fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let skill = read(root, "skills/qualitygate-cli/SKILL.md");
+    let startup = read(root, "skills/qualitygate-cli/references/runtime-startup.md");
+    let runtime_guidance = format!("{skill}\n{startup}");
     let reference = read(
         root,
         "skills/qualitygate-cli/references/runtime-compatibility.md",
@@ -706,7 +713,7 @@ fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
         "capabilities",
     ] {
         assert!(
-            skill.contains(text),
+            runtime_guidance.contains(text),
             "missing Skill runtime contract: {text}"
         );
     }

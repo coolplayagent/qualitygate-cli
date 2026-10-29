@@ -12,6 +12,8 @@ mod rust_references;
 mod site;
 #[path = "quality/skill_package.rs"]
 mod skill_package;
+#[path = "quality/skill_startup.rs"]
+mod skill_startup;
 
 fn files(root: &Path) -> Vec<PathBuf> {
     let mut entries = Vec::new();

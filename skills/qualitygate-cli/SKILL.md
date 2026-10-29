@@ -1,8 +1,8 @@
 ---
 name: qualitygate-cli
-description: "Verify repository code changes with Qualitygate CLI before declaring implementation, bug-fix, or refactor tasks complete. When configuration is missing, run init automatically without asking and stop subsequent workflow actions until initialization succeeds. Run a full snapshot-bound check against existing policy and any task contract, repair violations or incomplete evidence, and recheck the final snapshot. Also turn repository instructions such as AGENTS.md into source-bound, schema-validated project-rule candidates through the matching CLI. Use for file contracts, diagnostic ratchets, rule configuration, and selfcheck; not generic review advice."
+description: "Use Qualitygate CLI for implementation, bug-fix and refactor verification: run a full snapshot-bound check, repair violations or incomplete evidence, and recheck the final snapshot. If configuration is missing, run init automatically without asking and stop verification until it succeeds. Also translate explicit AGENTS.md constraints into source-bound, schema-validated project-rule candidates through the matching CLI; supports rule configuration, file contracts, diagnostic ratchets and selfcheck."
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
@@ -65,6 +65,34 @@ verified introduction versions, old-runtime handling, schemas and a large-reposi
 template. The initialization prerequisite below applies after runtime resolution;
 capabilities and schema export do not require repository configuration.
 
+## Path conventions
+
+Resolve the installed Skill directory and the target repository independently.
+`QUALITYGATE_SKILL_ROOT` is the absolute directory containing this `SKILL.md`;
+`REPOSITORY_ROOT` is the absolute root of the repository being checked.
+
+| Input | Path and owner |
+|---|---|
+| Runtime | Skill: `assets/<platform>-<architecture>/qualitygate[.exe]` |
+| Built-in rule assets | Skill: `references/rules/`; optional override `QUALITYGATE_BUILTIN_RULES_DIR` |
+| Packaged schemas | Skill: `references/schemas/` |
+| Candidate configuration | Repository: `qualitygate.yaml`, or the caller's `--config` path |
+| Project rule discovery and generation | Repository: `qualitygate/rules/`; discovery honors explicit `custom_rules` |
+| Policy history | Repository: `.qualitygate/policy/` |
+
+The `skill:references/rules/...` catalog origin is a provenance label, not a
+repository-relative filename. Built-in YAML assets belong to the installation;
+project candidates belong to the target repository. `rules generate` always
+writes to `qualitygate/rules`, even when discovery uses a legacy `custom_rules`
+directory. Discovery alone does not select project rules for enforcement.
+
+Use `QUALITYGATE_CONFIG=qualitygate.yaml` unless the caller selected another
+normalized repository-relative path. Carry the same `--root` and `--config`
+through `config`, `init`, rule queries, `doctor` and `check`. Examples below use
+the resolved absolute `QUALITYGATE_BIN`; reference examples that omit `--config`
+assume the default. Shell variables and functions may not survive separate tool
+calls: repeat the bindings or substitute the recorded absolute paths each time.
+
 ## Initialization prerequisite
 
 Before repository verification, establish whether the required policy exists
@@ -95,129 +123,25 @@ commit or change the snapshot selector to satisfy this prerequisite.
 
 ## Resolve the executable
 
-An intact release archive automatically resolves its own rule assets; setting
-`QUALITYGATE_BUILTIN_RULES_DIR` is an optional override. On Windows, after setting
-`$QualitygateSkillRoot` to the extracted Skill directory and `$RepositoryRoot` to
-the target repository, this single invocation
-selects x64/ARM64 and inspects configuration without modifying it:
+Follow the [runtime startup examples](references/runtime-startup.md) for the
+active operating system and shell. Select Linux assets for Linux and WSL,
+Windows assets for PowerShell or native Git Bash/MSYS2; choose x86_64 or
+aarch64 by architecture. There is no bundled macOS runtime. A missing or
+unusable matching asset may fall back to an already verified published
+`qualitygate` executable on PATH. Do not silently build an
+untrusted repository checkout as the skill runtime.
 
-```powershell
-& (Join-Path $QualitygateSkillRoot ("assets/windows-{0}/qualitygate.exe" -f @{X64='x86_64';Arm64='aarch64'}[[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()])) config --show --root $RepositoryRoot --format json
-```
+An intact release archive automatically finds its own `references/rules`.
+`QUALITYGATE_BUILTIN_RULES_DIR` is optional; preserve an explicit override and
+verify that it belongs to the selected runtime. For PATH fallback or a custom
+layout, bind the matching Skill's rule assets explicitly when no override was
+provided. An invalid explicit override is an error, not a reason to fall back.
 
-On Linux, set `QUALITYGATE_SKILL_ROOT` and `REPOSITORY_ROOT` to those directories
-and run this Bash command; the subshell keeps helper variables local:
-
-```bash
-(
-  case "$(uname -m)" in
-    x86_64|amd64) qualitygate_asset=linux-x86_64 ;;
-    aarch64|arm64) qualitygate_asset=linux-aarch64 ;;
-    *) echo "Unsupported Linux architecture" >&2; exit 2 ;;
-  esac
-  "$QUALITYGATE_SKILL_ROOT/assets/$qualitygate_asset/qualitygate" config --show --root "$REPOSITORY_ROOT" --format json
-)
-```
-
-Use `init --with-checks` only when candidate command adoption is authorized.
-Read its `snapshot_preflight` and follow the
-[existing-repository trimming workflow](references/operations.md#existing-repository-trimming)
-before checking an existing repository. Review explicit `exclude` patterns or
-the suggested per-file acquisition budget; neither is an automatic exemption.
-The longer resolution examples below support
-asset overrides and a verified PATH fallback; they are not mandatory glue for
-an intact archive.
-
-Release archives place a platform binary under this skill's `assets/` directory.
-Use its absolute path only when it matches the active operating system and
-`--version` succeeds. A lightweight registry installation may omit assets; in
-that case use a verified published `qualitygate` executable on `PATH`. Do not
-silently build an untrusted repository checkout as the skill runtime.
-
-On a POSIX shell, set `QUALITYGATE_SKILL_ROOT` to the directory containing this
-`SKILL.md`, point the CLI at this Skill's external rule assets, and select the
-matching Linux asset before falling back to `PATH`:
-
-```bash
-QUALITYGATE_BUILTIN_RULES_DIR="$QUALITYGATE_SKILL_ROOT/references/rules"
-export QUALITYGATE_BUILTIN_RULES_DIR
-if ! test -d "$QUALITYGATE_BUILTIN_RULES_DIR"; then
-  echo "Qualitygate Skill rule assets are missing" >&2
-  exit 2
-fi
-case "$(uname -m)" in
-  x86_64|amd64) QUALITYGATE_ASSET="assets/linux-x86_64/qualitygate" ;;
-  aarch64|arm64) QUALITYGATE_ASSET="assets/linux-aarch64/qualitygate" ;;
-  *) QUALITYGATE_ASSET="" ;;
-esac
-QUALITYGATE_BIN="$QUALITYGATE_SKILL_ROOT/$QUALITYGATE_ASSET"
-if [ -z "$QUALITYGATE_ASSET" ] || ! test -x "$QUALITYGATE_BIN" || ! "$QUALITYGATE_BIN" --version; then
-  QUALITYGATE_BIN="$(command -v qualitygate)"
-  "$QUALITYGATE_BIN" --version
-fi
-```
-
-On PowerShell, use the matching Windows asset only from a Windows shell:
-
-```powershell
-$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
-$env:QUALITYGATE_BUILTIN_RULES_DIR = Join-Path $QualitygateSkillRoot "references/rules"
-if (-not (Test-Path -LiteralPath $env:QUALITYGATE_BUILTIN_RULES_DIR -PathType Container)) {
-  throw "Qualitygate Skill rule assets are missing"
-}
-$assetDirectory = if ($architecture -eq "X64") {
-  "windows-x86_64"
-} elseif ($architecture -eq "Arm64") {
-  "windows-aarch64"
-} else {
-  $null
-}
-$QualitygateBin = if ($assetDirectory) {
-  Join-Path $QualitygateSkillRoot "assets/$assetDirectory/qualitygate.exe"
-} else {
-  $null
-}
-$qualitygateReady = $false
-if ($QualitygateBin -and (Test-Path -LiteralPath $QualitygateBin)) {
-  & $QualitygateBin --version
-  $qualitygateReady = $LASTEXITCODE -eq 0
-}
-if (-not $qualitygateReady) {
-  $QualitygateBin = (Get-Command qualitygate -ErrorAction Stop).Source
-  & $QualitygateBin --version
-}
-```
-
-Windows Git Bash/MSYS2 can invoke the native Windows `.exe` directly. Use
-Linux assets in Linux and WSL; use PowerShell syntax only in PowerShell.
-For Git Bash/MSYS2, set the two roots to shell paths (spaces are supported):
-
-```bash
-(
-  case "$(uname -s)" in
-    MINGW*|MSYS*) ;;
-    *) echo "This snippet requires Windows Git Bash/MSYS2" >&2; exit 2 ;;
-  esac
-  case "$(uname -m)" in
-    x86_64|amd64) qualitygate_asset=windows-x86_64 ;;
-    aarch64|arm64) qualitygate_asset=windows-aarch64 ;;
-    *) echo "Unsupported Windows architecture" >&2; exit 2 ;;
-  esac
-  qualitygate_bin="$QUALITYGATE_SKILL_ROOT/assets/$qualitygate_asset/qualitygate.exe"
-  "$qualitygate_bin" --version || exit 2
-  "$qualitygate_bin" capabilities --format json || exit 2
-  QUALITYGATE_BUILTIN_RULES_DIR="$(cygpath -m "$QUALITYGATE_SKILL_ROOT/references/rules")" \
-  MSYS2_ENV_CONV_EXCL=QUALITYGATE_BUILTIN_RULES_DIR MSYS2_ARG_CONV_EXCL='*' \
-    "$qualitygate_bin" doctor --root "$(cygpath -m "$REPOSITORY_ROOT")" \
-    --worktree --profile full --format json
-)
-```
-
-Explicit conversion keeps native paths distinct from shell paths; the conversion
-exclusions apply only to that invocation. Resolve missing configuration through
-the initialization prerequisite before retrying doctor. If neither a matching
-asset nor a verified published PATH executable works, report the installation
-gap without changing repository or global tool configuration.
+The startup examples record the executable, verify `--version` and capabilities,
+and inspect configuration read-only. Apply the initialization prerequisite
+before rule discovery, doctor or checks in the repository-verification workflow.
+`--version`, help, capabilities, schema export and `selfcheck` need no repository
+configuration; do not initialize a repository just to use them.
 
 ## Verify code tasks before completion
 
@@ -229,7 +153,6 @@ intended selector/profile/task/policy/budgets. Default doctor is static; explici
 select `--probe-tools` when declared tool execution is authorized. Repair its
 structured prerequisites before formal checks. MR doctor is not supported yet;
 retain that preflight gap when using the formal MR workflow.
-
 
 Use the repository's current policy and any applicable task contract. Inspect
 the effective configuration and identify the snapshot being delivered. For
@@ -304,7 +227,7 @@ than a published release.
 Start repository verification with the read-only configuration prerequisite:
 
 ```bash
-"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" config --show --format json
+"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" config --show --format json
 ```
 
 If configuration is missing, automatically run `init` as described above and
@@ -312,7 +235,7 @@ verify that the initialization prerequisite is satisfied. Continue with read-onl
 rule discovery only when the required policy is available:
 
 ```bash
-"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" rules list --format json
+"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" rules list --format json
 ```
 
 Ordinary `init` automatically creates a missing candidate configuration.
@@ -345,7 +268,7 @@ runtime; they are reviewable selection evidence, not editable runtime
 configuration. Verify the executable's active catalog before acting:
 
 ```bash
-"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" rules list --format json
+"$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" rules list --format json
 ```
 
 The general `security-sensitive-api` and `todo-marker` rules are warning-level
@@ -363,9 +286,9 @@ worktree against the repository's existing policy. Add the caller's selected
 task and policy inputs when that workflow requires them:
 
 ```bash
-"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --worktree --profile quick --format json
-"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --worktree --profile full --format json
-"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --worktree --profile full \
+"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" --worktree --profile quick --format json
+"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" --worktree --profile full --format json
+"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" --worktree --profile full \
   --task tasks/request.yaml --policy-ref "$TRUSTED_COMMIT" \
   --trust-store /trusted/qualitygate/trust.json \
   --evidence-dir /trusted/qualitygate/records --format json
