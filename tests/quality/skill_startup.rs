@@ -13,7 +13,12 @@ mod native {
             "/skills/qualitygate-cli/references/runtime-startup.md"
         ))
         .unwrap();
-        text.split(heading)
+        code_block(&text, heading, language)
+    }
+
+    fn code_block(text: &str, heading: &str, language: &str) -> String {
+        text.replace("\r\n", "\n")
+            .split(heading)
             .nth(1)
             .unwrap()
             .split(&format!("```{language}\n"))
@@ -23,6 +28,19 @@ mod native {
             .next()
             .unwrap()
             .into()
+    }
+
+    #[test]
+    fn skill_startup_extracts_lf_and_crlf_examples_identically() {
+        for language in ["bash", "powershell"] {
+            let text = format!("## Native shell\n\n```{language}\ncommand --version\n```\n");
+            for text in [&text, &text.replace('\n', "\r\n")] {
+                assert_eq!(
+                    code_block(text, "## Native shell", language),
+                    "command --version\n"
+                );
+            }
+        }
     }
 
     fn copy_directory(source: &Path, target: &Path) {
