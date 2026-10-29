@@ -2,7 +2,7 @@
 name: qualitygate-cli
 description: "Use Qualitygate CLI for implementation, bug-fix and refactor verification: run a full snapshot-bound check, repair violations or incomplete evidence, and recheck the final snapshot. If configuration is missing, run init automatically without asking and stop verification until it succeeds. Also translate explicit AGENTS.md constraints into source-bound, schema-validated project-rule candidates through the matching CLI; supports rule configuration, file contracts, diagnostic ratchets and selfcheck."
 metadata:
-  version: "1.0.1"
+  version: "1.0.2"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
