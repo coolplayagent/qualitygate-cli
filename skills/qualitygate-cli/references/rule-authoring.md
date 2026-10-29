@@ -30,6 +30,13 @@ Skill's built-in asset directory.
 
 ## Contract and compatibility
 
+This section describes the v1 fixed-assertion contract. For typed expression
+composition use [V2 operators](operators.md); for named collections and lexical
+lambdas in 1.0.0 use [V3 operators](operators-v3.md). Query runtime capabilities
+and export the schema for that format. `rules schema` still exports v1;
+`schema project-rule-family` includes v1/v2/v3. The source-binding, validation,
+generation and separate policy-adoption sequence below applies to all three.
+
 Read [project-rule.schema.json](schemas/project-rule.schema.json) in full before
 constructing a candidate. It is the executable JSON Schema Draft 2020-12
 contract, not an illustrative template. The same schema is compiled into the
