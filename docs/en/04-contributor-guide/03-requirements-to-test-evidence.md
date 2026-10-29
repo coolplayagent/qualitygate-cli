@@ -128,6 +128,7 @@ what was actually verified.
 | ENV-39-05: exact per-side budgets | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`: base-only oversize, 2/8 MiB, above maximum, total bytes, protected exclusions, index and truncation |
 | ENV-39-06: preflight protocol and executable next steps | `domain::doctor::tests` | `tests/doctor.rs` schema validation and replay of suggested argv |
 | ENV-39-07: packaged workflow, compatibility and native shells | `tests/quality/skill_package.rs` | `pr-checks.yml` complete native Windows target partition with debug assertions/overflow checks enabled and debug symbols omitted; PowerShell/Git Bash steps with paths containing spaces |
+| DOCTOR-56: bounded summaries, retained private temporary reports, original exit codes, write failures and full JSON compatibility | `application::doctor_output::tests`, `interfaces::doctor_summary::tests` | `tests/doctor/output.rs`: large blocked report, unique directories, digest/size/schema, malformed policy, invalid selector, unavailable storage and human/JSON formats |
 | EXECUTABLE-FILE-01: regular-file identity before open, retained size/digest checks and symlink compatibility | `runner::identity::tests` | `tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent` (Unix): bounded old-code counterexample, incomplete ledger, no Agent launch or delivery |
 
 Run `cargo test --test doctor --all-features` independently of native unit tests.

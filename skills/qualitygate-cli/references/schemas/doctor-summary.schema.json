@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qualitygate:doctor-summary:1",
+  "title": "Qualitygate doctor summary v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "scope",
+    "profile",
+    "probe_tools",
+    "complete",
+    "exit_code",
+    "report",
+    "counts",
+    "diagnostics",
+    "next_steps",
+    "details_truncated",
+    "notice"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "doctor_summary"
+    },
+    "scope": {
+      "const": "preflight"
+    },
+    "profile": {
+      "enum": [
+        "quick",
+        "full"
+      ]
+    },
+    "probe_tools": {
+      "type": "boolean"
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "exit_code": {
+      "enum": [
+        0,
+        2
+      ]
+    },
+    "report": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "digest",
+            "bytes"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "diagnostics",
+        "next_steps",
+        "planned_checks",
+        "pending_delivery_checks",
+        "not_executed"
+      ],
+      "properties": {
+        "diagnostics": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "planned_checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending_delivery_checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_executed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "field",
+          "line",
+          "column"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 241
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 241
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 241
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "message"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "maxLength": 241
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 241
+          }
+        }
+      }
+    },
+    "details_truncated": {
+      "type": "boolean"
+    },
+    "notice": {
+      "type": "string"
+    }
+  }
+}

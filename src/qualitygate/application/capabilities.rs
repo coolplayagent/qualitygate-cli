@@ -18,6 +18,7 @@ pub async fn report() -> Result<Capabilities> {
         protocols: [
             ("capabilities", 1),
             ("doctor", 1),
+            ("doctor_summary", 1),
             ("decision", 1),
             ("feedback", 1),
             ("configuration", 1),

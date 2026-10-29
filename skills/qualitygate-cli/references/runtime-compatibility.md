@@ -51,6 +51,29 @@ names embedded in scripts; declare `required_env` in command checks or task
 verification. Names must exist and have nonempty values; never print values.
 Formal check enforces the declarations too.
 
+For a runtime advertising `doctor.summary.v1`, avoid terminal truncation directly:
+
+```bash
+"$QUALITYGATE_BIN" doctor --root "$REPOSITORY_ROOT" \
+  --diff origin/1.8.x-alpha..HEAD --profile full --summary --format json
+```
+
+Default table/Markdown output also uses this summary. The
+[summary schema](schemas/doctor-summary.schema.json) is separate from the full
+doctor schema. `report.path` names a retained `qualitygate-doctor-*/report.json`
+in OS temporary storage; `report.digest` and `report.bytes` identify its contents.
+Read the saved report to inspect all diagnostics, identities, budgets, unexecuted
+items and `next_steps[].command`. Summary details are limited to five diagnostics
+and five next steps, with 240 characters of each text field; counts are complete
+and `details_truncated` signals omitted summary detail. The saved report retains
+the existing full protocol, including its own inventory detail limits.
+Exit 2 still means blocked/incomplete. A failed write or the 16 MiB report limit
+returns `report.write_failed` and `report: null`, never a successful receipt.
+Delete the private temporary directory when finished; it survives CLI exit and
+is not governed by `QUALITYGATE_HOME`. No repository output files are created.
+Older runtimes retain `--format json`; redirect stdout to a temporary file and
+capture the CLI exit status before parsing it. Do not pass an unsupported flag.
+
 Validate the report with [doctor schema](schemas/doctor.schema.json). Retain
 `scope: preflight`, identities, requested probe scope, diagnostics, unexecuted
 items, pending checks and `next_steps`. Invoke `next_steps[].command` as argv.

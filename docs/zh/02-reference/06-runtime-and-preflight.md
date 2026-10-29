@@ -21,6 +21,32 @@ SHA-256、系统/架构、版本化能力 ID、协议版本和资源限制。摘
 工作区 `--base`、`--profile`、`--task`、`--policy-ref` 及与 `check` 共享的四个快照预算选项。
 首版不支持远程 MR、路径过滤、feedback 或 decision envelope；MR 仍使用正式流程并明确缺口。
 
+## 精简诊断与临时报告
+
+支持 `doctor.summary.v1` 的运行时默认在 table/Markdown 格式中显示精简摘要。
+自动化调用使用：
+
+```bash
+qualitygate doctor --worktree --profile full --summary --format json
+qualitygate schema doctor-summary --format json
+```
+
+摘要包含 `kind: doctor_summary`、`scope: preflight`、`complete`、`exit_code`、
+完整计数及最多五条诊断和五条后续建议。文本字段最多显示 240 个字符及省略号，
+`details_truncated` 标记省略的摘要细节。`report.path`、`report.digest` 和
+`report.bytes` 指向系统临时目录中的 `qualitygate-doctor-*/report.json` 并标识内容。
+读取该文件可获取完整诊断、位置、受影响检查、身份、预算及可执行的
+`next_steps[].command` 参数数组；完整报告沿用原有的清单明细上限。
+
+每次调用创建独立私有目录，默认位于仓库外，进程退出后保留。诊断完成后删除该目录；
+不使用 `QUALITYGATE_HOME`，遵循操作系统临时目录配置。
+目录不可用、写入失败或报告超过 16 MiB 时，返回退出码 2、`report.write_failed`、
+`complete: false` 和 `report: null`。其他退出码 2 仍表示预检受阻或未完成；
+保存报告不会将失败改为成功，也不会产生交付结论。
+
+为保持兼容，不带 `--summary` 的 `doctor --format json` 仍直接输出完整 doctor v1
+协议，不创建报告文件。旧安装应先查询能力再使用新选项；完整报告和摘要各有独立导出的 Schema。
+
 ## 配置要求
 
 ```yaml

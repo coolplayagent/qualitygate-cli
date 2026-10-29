@@ -135,6 +135,7 @@ enum SchemaKind {
     Constraint,
     Capabilities,
     Doctor,
+    DoctorSummary,
     Decision,
     Feedback,
     ProjectRule,
@@ -344,6 +345,7 @@ impl Cli {
             ));
         }
         if let Command::Doctor(args) = self.command {
+            let summary = args.summary || self.format != Format::Json;
             let probe_tools = args.probe_tools;
             let profile = args.profile.clone();
             let report = if self.envelope {
@@ -366,6 +368,13 @@ impl Cli {
                     }
                 }
             };
+            if summary {
+                let (report, artifact) = application::doctor_output::persist(report).await?;
+                return Ok((
+                    super::doctor_summary::render(&report, artifact, self.format)?,
+                    report.exit_code(),
+                ));
+            }
             let code = report.exit_code();
             return Ok((
                 super::render::metadata(&serde_json::to_value(report)?, self.format)?,
@@ -400,6 +409,7 @@ impl Cli {
                 SchemaKind::ProjectRule => config::rule_schema::document(),
                 SchemaKind::Capabilities => config::preflight_schema::capabilities_document(),
                 SchemaKind::Doctor => config::preflight_schema::doctor_document(),
+                SchemaKind::DoctorSummary => config::preflight_schema::doctor_summary_document(),
             })
             .await??;
             return Ok((serde_json::to_string_pretty(&document)?, 0));

@@ -25,6 +25,38 @@ snapshot budget options shared with `check`. It does not accept MR, path-filter,
 feedback, or decision-envelope options. Remote MR preflight is outside this
 version's scope; use the formal MR workflow with explicit remaining gaps.
 
+## Compact diagnostics and temporary reports
+
+Runtimes advertising `doctor.summary.v1` show a bounded summary by default in
+table/Markdown format. For automation use:
+
+```bash
+qualitygate doctor --worktree --profile full --summary --format json
+qualitygate schema doctor-summary --format json
+```
+
+The summary has `kind: doctor_summary`, `scope: preflight`, `complete`,
+`exit_code`, complete counts, and at most five diagnostics and five next steps.
+Text fields show at most 240 characters plus an ellipsis; `details_truncated`
+marks omitted summary details. `report.path`, `report.digest` and `report.bytes`
+identify the complete JSON report saved as `qualitygate-doctor-*/report.json`
+under the OS temporary directory. Read that file for all diagnostics, locations,
+affected checks, identities, budgets and executable `next_steps[].command` argv.
+The full report retains its existing bounded inventory details.
+
+Each run uses a private unique directory, outside the repository by default,
+and retains it after exit. Remove it when diagnosis is complete; these reports
+do not use `QUALITYGATE_HOME`. The OS temporary-directory configuration applies.
+An unavailable directory, failed write or report above 16 MiB produces exit 2,
+`report.write_failed`, `complete: false` and `report: null`.
+Exit 2 otherwise preserves the original blocked/incomplete preflight meaning;
+saving a report never changes it to success. No delivery verdict is issued.
+
+For compatibility, `doctor --format json` without `--summary` still emits the
+full doctor v1 protocol directly and creates no report file. Query the capability
+before using `--summary` with an older installation. The saved full report and
+the summary have separate exported schemas.
+
 ## Policy requirements
 
 ```yaml

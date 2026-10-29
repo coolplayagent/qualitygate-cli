@@ -154,6 +154,14 @@ select `--probe-tools` when declared tool execution is authorized. Repair its
 structured prerequisites before formal checks. MR doctor is not supported yet;
 retain that preflight gap when using the formal MR workflow.
 
+When the runtime advertises `doctor.summary.v1`, prefer `doctor --summary
+--format json` with the intended snapshot options. The bounded summary identifies
+the complete JSON report in a unique temporary directory through `report.path`,
+SHA-256 and byte count. Read that file for full diagnostics and next-step argv;
+do not mistake `details_truncated` for evidence loss in the saved report or a
+preflight pass for delivery acceptance. Exit 2 remains blocked/incomplete,
+including `report.write_failed`. Retain the file until diagnosis is complete.
+
 Use the repository's current policy and any applicable task contract. Inspect
 the effective configuration and identify the snapshot being delivered. For
 uncommitted edits, `--worktree` captures the current files; use `--staged`,

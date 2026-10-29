@@ -10,6 +10,7 @@ pub const CAPABILITIES: &[&str] = &[
     "command.required-env.v1",
     "doctor.static.v1",
     "doctor.tool-probes.v1",
+    "doctor.summary.v1",
     "snapshot.worktree.v1",
     "snapshot.staged.v1",
     "snapshot.diff.v1",

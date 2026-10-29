@@ -1,6 +1,8 @@
 #[path = "doctor/budgets.rs"]
 mod budgets;
 mod common;
+#[path = "doctor/output.rs"]
+mod output;
 #[path = "doctor/probes.rs"]
 mod probes;
 #[path = "doctor/yaml.rs"]
@@ -83,7 +85,7 @@ fn offline_capabilities_and_schemas_ignore_repository_and_invalid_policy() {
                 .unwrap()
                 .contains(&json!("doctor.static.v1"))
         );
-        for kind in ["doctor", "capabilities"] {
+        for kind in ["doctor", "doctor-summary", "capabilities"] {
             let schema = report(&cli(&path, &["schema", kind, "--format", "json"]), 0);
             let bundled: Value = serde_json::from_str(
                 &std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
