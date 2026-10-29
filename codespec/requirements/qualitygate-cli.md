@@ -813,6 +813,7 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | DIST-02 | `main` 的静态 Pages 站点提供当前版本的下载、安装和文档入口；站点内链接及版本在仓库质量门禁中校验，部署结果由 GitHub Pages 实际地址复核 | `tests/quality/site.rs`、[Pages 工作流](../../.github/workflows/pages.yml)的实际运行记录和在线页面 |
 | DIST-03 | Skill 描述优先匹配代码实现、缺陷修复和重构任务；Agent 只在最终快照的无路径过滤 `full` 检查完整通过、必需交付检查无待执行项，并已完成仓库要求的其他验证后，才能报告代码任务已通过质量验证。违规或证据缺失需修复并复验，不能改弱策略或伪造验收 | [Skill 入口](../../skills/qualitygate-cli/SKILL.md)、[操作边界](../../skills/qualitygate-cli/references/operations.md)、`tests/quality/skill_package.rs` 的元数据、引用与版本契约，以及 `tests/cli.rs` 的完整范围 / 快速范围门禁断言 |
 | DIST-04 | Skill 独立检查所需配置；本地配置缺失时自动执行普通 `init`，保留自定义路径，不自动启用检查或采用策略。初始化失败或配置仍不可用时停止，成功后复查配置及所选快照；已有有效配置不重复初始化，不覆盖损坏配置，不静默 stage/commit 或切换选择器 | `tests/quality/skill_package.rs::skill_initialization_contract_requires_auto_init_stop_and_recheck`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+| DIST-05 | Skill 明确安装根目录与仓库根目录、配置及资产覆盖路径；按 OS 和架构选择随包运行时，轻量安装可回退到已验证 PATH 运行时；启动示例保留自定义配置与显式资产覆盖，只读查询成功后才进入初始化/预检分支；跨工具调用重新绑定路径 | `tests/quality/skill_startup.rs` 直接执行打包的 Bash/PowerShell 示例，验证真实 CLI、空格路径、PATH 回退、覆盖路径、缺失/损坏配置及非 Linux 平台选择；`tests/quality/skill_package.rs` 保留初始化和发布契约 |
 
 发布工作流成功与正式试点收益验收相互独立；站点只陈述已实现能力，
 不能把受控 fixture 或未启动的 8 任务/7 天试点称为真实收益。

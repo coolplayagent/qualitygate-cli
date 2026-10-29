@@ -78,15 +78,19 @@ qualitygate-cli-skill-<tag>/
 ```
 
 Agents prefer the matching bundled asset only when it is executable and
-`qualitygate --version` succeeds. The Windows asset is for PowerShell or cmd,
-not POSIX shells. A registry distribution may omit the binaries to respect
+`qualitygate --version` succeeds. Windows assets run in native Windows shells,
+including PowerShell and Git Bash/MSYS2; Linux and WSL use Linux assets.
+There is no bundled macOS asset. A registry distribution may omit the binaries to respect
 registry file limits; it then uses a verified published `qualitygate` executable
 on `PATH` rather than building an arbitrary checkout. In both distributions,
 the rule assets and selection guide stay with the skill. Complete archives resolve
 their own rule assets. PATH fallback or custom layouts can set
 `QUALITYGATE_BUILTIN_RULES_DIR`; agents compare the loaded catalog with `rules list`
 before recommending a policy change. The Skill provides PowerShell and Linux Bash
-startup examples that select the matching bundled architecture.
+startup examples that select the matching bundled architecture. Follow
+[runtime startup](references/runtime-startup.md) to retain the executable and
+configuration bindings across commands, preserve explicit asset overrides,
+and inspect configuration before doctor or formal checks.
 
 ## Release contract
 
