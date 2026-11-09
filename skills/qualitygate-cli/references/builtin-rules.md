@@ -152,7 +152,7 @@ for semantic lint results.
 
 ## C and C++ review signals
 
-Select `rulesets: [lang-c]` and the desired rule IDs. These seven rules are
+Select `rulesets: [lang-c]` and the desired rule IDs. These ten rules are
 opt-in and fixed to `languages: [c, cpp]`. They match changed UTF-8 source
 lines with bounded regular expressions. `paths`, `prohibited_patterns.c`,
 and `prohibited_patterns.cpp` may be configured, but both language keys must
@@ -161,6 +161,9 @@ text. No C/C++ syntax parser is implied. These signals can match comments or
 strings and cannot establish type safety, data flow or CERT compliance. Use
 the [GCC SARIF ratchet reference](gcc-analyzer-ratchet.yaml) for analyzer
 evidence. The repository's `docs/en/02-reference/03-projects-and-tool-reports.md` explains adoption.
+The internal clauses come from the C V5.3 and C++ V5.1 language specifications;
+the older C&C++ secure coding V3.0 document is explicitly superseded
+and is not the current source.
 
 | Rule | Default | Review signal |
 | --- | --- | --- |
@@ -171,16 +174,22 @@ evidence. The repository's `docs/en/02-reference/03-projects-and-tool-reports.md
 | `c-file-security` | error | `mktemp` or `tmpnam` call |
 | `c-function-safety` | warning | `abort`, `exit`, `realloc`, `alloca`, `pthread_exit` or `ExitThread` call |
 | `c-numeric-literal` | error | lowercase `l` integer suffix |
+| `c-no-atoi` | warning | `atoi`, `atol`, `atoll` or `atof` call |
+| `c-no-goto` | warning | `goto` statement |
+| `c-no-process-launch` | warning | `system`, `popen`, `exec*`, `WinExec`, `CreateProcess` or `ShellExecute` call |
 
 ## C++ review signals
 
-Select `rulesets: [lang-cpp]` and individual rule IDs. These nine opt-in rules
-fix `languages: [cpp]` and inspect changed `.cc`, `.cpp`, `.cxx`, `.hh`, `.hpp`
-and `.hxx` lines. `paths` and `prohibited_patterns.cpp` may be configured.
-`.h` is classified as C text by the shared source classifier. Same-line regex
-matches are review signals; they do not establish receiver types, ownership,
-exception safety, buffer bounds, random-number purpose or NRVO behavior. Use
-the [Clang SARIF reference](clang-static-analyzer-ratchet.yaml) or the
+Select `rulesets: [lang-cpp]` and individual rule IDs. These sixteen opt-in
+rules fix `languages: [cpp]`. Fifteen inspect changed `.cc`, `.cpp`, `.cxx`,
+`.hh`, `.hpp` and `.hxx` lines; `cpp-no-using-namespace-in-header` instead
+scans added headers selected by `paths`. `.h` is classified as C text by the
+shared source classifier for line rules, while the added-file header rule
+accepts conventional C++ header globs. `paths` and `prohibited_patterns.cpp`
+may be configured for line rules. Same-line regex matches are review signals;
+they do not establish receiver types, ownership, exception safety, buffer
+bounds, random-number purpose or NRVO behavior. Use the
+[Clang SARIF reference](clang-static-analyzer-ratchet.yaml) or the
 [GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
 
 | Rule | Default | Review signal |
@@ -194,6 +203,13 @@ the [Clang SARIF reference](clang-static-analyzer-ratchet.yaml) or the
 | `cpp-no-std-move-local-return` | warning | `return std::move(...)` expression |
 | `cpp-no-unsafe-rand` | warning | `rand()` call |
 | `cpp-no-throw-spec` | warning | simple empty `throw()` specification |
+| `cpp-no-reinterpret-cast` | warning | `reinterpret_cast` expression |
+| `cpp-no-const-cast` | warning | `const_cast` expression |
+| `cpp-no-delete-this` | warning | `delete this` expression |
+| `cpp-prefer-make-smart-pointer` | warning | `unique_ptr` or `shared_ptr` constructed from `new` |
+| `cpp-use-nullptr` | warning | `NULL` token in C++ code |
+| `cpp-no-macro-constant` | warning | numeric `#define` constant |
+| `cpp-no-using-namespace-in-header` | warning | `using namespace` in an added header |
 
 ## Python review signals
 

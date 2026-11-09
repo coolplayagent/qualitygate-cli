@@ -108,3 +108,87 @@ inputs:
     evidence: [changed-cpp-line, regex-pattern]
     applicability: Selected changed C++ lines when this optional rule is enabled.
     critical_adoption: Only simple same-line signatures are recognized; language mode matters.
+  - id: cpp-no-reinterpret-cast-review
+    status: enforced
+    rule_id: cpp-no-reinterpret-cast
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Some low-level and ABI boundaries require reinterpret_cast; this signal prompts review rather than proving a defect.
+  - id: cpp-no-const-cast-review
+    status: enforced
+    rule_id: cpp-no-const-cast
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Legacy APIs may require const_cast; the signal cannot prove whether the original object is actually mutable.
+  - id: cpp-no-delete-this-review
+    status: enforced
+    rule_id: cpp-no-delete-this
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: delete this is occasionally used in reference-counted designs; ownership and post-delete access require semantic review.
+  - id: cpp-prefer-make-smart-pointer-review
+    status: enforced
+    rule_id: cpp-prefer-make-smart-pointer
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Only simple same-line unique_ptr/shared_ptr construction is recognized; custom deleters and factory boundaries need review.
+  - id: cpp-use-nullptr-review
+    status: enforced
+    rule_id: cpp-use-nullptr
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Legacy headers may define or require NULL; replacing it needs language-mode and compatibility review.
+  - id: cpp-no-macro-constant-review
+    status: enforced
+    rule_id: cpp-no-macro-constant
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Selected changed C++ lines when this optional rule is enabled.
+    critical_adoption: Numeric macros can be configuration switches or build contracts; constexpr and enum replacements need compatibility review.
+  - id: cpp-no-using-namespace-in-header-review
+    status: enforced
+    rule_id: cpp-no-using-namespace-in-header
+    lifecycle_stage: implementation
+    languages: [cpp]
+    concerns: [coding, architecture]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-cpp-coding]
+    evidence: [added-cpp-file, configured-pattern]
+    applicability: Added C++ header files selected by the configured header globs.
+    critical_adoption: Added-file scanning does not inspect modified headers; using-declarations and namespace aliases need separate review.

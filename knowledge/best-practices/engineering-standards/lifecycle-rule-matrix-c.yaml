@@ -84,3 +84,39 @@ inputs:
     evidence: [changed-c-family-line, regex-pattern]
     applicability: Selected changed C and C++ lines when this optional rule is enabled.
     critical_adoption: Lowercase l suffixes are visually ambiguous; regex may also match comments or strings.
+  - id: c-no-atoi-review
+    status: enforced
+    rule_id: c-no-atoi
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-c-coding, internal-cpp-coding]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: The atoi family has no error channel for overflow or malformed input; a call name alone does not prove the input is untrusted.
+  - id: c-no-goto-review
+    status: enforced
+    rule_id: c-no-goto
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-c-coding, internal-cpp-coding]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Single-exit cleanup labels can be justified; forward-only and cross-function control flow require control-flow analysis.
+  - id: c-no-process-launch-review
+    status: enforced
+    rule_id: c-no-process-launch
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-c-coding, internal-cpp-coding]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Selected changed C and C++ lines when this optional rule is enabled.
+    critical_adoption: Process-launch calls are high-risk review signals; argument provenance, white-listing and platform APIs require semantic analysis.

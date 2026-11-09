@@ -196,5 +196,159 @@
         "include/module.hpp": "void process() throw() {}\n"
       }
     }
+  },
+  {
+    "id": "issue19-no-reinterpret-cast-pass-stress",
+    "rule": "cpp-no-reinterpret-cast",
+    "description": "stress pass C++ review signal cpp-no-reinterpret-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "auto value = static_cast<int>(pointer);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-reinterpret-cast-fail-stress",
+    "rule": "cpp-no-reinterpret-cast",
+    "description": "stress fail C++ review signal cpp-no-reinterpret-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "auto value = reinterpret_cast<int>(pointer);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-const-cast-pass-stress",
+    "rule": "cpp-no-const-cast",
+    "description": "stress pass C++ review signal cpp-no-const-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "auto value = text;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-const-cast-fail-stress",
+    "rule": "cpp-no-const-cast",
+    "description": "stress fail C++ review signal cpp-no-const-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "auto value = const_cast<char *>(text);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-delete-this-pass-stress",
+    "rule": "cpp-no-delete-this",
+    "description": "stress pass C++ review signal cpp-no-delete-this",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "owner_->release(this);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-delete-this-fail-stress",
+    "rule": "cpp-no-delete-this",
+    "description": "stress fail C++ review signal cpp-no-delete-this",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "delete this;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-prefer-make-smart-pointer-pass-stress",
+    "rule": "cpp-prefer-make-smart-pointer",
+    "description": "stress pass C++ review signal cpp-prefer-make-smart-pointer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "auto widget = std::make_unique<Widget>();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-prefer-make-smart-pointer-fail-stress",
+    "rule": "cpp-prefer-make-smart-pointer",
+    "description": "stress fail C++ review signal cpp-prefer-make-smart-pointer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "std::unique_ptr<Widget> widget(new Widget());\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-use-nullptr-pass-stress",
+    "rule": "cpp-use-nullptr",
+    "description": "stress pass C++ review signal cpp-use-nullptr",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "Widget *widget = nullptr;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-use-nullptr-fail-stress",
+    "rule": "cpp-use-nullptr",
+    "description": "stress fail C++ review signal cpp-use-nullptr",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "Widget *widget = NULL;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-macro-constant-pass-stress",
+    "rule": "cpp-no-macro-constant",
+    "description": "stress pass C++ review signal cpp-no-macro-constant",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "constexpr int kMaxItems = 16;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-macro-constant-fail-stress",
+    "rule": "cpp-no-macro-constant",
+    "description": "stress fail C++ review signal cpp-no-macro-constant",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "#define MAX_ITEMS 16\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-using-namespace-in-header-pass-stress",
+    "rule": "cpp-no-using-namespace-in-header",
+    "description": "stress pass C++ review signal cpp-no-using-namespace-in-header",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "using std::string;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-using-namespace-in-header-fail-stress",
+    "rule": "cpp-no-using-namespace-in-header",
+    "description": "stress fail C++ review signal cpp-no-using-namespace-in-header",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "using namespace std;\n"
+      }
+    }
   }
 ]

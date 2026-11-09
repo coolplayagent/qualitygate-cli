@@ -22,6 +22,13 @@ runtime behavior, or standards conformance.
 default. Language-specific rules should be enabled only after reading their
 exact definition and capability limits.
 
+Internal C and C++ rules cite the C V5.3 (DKBA 12271-2023.12) and C++ V5.1
+(DKBA 12977-2022.12) language specifications. The older C&C++ secure coding
+V3.0 document is superseded by those language specifications and is not the
+current source. Line rules remain review signals; clauses that need type,
+ownership, control-flow or multi-line evidence are recorded as capability gaps
+instead of being approximated by regular expressions.
+
 ## Project rule protocol
 
 Version 1 YAML packages declare identity, applicability, source review,

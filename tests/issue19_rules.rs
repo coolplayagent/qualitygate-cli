@@ -59,6 +59,42 @@ const CASES: &[(&str, &str, &str, &str)] = &[
         "void process() throw() {}\n",
         "void process() noexcept {}\n",
     ),
+    (
+        "cpp-no-reinterpret-cast",
+        "warning",
+        "auto value = reinterpret_cast<int>(pointer);\n",
+        "auto value = static_cast<int>(pointer);\n",
+    ),
+    (
+        "cpp-no-const-cast",
+        "warning",
+        "auto value = const_cast<char *>(text);\n",
+        "auto value = text;\n",
+    ),
+    (
+        "cpp-no-delete-this",
+        "warning",
+        "delete this;\n",
+        "owner_->release(this);\n",
+    ),
+    (
+        "cpp-prefer-make-smart-pointer",
+        "warning",
+        "std::unique_ptr<Widget> widget(new Widget());\n",
+        "auto widget = std::make_unique<Widget>();\n",
+    ),
+    (
+        "cpp-use-nullptr",
+        "warning",
+        "Widget *widget = NULL;\n",
+        "Widget *widget = nullptr;\n",
+    ),
+    (
+        "cpp-no-macro-constant",
+        "warning",
+        "#define MAX_ITEMS 16\n",
+        "constexpr int kMaxItems = 16;\n",
+    ),
 ];
 
 fn check(root: &Path, expected: i32) -> Value {
@@ -205,4 +241,32 @@ fn cpp_source_signals_find_only_selected_changed_lines_then_repair() {
             "{id}"
         );
     }
+}
+
+#[test]
+fn cpp_header_rule_scans_only_added_headers_selected_by_paths() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::create_dir(root.join("include")).unwrap();
+    fs::create_dir(root.join("src")).unwrap();
+    fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-cpp]\nrules: {cpp-no-using-namespace-in-header: {}}\n",
+    )
+    .unwrap();
+    fs::write(root.join("include/sample.h"), "using namespace std;\n").unwrap();
+    fs::write(root.join("src/sample.cpp"), "using namespace std;\n").unwrap();
+    let report = check(root, 0);
+    let diagnostics = rule(&report, "cpp-no-using-namespace-in-header")["diagnostics"]
+        .as_array()
+        .unwrap();
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["file"], "include/sample.h");
+    fs::write(root.join("include/sample.h"), "using std::string;\n").unwrap();
+    assert!(
+        rule(&check(root, 0), "cpp-no-using-namespace-in-header")["diagnostics"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
 }

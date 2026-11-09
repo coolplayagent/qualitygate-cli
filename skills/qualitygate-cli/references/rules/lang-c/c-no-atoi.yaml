@@ -1,0 +1,20 @@
+id: c-no-atoi
+version: 1
+description: Review atoi, atol, atoll and atof calls in C and C++ code
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c:
+        - '\b(?:atoi|atol|atoll|atof)\s*\('
+      cpp:
+        - '\b(?:atoi|atol|atoll|atof)\s*\('
+standard_refs:
+  - {source_id: internal-c-coding, controls: [function-usage]}
+  - {source_id: internal-cpp-coding, controls: [standard-library]}
+lifecycle_inputs: [c-no-atoi-review]

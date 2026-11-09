@@ -47,6 +47,7 @@ Source notes:
 - [Alibaba](sources/alibaba.md)
 - [Google](sources/google.md)
 - [Huawei](sources/huawei.md)
+- [Internal C/C++ standards](sources/internal-c-cpp.md)
 - [NVIDIA](sources/nvidia.md)
 - [AWS](sources/aws.md)
 - [Azure](sources/azure.md)
@@ -71,7 +72,7 @@ The archive is organized for review from three directions:
   [static gates](concerns/static-gates.md), and
   [supply chain and release evidence](concerns/supply-chain.md).
 
-The research snapshot was reviewed on 2026-09-13. Recheck live pages before
+The research snapshot was reviewed on 2026-11-09. Recheck live pages before
 changing a rule, especially where a vendor guide is updated continuously.
 
 The [Java lifecycle supplement](lifecycle-rule-matrix-java.yaml) binds the optional Java source review signals to recorded standards and their narrow adoption limits.

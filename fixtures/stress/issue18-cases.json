@@ -152,5 +152,71 @@
         "include/module.hpp": "long n = 123l;\n"
       }
     }
+  },
+  {
+    "id": "issue18-no-atoi-pass-stress",
+    "rule": "c-no-atoi",
+    "description": "stress pass C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int value = parse_int(text);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-atoi-fail-stress",
+    "rule": "c-no-atoi",
+    "description": "stress fail C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int value = atoi(text);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-pass-stress",
+    "rule": "c-no-goto",
+    "description": "stress pass C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "return cleanup();\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-fail-stress",
+    "rule": "c-no-goto",
+    "description": "stress fail C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "goto cleanup;\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-pass-stress",
+    "rule": "c-no-process-launch",
+    "description": "stress pass C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int status = run_command(command);\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-fail-stress",
+    "rule": "c-no-process-launch",
+    "description": "stress fail C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "int status = system(command);\n"
+      }
+    }
   }
 ]

@@ -1,0 +1,17 @@
+id: cpp-use-nullptr
+version: 1
+description: Review NULL usage in C++ code
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\bNULL\b'
+standard_refs:
+  - {source_id: internal-cpp-coding, controls: [expressions]}
+lifecycle_inputs: [cpp-use-nullptr-review]

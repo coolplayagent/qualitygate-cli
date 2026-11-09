@@ -196,5 +196,159 @@
         "src/main.cpp": "void process() throw() {}\n"
       }
     }
+  },
+  {
+    "id": "issue19-no-reinterpret-cast-pass-minimal",
+    "rule": "cpp-no-reinterpret-cast",
+    "description": "minimal pass C++ review signal cpp-no-reinterpret-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "auto value = static_cast<int>(pointer);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-reinterpret-cast-fail-minimal",
+    "rule": "cpp-no-reinterpret-cast",
+    "description": "minimal fail C++ review signal cpp-no-reinterpret-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "auto value = reinterpret_cast<int>(pointer);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-const-cast-pass-minimal",
+    "rule": "cpp-no-const-cast",
+    "description": "minimal pass C++ review signal cpp-no-const-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "auto value = text;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-const-cast-fail-minimal",
+    "rule": "cpp-no-const-cast",
+    "description": "minimal fail C++ review signal cpp-no-const-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "auto value = const_cast<char *>(text);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-delete-this-pass-minimal",
+    "rule": "cpp-no-delete-this",
+    "description": "minimal pass C++ review signal cpp-no-delete-this",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "owner_->release(this);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-delete-this-fail-minimal",
+    "rule": "cpp-no-delete-this",
+    "description": "minimal fail C++ review signal cpp-no-delete-this",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "delete this;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-prefer-make-smart-pointer-pass-minimal",
+    "rule": "cpp-prefer-make-smart-pointer",
+    "description": "minimal pass C++ review signal cpp-prefer-make-smart-pointer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "auto widget = std::make_unique<Widget>();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-prefer-make-smart-pointer-fail-minimal",
+    "rule": "cpp-prefer-make-smart-pointer",
+    "description": "minimal fail C++ review signal cpp-prefer-make-smart-pointer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "std::unique_ptr<Widget> widget(new Widget());\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-use-nullptr-pass-minimal",
+    "rule": "cpp-use-nullptr",
+    "description": "minimal pass C++ review signal cpp-use-nullptr",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "Widget *widget = nullptr;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-use-nullptr-fail-minimal",
+    "rule": "cpp-use-nullptr",
+    "description": "minimal fail C++ review signal cpp-use-nullptr",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "Widget *widget = NULL;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-macro-constant-pass-minimal",
+    "rule": "cpp-no-macro-constant",
+    "description": "minimal pass C++ review signal cpp-no-macro-constant",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "constexpr int kMaxItems = 16;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-macro-constant-fail-minimal",
+    "rule": "cpp-no-macro-constant",
+    "description": "minimal fail C++ review signal cpp-no-macro-constant",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.cpp": "#define MAX_ITEMS 16\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-using-namespace-in-header-pass-minimal",
+    "rule": "cpp-no-using-namespace-in-header",
+    "description": "minimal pass C++ review signal cpp-no-using-namespace-in-header",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.h": "using std::string;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-using-namespace-in-header-fail-minimal",
+    "rule": "cpp-no-using-namespace-in-header",
+    "description": "minimal fail C++ review signal cpp-no-using-namespace-in-header",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.h": "using namespace std;\n"
+      }
+    }
   }
 ]

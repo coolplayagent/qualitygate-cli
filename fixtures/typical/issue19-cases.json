@@ -196,5 +196,159 @@
         "src/service.cc": "void process() throw() {}\n"
       }
     }
+  },
+  {
+    "id": "issue19-no-reinterpret-cast-pass-typical",
+    "rule": "cpp-no-reinterpret-cast",
+    "description": "typical pass C++ review signal cpp-no-reinterpret-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "auto value = static_cast<int>(pointer);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-reinterpret-cast-fail-typical",
+    "rule": "cpp-no-reinterpret-cast",
+    "description": "typical fail C++ review signal cpp-no-reinterpret-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "auto value = reinterpret_cast<int>(pointer);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-const-cast-pass-typical",
+    "rule": "cpp-no-const-cast",
+    "description": "typical pass C++ review signal cpp-no-const-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "auto value = text;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-const-cast-fail-typical",
+    "rule": "cpp-no-const-cast",
+    "description": "typical fail C++ review signal cpp-no-const-cast",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "auto value = const_cast<char *>(text);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-delete-this-pass-typical",
+    "rule": "cpp-no-delete-this",
+    "description": "typical pass C++ review signal cpp-no-delete-this",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "owner_->release(this);\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-delete-this-fail-typical",
+    "rule": "cpp-no-delete-this",
+    "description": "typical fail C++ review signal cpp-no-delete-this",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "delete this;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-prefer-make-smart-pointer-pass-typical",
+    "rule": "cpp-prefer-make-smart-pointer",
+    "description": "typical pass C++ review signal cpp-prefer-make-smart-pointer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "auto widget = std::make_unique<Widget>();\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-prefer-make-smart-pointer-fail-typical",
+    "rule": "cpp-prefer-make-smart-pointer",
+    "description": "typical fail C++ review signal cpp-prefer-make-smart-pointer",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "std::unique_ptr<Widget> widget(new Widget());\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-use-nullptr-pass-typical",
+    "rule": "cpp-use-nullptr",
+    "description": "typical pass C++ review signal cpp-use-nullptr",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "Widget *widget = nullptr;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-use-nullptr-fail-typical",
+    "rule": "cpp-use-nullptr",
+    "description": "typical fail C++ review signal cpp-use-nullptr",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "Widget *widget = NULL;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-macro-constant-pass-typical",
+    "rule": "cpp-no-macro-constant",
+    "description": "typical pass C++ review signal cpp-no-macro-constant",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "constexpr int kMaxItems = 16;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-macro-constant-fail-typical",
+    "rule": "cpp-no-macro-constant",
+    "description": "typical fail C++ review signal cpp-no-macro-constant",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cc": "#define MAX_ITEMS 16\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-using-namespace-in-header-pass-typical",
+    "rule": "cpp-no-using-namespace-in-header",
+    "description": "typical pass C++ review signal cpp-no-using-namespace-in-header",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.hpp": "using std::string;\n"
+      }
+    }
+  },
+  {
+    "id": "issue19-no-using-namespace-in-header-fail-typical",
+    "rule": "cpp-no-using-namespace-in-header",
+    "description": "typical fail C++ review signal cpp-no-using-namespace-in-header",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.hpp": "using namespace std;\n"
+      }
+    }
   }
 ]

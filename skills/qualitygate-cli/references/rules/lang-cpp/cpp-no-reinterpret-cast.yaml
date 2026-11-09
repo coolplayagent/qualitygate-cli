@@ -1,0 +1,17 @@
+id: cpp-no-reinterpret-cast
+version: 1
+description: Review reinterpret_cast expressions in C++ code
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp:
+        - '\breinterpret_cast\s*<'
+standard_refs:
+  - {source_id: internal-cpp-coding, controls: [expressions]}
+lifecycle_inputs: [cpp-no-reinterpret-cast-review]
