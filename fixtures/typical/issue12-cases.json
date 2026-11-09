@@ -402,7 +402,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "ci/check.bash": "#!/bin/sh\nrun \"$cmd\"\n"
+        "ci/check.bash": "#!/bin/sh\nrun \"$cmd\"\nexample='e'\"'\"'va'\"'\"'l \"$cmd\"\n'\n"
       }
     }
   },
@@ -413,7 +413,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "ci/check.bash": "#!/bin/sh\neval \"$cmd\"\n"
+        "ci/check.bash": "e'va'l \"$cmd\"\n"
       }
     }
   },
@@ -424,7 +424,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "ci/check.bash": "#!/bin/sh\nll() { ls -l \"$@\"; }\n"
+        "ci/check.bash": "#!/bin/sh\nll() { ls -l \"$@\"; }\nexample='alias ll=\"$cmd\"\n'\n"
       }
     }
   },
@@ -435,7 +435,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "ci/check.bash": "#!/bin/sh\nalias ll='ls -l'\n"
+        "ci/check.bash": "alias ll=\"$cmd\"\n"
       }
     }
   },
@@ -446,7 +446,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "ci/check.bash": "#!/bin/sh\nchmod u-r secret.txt\n"
+        "ci/check.bash": "#!/bin/sh\nchmod u-r secret.txt\nexample='chmod --recursive \"a-rw\" file\n'\n"
       }
     }
   },
@@ -457,7 +457,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "ci/check.bash": "#!/bin/sh\nchmod a-r secret.txt\n"
+        "ci/check.bash": "chmod --recursive \"a-rw\" file\n"
       }
     }
   }

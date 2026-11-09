@@ -294,7 +294,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.go": "p := &value\n"
+        "src/module.go": "package sample\nfunc example() { p := &value }\nvar example = \"package sample\\nimport . \\\"unsafe\\\"\\nvar pointer Pointer\\n\"\n"
       }
     }
   },
@@ -305,7 +305,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.go": "p := unsafe.Pointer(&value)\n"
+        "src/module.go": "package sample\nimport . \"unsafe\"\nvar pointer Pointer\n"
       }
     }
   },
@@ -316,7 +316,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.go": "return\n"
+        "src/module.go": "package sample\nfunc example() { return }\nvar example = \"package sample\\nimport . \\\"runtime\\\"\\nfunc f(){ Goexit() }\\n\"\n"
       }
     }
   },
@@ -327,7 +327,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.go": "os.Exit(1)\n"
+        "src/module.go": "package sample\nimport . \"runtime\"\nfunc f(){ Goexit() }\n"
       }
     }
   },
@@ -338,7 +338,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.go": "import \"fmt\"\n"
+        "src/module.go": "package sample\nimport \"fmt\"\nvar example = \"package sample\\nimport (\\n    f \\\"fmt\\\"\\n    \\\"os\\\"\\n)\\n\"\n"
       }
     }
   },
@@ -349,7 +349,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.go": "import f \"fmt\"\n"
+        "src/module.go": "package sample\nimport (\n    f \"fmt\"\n    \"os\"\n)\n"
       }
     }
   }

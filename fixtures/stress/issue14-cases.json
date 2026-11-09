@@ -294,7 +294,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.mjs": "run(obj);\n"
+        "src/module.mjs": "run(obj);\nconst example = \"function f(){ with\\n(obj) { run(); } }\\n\";\n"
       }
     }
   },
@@ -305,7 +305,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.mjs": "with (obj) { run(); }\n"
+        "src/module.mjs": "function f(){ with\n(obj) { run(); } }\n"
       }
     }
   },
@@ -316,7 +316,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.mjs": "let count = 0;\n"
+        "src/module.mjs": "let count = 0;\nconst example = \"for (var value of items) { run(value); }\\n\";\n"
       }
     }
   },
@@ -327,7 +327,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.mjs": "var count = 0;\n"
+        "src/module.mjs": "for (var value of items) { run(value); }\n"
       }
     }
   },
@@ -338,7 +338,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.mjs": "function sum(...items) { return items.length; }\n"
+        "src/module.mjs": "function sum(...items) { return items.length; }\nconst example = \"function f(){ return `${arguments[0]}`; }\\n\";\n"
       }
     }
   },
@@ -349,7 +349,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.mjs": "function sum() { return arguments.length; }\n"
+        "src/module.mjs": "function f(){ return `${arguments[0]}`; }\n"
       }
     }
   }

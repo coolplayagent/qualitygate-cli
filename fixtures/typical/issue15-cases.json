@@ -270,7 +270,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "p := &value\n"
+        "src/main.go": "package sample\nfunc example() { p := &value }\nvar example = \"package sample\\nimport u `unsafe`\\nvar pointer u.Pointer\\n\"\n"
       }
     }
   },
@@ -281,7 +281,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "p := unsafe.Pointer(&value)\n"
+        "src/main.go": "package sample\nimport u `unsafe`\nvar pointer u.Pointer\n"
       }
     }
   },
@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "return\n"
+        "src/main.go": "package sample\nfunc example() { return }\nvar example = \"package sample\\nimport stop \\\"os\\\"\\nfunc f(){ stop.Exit(1) }\\n\"\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "os.Exit(1)\n"
+        "src/main.go": "package sample\nimport stop \"os\"\nfunc f(){ stop.Exit(1) }\n"
       }
     }
   },
@@ -314,7 +314,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "import \"fmt\"\n"
+        "src/main.go": "package sample\nimport \"fmt\"\nvar example = \"package sample\\nimport (\\n    f \\\"fmt\\\"\\n    \\\"os\\\"\\n)\\n\"\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "import f \"fmt\"\n"
+        "src/main.go": "package sample\nimport (\n    f \"fmt\"\n    \"os\"\n)\n"
       }
     }
   }

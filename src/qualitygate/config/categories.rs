@@ -92,7 +92,7 @@ fn origin(entry: &Entry) -> &str {
         | "ai-code-traceability" => "test",
         "file-pattern" if rule.id == "no-test-sleep" => "test",
         "shell-shebang" | "shell-commented-code" => "style",
-        "source-pattern"
+        "source-pattern" | "language-syntax"
             if rule.id.starts_with("shell-")
                 && ![
                     "shell-hardcoded-secret",
@@ -112,7 +112,9 @@ fn origin(entry: &Entry) -> &str {
         {
             "style"
         }
-        "source-pattern" | "file-pattern" if rule.id != "todo-marker" => "security",
+        "source-pattern" | "file-pattern" | "language-syntax" if rule.id != "todo-marker" => {
+            "security"
+        }
         "import-boundary" | "module-boundary" | "used-undeclared" => "architecture",
         _ => "style",
     }

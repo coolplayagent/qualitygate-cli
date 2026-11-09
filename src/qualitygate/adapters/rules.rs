@@ -130,6 +130,7 @@ pub fn evaluate_with_context(
             "used-undeclared" => {
                 super::project_rules::used_undeclared(&mut result, setting, snapshot, projects)
             }
+            "language-syntax" => super::language_syntax::evaluate(&mut result, setting, snapshot),
             "native-syntax" => super::native_syntax::evaluate(&mut result, setting, snapshot),
             "source-pattern" => source_patterns(&mut result, setting, snapshot),
             "test-naming"

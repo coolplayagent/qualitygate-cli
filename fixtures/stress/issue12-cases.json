@@ -438,7 +438,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "bin/extensionless": "#!/bin/sh\nrun \"$cmd\"\n"
+        "bin/extensionless": "#!/bin/sh\nrun \"$cmd\"\nexample='echo \"$(eval \"$cmd\")\"\n'\n"
       }
     }
   },
@@ -449,7 +449,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "bin/extensionless": "#!/bin/sh\neval \"$cmd\"\n"
+        "bin/extensionless": "#!/bin/sh\necho \"$(eval \"$cmd\")\"\n"
       }
     }
   },
@@ -460,7 +460,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "bin/extensionless": "#!/bin/sh\nll() { ls -l \"$@\"; }\n"
+        "bin/extensionless": "#!/bin/sh\nll() { ls -l \"$@\"; }\nexample='builtin alias ll='\"'\"'ls -l'\"'\"'\n'\n"
       }
     }
   },
@@ -471,7 +471,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "bin/extensionless": "#!/bin/sh\nalias ll='ls -l'\n"
+        "bin/extensionless": "#!/bin/sh\nbuiltin alias ll='ls -l'\n"
       }
     }
   },
@@ -482,7 +482,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "bin/extensionless": "#!/bin/sh\nchmod u-r secret.txt\n"
+        "bin/extensionless": "#!/bin/sh\nchmod u-r secret.txt\nexample='chmod -- \"ugo-r\" file\n'\n"
       }
     }
   },
@@ -493,7 +493,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "bin/extensionless": "#!/bin/sh\nchmod a-r secret.txt\n"
+        "bin/extensionless": "#!/bin/sh\nchmod -- \"ugo-r\" file\n"
       }
     }
   }

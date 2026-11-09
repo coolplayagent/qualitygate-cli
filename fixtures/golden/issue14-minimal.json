@@ -140,7 +140,8 @@
     "/execution/status": "completed",
     "/verdict": "fail",
     "/diagnostic_count": 1,
-    "/diagnostics/0/evidence/language": "typescript"
+    "/diagnostics/0/evidence/language": "typescript",
+    "/diagnostics/0/evidence/node_kind": "with_statement"
   },
   "issue14-no-var-pass-minimal": {
     "/execution/status": "completed",
@@ -151,7 +152,8 @@
     "/execution/status": "completed",
     "/verdict": "fail",
     "/diagnostic_count": 1,
-    "/diagnostics/0/evidence/language": "typescript"
+    "/diagnostics/0/evidence/language": "typescript",
+    "/diagnostics/0/evidence/node_kind": "variable_declaration"
   },
   "issue14-no-arguments-pass-minimal": {
     "/execution/status": "completed",
@@ -162,6 +164,7 @@
     "/execution/status": "completed",
     "/verdict": "fail",
     "/diagnostic_count": 1,
-    "/diagnostics/0/evidence/language": "typescript"
+    "/diagnostics/0/evidence/language": "typescript",
+    "/diagnostics/0/evidence/node_kind": "identifier"
   }
 }

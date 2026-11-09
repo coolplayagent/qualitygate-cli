@@ -1,7 +1,7 @@
 id: go-unsafe-package
 version: 1
 description: Review unsafe package usage in Go code
-implementation: source-pattern
+implementation: language-syntax
 language: [go]
 requires_capabilities: [files]
 defaults:
@@ -9,9 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [go]
-    prohibited_patterns:
-      go:
-        - '\bunsafe\.'
 standard_refs:
   - {source_id: internal-go-coding, controls: [memory]}
 lifecycle_inputs: [go-unsafe-package-review]

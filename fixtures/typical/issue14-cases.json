@@ -270,7 +270,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/component.tsx": "run(obj);\n"
+        "src/component.tsx": "run(obj);\nconst example = \"function f(){ with\\n(obj) { run(); } }\\n\";\n"
       }
     }
   },
@@ -281,7 +281,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/component.tsx": "with (obj) { run(); }\n"
+        "src/component.tsx": "function f(){ with\n(obj) { run(); } }\n"
       }
     }
   },
@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/component.tsx": "let count = 0;\n"
+        "src/component.tsx": "let count = 0;\nconst example = \"var {value} = object;\\n\";\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/component.tsx": "var count = 0;\n"
+        "src/component.tsx": "var {value} = object;\n"
       }
     }
   },
@@ -314,7 +314,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/component.tsx": "function sum(...items) { return items.length; }\n"
+        "src/component.tsx": "function sum(...items) { return items.length; }\nconst example = \"function f(){ return (() => arguments[0])(); }\\n\";\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/component.tsx": "function sum() { return arguments.length; }\n"
+        "src/component.tsx": "function f(){ return (() => arguments[0])(); }\n"
       }
     }
   }

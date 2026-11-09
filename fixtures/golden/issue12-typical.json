@@ -206,7 +206,8 @@
     "/execution/status": "completed",
     "/verdict": "fail",
     "/diagnostic_count": 1,
-    "/diagnostics/0/evidence/language": "shell"
+    "/diagnostics/0/evidence/language": "shell",
+    "/diagnostics/0/evidence/node_kind": "command"
   },
   "issue12-alias-pass-typical": {
     "/execution/status": "completed",
@@ -217,7 +218,8 @@
     "/execution/status": "completed",
     "/verdict": "fail",
     "/diagnostic_count": 1,
-    "/diagnostics/0/evidence/language": "shell"
+    "/diagnostics/0/evidence/language": "shell",
+    "/diagnostics/0/evidence/node_kind": "command"
   },
   "issue12-chmod-read-pass-typical": {
     "/execution/status": "completed",
@@ -228,6 +230,7 @@
     "/execution/status": "completed",
     "/verdict": "fail",
     "/diagnostic_count": 1,
-    "/diagnostics/0/evidence/language": "shell"
+    "/diagnostics/0/evidence/language": "shell",
+    "/diagnostics/0/evidence/node_kind": "command"
   }
 }

@@ -9,7 +9,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-go-coding]
-    evidence: [changed-go-line, regex-pattern]
+    evidence: [changed-go-line, syntax-node, file-local-context]
     applicability: Selected changed Go lines when this optional rule is enabled.
     critical_adoption: Some low-level and interoperability code requires unsafe; this signal prompts review rather than proving a defect.
   - id: go-os-exit-review
@@ -21,7 +21,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-go-coding]
-    evidence: [changed-go-line, regex-pattern]
+    evidence: [changed-go-line, syntax-node, file-local-context]
     applicability: Selected changed Go lines when this optional rule is enabled.
     critical_adoption: A main entry point may intentionally terminate the process; defer and cleanup behavior need semantic review.
   - id: go-import-alias-review
@@ -33,6 +33,6 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-go-coding]
-    evidence: [changed-go-line, regex-pattern]
+    evidence: [changed-go-line, syntax-node, file-local-context]
     applicability: Selected changed Go lines when this optional rule is enabled.
     critical_adoption: Aliases can resolve real package-name collisions; this signal asks for a naming review.

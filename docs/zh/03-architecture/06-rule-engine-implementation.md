@@ -258,3 +258,12 @@ Qualitygate 增加的是单个 lint 通常不负责的编排：Git 快照身份�
 ---
 
 [上一章：+1 场景视图](05-scenarios.md) · [全书目录](../README.md) · [下一章：规则能力与 Agent 行为契约](07-rule-capabilities-and-agent-contracts.md)
+
+### `language-syntax`
+
+`adapters::language_syntax` 基于不可变快照检查十二条 Python/Go/Shell/TypeScript 规则。
+`syntax::review` 负责有界解析和变更 token 遍历；`language_bindings` 负责文件内 Go 导入及
+TypeScript 作用域；`language_shell` 解码静态命令操作数，不执行展开。
+注释和字面文本不触发诊断，插值中的执行表达式仍受检查。证据记录语言、节点种类和局部绑定边界。
+固定语言校验拒绝正则覆盖。每个选定文件最多 4 MiB、200,000 工作步骤和两秒，
+同时受共享内置规则时间及输出预算约束。解析错误、无效 UTF-8 和超限均报告未完成。

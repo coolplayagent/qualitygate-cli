@@ -9,7 +9,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-typescript-coding]
-    evidence: [changed-typescript-line, regex-pattern]
+    evidence: [changed-typescript-line, syntax-node, file-local-context]
     applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
     critical_adoption: with is forbidden in strict mode; legacy non-strict code may still contain it.
   - id: ts-no-var-review
@@ -21,7 +21,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-typescript-coding]
-    evidence: [changed-typescript-line, regex-pattern]
+    evidence: [changed-typescript-line, syntax-node, file-local-context]
     applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
     critical_adoption: Legacy JavaScript may require var for compatibility; function-scope behavior needs review.
   - id: ts-no-arguments-review
@@ -33,6 +33,6 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-typescript-coding]
-    evidence: [changed-typescript-line, regex-pattern]
+    evidence: [changed-typescript-line, syntax-node, file-local-context]
     applicability: Selected changed TypeScript or JavaScript lines when this optional rule is enabled.
     critical_adoption: Some legacy callbacks use arguments intentionally; rest parameters are preferred in new code.

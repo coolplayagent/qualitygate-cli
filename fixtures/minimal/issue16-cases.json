@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.py": "if value is None:\n"
+        "src/main.py": "if value is None:\n    pass\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.py": "if value == None:\n"
+        "src/main.py": "if value == None:\n    pass\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.py": "if (count := len(items)) > 0:\n"
+        "src/main.py": "if (count := len(items)) > 0:\n    pass\n"
       }
     }
   },

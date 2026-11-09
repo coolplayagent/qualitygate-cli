@@ -1,7 +1,7 @@
 id: ts-no-arguments
 version: 1
 description: Review arguments object usage in TypeScript or JavaScript code
-implementation: source-pattern
+implementation: language-syntax
 language: [typescript]
 requires_capabilities: [files]
 defaults:
@@ -9,9 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [typescript]
-    prohibited_patterns:
-      typescript:
-        - '\barguments\b'
 standard_refs:
   - {source_id: internal-typescript-coding, controls: [functions]}
 lifecycle_inputs: [ts-no-arguments-review]

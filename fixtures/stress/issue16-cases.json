@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.py": "if value is None:\n"
+        "src/module.py": "if value is None:\n    pass\nexample = \"if value == (\\n    None\\n):\\n    pass\\n\"\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.py": "if value == None:\n"
+        "src/module.py": "if value == (\n    None\n):\n    pass\n"
       }
     }
   },
@@ -314,7 +314,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.py": "count = len(items)\n"
+        "src/module.py": "count = len(items)\nexample = \"example = f\\\"{(count := 1)}\\\"\\n\"\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.py": "if (count := len(items)) > 0:\n"
+        "src/module.py": "example = f\"{(count := 1)}\"\n"
       }
     }
   },
@@ -336,7 +336,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.py": "def handler(x):\n    return x + 1\n"
+        "src/module.py": "def handler(x):\n    return x + 1\nexample = \"handler: Callable = (\\n    lambda x: x + 1\\n)\\n\"\n"
       }
     }
   },
@@ -347,7 +347,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/module.py": "handler = lambda x: x + 1\n"
+        "src/module.py": "handler: Callable = (\n    lambda x: x + 1\n)\n"
       }
     }
   }

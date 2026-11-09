@@ -1,7 +1,7 @@
 id: ts-no-with
 version: 1
 description: Review with statements in TypeScript or JavaScript code
-implementation: source-pattern
+implementation: language-syntax
 language: [typescript]
 requires_capabilities: [files]
 defaults:
@@ -9,9 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [typescript]
-    prohibited_patterns:
-      typescript:
-        - '^\s*with\s*\('
 standard_refs:
   - {source_id: internal-typescript-coding, controls: [environment]}
 lifecycle_inputs: [ts-no-with-review]

@@ -9,7 +9,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-shell-coding]
-    evidence: [changed-shell-line, regex-pattern]
+    evidence: [changed-shell-line, syntax-node, file-local-context]
     applicability: Selected changed Shell lines when this optional rule is enabled.
     critical_adoption: eval can be justified for controlled generated commands; argument provenance requires semantic review.
   - id: shell-alias-review
@@ -21,7 +21,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-shell-coding]
-    evidence: [changed-shell-line, regex-pattern]
+    evidence: [changed-shell-line, syntax-node, file-local-context]
     applicability: Selected changed Shell lines when this optional rule is enabled.
     critical_adoption: Interactive convenience aliases may be intentional; scripts should prefer functions for predictable expansion.
   - id: shell-chmod-read-review
@@ -33,6 +33,6 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-shell-coding]
-    evidence: [changed-shell-line, regex-pattern]
+    evidence: [changed-shell-line, syntax-node, file-local-context]
     applicability: Selected changed Shell lines when this optional rule is enabled.
     critical_adoption: Removing read permission can be deliberate for secrets or policy; the target scope needs review.

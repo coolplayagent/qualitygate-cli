@@ -270,7 +270,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "p := &value\n"
+        "src/main.go": "package sample\nfunc example() { p := &value }\n"
       }
     }
   },
@@ -281,7 +281,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "p := unsafe.Pointer(&value)\n"
+        "src/main.go": "package sample\nimport \"unsafe\"\nfunc example() { p := unsafe.Pointer(&value) }\n"
       }
     }
   },
@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "return\n"
+        "src/main.go": "package sample\nfunc example() { return }\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "os.Exit(1)\n"
+        "src/main.go": "package sample\nimport \"os\"\nfunc example() { os.Exit(1) }\n"
       }
     }
   },
@@ -314,7 +314,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "import \"fmt\"\n"
+        "src/main.go": "package sample\nimport \"fmt\"\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.go": "import f \"fmt\"\n"
+        "src/main.go": "package sample\nimport f \"fmt\"\n"
       }
     }
   }

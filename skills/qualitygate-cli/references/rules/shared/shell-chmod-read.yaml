@@ -1,7 +1,7 @@
 id: shell-chmod-read
 version: 1
-description: Review recursive read-permission removal in chmod calls
-implementation: source-pattern
+description: Review symbolic chmod modes removing read permission for all user classes
+implementation: language-syntax
 language: [shell]
 requires_capabilities: [files]
 defaults:
@@ -9,9 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [shell]
-    prohibited_patterns:
-      shell:
-        - '\bchmod\s+(?:-[A-Za-z]+\s+)*[^\n]*\ba-r\b'
 standard_refs:
   - {source_id: internal-shell-coding, controls: [security]}
 lifecycle_inputs: [shell-chmod-read-review]

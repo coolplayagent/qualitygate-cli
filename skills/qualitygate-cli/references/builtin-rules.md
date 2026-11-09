@@ -101,7 +101,7 @@ handlers, and PEP 428 does not require every project to replace `os.path`.
 
 Select `rulesets: [lang-typescript]` and the desired rule IDs. All fifteen
 rules are opt-in and fixed to `languages: [typescript]`, which includes
-`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` and `.cjs`. They inspect changed UTF-8
+`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` and `.cjs`. The original twelve inspect changed UTF-8
 lines with bounded `source-pattern` matching and accept `paths` and
 `prohibited_patterns.typescript` overrides. A pattern can match a comment or
 string and cannot establish data flow, receiver type or production reachability.
@@ -130,8 +130,8 @@ for semantic lint results.
 ## Go review signals
 
 Select `rulesets: [lang-go]` and the desired rule IDs. All fifteen rules are
-opt-in, fixed to `languages: [go]`, and inspect changed UTF-8 `.go` lines with
-bounded `source-pattern` matching. They accept `paths` and
+opt-in and fixed to `languages: [go]`. The original twelve inspect changed UTF-8 `.go` lines with
+bounded `source-pattern` matching. Those rules accept `paths` and
 `prohibited_patterns.go` overrides. Comments and strings can match. SQL
 formatting does not establish taint, `math/rand` may serve nonsecurity uses,
 the panic rule does not determine function visibility, and the cgo rule does
@@ -240,8 +240,8 @@ or [GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
 ## Python review signals
 
 Select `rulesets: [lang-python]` and the desired rule IDs. All sixteen rules
-are opt-in, fixed to `languages: [python]`, and inspect changed UTF-8 `.py`
-lines with bounded `source-pattern` matching. They accept `paths` and
+are opt-in and fixed to `languages: [python]`. The original thirteen inspect changed UTF-8 `.py`
+lines with bounded `source-pattern` matching. Those rules accept `paths` and
 `prohibited_patterns.python` overrides. Calls and names are review signals:
 they do not prove tainted input, credential validity, production use, safe YAML
 Loader selection or sensitive log content. Use the [Ruff reference](ruff-ratchet.yaml)
@@ -266,6 +266,35 @@ for semantic lint results.
 | `py-walrus-operator` | warning | assignment expression |
 | `py-lambda-assignment` | warning | lambda assigned to a name |
 
+## Structured language reviews
+
+The twelve rules `py-none-comparison`, `py-walrus-operator`,
+`py-lambda-assignment`, `go-unsafe-package`, `go-os-exit`, `go-import-alias`,
+`ts-no-with`, `ts-no-var`, `ts-no-arguments`, `shell-eval`, `shell-alias` and
+`shell-chmod-read` use `language-syntax`. They accept `paths` and their fixed
+`languages` only; regex overrides are rejected. Tree-sitter parses immutable
+selected source, including multiline syntax. Comments and literal text do not
+trigger findings, while expressions inside interpolated strings and command
+substitutions are inspected. Findings require changed syntax tokens.
+
+Python checks adjacent equality operands against `None`, assignment expressions,
+and named lambda assignments. Go resolves actual standard-library import paths,
+including grouped, named and dot imports, with file-local lexical shadowing.
+Changed imports also review retained calls; changed unsafe imports are reported
+once. Named import aliases exclude blank and dot imports. TypeScript checks
+`with`, `var` and implicit function `arguments`, including inherited arrow use;
+properties, explicit bindings and type-only parameters are excluded.
+Shell checks actual commands with static quoted names and `command`/`builtin`
+wrappers. Alias queries are excluded. `chmod` examines its symbolic mode operand
+for removal of read permission from all classes, not filenames or final effective
+permissions; recursion is not required. Dynamic command names/modes, runtime
+aliases, cross-file type resolution and ambiguous Go keyed-field names are outside
+this analysis. Findings remain optional review warnings, not safety proofs.
+
+Parsing is bounded to 4 MiB per file, 200,000 traversal/binding work steps and a
+2-second per-file deadline, within shared rule time and diagnostic budgets.
+Invalid UTF-8, malformed syntax and exhausted budgets produce incomplete execution.
+
 ## Rust review signals
 
 All three Rust rules are opt-in source patterns with fixed `languages: [rust]`.
@@ -285,7 +314,7 @@ same-line definitions only; comments and strings may match. Use the
 
 All twenty-one Shell rules are opt-in and use a fixed `shell` scope. Source
 patterns inspect changed lines in `.sh`, `.bash`, and extensionless scripts
-with a recognized `sh` or `bash` shebang. Each accepts `paths`; the nineteen
+with a recognized `sh` or `bash` shebang. Each accepts `paths`; the sixteen
 source-pattern rules accept `prohibited_patterns.shell` overrides. They are
 lexical review signals, not proof of an exploit or broken execution. Comments,
 strings, valid uses of `exec`, checksums, signal numbers, and continued pipelines
