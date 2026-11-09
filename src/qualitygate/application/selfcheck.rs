@@ -20,6 +20,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// The shipped corpus has grown with each rule pack; keep one bounded budget
+/// for the complete run rather than letting individual fixtures drift.
+const CORPUS_BUDGET: Duration = Duration::from_secs(120);
+
 pub async fn run(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
     let (selected_fixture, selected_rule) = (fixture.clone(), rule.clone());
     match tokio::task::spawn_blocking(move || execute(selected_fixture, selected_rule)).await {
@@ -95,9 +99,9 @@ fn execute(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
                     .as_ref()
                     .is_none_or(|filter| filter == &case.fixture.rule)
         }) {
-            if started.elapsed() > Duration::from_secs(60) {
+            if started.elapsed() > CORPUS_BUDGET {
                 bail!(
-                    "Selfcheck exceeded its 60 second corpus budget before {}/{}",
+                    "Selfcheck exceeded its 120 second corpus budget before {}/{}",
                     case.suite,
                     case.fixture.id
                 );

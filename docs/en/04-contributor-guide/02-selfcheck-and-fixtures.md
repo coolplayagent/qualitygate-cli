@@ -15,7 +15,8 @@ qualitygate selfcheck --fixture minimal --rule commit-message
 The corpus covers passes, violations, missing evidence, malformed inputs,
 timeouts, policy evolution, custom contracts, signed records, report adapters,
 and compatibility behavior. Filters are useful for diagnosis but do not replace
-a full corpus run after implementation changes.
+a full corpus run after implementation changes. The complete run shares a
+120-second budget; exceeding it is incomplete evidence, never a pass.
 
 Each result reports a verification conclusion, verified shapes, known limits,
 and unverified assumptions. Agreement means no mismatch was found for those

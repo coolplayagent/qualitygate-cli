@@ -152,5 +152,71 @@
         "src/main.c": "long n = 123l;\n"
       }
     }
+  },
+  {
+    "id": "issue18-no-atoi-pass-minimal",
+    "rule": "c-no-atoi",
+    "description": "minimal pass C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "void example() { int value = parse_int(text); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-atoi-fail-minimal",
+    "rule": "c-no-atoi",
+    "description": "minimal fail C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "void example() { int value = atoi(text); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-pass-minimal",
+    "rule": "c-no-goto",
+    "description": "minimal pass C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "void example() { return cleanup(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-fail-minimal",
+    "rule": "c-no-goto",
+    "description": "minimal fail C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "void example() { goto cleanup; cleanup: return; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-pass-minimal",
+    "rule": "c-no-process-launch",
+    "description": "minimal pass C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "void example() { int status = run_command(command); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-fail-minimal",
+    "rule": "c-no-process-launch",
+    "description": "minimal fail C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.c": "void example() { int status = system(command); }\n"
+      }
+    }
   }
 ]

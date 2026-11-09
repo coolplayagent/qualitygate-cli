@@ -261,6 +261,7 @@ const RULE_IMPLEMENTATIONS: &[&str] = &[
     "module-boundary",
     "used-undeclared",
     "source-pattern",
+    "native-syntax",
     "test-naming",
     "test-naming-strict",
     "parameterized-tests",

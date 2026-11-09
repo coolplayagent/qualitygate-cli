@@ -152,5 +152,71 @@
         "include/module.hpp": "long n = 123l;\n"
       }
     }
+  },
+  {
+    "id": "issue18-no-atoi-pass-stress",
+    "rule": "c-no-atoi",
+    "description": "stress pass C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "void example() { int value = parse_int(text); }\nconst char *example = \"int f() { return atoi\\n(text); }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-atoi-fail-stress",
+    "rule": "c-no-atoi",
+    "description": "stress fail C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "// review example follows\nint f() { return atoi\n(text); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-pass-stress",
+    "rule": "c-no-goto",
+    "description": "stress pass C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "void example() { return cleanup(); }\nconst char *example = \"void f() { goto\\n cleanup; cleanup: return; }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-fail-stress",
+    "rule": "c-no-goto",
+    "description": "stress fail C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "// review example follows\nvoid f() { goto\n cleanup; cleanup: return; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-pass-stress",
+    "rule": "c-no-process-launch",
+    "description": "stress pass C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "void example() { int status = run_command(command); }\nconst char *example = \"void f() { system\\n(command); }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-fail-stress",
+    "rule": "c-no-process-launch",
+    "description": "stress fail C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "include/module.hpp": "// review example follows\nvoid f() { system\n(command); }\n"
+      }
+    }
   }
 ]

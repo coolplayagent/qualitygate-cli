@@ -152,5 +152,71 @@
         "src/service.cpp": "long n = 123l;\n"
       }
     }
+  },
+  {
+    "id": "issue18-no-atoi-pass-typical",
+    "rule": "c-no-atoi",
+    "description": "typical pass C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "void example() { int value = parse_int(text); }\nconst char *example = \"int f() { return atoi\\n(text); }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-atoi-fail-typical",
+    "rule": "c-no-atoi",
+    "description": "typical fail C family review signal c-no-atoi",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "int f() { return atoi\n(text); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-pass-typical",
+    "rule": "c-no-goto",
+    "description": "typical pass C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "void example() { return cleanup(); }\nconst char *example = \"void f() { goto\\n cleanup; cleanup: return; }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-goto-fail-typical",
+    "rule": "c-no-goto",
+    "description": "typical fail C family review signal c-no-goto",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "void f() { goto\n cleanup; cleanup: return; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-pass-typical",
+    "rule": "c-no-process-launch",
+    "description": "typical pass C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "void example() { int status = run_command(command); }\nconst char *example = \"void f() { system\\n(command); }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue18-no-process-launch-fail-typical",
+    "rule": "c-no-process-launch",
+    "description": "typical fail C family review signal c-no-process-launch",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.cpp": "void f() { system\n(command); }\n"
+      }
+    }
   }
 ]

@@ -1,0 +1,15 @@
+id: cpp-no-using-namespace-in-header
+version: 1
+description: Review using namespace directives in changed C++ headers
+implementation: native-syntax
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+    paths: ['**/*.h', '**/*.hh', '**/*.hpp', '**/*.hxx', '*.h', '*.hh', '*.hpp', '*.hxx']
+standard_refs:
+  - {source_id: internal-cpp-coding, controls: [includes]}
+lifecycle_inputs: [cpp-no-using-namespace-in-header-review]

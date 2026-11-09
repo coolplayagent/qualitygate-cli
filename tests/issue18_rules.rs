@@ -47,6 +47,24 @@ const CASES: &[(&str, &str, &str, &str)] = &[
         "long n = 123l;\n",
         "long n = 123L;\n",
     ),
+    (
+        "c-no-atoi",
+        "warning",
+        "int value = atoi(text);\n",
+        "int value = parse_int(text);\n",
+    ),
+    (
+        "c-no-goto",
+        "warning",
+        "void f() { goto cleanup; cleanup: return; }\n",
+        "void f() { return cleanup(); }\n",
+    ),
+    (
+        "c-no-process-launch",
+        "warning",
+        "int status = system(command);\n",
+        "int status = run_command(command);\n",
+    ),
 ];
 
 fn check(root: &Path, expected: i32) -> Value {

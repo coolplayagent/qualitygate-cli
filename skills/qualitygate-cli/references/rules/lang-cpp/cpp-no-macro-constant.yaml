@@ -1,0 +1,14 @@
+id: cpp-no-macro-constant
+version: 1
+description: Review numeric macro constants in C++ code
+implementation: native-syntax
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+standard_refs:
+  - {source_id: internal-cpp-coding, controls: [preprocessing]}
+lifecycle_inputs: [cpp-no-macro-constant-review]

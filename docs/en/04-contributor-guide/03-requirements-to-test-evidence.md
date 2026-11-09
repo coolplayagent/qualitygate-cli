@@ -8,6 +8,17 @@ This chapter is the stable evidence index; it replaces date-stamped
 implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
+
+## Native syntax review rules
+
+`NATIVE-SYNTAX-01` maps to `adapters::native_syntax::tests` (syntax shapes,
+comments/literals, unrelated names, numeric macros, malformed/oversize/expired
+parsing) and `tests/issue18_rules.rs` / `tests/issue19_rules.rs` (CLI opt-in,
+language restrictions, braces, modified headers, changed-line selection,
+parse failures, path exclusion, rejected regex overrides). The issue18/19
+fixtures and independent goldens run the same evaluator in all three selfcheck
+suites. Syntax evidence is not semantic compiler evidence.
+
 ## Snapshots, initialization and acquisition
 
 The resource/concurrency audit also has a focused [CodeSpec validation record](../../../codespec/test/README.md).

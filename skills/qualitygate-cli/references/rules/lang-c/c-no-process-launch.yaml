@@ -1,0 +1,15 @@
+id: c-no-process-launch
+version: 1
+description: Review process-launch API calls in C and C++ code
+implementation: native-syntax
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+standard_refs:
+  - {source_id: internal-c-coding, controls: [function-usage]}
+  - {source_id: internal-cpp-coding, controls: [standard-library]}
+lifecycle_inputs: [c-no-process-launch-review]

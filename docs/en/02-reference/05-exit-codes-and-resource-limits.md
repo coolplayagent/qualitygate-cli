@@ -144,6 +144,10 @@ catalog loading incomplete before YAML parsing. Exact limits are inclusive.
 Asset symlinks, including Bazel runfiles, may resolve to regular files; type and
 size are checked both before opening and on the opened handle.
 
+`qualitygate selfcheck` runs the complete shipped corpus under one 120-second
+budget. Expiry is incomplete evidence and never becomes a pass; filtered runs
+use the same budget.
+
 ## Diagnostic output
 
 Each check retains at most 10,000 diagnostic records and 8 MiB of compact UTF-8

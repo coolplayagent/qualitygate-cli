@@ -94,6 +94,9 @@ Cargo Clippy、ESLint、golangci-lint、Ruff、JUnit、Checkstyle、PMD 和 Spot
 基线位置先在原始源文件中验证，再进行重命名映射。重命名索引按需建立，仅借用重命名变更的旧路径
 和当前路径；即使没有重命名也复用空索引，避免逐条位置扫描全部变更。
 
+`qualitygate selfcheck` 的完整内置语料共享 120 秒预算；超时属于未完成证据，不会变成通过。
+带 `--fixture` 或 `--rule` 的过滤运行使用同一预算。
+
 ## 诊断输出
 
 每项检查最多保留 10,000 条诊断，诊断数组的 UTF-8 紧凑 JSON 最多 8 MiB，包括字符串转义和复验命令。

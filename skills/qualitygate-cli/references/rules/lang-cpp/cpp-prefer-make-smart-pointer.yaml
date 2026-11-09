@@ -1,0 +1,14 @@
+id: cpp-prefer-make-smart-pointer
+version: 1
+description: Review unique_ptr or shared_ptr construction from a new expression
+implementation: native-syntax
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [cpp]
+standard_refs:
+  - {source_id: internal-cpp-coding, controls: [resources]}
+lifecycle_inputs: [cpp-prefer-make-smart-pointer-review]

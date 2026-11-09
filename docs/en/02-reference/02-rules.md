@@ -22,6 +22,25 @@ runtime behavior, or standards conformance.
 default. Language-specific rules should be enabled only after reading their
 exact definition and capability limits.
 
+Internal C and C++ rules cite the C V5.3 (DKBA 12271-2023.12) and C++ V5.1
+(DKBA 12977-2022.12) language specifications. The older C&C++ secure coding
+V3.0 document is superseded by those language specifications and is not the
+current source. Line rules remain review signals; clauses that need type,
+ownership or control-flow semantics are recorded as capability gaps
+instead of being approximated by regular expressions.
+
+The ten internal-standard rules use `native-syntax` C/C++ parsing rather than
+line regexes: three `c-no-*` rules and seven C++ rules from
+`cpp-no-reinterpret-cast` through `cpp-no-using-namespace-in-header`.
+They skip comments and literals, recognize multiline syntax and inspect nodes
+intersecting changed lines. Existing headers are included; `.h` uses the C++
+grammar for C++ rules. Only `paths` and fixed `languages` are configurable.
+API checks exclude member calls and unrelated namespaces, but cannot resolve
+unqualified shadowing. Macro expansion, conditional compilation and type/symbol
+resolution still require an external analyzer. Syntax errors and resource-limit
+exhaustion produce incomplete execution. Older regex-based rules retain their
+explicit textual limitations.
+
 ## Project rule protocol
 
 Version 1 YAML packages declare identity, applicability, source review,
