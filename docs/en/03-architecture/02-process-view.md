@@ -106,6 +106,17 @@ Rendering, feedback persistence and host compact projection transfer report
 ownership instead of cloning the complete report. Severity filters still affect
 only displayed diagnostics; stored evidence and gate decisions retain all findings.
 
+CLI dispatch keeps the selected command future on the heap. The check command
+uses a separate poll frame, so unrelated command branches do not add their local
+stack storage to the active check path. Recognized Cargo test summaries are
+parsed on a blocking worker; captured stdout and stderr retain the same shared
+buffers, and process metadata survives parsing failures. Evidence saving,
+input revalidation, timeout and capture failures keep their existing precedence
+over test-count errors. A real-Cargo regression polls the dispatcher on a 768 KiB
+test thread inside an isolated child process and checks failed, repaired and
+zero-test outcomes. That allowance characterizes this fixture, not every command;
+production Windows stack settings and gate requirements remain unchanged.
+
 Feedback projection measures borrowed, typed diagnostic previews before
 constructing owned JSON members. Acceptance lookup runs once per selected check.
 If the remaining category allowance cannot fit even that check's smallest member,

@@ -1,11 +1,11 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 5
-updated_at: unix:1794191595
+map_version: 7
+updated_at: unix:1794194814
 directories:
 - directory: requirements
-  purpose: Product requirements and acceptance criteria, including bounded resource and concurrency contracts.
+  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts.
   content_scope:
   - codespec/requirements/**
   key_files:
@@ -33,7 +33,7 @@ directories:
   relations: []
   update_rule: reviewed
 - directory: test
-  purpose: Verification strategy, fixtures, and evidence, including resource and concurrency audit regressions.
+  purpose: Verification strategy, fixtures, and evidence, including resource, concurrency and bounded-stack regressions.
   content_scope:
   - codespec/test/**
   key_files:
@@ -71,6 +71,14 @@ history:
     actor: cli
     summary: Updated governed directory 'requirements'.
   - version: 5
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'test'.
+  - version: 6
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.
+  - version: 7
     action: directory.update
     actor: cli
     summary: Updated governed directory 'test'.

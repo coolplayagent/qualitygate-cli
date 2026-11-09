@@ -227,7 +227,7 @@ async fn execute_checked(
             result.execution.ended_at_ms = Some(output.ended_at_ms);
             result.execution.duration_ms = Some(output.duration_ms);
             result.execution.exit_code = output.exit_code;
-            let test_counts = super::test_counts::from_output(check, &output.stdout);
+            let (output, test_counts) = super::test_counts::from_capture(check, output).await;
             for (suffix, bytes) in [("stdout", &output.stdout), ("stderr", &output.stderr)] {
                 match super::evidence::persist(
                     artifacts,
@@ -266,8 +266,8 @@ async fn execute_checked(
                 );
                 return result;
             }
-            if let Some(error) = output.capture_error {
-                result.block(ExecutionStatus::ToolError, error);
+            if let Some(error) = &output.capture_error {
+                result.block(ExecutionStatus::ToolError, error.as_str());
                 return result;
             }
             if output.exit_code.is_none() {

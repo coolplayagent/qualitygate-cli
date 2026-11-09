@@ -947,7 +947,7 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 | BUILTIN-WORK-01 | 所有内置规则在保留诊断前共享 10,000 条和紧凑 JSON 8 MiB 预算，包含并行批次；共享 30 秒分析截止时间覆盖语法、标记和末次完成检查；耗尽仍未完成，保留已提交诊断和较早错误，不伪造遗漏数量 | `adapters::rules::builtin_limits_tests`；`adapters::diagnostic_budget::tests`；`adapters::markers::tests` |
 | FACT-WORK-01 | Schema 1/2/3 事实采集统一限制 50,000 实体、32 MiB 与 30 秒，包括未传入外部预算的选择器；名称/文本/路径及每个保留标记声明副本均计量；Schema 3 命名来源继续共享预算 | `adapters::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects` |
 | HISTORY-WORK-01 | 交付消息一次批量获取，最多 1,000 提交及 UTF-8 消息累计 8 MiB（含保留换行）；声明历史共享 60 秒总截止时间，向 Git/树读取传入剩余时间并最终复核；64 MiB 内容/消息/trailer 计量在解码扩张前执行，禁止静默遗漏必需历史 | `snapshot::messages::tests`；`snapshot::history::tests`；`snapshot::git::tests` |
-| ASYNC-WORK-01 | 有界 HTTP JSON 解码/原始字节摘要、最终报告工件序列化和 CLI 渲染在阻塞 worker 运行；报告在渲染/反馈/host 紧凑投影间转移所有权，保持证据摘要、序列化和展示过滤语义 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`interfaces::render::tests`；`application::feedback::tests` |
+| ASYNC-WORK-01 | CLI 调度 future 位于堆上，检查执行使用独立 poll 栈帧；有界 HTTP JSON 解码/原始字节摘要、Cargo 测试摘要、最终报告工件序列化和 CLI 渲染在阻塞 worker 运行；报告在渲染/反馈/host 紧凑投影间转移所有权，保持证据摘要、序列化和展示过滤语义；摘要解析失败仍保留原始捕获缓冲区及元数据，保存证据/输入复核/超时/捕获错误优先级不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`interfaces::render::tests`；`application::feedback::tests`；`application::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`；[有界栈调度回归](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack` |
 
 进程取消边界是 Unix 进程组及 Windows Job；Unix 后代可通过新会话/进程组脱离，不承诺任意进程树沙箱。
 阻塞 worker 使用协作截止时间并保留并发许可直到退出，已进入的操作系统文件调用不保证可被强制中断。

@@ -1,6 +1,8 @@
 mod common;
 #[path = "init/maven_xml.rs"]
 mod maven_xml;
+#[path = "init/stack.rs"]
+mod stack;
 use common::*;
 use std::path::Path;
 

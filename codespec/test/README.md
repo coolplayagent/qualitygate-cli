@@ -106,7 +106,15 @@ or process-memory bound.
 | BUILTIN-WORK-01 | `adapters::rules::builtin_limits_tests`: a small source that expands beyond 8 MiB, 10,001 structural findings, shared reservations across 32 parallel files and multiline range intersections; `adapters::diagnostic_budget::tests::builtin_workers_reject_expired_deadlines_before_retaining_findings`; marker adjacency and 2,000-entity binding tests. |
 | FACT-WORK-01 | `adapters::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes` checks all three schema versions; `selectors_without_an_external_budget_still_reject_excess_subjects` rejects excessive local collections. Existing named-source tests retain shared allowance and prior findings. |
 | HISTORY-WORK-01 | `snapshot::messages::tests`: real isolated Git commits with order, alternate encoding, newline and NUL cases; 9 MiB aggregate rejection without partial success; parser framing/count/byte boundaries. `snapshot::history::tests`: injectable short deadlines for pending work and late completion, unique-content interning and pre-expansion accounting; `snapshot::git::tests::expired_git_parsing_stops_before_returning_partial_inputs`. |
-| ASYNC-WORK-01 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`: exact 1 MiB wire identity; `interfaces::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`; `application::feedback::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`. |
+| ASYNC-WORK-01 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`: exact 1 MiB wire identity; `interfaces::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`; `application::feedback::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`. `application::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`; [bounded dispatcher regression](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack`. |
+
+The dispatcher regression runs real generated Rust checks through failed, repaired
+and zero-test states on a 768 KiB thread in an isolated child process, with a
+180-second child deadline. It catches the previous stack-overflow counterexample
+without changing the original native init regression, Windows stack settings or
+required gates. The thread size is a regression-fixture allowance, not a universal
+stack guarantee. The summary-parsing unit test independently verifies retained
+stdout/stderr buffer identities, process metadata and parsing-failure behavior.
 
 The audit includes snapshot selectors, worktree/Git acquisition, history,
 materialization/input guards, delivery archives, path confinement, declaration

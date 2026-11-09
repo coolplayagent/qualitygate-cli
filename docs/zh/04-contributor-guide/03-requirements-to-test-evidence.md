@@ -75,7 +75,7 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
-| ASYNC-WORK-01：阻塞响应解析/报告渲染及转移报告所有权，证据不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`interfaces::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`；`application::feedback::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`；既有 CLI、feedback、decision-envelope 及 host 集成目标 |
+| ASYNC-WORK-01：堆上命令调度、阻塞响应/测试摘要解析与报告渲染，证据不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`interfaces::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`；`application::feedback::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`；既有 CLI、feedback、decision-envelope 及 host 集成目标；`application::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`；[有界栈调度回归](../../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack` |
 | AGENT-01 — 绑定来源的 Agent 义务、按范围投影 Prompt、过期/缺失证据与冲突处理 | `tests/agent_contracts.rs`；`domain/agent_contract.rs` 范围单元测试 |
 | AGENT-HOST-01 — Agent 注入、修复/恢复/切换、能力缺口、伪造报告、策略变化、不可变交付与规范路径边界 | `tests/agent_host.rs`；`tests/delivery.rs`，包括 `equivalent_repository_paths_cannot_bypass_delivery_confinement`；`tests/agent_loop.rs` 验证修复 fixture 完整读取 Prompt；`runner::tests::closed_stdin_is_incomplete_even_when_the_child_exits_successfully` 保留输入交付失败语义；纯判定 `domain/agent_host_tests.rs` |
 | 任务、人工验收、provenance 与 Git trailer | `tests/manual.rs`、`tests/provenance.rs`、`tests/case_provenance.rs`、`tests/git_trailers.rs` |
