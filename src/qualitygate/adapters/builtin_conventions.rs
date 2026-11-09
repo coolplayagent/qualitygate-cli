@@ -111,11 +111,12 @@ pub(super) fn annotation_dependency(
     setting: &RuleSetting,
     snapshot: &Snapshot,
     projects: &[ProjectFacts],
+    syntax: Option<&super::syntax::Cache>,
 ) -> Result<()> {
     let annotation = parameter(setting, "annotation")?;
     let group = parameter(setting, "group")?;
     let artifact = parameter(setting, "artifact")?;
-    let changes = entity_changes::collect(snapshot, &paths(setting)?, &["java".into()])?;
+    let changes = entity_changes::collect(snapshot, &paths(setting)?, &["java".into()], syntax)?;
     let has_selected_test = changes.iter().any(|file| {
         file.tests
             .iter()

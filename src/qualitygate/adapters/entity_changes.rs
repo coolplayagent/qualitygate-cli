@@ -4,7 +4,7 @@ use super::syntax::{self, Entity, Structure};
 use crate::snapshot::{self, File, Snapshot};
 use anyhow::{Result, bail};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 pub(super) struct TestChange {
     pub entity: Entity,
@@ -16,8 +16,8 @@ pub(super) struct TestChange {
 
 pub(super) struct FileView {
     pub path: String,
-    pub view: Structure,
-    pub previous: Option<Structure>,
+    pub view: Arc<Structure>,
+    pub previous: Option<Arc<Structure>>,
     pub tests: Vec<TestChange>,
 }
 
@@ -25,15 +25,16 @@ pub(super) fn collect(
     snapshot: &Snapshot,
     paths: &[String],
     languages: &[String],
+    cache: Option<&syntax::Cache>,
 ) -> Result<Vec<FileView>> {
     analyze(
-        &snapshot.base_files,
-        &snapshot.files,
+        (&snapshot.base_files, &snapshot.files),
         &snapshot.changes,
         paths,
         languages,
         |path| snapshot.includes(path),
         super::parallel::deadline(),
+        cache,
     )
 }
 
@@ -44,15 +45,16 @@ pub(super) fn collect_before(
     languages: &[String],
     independent: bool,
     deadline: Instant,
+    cache: Option<&syntax::Cache>,
 ) -> Result<Vec<FileView>> {
     analyze(
-        &snapshot.base_files,
-        &snapshot.files,
+        (&snapshot.base_files, &snapshot.files),
         &snapshot.changes,
         paths,
         languages,
         |path| independent || snapshot.includes(path),
         deadline,
+        cache,
     )
 }
 
@@ -61,25 +63,26 @@ pub(super) fn collect_between(
     head: &BTreeMap<String, File>,
 ) -> Result<Vec<FileView>> {
     analyze(
-        base,
-        head,
+        (base, head),
         &snapshot::compare_files(base, head),
         &[],
         &[],
         |_| true,
         super::parallel::deadline(),
+        None,
     )
 }
 
 fn analyze(
-    base_files: &BTreeMap<String, File>,
-    files: &BTreeMap<String, File>,
+    inputs: (&BTreeMap<String, File>, &BTreeMap<String, File>),
     changes: &BTreeMap<String, snapshot::Change>,
     paths: &[String],
     languages: &[String],
     includes: impl Fn(&str) -> bool,
     deadline: Instant,
+    cache: Option<&syntax::Cache>,
 ) -> Result<Vec<FileView>> {
+    let (base_files, files) = inputs;
     super::parallel::check_deadline(deadline)?;
     for language in languages {
         if !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str()) {
@@ -108,14 +111,16 @@ fn analyze(
         let parsed = super::parallel::map(chunk, deadline, |(path, change)| {
             let current = files
                 .get(*path)
-                .map(|file| syntax::parse_before(path, &file.bytes, deadline))
+                .map(|file| syntax::parse_cached(cache, path, &file.bytes, deadline))
                 .transpose()?
                 .flatten();
             let previous = change
                 .old_path
                 .as_ref()
                 .and_then(|old_path| base_files.get(old_path).map(|file| (old_path, file)))
-                .map(|(old_path, file)| syntax::parse_before(old_path, &file.bytes, deadline))
+                .map(|(old_path, file)| {
+                    syntax::parse_cached(cache, old_path, &file.bytes, deadline)
+                })
                 .transpose()?
                 .flatten();
             Ok(((*path).clone(), change.old_path.clone(), current, previous))

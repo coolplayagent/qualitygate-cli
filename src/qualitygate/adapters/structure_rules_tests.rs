@@ -244,3 +244,80 @@ fn removing_an_existing_required_annotation_is_a_violation() {
     assert_eq!(result.verdict, Some(Verdict::Fail));
     assert_eq!(result.matched_entities, 1);
 }
+
+#[test]
+fn declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy() {
+    let input = snapshot("broken.sh", None, "if then\n");
+    let config = crate::config::parse(
+        b"schema_version: 1\nrules: {test-naming: {}, parameterized-tests: {}}\n",
+    )
+    .unwrap();
+    let catalog = crate::config::catalog::Catalog::load(&config, std::iter::empty()).unwrap();
+    let effective = catalog.resolve(&config).unwrap();
+    for id in ["test-naming", "parameterized-tests"] {
+        let result = crate::adapters::rules::evaluate(id, &effective.rules[id], &input);
+        assert_eq!(result.execution.status, ExecutionStatus::Completed);
+        assert_eq!(result.matched_entities, 0);
+    }
+    let config = crate::config::parse(
+        b"schema_version: 1\nrules: {test-naming: {parameters: {languages: [shell]}}}\n",
+    )
+    .unwrap();
+    let catalog = crate::config::catalog::Catalog::load(&config, std::iter::empty()).unwrap();
+    let effective = catalog.resolve(&config).unwrap();
+    assert_eq!(
+        effective.rules["test-naming"].parameters["languages"],
+        serde_json::json!(["shell"])
+    );
+    let result =
+        crate::adapters::rules::evaluate("test-naming", &effective.rules["test-naming"], &input);
+    assert_eq!(result.execution.status, ExecutionStatus::Blocked);
+}
+
+#[test]
+fn shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics() {
+    let source = "#[test]\nfn existing_test() { assert!(true); }\n";
+    let mut input = snapshot("old.rs", Some(source), "");
+    input.files.remove("old.rs");
+    input.files.insert(
+        "new.rs".into(),
+        File {
+            bytes: source.as_bytes().to_vec(),
+            executable: false,
+        },
+    );
+    input.changes = crate::snapshot::compare_files(&input.base_files, &input.files);
+    input.path_filter = Some("new.rs".into());
+    let cache = super::super::syntax::Cache::default();
+    let facts = super::super::facts::RuleFacts {
+        syntax: Some(&cache),
+        ..Default::default()
+    };
+    for id in ["test-naming", "parameterized-tests"] {
+        let setting = RuleSetting::default();
+        let fresh = crate::adapters::rules::evaluate(id, &setting, &input);
+        let reused =
+            crate::adapters::rules::evaluate_with_context(id, id, &setting, &input, &facts);
+        assert_eq!(
+            serde_json::to_value(fresh).unwrap(),
+            serde_json::to_value(reused).unwrap()
+        );
+    }
+    input
+        .files
+        .get_mut("new.rs")
+        .unwrap()
+        .bytes
+        .extend_from_slice(b"#[test]\nfn BadName() {}\n");
+    input.changes = crate::snapshot::compare_files(&input.base_files, &input.files);
+    let changed = crate::adapters::rules::evaluate_with_context(
+        "test-naming",
+        "test-naming",
+        &RuleSetting::default(),
+        &input,
+        &facts,
+    );
+    assert_eq!(changed.verdict, Some(Verdict::Fail));
+    assert_eq!(changed.diagnostics.len(), 1);
+    assert!(changed.diagnostics[0].message.contains("BadName"));
+}

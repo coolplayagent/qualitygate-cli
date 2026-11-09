@@ -78,6 +78,7 @@ fn facts() -> RuleFacts<'static> {
         projects: &[],
         provenance: None,
         git_trailers: None,
+        syntax: None,
     }
 }
 
@@ -162,7 +163,7 @@ fn expired_sources_and_empty_sources_cannot_restart_the_shared_deadline() {
 fn syntax_acquisition_propagates_the_deadline_before_parsing() {
     let mut snapshot = snapshot();
     snapshot.files.values_mut().next().unwrap().bytes = b"def broken(\n".to_vec();
-    let error = entity_changes::collect_before(&snapshot, &[], &[], true, Instant::now())
+    let error = entity_changes::collect_before(&snapshot, &[], &[], true, Instant::now(), None)
         .err()
         .unwrap();
     assert!(error.to_string().contains("30 seconds"));

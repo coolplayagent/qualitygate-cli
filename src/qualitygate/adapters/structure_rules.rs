@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 
 struct Change {
     path: String,
-    view: Structure,
+    view: std::sync::Arc<Structure>,
     added: Vec<Entity>,
     removed_declarations: Vec<Entity>,
 }
@@ -23,7 +23,7 @@ pub(super) fn evaluate_with_provenance(
     snapshot: &Snapshot,
     facts: &super::facts::RuleFacts<'_>,
 ) -> Result<()> {
-    let changes = collect(setting, snapshot, facts.git_trailers)?;
+    let changes = collect(setting, snapshot, facts)?;
     match id {
         "test-naming" | "test-naming-strict" => naming(result, setting, &changes),
         "parameterized-tests" => parameterized(result, setting, &changes),
@@ -37,8 +37,9 @@ pub(super) fn evaluate_with_provenance(
 fn collect(
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    git: Option<&super::git_trailers::GitFacts>,
+    facts: &super::facts::RuleFacts<'_>,
 ) -> Result<Vec<Change>> {
+    let git = facts.git_trailers;
     let strings = |key: &str| -> Result<Vec<String>> {
         setting
             .parameters
@@ -54,9 +55,12 @@ fn collect(
         .transpose()?;
     let mut previous_views = BTreeMap::new();
     let mut result = Vec::new();
-    for file in
-        super::entity_changes::collect(snapshot, &strings("paths")?, &strings("languages")?)?
-    {
+    for file in super::entity_changes::collect(
+        snapshot,
+        &strings("paths")?,
+        &strings("languages")?,
+        facts.syntax,
+    )? {
         let mut removed_declarations = Vec::new();
         if let Some(marker) = &marker {
             for test in &file.tests {
@@ -64,8 +68,13 @@ fn collect(
                     if !previous_views.contains_key(path) {
                         previous_views.insert(
                             path.clone(),
-                            super::syntax::parse(path, &snapshot.base_files[path].bytes)?
-                                .context("Previous syntax is unavailable")?,
+                            super::syntax::parse_cached(
+                                facts.syntax,
+                                path,
+                                &snapshot.base_files[path].bytes,
+                                super::parallel::deadline(),
+                            )?
+                            .context("Previous syntax is unavailable")?,
                         );
                     }
                     let previous_declaration = super::markers::bound_declaration(

@@ -222,6 +222,7 @@ fn unchanged_tests_with_historical_trailers_keep_dependency_obligations() {
                 projects: std::slice::from_ref(project),
                 provenance: None,
                 git_trailers: Some(&facts),
+                syntax: None,
             },
         )
     };

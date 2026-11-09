@@ -53,6 +53,13 @@ also bound report bytes, selected files, source lines, diagnostics, parser work,
 subprocess time, and concurrency. The effective report records which limit was
 hit. Increasing a caller budget does not authorize broader paths or policy.
 
+Command `when_changed.paths` and `when_changed.inputs` each accept at most 256
+repository-relative globs of at most 1,024 bytes. Syntax reuse is local to one
+check and retains at most 4,096 entries within a 32 MiB accounting budget. Eviction
+or a fact too large to retain causes normal parsing under the existing deadline;
+cache hits also obey that deadline. These retention limits do not bound total
+process memory or turn parse failures into successful evidence.
+
 Executable identity accepts regular files, including symlinks resolving to a
 regular file. It checks file type and size before opening, then rechecks the
 opened handle before hashing. Existing FIFOs, sockets and directories cannot

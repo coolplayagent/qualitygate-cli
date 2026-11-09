@@ -62,6 +62,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
         }
     }
     for check in &config.checks {
+        super::change_selection::validate(check)?;
         super::runtime::validate_env(&check.required_env)?;
         validate_id(&check.id)?;
         super::compatibility::validate(check)?;

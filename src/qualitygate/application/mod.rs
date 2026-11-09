@@ -1,6 +1,7 @@
 //! Coordinates policy selection, snapshot execution and evidence-bound reports.
 
 mod acquisition;
+mod change_selection;
 pub use acquisition::initialization_preflight;
 pub mod agent_contract;
 pub mod agent_host;
@@ -201,8 +202,11 @@ async fn check_prepared(
         .to_string();
     let mut results: Vec<CheckResult> = Vec::new();
     let mut provenance_proofs = std::collections::BTreeMap::new();
+    let command_selections =
+        change_selection::select(&plan, &snapshot, &protected_paths, !invalid.is_empty()).await?;
     let workspace = if plan.commands.iter().any(|check| {
-        check.kind == config::CheckKind::Command
+        command_selections[&check.id].execute
+            && check.kind == config::CheckKind::Command
             && check.compatibility.is_none()
             && check.test_effectiveness.is_none()
     }) && invalid.is_empty()
@@ -216,6 +220,7 @@ async fn check_prepared(
     } else {
         None
     };
+    let rule_context = rule_execution::Context::new(Arc::clone(&snapshot));
     for id in &plan.order {
         if id == constraint::CHECK_ID {
             // Aggregate after final external-evidence revalidation can block producers.
@@ -239,7 +244,13 @@ async fn check_prepared(
         let missing_env = command
             .map(|check| crate::env::missing_required(&check.required_env))
             .unwrap_or_default();
-        let mut result = if !missing_env.is_empty() {
+        let mut result = if let Some(selection) = command_selections.get(id)
+            && !selection.execute
+        {
+            let mut result = CheckResult::pending(id, required, severity);
+            result.skip(&selection.reason);
+            result
+        } else if !missing_env.is_empty() {
             let mut result = CheckResult::pending(id, required, severity);
             result.block(
                 ExecutionStatus::Blocked,
@@ -277,7 +288,7 @@ async fn check_prepared(
                         id,
                         rule,
                         &catalog.entries[id],
-                        &snapshot,
+                        &rule_context,
                         &results,
                         proof.as_ref().map(|proof| &proof.facts),
                         git_facts.as_ref(),
@@ -341,6 +352,10 @@ async fn check_prepared(
             .metadata
             .insert("depends_on".into(), serde_json::json!(dependencies));
         if let Some(command) = command {
+            result.metadata.insert(
+                "change_selection".into(),
+                serde_json::to_value(&command_selections[id])?,
+            );
             result
                 .metadata
                 .insert("command_definition".into(), serde_json::to_value(command)?);

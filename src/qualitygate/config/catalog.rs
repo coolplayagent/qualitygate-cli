@@ -860,6 +860,14 @@ impl Catalog {
             parameters.extend(setting.parameters.clone());
             setting.parameters = parameters;
             if let Some(builtin) = &entry.builtin {
+                if !builtin.language.is_empty()
+                    && super::parameters::names(&builtin.implementation)?.contains(&"languages")
+                {
+                    setting
+                        .parameters
+                        .entry("languages".into())
+                        .or_insert_with(|| serde_json::json!(builtin.language));
+                }
                 super::builtin_validation::validate(
                     &builtin.id,
                     &builtin.implementation,

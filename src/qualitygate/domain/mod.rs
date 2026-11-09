@@ -3,6 +3,7 @@
 mod attestation;
 pub mod case_provenance;
 mod category;
+pub mod change_selection;
 pub mod constraint;
 pub mod coverage;
 pub mod decision_envelope;

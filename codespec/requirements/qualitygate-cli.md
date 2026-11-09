@@ -195,6 +195,29 @@ OUTPUT-PATH-01：报告路径（含 stdout 标签）与项目输出按仓库相�
 合法别名保留原声明。重复声明在探测及生产命令启动前拒绝。证据见 `config::tests` 的输出路径单元测试
 与 `tests/execution/output_aliases.rs`。
 
+COMMAND-SCOPE-01：命令检查可显式声明 `when_changed`，以语言与仓库相对路径的交集、或额外
+`inputs` 的匹配结果判断交付适用性。至少一个条件非空；未知/重复语言及非法 glob 拒绝加载。
+未声明条件时保持原有执行行为，顶层语言清单不隐式关闭检查。匹配使用完整捕获变更集中的旧/新路径
+和语言，包含删除、重命名和语言改变；`.h` 头文件保守匹配 C 与 C++；反馈路径过滤不缩小调度。
+策略、受保护验证资产、工具输入、
+已识别 manifest/锁文件/构建配置变化时保守执行全部计划命令，repository 范围不做变更跳过。
+适用检查及选中规则的命令依赖必须递归执行；人工验收与任务 verification 不支持该选择器。
+不适用命令保留明确原因、`metadata.change_selection` 及 skipped 结果，不启动其工具或环境探测；
+doctor 使用相同选择，在 `not_executed` 保留原因；全部检查跳过仍不构成完整通过。
+策略无效、超时、执行失败、报告缺失和快照不匹配不能转为成功跳过。保持完整不可变命令输入、
+原始 argv 和现有输入保护，不缓存跨快照命令结果。证据见 `tests/command_applicability.rs`
+（含 `c_headers_activate_both_c_and_cpp_consumers`）、`config::change_selection::tests`
+和[配置说明](../../docs/zh/01-user-guide/03-rule-configuration.md)。
+
+SYNTAX-REUSE-01：单次检查在结构规则间共享有界语法事实，缓存绑定该次不可变输入，避免重复解析
+相同文件及其基线；缓存不会放宽语法解析、时间和诊断预算，也不能将失败转成可用事实。
+跨文件移动仍在所选语言的完整变更集上匹配，不能因反馈路径过滤而误报新增实体。
+内置规则缺少显式语言过滤参数时，使用其已声明支持语言作为默认值。
+证据见 `adapters::syntax::cache::tests`、
+`adapters::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、
+`adapters::structure_rules::tests::shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`
+与既有结构规则集成回归。
+
 SHARED-EXECUTION-01：基线派生由 snapshot 层在阻塞工作线程中完成，直接选择已捕获 base 文件并
 保留父级验证范围绑定。报告与兼容性执行的物化、输入校验共享各自不可变快照；共享快照的输入校验器
 复用已绑定的内容摘要，直接接收文件映射时仍在阻塞工作线程中计算摘要。两种路径都要检查创建时的

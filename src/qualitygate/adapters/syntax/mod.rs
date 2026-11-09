@@ -1,6 +1,9 @@
 //! Framework-aware syntax facts from bounded Tree-sitter parsing.
 
+mod cache;
 mod tests_in_source;
+pub use cache::Cache;
+pub(super) use cache::parse_cached;
 
 use crate::domain::Range;
 use anyhow::{Context, Result, bail};

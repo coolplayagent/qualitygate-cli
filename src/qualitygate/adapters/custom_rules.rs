@@ -67,6 +67,7 @@ pub fn evaluate_with_facts(
             projects,
             provenance,
             git_trailers: None,
+            syntax: None,
         },
     )
 }
