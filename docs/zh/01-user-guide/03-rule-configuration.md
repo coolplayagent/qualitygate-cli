@@ -47,7 +47,49 @@ qualitygate config --show --format json
 命令报告与采用边界分别见[报告参考](../02-reference/03-projects-and-tool-reports.md)和
 [策略生命周期](../02-reference/04-policy-task-and-signed-evidence.md)。
 
-## 4. 验证选中的策略
+## 4. 按变更语言和项目选择命令
+
+命令检查只要被 profile 选中，默认就会执行；声明 `when_changed` 后才按变更判断适用性。
+只有明确了解命令受哪些输入影响时才配置选择条件。顶层 `languages` 是语言清单，不会隐式跳过命令。
+
+```yaml
+checks:
+  - id: service-tests
+    kind: command
+    argv: [cargo, test, --package, service]
+    when_changed:
+      languages: [rust]
+      paths: ['crates/service/**']
+      inputs: ['crates/shared/**', 'fixtures/service/**']
+```
+
+对每个变更路径，已提供的 `languages` 与 `paths` 必须同时匹配；缺省或空列表表示该维度不限制。
+`inputs` 是独立于语言和项目路径的附加 OR 条件；只提供 inputs 时，仅按该输入列表匹配。
+应列出会影响命令的共享源码、生成输入和测试数据。路径使用区分大小写、相对仓库根目录的 glob，
+不相对 `cwd`。选择器至少包含一个非空列表；未知语言、重复语言和非法 glob 都会报错。
+支持的语言名为 `java`、`python`、`typescript`（含 JavaScript）、`go`、`rust`、`shell`、
+`c` 和 `cpp`；Shell shebang 可以识别没有扩展名的输入。
+`.h` 头文件变化会保守地同时匹配 `c` 和 `cpp` 命令选择器。
+
+调度读取完整采集变更集，删除、重命名或语言改变同时考虑旧、新路径及语言。`--path` 只过滤反馈，
+不会缩小命令选择范围。策略、受保护验证资产、工具输入及已识别的 manifest、锁文件或构建配置变化时，
+保守地选中计划内全部命令。可复用核心的 repository 范围也执行全部计划命令。适用检查的依赖会
+递归执行，包括选中规则需要的命令。人工验收和任务契约 verification 不允许声明 `when_changed`。
+
+[全局输入清单](../../../src/qualitygate/config/change_selection.rs)覆盖 Cargo、Maven/Gradle、
+Python 包与测试配置、Node/TypeScript、Go、CMake/Make 和 Bazel 输入。例如 `Cargo.lock`、
+`package.json`、`requirements*.txt`、`tsconfig*.json`、`.bzl` 和 `.cmake` 变化，即使位于
+所声明项目之外，也会保守触发。项目专有输入仍需显式声明；该清单不等同于依赖图。
+
+未匹配命令仍保留在报告中，标为 `not_applicable`、`not_run`、`skipped`，附带明确原因和
+`metadata.change_selection`。这一判断先于该命令的环境检查、工具探针和工作区准备。
+适用命令的失败、超时、报告缺失及快照不匹配仍阻止完整通过。选择条件属于策略审核内容；
+未声明某个依赖并不能证明它与命令无关。
+全部选中检查均被跳过时，门禁仍为未完成；仅有 skipped 命令不能证明交付通过。
+
+选择器决定是否执行已配置命令，不改写 `argv`、不推断测试目标，也不从不可变执行快照中移除文件。
+
+## 5. 验证选中的策略
 
 ```bash
 qualitygate doctor --worktree --profile full --format json

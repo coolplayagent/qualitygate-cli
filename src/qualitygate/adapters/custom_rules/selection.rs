@@ -98,9 +98,15 @@ pub(super) fn collect(
             &rule.language,
             independent,
             budget.deadline(),
+            facts.syntax,
         )?
     } else {
-        entity_changes::collect(snapshot, &rule.applies_to.paths, &rule.language)?
+        entity_changes::collect(
+            snapshot,
+            &rule.applies_to.paths,
+            &rule.language,
+            facts.syntax,
+        )?
     };
     let mut subjects = Vec::new();
     let mut previous_views = BTreeMap::new();
@@ -130,9 +136,14 @@ pub(super) fn collect(
                         if !previous_views.contains_key(path) {
                             let bytes = &snapshot.base_files[path].bytes;
                             let view = if let Some(budget) = &budget {
-                                syntax::parse_before(path, bytes, budget.deadline())?
+                                syntax::parse_cached(facts.syntax, path, bytes, budget.deadline())?
                             } else {
-                                syntax::parse(path, bytes)?
+                                syntax::parse_cached(
+                                    facts.syntax,
+                                    path,
+                                    bytes,
+                                    crate::adapters::parallel::deadline(),
+                                )?
                             };
                             previous_views
                                 .insert(path.clone(), view.expect("previous supported syntax"));

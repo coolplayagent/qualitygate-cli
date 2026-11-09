@@ -117,6 +117,13 @@ stdout/stderr and version text are not published, because producers can print
 inherited credentials. Temporary probe logs disappear with the private workspace.
 Checks, rule evaluations and unattempted probes appear in `not_executed`.
 
+After capturing the selected snapshot, doctor applies the same command
+`when_changed` selection and dependency closure as check. Non-applicable commands
+keep their planned IDs and an explanation in `not_executed`; their environment,
+working-directory and tool prerequisites are not inspected, and their probes do
+not run. This is a scope decision, not evidence that those tools work. Commands
+selected by policy/build-input changes or dependencies still receive preflight.
+
 The report has `scope: preflight`, runtime/snapshot/policy identities, selected
 and pending checks, per-side budgets, diagnostics and `next_steps`. Each optional
 `next_steps[].command` is an argv array to invoke directly, never a shell string.

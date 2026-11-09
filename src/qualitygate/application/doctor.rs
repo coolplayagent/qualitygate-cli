@@ -204,31 +204,61 @@ async fn run_inner(options: &mut CheckOptions, report: &mut Report) -> Result<()
         ));
     }
     if report.diagnostics.is_empty() {
-        let workspace = snapshot::materialize_shared(Arc::clone(&snapshot)).await?;
-        let guard =
-            snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(&snapshot)).await?;
-        doctor_context::inspect(&loaded.plan, workspace.path(), &snapshot, report).await;
-        if report.probe_tools && report.diagnostics.is_empty() {
-            match tokio::time::timeout(
-                std::time::Duration::from_secs(PROBE_SECONDS),
-                doctor_context::probe(&loaded.plan, workspace.path(), &snapshot, &guard, report),
-            )
-            .await
+        let selections = super::change_selection::select(
+            &loaded.plan,
+            &snapshot,
+            &loaded.protected_paths,
+            false,
+        )
+        .await?;
+        let mut applicable_plan = loaded.plan.clone();
+        applicable_plan
+            .commands
+            .retain(|command| selections[&command.id].execute);
+        for operation in &mut report.not_executed {
+            if let Some(selection) = selections.get(&operation.check)
+                && !selection.execute
             {
-                Ok(result) => result?,
-                Err(_) => report.diagnostics.push(Diagnostic::new(
-                    "probe.budget_exhausted",
-                    "Tool probes exhausted the shared 120-second budget",
-                    loaded.plan.order.clone(),
-                )),
+                operation.reason = selection.reason.clone();
             }
         }
-        if let Err(error) = guard.verify().await {
-            report.diagnostics.push(diagnostic(
-                "snapshot.inputs_changed",
-                &error,
-                loaded.plan.order.clone(),
-            ));
+        if applicable_plan
+            .commands
+            .iter()
+            .any(|command| command.kind == crate::config::CheckKind::Command)
+        {
+            let workspace = snapshot::materialize_shared(Arc::clone(&snapshot)).await?;
+            let guard =
+                snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(&snapshot)).await?;
+            doctor_context::inspect(&applicable_plan, workspace.path(), &snapshot, report).await;
+            if report.probe_tools && report.diagnostics.is_empty() {
+                match tokio::time::timeout(
+                    std::time::Duration::from_secs(PROBE_SECONDS),
+                    doctor_context::probe(
+                        &applicable_plan,
+                        workspace.path(),
+                        &snapshot,
+                        &guard,
+                        report,
+                    ),
+                )
+                .await
+                {
+                    Ok(result) => result?,
+                    Err(_) => report.diagnostics.push(Diagnostic::new(
+                        "probe.budget_exhausted",
+                        "Tool probes exhausted the shared 120-second budget",
+                        loaded.plan.order.clone(),
+                    )),
+                }
+            }
+            if let Err(error) = guard.verify().await {
+                report.diagnostics.push(diagnostic(
+                    "snapshot.inputs_changed",
+                    &error,
+                    loaded.plan.order.clone(),
+                ));
+            }
         }
     }
     let current = snapshot::capture_with_options(

@@ -7,11 +7,25 @@ use crate::{
 };
 use std::sync::Arc;
 
+pub(super) struct Context {
+    snapshot: Arc<Snapshot>,
+    syntax: Arc<crate::adapters::syntax::Cache>,
+}
+
+impl Context {
+    pub(super) fn new(snapshot: Arc<Snapshot>) -> Self {
+        Self {
+            snapshot,
+            syntax: Arc::new(crate::adapters::syntax::Cache::default()),
+        }
+    }
+}
+
 pub(super) async fn execute(
     id: &str,
     setting: &RuleSetting,
     entry: &Entry,
-    snapshot: &Arc<Snapshot>,
+    context: &Context,
     previous: &[CheckResult],
     provenance: Option<&crate::adapters::provenance::ProvenanceFacts>,
     git_input: Option<&super::git_trailers::Input>,
@@ -19,7 +33,8 @@ pub(super) async fn execute(
     let id = id.to_owned();
     let setting = setting.clone();
     let entry = entry.clone();
-    let snapshot = Arc::clone(snapshot);
+    let snapshot = Arc::clone(&context.snapshot);
+    let syntax = Arc::clone(&context.syntax);
     let provenance = provenance.cloned();
     let git_input = git_input.cloned();
     let mut projects = Vec::new();
@@ -52,6 +67,7 @@ pub(super) async fn execute(
             None
         };
         let facts = crate::adapters::facts::RuleFacts {
+            syntax: Some(&syntax),
             projects: &projects,
             provenance: provenance.as_ref(),
             git_trailers: git,

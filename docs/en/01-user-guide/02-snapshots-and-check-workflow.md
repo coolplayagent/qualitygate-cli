@@ -44,6 +44,11 @@ project facts, then builds a dependency-aware plan. Commands run in a disposable
 materialization of that snapshot. Their stdout, stderr, status, duration,
 version, and report artifacts are captured within configured bounds.
 
+Commands may opt into [change-based selection](03-rule-configuration.md#4-select-commands-by-changed-language-and-project)
+with explicit language, project-path and additional-input conditions. Selection
+retains required dependencies and records why a command runs or is not applicable.
+Commands without conditions retain their existing behavior.
+
 `quick` and `--path` deliberately omit work and list the omitted delivery
 checks. Only an unfiltered `full` report whose scope is `delivery` or `task`,
 whose pending delivery list is empty, and whose gate is complete can establish
@@ -57,6 +62,7 @@ the configured delivery decision.
 | `selection` | Changed files/lines, exclusions, empty delivery and execution context. |
 | `profile` and `scope` | Which checks ran and whether this is delivery, task or path feedback. |
 | `plan.pending_delivery_checks` | Work still required for a delivery decision. |
+| `checks[].metadata.change_selection` | The command's change-based execution or non-applicability explanation. |
 | `gate.complete` and `gate.decision` | Whether validation finished and whether blockers remain. |
 
 Line findings apply to changed lines; findings without line positions apply to
@@ -80,6 +86,14 @@ If files, policy, task or report inputs change, capture and check a new snapshot
 Builds and tests need unexcluded dependency context, even for a small diff.
 Language selection or `--path` does not remove those inputs. Start with `doctor`
 for your actual selector; its metadata identifies capacity or unsupported-file gaps.
+
+Command selection reduces producer executions, while the complete unexcluded
+snapshot and input-integrity checks remain required. A single check shares bounded
+syntax facts between structure rules; built-in language declarations supply the
+default language filter where the rule has no explicit filter. Facts are scoped
+to that check, not reused as evidence across snapshots. There is no persistent
+command-result cache; temporary workspaces may still require builds unless the
+configured tool supplies its own build cache.
 
 1. Keep files needed by checks and choose a supported acquisition budget when justified.
 2. Review precise policy exclusions for unrelated resources; they also disappear from command inputs.

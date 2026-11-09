@@ -53,6 +53,7 @@ impl Plan {
                 let v = &item.verification;
                 combined.checks.push(CommandCheck {
                     id: v.check_id.clone(),
+                    when_changed: None,
                     required_env: v.required_env.clone(),
                     kind: v.kind,
                     argv: v.argv.clone(),

@@ -6,6 +6,7 @@ pub mod case_provenance;
 pub mod catalog;
 mod catalog_assets;
 pub mod categories;
+pub mod change_selection;
 pub mod compatibility;
 pub mod constraint_inventory;
 mod constraints;

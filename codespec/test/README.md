@@ -16,6 +16,12 @@ must detect a weakened evaluator without editing either acceptance or goldens.
 file/report assertions. Pure count decisions remain in the native domain unit
 target and Miri selection; adapter bounds remain in native unit tests.
 
+`command_applicability` is a separate integration target for opt-in command
+selection. Its isolated Git repositories distinguish non-applicable commands from
+failed or incomplete execution and retain dependency and policy-change behavior.
+Per-check syntax reuse has separate native adapter tests for cache bounds and
+input identity; existing structure-rule regressions retain cross-file semantics.
+
 The [Skill release contract](../../docs/en/03-architecture/04-physical-view.md) checks
 that published Markdown links and the v7 pilot template resolve inside the
 Skill package, in addition to CLI/schema and release-archive checks.

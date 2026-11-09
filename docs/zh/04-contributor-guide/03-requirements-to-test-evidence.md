@@ -31,6 +31,8 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
+| COMMAND-SCOPE-01：显式语言/路径/输入命令选择、依赖保留及全局输入变化保守失效 | `config::change_selection::tests`；`tests/command_applicability.rs`：隔离 Git 仓库、混合语言、选择器、旧/新路径、空交付、默认兼容、策略变化、依赖、路径反馈与未完成执行；`c_headers_activate_both_c_and_cpp_consumers` 验证 `.h` 头文件的保守语言选择 |
+| SYNTAX-REUSE-01：单次检查有界语法事实与内置声明语言默认值 | `adapters::syntax::cache::tests`；`adapters::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、`shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`；既有 `tests/issue9_rules.rs`、`tests/custom_rules.rs` 和语法/实体变更单元测试保留诊断、非法输入失败和跨文件移动语义 |
 | CONSTRAINT-01 来源绑定清单、采用、快照覆盖与显式缺口 | `tests/constraint_coverage.rs`；`domain::constraint::tests` |
 | RULE-OUTPUT-01: bounded diagnostic records, serialized bytes and replay expansion | `adapters::diagnostic_budget::tests`; `tests/custom_rules/output_budget.rs`: v1/v2/v3 incompleteness, retained findings, expression/fixed allowance and repair |
 | OPERATOR-01 严格 v2 组合、完整事实、共享预算和有界来源观察记录 | `tests/operators.rs`；`domain::operator::tests`；`adapters::operators::tests`；既有 `tests/rule_authoring.rs`、`tests/custom_rules.rs` 保持 v1 回归 |
