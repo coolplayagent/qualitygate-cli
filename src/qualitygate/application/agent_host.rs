@@ -156,12 +156,11 @@ async fn check(
     // a file path or report submitted by the consuming agent.
     let bytes = serde_json::to_vec_pretty(&report)?;
     let full_report = save(evidence, &format!("{label}-report.json"), &bytes)?;
-    let feedback = if matches!(options.feedback_mode, FeedbackMode::Compact) {
-        super::feedback::render(report.clone(), 32768, None)
-            .await?
-            .into_bytes()
+    let (report, feedback) = if matches!(options.feedback_mode, FeedbackMode::Compact) {
+        let (report, feedback) = super::feedback::render_retaining(report, 32768, None).await?;
+        (report, feedback.into_bytes())
     } else {
-        bytes
+        (report, bytes)
     };
     let reference = json!({"argv":argv,"stdout":stdout,"stderr":stderr,"full_report":full_report,"gate":report.gate,
         "snapshot":report.snapshot,"policy":report.policy,"duration_ms":output.duration_ms,"delivery":delivery});

@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain::{CheckResult, ExecutionStatus, Verdict};
 use crate::snapshot::{Change as FileChange, File, Identity};
 
 fn snapshot(path: &str, old: Option<&str>, current: &str) -> Snapshot {

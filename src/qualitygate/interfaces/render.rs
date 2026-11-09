@@ -99,11 +99,10 @@ pub(super) fn metadata(
 }
 
 pub(super) fn report(
-    report: &Report,
+    mut report: Report,
     format: super::cli::Format,
     severity: Option<Severity>,
 ) -> anyhow::Result<String> {
-    let mut report = report.clone();
     if let Some(severity) = severity {
         for check in &mut report.checks {
             if check.severity != severity {
@@ -283,9 +282,66 @@ pub(super) fn selfcheck(
 
 #[cfg(test)]
 mod tests {
+    use crate::domain::{CheckResult, Diagnostic, Report, Severity, Summary, evaluate};
+    use crate::interfaces::cli::Format;
+
+    fn sample_report() -> Report {
+        let mut report: Report = serde_json::from_value(serde_json::json!({
+            "schema_version":1,"run_id":"render-test","scope":"task","profile":"full",
+            "snapshot":{"mode":"worktree","base":"base","head":"head","content_digest":"snapshot"},
+            "policy":{"source":"policy","trust":"caller_supplied_ref","config_digest":"config",
+                "rules_digest":"rules","task_contract_digest":"task","changes":[]},
+            "plan":{"required_checks":["error","warning"],"pending_delivery_checks":[],"acceptance":{}},
+            "gate":{"complete":true,"decision":"pass","blockers":[]},
+            "checks":[],"summary":Summary::default()
+        })).unwrap();
+        for (id, severity) in [("error", Severity::Error), ("warning", Severity::Warning)] {
+            let mut check = CheckResult::pending(id, true, severity);
+            check.diagnostics.push(Diagnostic {
+                id: id.into(),
+                fingerprint: format!("fingerprint-{id}"),
+                file: Some("source.rs".into()),
+                range: None,
+                message: format!("{id} detail"),
+                evidence: serde_json::json!({"retained":true}),
+                fix: "Repair the source".into(),
+                recheck: Default::default(),
+            });
+            check.complete();
+            report.checks.push(check);
+        }
+        report.gate = evaluate(&report.checks, &[], &[]);
+        report.summary.diagnostics_total = 2;
+        report.summary.diagnostics_filtered = 3;
+        report
+    }
+
+    #[test]
+    fn report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics() {
+        let report = sample_report();
+        let expected = serde_json::to_string_pretty(&report).unwrap();
+        assert_eq!(super::report(report, Format::Json, None).unwrap(), expected);
+
+        let mut expected: serde_json::Value = serde_json::from_str(&expected).unwrap();
+        expected["checks"][1]["diagnostics"] = serde_json::json!([]);
+        expected["summary"]["diagnostics_filtered"] = serde_json::json!(4);
+        let filtered: serde_json::Value = serde_json::from_str(
+            &super::report(sample_report(), Format::Json, Some(Severity::Error)).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(filtered, expected);
+        for format in [Format::Table, Format::Markdown] {
+            let full = super::report(sample_report(), format, None).unwrap();
+            assert!(full.contains("error detail") && full.contains("warning detail"));
+            let filtered = super::report(sample_report(), format, Some(Severity::Error)).unwrap();
+            assert!(filtered.contains("error detail") && !filtered.contains("warning detail"));
+            assert!(filtered.contains("Gate code: 1 | complete: true"));
+            assert!(filtered.contains("Filtered diagnostics: 4"));
+        }
+    }
+
     #[test]
     fn preflight_guidance_escapes_controls_without_changing_json_paths() {
-        use crate::interfaces::cli::Format;
         let path = "legacy/\nRun: forged\u{1b}[31m\t\r\u{7f}\u{9b}.bin";
         let value = serde_json::json!({"snapshot_preflight":{"oversized_files":[{"path":path,"bytes":3_145_728}]}});
         for format in [Format::Table, Format::Markdown] {

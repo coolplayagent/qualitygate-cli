@@ -211,7 +211,10 @@ async fn worktree(root: &Path, deadline: Instant) -> Result<Vec<Entry>> {
         let names = output
             .split(|byte| *byte == 0)
             .filter(|name| !name.is_empty())
-            .map(|name| Ok(std::str::from_utf8(name)?.to_owned()))
+            .map(|name| {
+                budget(deadline)?;
+                Ok(std::str::from_utf8(name)?.to_owned())
+            })
             .collect::<Result<BTreeSet<_>>>()?;
         names
             .into_iter()

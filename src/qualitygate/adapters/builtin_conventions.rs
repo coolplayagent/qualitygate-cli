@@ -3,13 +3,12 @@
 use super::{entity_changes, parallel, rules::diagnostic};
 use crate::{
     config::RuleSetting,
-    domain::{CheckResult, ProjectFacts, Range},
+    domain::{ProjectFacts, Range},
     snapshot::Snapshot,
 };
 use anyhow::{Context, Result, bail};
 use globset::{Glob, GlobSetBuilder};
 use regex::Regex;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[cfg(test)]
 #[path = "builtin_conventions_tests.rs"]
@@ -107,7 +106,7 @@ fn file_pattern_guidance(id: &str) -> (&'static str, &'static str) {
 }
 
 pub(super) fn annotation_dependency(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
     projects: &[ProjectFacts],
@@ -116,7 +115,14 @@ pub(super) fn annotation_dependency(
     let annotation = parameter(setting, "annotation")?;
     let group = parameter(setting, "group")?;
     let artifact = parameter(setting, "artifact")?;
-    let changes = entity_changes::collect(snapshot, &paths(setting)?, &["java".into()], syntax)?;
+    let changes = entity_changes::collect_before(
+        snapshot,
+        &paths(setting)?,
+        &["java".into()],
+        false,
+        result.deadline(),
+        syntax,
+    )?;
     let has_selected_test = changes.iter().any(|file| {
         file.tests
             .iter()
@@ -170,7 +176,7 @@ pub(super) fn annotation_dependency(
                 bail!("Annotation dependency scope exceeds 10000 tests");
             }
             if !project.has_test_dependency(group, artifact) {
-                diagnostics.push(diagnostic(
+                result.push_buffered(&mut diagnostics, diagnostic(
                     &result.id,
                     Some(&file.path),
                     Some(test.entity.range.clone()),
@@ -181,7 +187,7 @@ pub(super) fn annotation_dependency(
                     serde_json::json!({"assertion":"require_dependency","annotation":annotation,"symbol":test.entity.symbol,"project":project.coordinate,"manifest":project.manifest,"producer":project.producer_check,"group":group,"artifact":artifact}),
                     "Declare and resolve the configured annotation dependency for this test module",
                     &format!("{}:require_dependency", test.entity.symbol),
-                ));
+                ))?;
             }
         }
     }
@@ -195,7 +201,7 @@ pub(super) fn annotation_dependency(
 }
 
 pub(super) fn file_pattern(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
 ) -> Result<()> {
@@ -225,29 +231,31 @@ pub(super) fn file_pattern(
         })
         .collect::<Result<Vec<_>>>()?;
     let (message, fix) = file_pattern_guidance(&result.id);
-    let matches = AtomicUsize::new(0);
-    let batches = parallel::map(&selected, parallel::deadline(), |(path, file)| {
+    let batches = parallel::map(&selected, result.deadline(), |(path, file)| {
         let source = std::str::from_utf8(&file.bytes)
             .with_context(|| format!("Added source is not UTF-8: {path}"))?;
         let mut diagnostics = Vec::new();
         for (index, line) in source.lines().enumerate() {
+            if index % 256 == 0 {
+                result.check_deadline()?;
+            }
             if regex.is_match(line) {
-                if matches.fetch_add(1, Ordering::Relaxed) >= 10_000 {
-                    bail!("File pattern diagnostics exceed 10000");
-                }
                 let line_number = index + 1;
-                diagnostics.push(diagnostic(
-                    &result.id,
-                    Some(path),
-                    Some(Range {
-                        start_line: line_number,
-                        end_line: line_number,
-                    }),
-                    message.into(),
-                    serde_json::json!({"assertion":"forbid_pattern","pattern":pattern}),
-                    fix,
-                    &format!("{path}:{line_number}:forbid_pattern"),
-                ));
+                result.push_buffered(
+                    &mut diagnostics,
+                    diagnostic(
+                        &result.id,
+                        Some(path),
+                        Some(Range {
+                            start_line: line_number,
+                            end_line: line_number,
+                        }),
+                        message.into(),
+                        serde_json::json!({"assertion":"forbid_pattern","pattern":pattern}),
+                        fix,
+                        &format!("{path}:{line_number}:forbid_pattern"),
+                    ),
+                )?;
             }
         }
         Ok(diagnostics)

@@ -44,6 +44,10 @@ pub struct Structure {
     pub tests: Vec<Entity>,
     pub comments: Vec<Comment>,
     pub imports: Vec<Import>,
+    /// One-based nonblank lines support declaration binding without rescanning
+    /// the full source for every entity. This is invocation-local derived data.
+    #[serde(skip)]
+    pub(super) nonblank_lines: Vec<usize>,
 }
 
 pub fn language(path: &str) -> Option<&'static str> {
@@ -106,6 +110,11 @@ pub(super) fn parse_before(
         tests: Vec::new(),
         comments: Vec::new(),
         imports: Vec::new(),
+        nonblank_lines: std::str::from_utf8(bytes)?
+            .lines()
+            .enumerate()
+            .filter_map(|(index, line)| (!line.trim().is_empty()).then_some(index + 1))
+            .collect(),
     };
     let mut pending = vec![tree.root_node()];
     let mut visited = 0;

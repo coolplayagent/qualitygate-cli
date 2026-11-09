@@ -8,6 +8,8 @@
 
 ## 快照、初始化与采集
 
+资源与并发审计另有集中维护的 [CodeSpec 验证记录](../../../codespec/test/README.md)。
+
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
 | 发布版本、Skill 包与网站链接一致性 | `tests/quality/site.rs::pages_site_links_resolve_and_match_the_release_version`、`pages_workflow_deploys_only_the_static_site_from_main`；`tests/quality/skill_package.rs::skill_package_contract_is_complete_and_matches_the_cli_version`；`tests/quality/documentation.rs` 文档链接和双语目录门禁 |
@@ -15,6 +17,8 @@
 | YAML-SCALAR-WORK-01：类型解析前的标量文本预算、数值别名、嵌套锚点成本、键/标签、编码与诊断位置 | `config::yaml_scalar_work::tests`；上述 YAML-EXPANSION-01 配置、任务、规则和外部信任回归中的数值场景 |
 | 快照选择、执行、报告与退出语义 | `tests/cli.rs`、`tests/execution.rs`、`tests/policy.rs`、domain 单元测试 |
 | SNAP-RENAME-01：确定性一一配对重命名来源、多余副本为新增、未配对旧路径为删除 | `snapshot::tests::rename_sources_are_consumed_once_in_path_order`：文本/二进制/空内容、保留原文件及权限；`tests/delivery_scope.rs::surplus_rename_copies_remain_added_and_subject_to_delivery_rules`：worktree/staged/path/diff 诊断及修复；`tests/benchmarks.rs::duplicate_content_rename_storm_consumes_each_old_path_once`：18,000 个相同来源及多余副本；既有采集超时测试继续执行 |
+| SCOPE-INDEX-01：借用单次操作索引，保留别名、当前键优先及反馈范围语义 | `snapshot::scope_index::tests`：与单次查询逐项比较、重复别名、公开快照变更，以及 2,000 个变更/5,000 个未变更路径清单；既有 delivery、report、coverage 集成目标 |
+| HISTORY-WORK-01：8 MiB 批量消息获取与声明历史共享 60 秒截止时间 | `snapshot::messages::tests`：Git 顺序、UTF-8 编码、换行/NUL 语义、非法 framing、提交数量及累计字节；`snapshot::history::tests`：执行前和完成时截止时间、内容驻留及解码前计量；`snapshot::git::tests::expired_git_parsing_stops_before_returning_partial_inputs` |
 | 初始化与能力缺口 | `tests/init.rs` |
 | XML-DISCOVERY-01 有界 Maven 建议性发现、独立元数据缺口及策略保留 | `config::discovery::maven_manifest::tests`：精确 32 层/100,000 节点边界、字面标记、XML 格式与命名空间；`tests/init/maven_xml.rs`：输入摘要、缺失策略时创建候选、已有策略字节保留、其他项目发现和修复恢复 |
 | CONFIG-FILE-01 配置与发现输入限于有界普通文件，保留缺失策略语义，非法输入后不发布候选 | `config::tests::configuration_file_size_budget_is_inclusive_and_precedes_parsing`；`tests/init.rs::fifo_configuration_is_rejected_without_initialization_or_replacement`、`fifo_ignore_file_blocks_discovery_before_candidate_publication`（Unix）；既有不可读/格式错误策略回归 |
@@ -31,6 +35,9 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
+| GRAPH-WORK-01：索引化迭代依赖遍历与稳定策略顺序 | `config::dependencies::tests`：首个就绪节点等价、有环/未知/重复依赖、10,000 节点反向链、profile 闭包、待完成检查及禁用依赖；既有 `config::change_selection::tests` 和 `tests/command_applicability.rs` |
+| BUILTIN-WORK-01：共享 10,000 条/8 MiB 预留预算与 30 秒分析截止时间 | `adapters::rules::builtin_limits_tests`：展开诊断字节、结构诊断数量、并行共享预留及多行变更范围；`adapters::diagnostic_budget::tests::builtin_workers_reject_expired_deadlines_before_retaining_findings`；`adapters::markers::tests`：索引邻接、标记边界与 2,000 个独立实体 |
+| FACT-WORK-01：Schema 1/2/3 事实采集计入重复标记声明，并为独立选择器提供本地预算 | `adapters::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects`；既有共享命名来源及未完成采集测试 |
 | COMMAND-SCOPE-01：显式语言/路径/输入命令选择、依赖保留及全局输入变化保守失效 | `config::change_selection::tests`；`tests/command_applicability.rs`：隔离 Git 仓库、混合语言、选择器、旧/新路径、空交付、默认兼容、策略变化、依赖、路径反馈与未完成执行；`c_headers_activate_both_c_and_cpp_consumers` 验证 `.h` 头文件的保守语言选择 |
 | SYNTAX-REUSE-01：单次检查有界语法事实与内置声明语言默认值 | `adapters::syntax::cache::tests`；`adapters::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、`shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`；既有 `tests/issue9_rules.rs`、`tests/custom_rules.rs` 和语法/实体变更单元测试保留诊断、非法输入失败和跨文件移动语义 |
 | CONSTRAINT-01 来源绑定清单、采用、快照覆盖与显式缺口 | `tests/constraint_coverage.rs`；`domain::constraint::tests` |
@@ -68,6 +75,7 @@
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
+| ASYNC-WORK-01：堆上命令调度、阻塞响应/测试摘要解析与报告渲染，证据不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`interfaces::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`；`application::feedback::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`；既有 CLI、feedback、decision-envelope 及 host 集成目标；`application::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`；[有界栈调度回归](../../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack` |
 | AGENT-01 — 绑定来源的 Agent 义务、按范围投影 Prompt、过期/缺失证据与冲突处理 | `tests/agent_contracts.rs`；`domain/agent_contract.rs` 范围单元测试 |
 | AGENT-HOST-01 — Agent 注入、修复/恢复/切换、能力缺口、伪造报告、策略变化、不可变交付与规范路径边界 | `tests/agent_host.rs`；`tests/delivery.rs`，包括 `equivalent_repository_paths_cannot_bypass_delivery_confinement`；`tests/agent_loop.rs` 验证修复 fixture 完整读取 Prompt；`runner::tests::closed_stdin_is_incomplete_even_when_the_child_exits_successfully` 保留输入交付失败语义；纯判定 `domain/agent_host_tests.rs` |
 | 任务、人工验收、provenance 与 Git trailer | `tests/manual.rs`、`tests/provenance.rs`、`tests/case_provenance.rs`、`tests/git_trailers.rs` |

@@ -35,17 +35,22 @@ pub(super) async fn read(root: &Path, acquisition: &Acquisition) -> Result<BTree
     .await?;
     let selected = acquisition.selector()?;
     let bootstrap = acquisition.options.include.is_some();
+    let deadline = acquisition.deadline;
     let names = tokio::task::spawn_blocking(move || -> Result<_> {
         let names: BTreeSet<_> = listing
             .split(|byte| *byte == 0)
             .filter(|entry| !entry.is_empty())
-            .map(|entry| String::from_utf8(entry.to_vec()))
-            .collect::<Result<_, _>>()?;
+            .map(|entry| {
+                super::changes::check_deadline(Some(deadline))?;
+                Ok(String::from_utf8(entry.to_vec())?)
+            })
+            .collect::<Result<_>>()?;
         if !bootstrap && names.len() > MAX_FILES {
             bail!("Snapshot exceeds {MAX_FILES} files");
         }
         let mut retained = Vec::new();
         for path in names {
+            super::changes::check_deadline(Some(deadline))?;
             if selected(&path)? {
                 retained.push(path);
             }

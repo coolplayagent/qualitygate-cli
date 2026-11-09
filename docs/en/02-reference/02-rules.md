@@ -121,6 +121,12 @@ entity/byte allowance. Selectors reserve normalized facts before copying them;
 syntax parsing and entity matching inherit the remaining time. Exhaustion leaves
 the check incomplete and preserves fixed violations already established.
 
+Fact acquisition for schema 1, 2 and 3 enforces 50,000 entities, 32 MiB and a
+30-second deadline, including selectors without an externally supplied budget.
+Bytes include normalized names, text, paths and retained marker declarations;
+the same declaration bound to multiple subjects counts for each retained copy.
+Schema 3 named sources continue to share one allowance with the primary selection.
+
 The report preserves the original snapshot, policy and source-review binding.
 Successful evaluation includes operation/scan metrics; false expressions produce
 aggregate violations. Mixed authoring packages identify the exported family

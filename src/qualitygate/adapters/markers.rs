@@ -1,7 +1,7 @@
 //! Explicit declaration bindings. Presence is not a claim of actual provenance.
 
 use super::syntax::{Entity, Structure};
-use crate::{config::Marker, snapshot::Snapshot};
+use crate::config::Marker;
 use anyhow::{Result, bail};
 use std::collections::BTreeMap;
 
@@ -10,7 +10,6 @@ pub(super) fn bound_declaration(
     entity: &Entity,
     view: &Structure,
     path: &str,
-    snapshot: &Snapshot,
     baseline: bool,
     git: Option<&super::git_trailers::GitFacts>,
 ) -> Result<Option<String>> {
@@ -19,36 +18,34 @@ pub(super) fn bound_declaration(
             .ok_or_else(|| anyhow::anyhow!("Verified commit-to-entity facts are unavailable"))?
             .declaration(marker, path, entity, baseline);
     }
-    let files = if baseline {
-        &snapshot.base_files
-    } else {
-        &snapshot.files
-    };
-    from_source(marker, entity, view, &files[path].bytes)
+    from_source(marker, entity, view)
 }
 
 pub(super) fn from_source(
     marker: &Marker,
     entity: &Entity,
     view: &Structure,
-    bytes: &[u8],
 ) -> Result<Option<String>> {
     match marker.kind.as_str() {
         "annotation" => Ok(entity.annotations.get(&marker.name).cloned()),
         "comment" => {
-            let source = std::str::from_utf8(bytes)?;
-            let lines: Vec<_> = source.lines().collect();
             let mut end = entity.range.start_line;
             let mut parts = Vec::new();
-            for comment in view
+            let preceding = view
                 .comments
+                .partition_point(|comment| comment.range.start_line < end);
+            for comment in view.comments[..preceding]
                 .iter()
                 .rev()
                 .filter(|comment| comment.range.end_line < entity.range.start_line)
             {
-                if lines[comment.range.end_line..end - 1]
-                    .iter()
-                    .any(|line| !line.trim().is_empty())
+                let next_line = view
+                    .nonblank_lines
+                    .partition_point(|line| *line <= comment.range.end_line);
+                if view
+                    .nonblank_lines
+                    .get(next_line)
+                    .is_some_and(|line| *line < end)
                 {
                     break;
                 }
@@ -159,3 +156,7 @@ fn quoted(bytes: &[u8], start: usize) -> (String, usize) {
     }
     (String::new(), bytes.len())
 }
+
+#[cfg(test)]
+#[path = "markers_tests.rs"]
+mod tests;

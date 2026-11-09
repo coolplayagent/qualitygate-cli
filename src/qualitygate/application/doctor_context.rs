@@ -19,10 +19,15 @@ pub(super) async fn inspect(
     snapshot: &snapshot::Snapshot,
     report: &mut Report,
 ) {
+    let commands: std::collections::BTreeMap<_, _> = plan
+        .commands
+        .iter()
+        .map(|command| (command.id.as_str(), command))
+        .collect();
     for command in plan
         .order
         .iter()
-        .filter_map(|id| plan.commands.iter().find(|command| &command.id == id))
+        .filter_map(|id| commands.get(id.as_str()).copied())
     {
         if command.kind != CheckKind::Command {
             continue;
@@ -188,11 +193,15 @@ async fn probe_until(
     deadline: Instant,
 ) -> Result<()> {
     let directory = tokio::task::spawn_blocking(tempfile::tempdir).await??;
+    let commands: std::collections::BTreeMap<_, _> = plan
+        .commands
+        .iter()
+        .map(|command| (command.id.as_str(), command))
+        .collect();
     for check in &mut report.checks {
-        let command = plan
-            .commands
-            .iter()
-            .find(|command| command.id == check.id)
+        let command = commands
+            .get(check.id.as_str())
+            .copied()
             .expect("selected command");
         for probe in &mut check.probes {
             let remaining = deadline.saturating_duration_since(Instant::now());

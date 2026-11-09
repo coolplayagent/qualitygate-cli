@@ -38,12 +38,13 @@ pub(super) fn apply(
         builder.add(globset::Glob::new(path)?);
     }
     let matcher = builder.build()?;
+    let scope = snapshot.scope_index();
     let expected: BTreeSet<_> = snapshot
         .files
         .keys()
         .filter(|path| {
             matcher.is_match(path)
-                && snapshot.includes(path)
+                && scope.includes(path)
                 && (spec.mode == IncrementMode::Full
                     || snapshot
                         .changes

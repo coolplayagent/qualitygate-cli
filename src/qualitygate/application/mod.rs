@@ -201,6 +201,8 @@ async fn check_prepared(
         .to_string_lossy()
         .to_string();
     let mut results: Vec<CheckResult> = Vec::new();
+    let mut passing = std::collections::BTreeSet::new();
+    let scope = snapshot.scope_index();
     let mut provenance_proofs = std::collections::BTreeMap::new();
     let command_selections =
         change_selection::select(&plan, &snapshot, &protected_paths, !invalid.is_empty()).await?;
@@ -221,26 +223,25 @@ async fn check_prepared(
         None
     };
     let rule_context = rule_execution::Context::new(Arc::clone(&snapshot));
+    let commands: std::collections::BTreeMap<_, _> = plan
+        .commands
+        .iter()
+        .map(|command| (command.id.as_str(), command))
+        .collect();
     for id in &plan.order {
         if id == constraint::CHECK_ID {
             // Aggregate after final external-evidence revalidation can block producers.
             continue;
         }
         let rule = plan.rules.get(id);
-        let command = plan.commands.iter().find(|command| &command.id == id);
+        let command = commands.get(id.as_str()).copied();
         let (required, severity, dependencies) = if let Some(rule) = rule {
             (rule.required, rule.severity, &rule.depends_on)
         } else {
             let command = command.expect("planned command");
             (command.required, command.severity, &command.depends_on)
         };
-        let dependency_failure = dependencies.iter().find(|id| {
-            !results.iter().any(|result| {
-                &result.id == *id
-                    && result.execution.status == ExecutionStatus::Completed
-                    && result.verdict == Some(Verdict::Pass)
-            })
-        });
+        let dependency_failure = dependencies.iter().find(|id| !passing.contains(*id));
         let missing_env = command
             .map(|check| crate::env::missing_required(&check.required_env))
             .unwrap_or_default();
@@ -364,8 +365,7 @@ async fn check_prepared(
             if snapshot.delivery() && result.execution.status == ExecutionStatus::Completed {
                 let before = result.diagnostics.len();
                 result.diagnostics.retain(|diagnostic| {
-                    snapshot
-                        .selects_diagnostic(diagnostic.file.as_deref(), diagnostic.range.as_ref())
+                    scope.selects_diagnostic(diagnostic.file.as_deref(), diagnostic.range.as_ref())
                 });
                 result.metadata.insert(
                     "delivery_filtered".into(),
@@ -392,6 +392,11 @@ async fn check_prepared(
                     result.block(ExecutionStatus::Blocked, format!("{earlier}Rule source review is missing or stale; inspect rules list and record a review in the selected policy"));
                 }
             }
+        }
+        if result.execution.status == ExecutionStatus::Completed
+            && result.verdict == Some(Verdict::Pass)
+        {
+            passing.insert(result.id.clone());
         }
         results.push(result);
     }
@@ -576,11 +581,12 @@ async fn check_prepared(
     if !snapshot.scope_evidence.excluded_paths.is_empty() {
         report.verification.known_limits.push(format!("Explicit and default resource exclusions removed {} paths from acquisition, execution inputs and verification; excluded resources are not verified.", snapshot.scope_evidence.excluded_paths.len()));
     }
-    tokio::fs::write(
-        directory.join("report.json"),
-        serde_json::to_vec_pretty(&report)?,
-    )
-    .await?;
+    let (report, bytes) = tokio::task::spawn_blocking(move || -> Result<_> {
+        let bytes = serde_json::to_vec_pretty(&report)?;
+        Ok((report, bytes))
+    })
+    .await??;
+    tokio::fs::write(directory.join("report.json"), bytes).await?;
     Ok(report)
 }
 

@@ -110,10 +110,10 @@ fn run(
     result: &mut CheckResult,
 ) -> Result<()> {
     let mut output = diagnostic_budget::Budget::default();
-    let mut budget = (rule.schema_version == 3).then(selection::Budget::new);
+    let mut budget = selection::Budget::new();
     requirements(rule, snapshot, facts)?;
     let projects = facts.projects;
-    let subjects = selection::collect(rule, snapshot, facts, false, budget.as_mut())?;
+    let subjects = selection::collect(rule, snapshot, facts, false, Some(&mut budget))?;
     let triggered = subjects.iter().filter(|subject| subject.triggered).count();
     result.matched_entities = subjects.len();
     result.metadata.insert(
@@ -275,7 +275,7 @@ fn run(
             facts,
             &subjects,
             result,
-            budget.as_mut().expect("v3 acquisition budget"),
+            &mut budget,
             &mut output,
         )?;
     } else if let Some(expression) = &rule.expression {
@@ -409,11 +409,12 @@ fn dependencies(
         filters.add(globset::Glob::new(pattern)?);
     }
     let filters = filters.build()?;
+    let scope = snapshot.scope_index();
     let started = std::time::Instant::now();
     if let Some(binding) = &rule.binding {
         // An unchanged marked test still needs its dependency after a manifest-only edit.
         for (path, file) in &snapshot.files {
-            if !snapshot.includes(path) || (!filters.is_empty() && !filters.is_match(path)) {
+            if !scope.includes(path) || (!filters.is_empty() && !filters.is_match(path)) {
                 continue;
             }
             if !rule.language.is_empty()
@@ -427,16 +428,8 @@ fn dependencies(
             }
             if let Some(view) = syntax::parse(path, &file.bytes)? {
                 for test in &view.tests {
-                    if markers::bound_declaration(
-                        &binding.marker,
-                        test,
-                        &view,
-                        path,
-                        snapshot,
-                        false,
-                        git,
-                    )?
-                    .is_some()
+                    if markers::bound_declaration(&binding.marker, test, &view, path, false, git)?
+                        .is_some()
                     {
                         selected.insert(
                             (path.clone(), test.symbol.clone()),
