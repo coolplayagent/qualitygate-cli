@@ -84,10 +84,10 @@ pub(super) fn validate(
                         globset::Glob::new(text)?;
                     } else if key == "exempt_patterns" {
                         regex::Regex::new(text)?;
-                    } else if !["java", "python", "typescript", "go", "rust", "shell"]
+                    } else if !(["java", "python", "typescript", "go", "rust", "shell"]
                         .contains(&text)
-                        && !(["file-pattern", "source-pattern"].contains(&id)
-                            && ["c", "cpp"].contains(&text))
+                        || (["file-pattern", "source-pattern"].contains(&id)
+                            && ["c", "cpp"].contains(&text)))
                     {
                         bail!("Unsupported rule language: {text}");
                     }

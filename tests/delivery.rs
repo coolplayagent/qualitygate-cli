@@ -139,7 +139,10 @@ async fn late_workspace_mutations_cannot_enter_the_frozen_export_and_tampering_i
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).unwrap();
     }
     #[cfg(windows)]
+    #[allow(clippy::permissions_set_readonly_false)]
     {
+        // The artifact is a real file on Windows; clearing read-only is the
+        // platform-correct way to make it writable for the substitution check.
         let mut mode = std::fs::metadata(path).unwrap().permissions();
         mode.set_readonly(false);
         std::fs::set_permissions(path, mode).unwrap();
