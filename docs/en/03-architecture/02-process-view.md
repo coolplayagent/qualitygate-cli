@@ -43,7 +43,10 @@ silently taken from the checked tree.
 Materialization creates a disposable directory for project commands. A command
 receives fixed argv, cwd, environment policy, deadline, output limits, and
 expected artifacts. The runner drains stdout and stderr without unbounded
-buffers, terminates timed-out process trees, and preserves partial evidence.
+buffers, terminates the Unix process group or Windows Job on timeout or
+cancellation, and preserves partial evidence. Unix descendants that create a
+separate session or process group can leave that group; this is not an arbitrary
+process-tree sandbox. Native Windows Job behavior requires its own platform tests.
 Blocking operations do not hold asynchronous orchestration resources.
 
 Baseline execution derives its identity and files directly from the captured
@@ -87,6 +90,21 @@ execution. Deadlines and counters are shared where work contributes to one
 contract; splitting work cannot bypass a global cap. Deterministic ordering is
 restored before serialization so parallel execution does not create unstable
 reports.
+
+Declaration history uses one 60-second deadline across subprocesses, tree reads
+and blocking decoding/hashing; remaining time is propagated and completion is
+checked again. Snapshot name, Git batch and blob loops also check their shared
+acquisition deadline. Cancellation is cooperative for blocking workers: reader
+permits remain held until the worker exits, and scoped workers are joined before
+their storage is released. An OS filesystem call already in progress cannot be
+forcibly interrupted by these Rust deadline checks.
+
+Remote JSON response decoding and wire-byte SHA-256 calculation run on a blocking
+worker after the 1 MiB response limit is enforced. Final report artifact
+serialization and CLI text/JSON/envelope rendering also use blocking workers.
+Rendering, feedback persistence and host compact projection transfer report
+ownership instead of cloning the complete report. Severity filters still affect
+only displayed diagnostics; stored evidence and gate decisions retain all findings.
 
 Feedback projection measures borrowed, typed diagnostic previews before
 constructing owned JSON members. Acceptance lookup runs once per selected check.

@@ -1,4 +1,4 @@
-//! Acquire normalized rule subjects, sharing v3 limits across every source.
+//! Acquire bounded rule subjects, sharing one allowance across every named source.
 use super::{
     CustomRule, Range, Result, Snapshot, Subject, file_inventory, require_syntax_capabilities,
 };
@@ -36,7 +36,9 @@ impl Budget {
         Ok(())
     }
 
-    // Reserve normalized name/text/path bytes before allocating an owned subject.
+    // Reserve normalized name/text/path bytes before retaining an owned subject.
+    // Marker declarations count as retained text, even when assertions inspect
+    // only their fields and the expression does not expose their contents.
     pub(super) fn reserve(&mut self, name: usize, text: usize, path: usize) -> Result<()> {
         self.check()?;
         let bytes = self
@@ -59,20 +61,18 @@ pub(super) fn collect(
     snapshot: &Snapshot,
     facts: &RuleFacts<'_>,
     independent: bool,
-    mut budget: Option<&mut Budget>,
+    budget: Option<&mut Budget>,
 ) -> Result<Vec<Subject>> {
-    if let Some(budget) = &budget {
-        budget.check()?;
-    }
+    let mut local_budget = Budget::new();
+    let budget = budget.unwrap_or(&mut local_budget);
+    budget.check()?;
     let provenance = facts.provenance;
     let change = rule.when.change.as_deref().unwrap_or("added");
     if rule.when.entity == "commit" {
         let mut subjects = Vec::new();
         for (oid, message) in &snapshot.commits {
             let name = message.lines().next().unwrap_or_default();
-            if let Some(budget) = budget.as_deref_mut() {
-                budget.reserve(name.len(), message.len(), 0)?;
-            }
+            budget.reserve(name.len(), message.len(), 0)?;
             subjects.push(Subject {
                 file: None,
                 range: None,
@@ -83,49 +83,30 @@ pub(super) fn collect(
                 triggered: true,
             });
         }
-        if let Some(budget) = budget {
-            budget.check()?;
-        }
+        budget.check()?;
         return Ok(subjects);
     }
     if rule.when.entity == "file" {
-        return file_inventory::selected_subjects(rule, snapshot, independent, budget);
+        return file_inventory::selected_subjects(rule, snapshot, independent, Some(budget));
     }
-    let files = if let Some(budget) = &budget {
-        entity_changes::collect_before(
-            snapshot,
-            &rule.applies_to.paths,
-            &rule.language,
-            independent,
-            budget.deadline(),
-            facts.syntax,
-        )?
-    } else {
-        entity_changes::collect(
-            snapshot,
-            &rule.applies_to.paths,
-            &rule.language,
-            facts.syntax,
-        )?
-    };
+    let files = entity_changes::collect_before(
+        snapshot,
+        &rule.applies_to.paths,
+        &rule.language,
+        independent,
+        budget.deadline(),
+        facts.syntax,
+    )?;
     let mut subjects = Vec::new();
     let mut previous_views = BTreeMap::new();
-    let started = std::time::Instant::now();
     for file in files {
-        if let Some(budget) = &budget {
-            budget.check()?;
-        }
-        if started.elapsed().as_secs() >= 30 {
-            bail!("Marker retention exceeds analysis budget");
-        }
+        budget.check()?;
         require_syntax_capabilities(&file.view.language, &rule.requires_capabilities)?;
         match rule.when.entity.as_str() {
             "test_method" => {
                 let bytes = &snapshot.files[&file.path].bytes;
                 for test in &file.tests {
-                    if let Some(budget) = &budget {
-                        budget.check()?;
-                    }
+                    budget.check()?;
                     let in_scope = rule.applies_to.provenance_scope.as_deref() != Some("ai_only")
                         || provenance
                             .is_some_and(|facts| facts.participated(&file.path, &test.entity));
@@ -135,16 +116,8 @@ pub(super) fn collect(
                     {
                         if !previous_views.contains_key(path) {
                             let bytes = &snapshot.base_files[path].bytes;
-                            let view = if let Some(budget) = &budget {
-                                syntax::parse_cached(facts.syntax, path, bytes, budget.deadline())?
-                            } else {
-                                syntax::parse_cached(
-                                    facts.syntax,
-                                    path,
-                                    bytes,
-                                    crate::adapters::parallel::deadline(),
-                                )?
-                            };
+                            let view =
+                                syntax::parse_cached(facts.syntax, path, bytes, budget.deadline())?;
                             previous_views
                                 .insert(path.clone(), view.expect("previous supported syntax"));
                         }
@@ -153,7 +126,6 @@ pub(super) fn collect(
                             previous,
                             &previous_views[path],
                             path,
-                            snapshot,
                             true,
                             facts.git_trailers,
                         )?
@@ -170,7 +142,6 @@ pub(super) fn collect(
                                 &test.entity,
                                 &file.view,
                                 &file.path,
-                                snapshot,
                                 false,
                                 facts.git_trailers,
                             )
@@ -182,9 +153,12 @@ pub(super) fn collect(
                     }
                     let entity = &test.entity;
                     let text = &bytes[entity.byte_range.clone()];
-                    if let Some(budget) = budget.as_deref_mut() {
-                        budget.reserve(entity.name.len(), text.len(), file.path.len())?;
-                    }
+                    budget.reserve(
+                        entity.name.len(),
+                        text.len()
+                            .saturating_add(declaration.as_ref().map_or(0, String::len)),
+                        file.path.len(),
+                    )?;
                     subjects.push(Subject {
                         triggered,
                         file: Some(file.path.clone()),
@@ -207,16 +181,12 @@ pub(super) fn collect(
                 let mut counts = BTreeMap::new();
                 if let Some(previous) = &file.previous {
                     for (text, _) in text_entities(previous, &rule.when.entity) {
-                        if let Some(budget) = &budget {
-                            budget.check()?;
-                        }
+                        budget.check()?;
                         *counts.entry(text).or_insert(0usize) += 1;
                     }
                 }
                 for (text, range) in text_entities(&file.view, &rule.when.entity) {
-                    if let Some(budget) = &budget {
-                        budget.check()?;
-                    }
+                    budget.check()?;
                     if change != "any"
                         && let Some(count) = counts.get_mut(text)
                         && *count > 0
@@ -224,9 +194,7 @@ pub(super) fn collect(
                         *count -= 1;
                         continue;
                     }
-                    if let Some(budget) = budget.as_deref_mut() {
-                        budget.reserve(text.len(), text.len(), file.path.len())?;
-                    }
+                    budget.reserve(text.len(), text.len(), file.path.len())?;
                     subjects.push(Subject {
                         triggered: true,
                         file: Some(file.path.clone()),
@@ -241,9 +209,7 @@ pub(super) fn collect(
             other => bail!("Unsupported DSL entity: {other}"),
         }
     }
-    if let Some(budget) = budget {
-        budget.check()?;
-    }
+    budget.check()?;
     Ok(subjects)
 }
 

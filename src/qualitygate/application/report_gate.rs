@@ -8,7 +8,7 @@ use crate::{
     },
     config::{IncrementMode, ReportSpec},
     domain::{CheckResult, Range, ratchet},
-    snapshot::{self, Snapshot},
+    snapshot::{self, ScopeIndex, Snapshot},
 };
 use anyhow::{Context, Result, bail};
 use std::{
@@ -69,6 +69,7 @@ pub(super) fn apply(
     }
     let mut effective_mode = spec.mode;
     let mut sources = Sources::new(snapshot, workspace);
+    let scope = snapshot.scope_index();
     if !data.coverage.is_empty() || !data.coverage_files.is_empty() {
         effective_mode =
             super::coverage_gate::apply(result, spec, &data, snapshot, workspace, &mut sources)?;
@@ -95,14 +96,14 @@ pub(super) fn apply(
             normalize_issue(&mut issue, snapshot, &mut sources, true, &mut line_counts)?;
             if snapshot.delivery() {
                 let selected = if is_ratchet {
-                    delivery_issue(&issue, snapshot, true)
+                    delivery_issue(&issue, snapshot, &scope, true)
                 } else if issue.locations.is_empty() {
-                    snapshot.selects_diagnostic(issue.file.as_deref(), None)
+                    scope.selects_diagnostic(issue.file.as_deref(), None)
                 } else {
                     issue
                         .locations
                         .iter()
-                        .any(|location| snapshot.selects_diagnostic(location.file.as_deref(), None))
+                        .any(|location| scope.selects_diagnostic(location.file.as_deref(), None))
                 };
                 if !selected {
                     continue;
@@ -126,7 +127,7 @@ pub(super) fn apply(
             for issue in data
                 .issues
                 .iter()
-                .filter(|issue| !delivery_issue(issue, snapshot, false))
+                .filter(|issue| !delivery_issue(issue, snapshot, &scope, false))
             {
                 if let Some(count) = previous.get_mut(&fingerprint(issue)) {
                     *count = count.saturating_sub(1);
@@ -135,7 +136,7 @@ pub(super) fn apply(
         }
         let before = data.issues.len();
         data.issues
-            .retain(|issue| delivery_issue(issue, snapshot, false));
+            .retain(|issue| delivery_issue(issue, snapshot, &scope, false));
         result.metadata.insert(
             format!("{}:delivery_filtered", spec.path),
             (before - data.issues.len()).into(),
@@ -184,7 +185,7 @@ pub(super) fn apply(
         }
         if snapshot.delivery() {
             select_location(&issue, &mut displayed, |location| {
-                Ok(snapshot.selects_diagnostic(
+                Ok(scope.selects_diagnostic(
                     location.file.as_deref(),
                     location
                         .line
@@ -267,13 +268,18 @@ pub(super) fn apply(
     Ok(())
 }
 
-fn delivery_issue(issue: &Issue, snapshot: &Snapshot, baseline: bool) -> bool {
+fn delivery_issue(
+    issue: &Issue,
+    snapshot: &Snapshot,
+    scope: &ScopeIndex<'_>,
+    baseline: bool,
+) -> bool {
     let selected = |file: Option<&str>, line: Option<usize>, end: Option<usize>| {
         if baseline {
             let Some(file) = file else {
                 return true;
             };
-            if !snapshot.includes(file) {
+            if !scope.includes(file) {
                 return false;
             }
             let Some(change) = snapshot.changes.get(file) else {
@@ -287,7 +293,7 @@ fn delivery_issue(issue: &Issue, snapshot: &Snapshot, baseline: bool) -> bool {
                     .is_some()
             })
         } else {
-            snapshot.selects_diagnostic(
+            scope.selects_diagnostic(
                 file,
                 line.map(|line| Range {
                     start_line: line,

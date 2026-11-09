@@ -60,6 +60,17 @@ or a fact too large to retain causes normal parsing under the existing deadline;
 cache hits also obey that deadline. These retention limits do not bound total
 process memory or turn parse failures into successful evidence.
 
+Delivery commit messages use one bounded Git log request for at most 1,000
+commits and 8 MiB of aggregate UTF-8 message bytes, including the retained
+trailing newline. UTF-8 output is explicit, independent of local Git log encoding
+settings; ordering, trailing newlines and Git's NUL handling remain consistent.
+Oversize history is incomplete, never silently truncated. Declaration
+history separately shares a 60-second acquisition deadline across Git commands,
+tree reads, hashing and decoding, with a final completion check. Each nested
+operation receives the remaining allowance. Its limits remain 1,000 commits,
+200,000 cumulative tree entries and 64 MiB of unique file contents plus raw
+commit/trailer bytes; bytes are charged before expanding decoded records.
+
 Executable identity accepts regular files, including symlinks resolving to a
 regular file. It checks file type and size before opening, then rechecks the
 opened handle before hashing. Existing FIFOs, sockets and directories cannot
@@ -141,6 +152,13 @@ Project rules v1/v2/v3 share this allowance across file inventory, fixed
 assertions, dependency findings and expressions. Records are charged before
 being retained. The application checks the allowance again when binding replay
 arguments, on its blocking worker pool.
+
+Built-in rules enforce the same record and byte limits while evaluating, before
+worker batches retain findings. All workers for one built-in check share one
+allowance and a 30-second analysis deadline, including syntax and marker work.
+An exhausted parallel batch does not supply successful partial evidence;
+previously committed findings remain available. Budget failure remains incomplete
+even when the application later applies scope or display filters.
 
 Exhaustion leaves the affected check incomplete and preserves the retained
 prefix of findings. `metadata.diagnostic_output` identifies the limit, phase

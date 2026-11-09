@@ -71,6 +71,20 @@ Interfaces do not perform external I/O directly. Blocking filesystem and parser
 work stays isolated from asynchronous orchestration. Network, environment, and
 path access have dedicated owners so capability review is explicit.
 
+`config::dependencies` builds identifier and adjacency indexes once for each
+graph operation. Validation, profile prerequisite closure and command
+applicability use iterative traversal. Topological order always selects the
+earliest policy-declared eligible node; unknown, repeated, disabled or cyclic
+dependencies remain errors. Deep reverse chains do not consume recursive stack
+frames or repeatedly scan the complete graph.
+
+`snapshot::ScopeIndex` borrows a snapshot for one operation and indexes old paths
+once. Inventory, diagnostic, coverage and retained-marker loops reuse it instead
+of scanning all changes for every path. Current keys take precedence, duplicate
+old paths retain the first snapshot-ordered match, and repository/delivery plus
+feedback scope semantics remain unchanged. The public mutable snapshot contains
+no cached index; a later operation rebuilds from its current changes.
+
 `config::yaml_budget` owns the shared YAML expansion preflight. It visits values
 without materializing their collections or copying alias strings, before the
 existing duplicate-key and typed decoders. Configuration, tasks, rules and

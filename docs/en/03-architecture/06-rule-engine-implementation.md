@@ -149,7 +149,8 @@ AST, type, control-flow, or taint semantics.
    derives from path, line, and pattern. Multiple patterns can intentionally
    produce separate findings on one line.
 6. One evaluation has a 30-second deadline, a one-million-added-line scope cap,
-   and a 10,000-diagnostic cap. Exceeding a bound blocks the result as
+   and a 10,000-diagnostic/8 MiB compact JSON cap, shared across workers and
+   reserved before retaining findings. Exceeding a bound blocks the result as
    incomplete; output is never truncated into a pass.
 
 Comments, literals, declarations, and unreachable code may match, while

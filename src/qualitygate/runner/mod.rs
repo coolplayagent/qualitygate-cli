@@ -1,4 +1,6 @@
-//! Bounded process execution with whole-process-tree cancellation.
+//! Bounded process execution with Unix process-group / Windows Job cancellation.
+//! Unix descendants that create a separate session or group are outside this
+//! cleanup boundary; configured commands are not contained by an OS sandbox.
 
 pub mod identity;
 
@@ -92,7 +94,7 @@ pub async fn capture(
         Ok::<_, anyhow::Error>(status.code())
     };
     let result = tokio::time::timeout(deadline, work).await;
-    // Kill descendants that outlive their direct parent, including on success.
+    // Kill remaining members of the process group/job, including on success.
     let _ = child.start_kill();
     let _ = tokio::time::timeout(Duration::from_secs(5), child.wait()).await;
     let (exit_code, timed_out, capture_error) = match result {

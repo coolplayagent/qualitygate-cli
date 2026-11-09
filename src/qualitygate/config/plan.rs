@@ -1,5 +1,5 @@
 use super::*;
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone)]
@@ -105,19 +105,19 @@ impl Plan {
                 .chain(combined.checks.iter().map(|check| check.id.clone()))
                 .collect()
         };
-        let mut needed = selected;
-        for _ in 0..combined.checks.len() + combined.rules.len() {
-            for (id, rule) in &combined.rules {
-                if needed.contains(id) {
-                    needed.extend(rule.depends_on.iter().cloned());
-                }
-            }
-            for check in &combined.checks {
-                if needed.contains(&check.id) {
-                    needed.extend(check.depends_on.iter().cloned());
-                }
-            }
-        }
+        let needed = super::dependencies::Graph::new(
+            combined
+                .rules
+                .iter()
+                .map(|(id, rule)| (id.as_str(), rule.depends_on.as_slice()))
+                .chain(
+                    combined
+                        .checks
+                        .iter()
+                        .map(|check| (check.id.as_str(), check.depends_on.as_slice())),
+                ),
+        )?
+        .closure(&selected)?;
         let rules: BTreeMap<_, _> = combined
             .rules
             .into_iter()
@@ -128,28 +128,19 @@ impl Plan {
             .into_iter()
             .filter(|check| needed.contains(&check.id))
             .collect();
-        let mut remaining: Vec<_> = rules
-            .iter()
-            .map(|(id, rule)| (id.clone(), rule.depends_on.clone()))
-            .chain(
-                commands
-                    .iter()
-                    .map(|check| (check.id.clone(), check.depends_on.clone())),
-            )
-            .collect();
-        let mut ordered = BTreeSet::new();
-        let mut order = Vec::new();
-        while !remaining.is_empty() {
-            let Some(index) = remaining
+        let mut order = super::dependencies::Graph::new(
+            rules
                 .iter()
-                .position(|(_, dependencies)| dependencies.iter().all(|id| ordered.contains(id)))
-            else {
-                bail!("Check depends on a disabled or unavailable prerequisite");
-            };
-            let (id, _) = remaining.remove(index);
-            ordered.insert(id.clone());
-            order.push(id);
-        }
+                .map(|(id, rule)| (id.as_str(), rule.depends_on.as_slice()))
+                .chain(
+                    commands
+                        .iter()
+                        .map(|check| (check.id.as_str(), check.depends_on.as_slice())),
+                ),
+        )
+        .context("Check depends on a disabled or unavailable prerequisite")?
+        .order()?;
+        let ordered: BTreeSet<_> = order.iter().cloned().collect();
         let mut required: Vec<_> = all_required.intersection(&ordered).cloned().collect();
         let pending_delivery = all_required.difference(&ordered).cloned().collect();
         if !config.constraints.is_empty() {

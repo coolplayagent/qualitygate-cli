@@ -8,7 +8,9 @@ mod input_guard;
 mod io_workers;
 mod limits;
 mod merge_request;
+mod messages;
 pub mod preflight;
+mod scope_index;
 pub mod selected_preflight;
 pub mod test_overlay;
 mod worktree;
@@ -16,6 +18,7 @@ pub use changes::{Change, compare as compare_files};
 pub use git::{read_commit, read_commit_with_options, resolve_commit, run_git};
 pub use input_guard::InputGuard;
 pub use limits::CaptureOptions;
+pub use scope_index::ScopeIndex;
 
 pub use crate::domain::SnapshotIdentity as Identity;
 use anyhow::{Context, Result};
@@ -212,7 +215,7 @@ async fn capture_inner(
     let (base_files, files, commits) = tokio::try_join!(
         git::commit(&root, &base, acquisition),
         read_target,
-        git::messages(&root, &base, &target)
+        messages::capture(&root, &base, &target)
     )?;
     let scope = acquisition.options.scope;
     let exclude = acquisition.options.exclude.clone();
@@ -347,6 +350,12 @@ fn materialize_files(files: &BTreeMap<String, File>) -> Result<Materialized> {
 }
 
 impl Snapshot {
+    /// Build once for loops over complete inventories or many diagnostics.
+    /// The borrow prevents the public snapshot from changing while indexed.
+    pub fn scope_index(&self) -> ScopeIndex<'_> {
+        ScopeIndex::new(self)
+    }
+
     pub fn delivery(&self) -> bool {
         self.scope_evidence.mode == crate::domain::check_scope::CheckScope::Delivery
     }

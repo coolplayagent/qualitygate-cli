@@ -4,12 +4,18 @@ use crate::domain::{
 };
 use anyhow::{Result, ensure};
 use std::io::{self, Write};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Mutex,
+    time::Instant,
+};
 
 pub(crate) struct Budget {
     count: usize,
     bytes: usize,
     max_count: usize,
     max_bytes: usize,
+    exhausted: bool,
 }
 impl Default for Budget {
     fn default() -> Self {
@@ -18,11 +24,18 @@ impl Default for Budget {
             bytes: 2,
             max_count: MAX_DIAGNOSTICS,
             max_bytes: MAX_DIAGNOSTIC_BYTES,
+            exhausted: false,
         }
     }
 }
 impl Budget {
     fn charge(&mut self, diagnostic: &Diagnostic) -> Result<()> {
+        let result = self.charge_inner(diagnostic);
+        self.exhausted |= result.is_err();
+        result
+    }
+
+    fn charge_inner(&mut self, diagnostic: &Diagnostic) -> Result<()> {
         ensure!(
             self.count < self.max_count,
             "Diagnostic output exceeds {} records",
@@ -52,11 +65,85 @@ impl Budget {
         result.metadata.insert(
             "diagnostic_output".into(),
             serde_json::json!({
-                "complete":false,"retained":self.count,"phase":phase,"encoding":"compact_json_utf8",
+                "complete":false,"retained":result.diagnostics.len(),"phase":phase,"encoding":"compact_json_utf8",
                 "max_records":self.max_count,"max_serialized_bytes":self.max_bytes,
                 "omitted_count_known":false
             }),
         );
+    }
+}
+
+/// All built-ins share one output budget and analysis deadline. Workers reserve
+/// before retaining a finding, so parallel batches cannot each consume the cap.
+pub(super) struct BuiltinResult {
+    result: CheckResult,
+    budget: Mutex<Budget>,
+    deadline: Instant,
+}
+
+impl BuiltinResult {
+    pub(super) fn new(result: CheckResult) -> Self {
+        Self {
+            result,
+            budget: Mutex::new(Budget::default()),
+            deadline: super::parallel::deadline(),
+        }
+    }
+
+    pub(super) fn deadline(&self) -> Instant {
+        self.deadline
+    }
+
+    pub(super) fn check_deadline(&self) -> Result<()> {
+        super::parallel::check_deadline(self.deadline)
+    }
+
+    fn reserve(&self, diagnostic: &Diagnostic) -> Result<()> {
+        self.check_deadline()?;
+        self.budget
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Diagnostic budget state unavailable"))?
+            .charge(diagnostic)
+            .map_err(|error| {
+                anyhow::anyhow!("Built-in diagnostics exceed 10000 records or 8 MiB: {error}")
+            })
+    }
+
+    pub(super) fn push(&mut self, diagnostic: Diagnostic) -> Result<()> {
+        self.reserve(&diagnostic)?;
+        self.result.diagnostics.push(diagnostic);
+        Ok(())
+    }
+
+    pub(super) fn push_buffered(
+        &self,
+        output: &mut Vec<Diagnostic>,
+        diagnostic: Diagnostic,
+    ) -> Result<()> {
+        self.reserve(&diagnostic)?;
+        output.push(diagnostic);
+        Ok(())
+    }
+
+    pub(super) fn finish(mut self) -> CheckResult {
+        if let Ok(budget) = self.budget.lock()
+            && budget.exhausted
+        {
+            budget.incomplete(&mut self.result, "rule_evaluation");
+        }
+        self.result
+    }
+}
+
+impl Deref for BuiltinResult {
+    type Target = CheckResult;
+    fn deref(&self) -> &Self::Target {
+        &self.result
+    }
+}
+impl DerefMut for BuiltinResult {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.result
     }
 }
 

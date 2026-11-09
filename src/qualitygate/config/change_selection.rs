@@ -160,10 +160,15 @@ pub fn select(
     // Reverse topological order propagates every live consumer to all ancestors.
     // Rules remain live: their producers must supply real evidence even if the
     // producer's own language/path condition would otherwise exclude execution.
+    let commands: BTreeMap<_, _> = plan
+        .commands
+        .iter()
+        .map(|command| (command.id.as_str(), command))
+        .collect();
     for id in plan.order.iter().rev() {
         let dependencies = if let Some(rule) = plan.rules.get(id) {
             &rule.depends_on
-        } else if let Some(command) = plan.commands.iter().find(|command| &command.id == id) {
+        } else if let Some(command) = commands.get(id.as_str()) {
             if !selections[id].execute {
                 continue;
             }

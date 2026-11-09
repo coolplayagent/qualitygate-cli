@@ -21,6 +21,7 @@ fn preflight_bounds_bytes_and_file_counts_before_acquiring_content() {
         size_line(MAX_FILE_BYTES).repeat(5).as_bytes(),
         12 * 1024 * 1024,
         MAX_FILE_BYTES,
+        None,
     )
     .unwrap();
     assert_eq!(planned.iter().map(Vec::len).collect::<Vec<_>>(), [2, 2, 1]);
@@ -36,6 +37,7 @@ fn preflight_bounds_bytes_and_file_counts_before_acquiring_content() {
         size_line(0).repeat(1025).as_bytes(),
         1,
         MAX_FILE_BYTES,
+        None,
     )
     .unwrap();
     assert_eq!(empty.iter().map(Vec::len).collect::<Vec<_>>(), [1024, 1]);
@@ -48,7 +50,8 @@ fn preflight_bounds_bytes_and_file_counts_before_acquiring_content() {
                 vec![entry(0)],
                 size_line(size).as_bytes(),
                 budget,
-                MAX_FILE_BYTES
+                MAX_FILE_BYTES,
+                None,
             )
             .unwrap_err()
             .to_string()
@@ -68,7 +71,7 @@ fn malformed_missing_and_mismatched_objects_never_produce_partial_snapshots() {
         "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb blob 1\n",
     ] {
         assert!(
-            batches(vec![entry(0)], bytes.as_bytes(), 100, MAX_FILE_BYTES).is_err(),
+            batches(vec![entry(0)], bytes.as_bytes(), 100, MAX_FILE_BYTES, None).is_err(),
             "{bytes}"
         );
     }
@@ -77,15 +80,35 @@ fn malformed_missing_and_mismatched_objects_never_produce_partial_snapshots() {
             vec![entry(0)],
             format!("{}trailing", size_line(0)).as_bytes(),
             1,
-            MAX_FILE_BYTES
+            MAX_FILE_BYTES,
+            None,
         )
         .is_err()
     );
     for tail in ["", "x", "x!", "x\ntrailing"] {
-        assert!(blobs(vec![entry(1)], format!("{}{tail}", size_line(1)).as_bytes()).is_err());
+        assert!(
+            blobs(
+                vec![entry(1)],
+                format!("{}{tail}", size_line(1)).as_bytes(),
+                None
+            )
+            .is_err()
+        );
     }
-    assert!(blobs(vec![entry(1)], format!("{}\n", size_line(0)).as_bytes()).is_err());
-    let valid = blobs(vec![entry(3)], format!("{}a\0b\n", size_line(3)).as_bytes()).unwrap();
+    assert!(
+        blobs(
+            vec![entry(1)],
+            format!("{}\n", size_line(0)).as_bytes(),
+            None
+        )
+        .is_err()
+    );
+    let valid = blobs(
+        vec![entry(3)],
+        format!("{}a\0b\n", size_line(3)).as_bytes(),
+        None,
+    )
+    .unwrap();
     assert_eq!(valid["source.txt"].bytes, b"a\0b");
     for listing in [
         "malformed",
@@ -121,6 +144,7 @@ fn explicitly_permitted_large_blobs_use_nonempty_bounded_batches() {
         headers.as_bytes(),
         limit * 3,
         limit,
+        None,
     )
     .unwrap();
     assert_eq!(
@@ -134,4 +158,35 @@ fn explicitly_permitted_large_blobs_use_nonempty_bounded_batches() {
             .sum();
         assert!(wire_bytes < crate::runner::MAX_OUTPUT_BYTES);
     }
+}
+
+#[test]
+fn expired_git_parsing_stops_before_returning_partial_inputs() {
+    let mut acquisition = Acquisition::new(&Default::default()).unwrap();
+    acquisition.deadline = Instant::now();
+    let listing = format!("100644 blob {}\tfile\0", "a".repeat(40));
+    assert!(
+        entries(listing.as_bytes(), false, &acquisition)
+            .unwrap_err()
+            .to_string()
+            .contains("timed out")
+    );
+    assert!(
+        batches(
+            vec![entry(0)],
+            size_line(0).as_bytes(),
+            1,
+            MAX_FILE_BYTES,
+            Some(Instant::now())
+        )
+        .is_err()
+    );
+    assert!(
+        blobs(
+            vec![entry(1)],
+            format!("{}x\n", size_line(1)).as_bytes(),
+            Some(Instant::now())
+        )
+        .is_err()
+    );
 }

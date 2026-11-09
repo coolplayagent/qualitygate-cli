@@ -690,10 +690,11 @@ impl Cli {
                     )
                     .await?;
                     let code = export.report.gate.decision.exit_code();
-                    return Ok((
-                        super::render::metadata(&serde_json::to_value(export)?, self.format)?,
-                        code,
-                    ));
+                    let output = tokio::task::spawn_blocking(move || {
+                        super::render::metadata(&serde_json::to_value(export)?, self.format)
+                    })
+                    .await??;
+                    return Ok((output, code));
                 }
                 let report =
                     application::check_with_expected_base(options, args.expect_base.as_deref())
@@ -701,10 +702,15 @@ impl Cli {
                 let code = report.gate.decision.exit_code();
                 if args.feedback {
                     let max_bytes = args.feedback_max_bytes.unwrap_or(32768) as usize;
-                    let feedback =
-                        application::feedback::render(report.clone(), max_bytes, args.severity)
+                    if !self.envelope {
+                        let feedback =
+                            application::feedback::render(report, max_bytes, args.severity).await?;
+                        return Ok((feedback, code));
+                    }
+                    let (report, feedback) =
+                        application::feedback::render_retaining(report, max_bytes, args.severity)
                             .await?;
-                    if self.envelope {
+                    let output = tokio::task::spawn_blocking(move || -> Result<String> {
                         let payload: serde_json::Value = serde_json::from_str(&feedback)?;
                         config::decision_schema::validate_feedback(&payload)?;
                         let mut envelope =
@@ -725,19 +731,28 @@ impl Cli {
                                 "Feedback envelope exceeds byte limit; inspect the retained full report"
                             );
                         }
-                        return Ok((output, code));
-                    }
-                    return Ok((feedback, code));
+                        Ok(output)
+                    })
+                    .await??;
+                    return Ok((output, code));
                 }
                 if self.envelope {
-                    let envelope =
-                        crate::domain::decision_envelope::DecisionEnvelope::from_check(&report)?;
-                    return Ok((decision_json(&envelope)?, code));
+                    let output = tokio::task::spawn_blocking(move || {
+                        let envelope =
+                            crate::domain::decision_envelope::DecisionEnvelope::from_check(
+                                &report,
+                            )?;
+                        decision_json(&envelope)
+                    })
+                    .await??;
+                    return Ok((output, code));
                 }
-                Ok((
-                    super::render::report(&report, self.format, args.severity)?,
-                    code,
-                ))
+                let severity = args.severity;
+                let output = tokio::task::spawn_blocking(move || {
+                    super::render::report(report, self.format, severity)
+                })
+                .await??;
+                Ok((output, code))
             }
         }
     }

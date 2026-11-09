@@ -12,6 +12,7 @@ pub mod constraint_inventory;
 mod constraints;
 mod custom_validation;
 pub mod decision_schema;
+mod dependencies;
 pub mod discovery;
 pub mod exclusions;
 mod initialization;

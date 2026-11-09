@@ -261,37 +261,19 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
             }
         }
     }
-    let nodes: Vec<_> = config
-        .rules
-        .iter()
-        .map(|(id, rule)| (id, &rule.depends_on))
-        .chain(
-            config
-                .checks
-                .iter()
-                .map(|check| (&check.id, &check.depends_on)),
-        )
-        .collect();
-    let mut completed = BTreeSet::new();
-    for _ in 0..=nodes.len() {
-        for (id, dependencies) in &nodes {
-            let mut unique = BTreeSet::new();
-            for dependency in *dependencies {
-                if !ids.contains(dependency.as_str()) {
-                    bail!("Unknown prerequisite: {dependency}");
-                }
-                if !unique.insert(dependency) {
-                    bail!("Repeated prerequisite: {dependency}");
-                }
-            }
-            if dependencies.iter().all(|id| completed.contains(id)) {
-                completed.insert((*id).clone());
-            }
-        }
-    }
-    if completed.len() != nodes.len() {
-        bail!("Check dependency graph contains a cycle");
-    }
+    super::dependencies::Graph::new(
+        config
+            .rules
+            .iter()
+            .map(|(id, rule)| (id.as_str(), rule.depends_on.as_slice()))
+            .chain(
+                config
+                    .checks
+                    .iter()
+                    .map(|check| (check.id.as_str(), check.depends_on.as_slice())),
+            ),
+    )?
+    .order()?;
     if let Some(path) = &config.custom_rules {
         let normalized = crate::paths::relative(Path::new(path))?;
         if normalized == "." || normalized.is_empty() || normalized != path.trim_end_matches('/') {

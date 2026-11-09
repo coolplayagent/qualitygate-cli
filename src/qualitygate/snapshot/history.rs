@@ -1,6 +1,8 @@
 //! Capture immutable commit parents, trees and input-only parsed trailers.
 
-use super::{File, Snapshot, content_digest, digest, read_commit_with_options, run_git};
+use super::{
+    File, Snapshot, content_digest_until, digest, git::run_git_before, read_commit_with_options,
+};
 use anyhow::{Context, Result, bail};
 use std::{
     collections::BTreeMap,
@@ -46,24 +48,37 @@ struct Interned {
     added_bytes: usize,
 }
 
-fn intern(source: BTreeMap<String, File>, mut pool: BlobPool) -> Interned {
-    let content_digest = content_digest(&source);
+fn intern(
+    source: BTreeMap<String, File>,
+    mut pool: BlobPool,
+    deadline: Instant,
+    byte_budget: usize,
+) -> Result<Interned> {
+    let content_digest = content_digest_until(&source, Some(deadline))?;
     let mut added_bytes = 0;
     let mut files = BTreeMap::new();
     for (path, file) in source {
+        remaining(deadline)?;
         let key = (digest(&file.bytes), file.executable);
-        let file = pool.entry(key).or_insert_with(|| {
-            added_bytes += file.bytes.len();
-            Arc::new(file)
-        });
+        let file = match pool.entry(key) {
+            std::collections::btree_map::Entry::Occupied(entry) => entry.into_mut(),
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                added_bytes += file.bytes.len();
+                if added_bytes > byte_budget {
+                    bail!("Git declaration history exceeds 64 MiB of unique contents");
+                }
+                entry.insert(Arc::new(file))
+            }
+        };
         files.insert(path, Arc::clone(file));
     }
-    Interned {
+    remaining(deadline)?;
+    Ok(Interned {
         pool,
         files,
         content_digest,
         added_bytes,
-    }
+    })
 }
 
 pub async fn capture(snapshot: &Snapshot) -> Result<History> {
@@ -87,9 +102,43 @@ pub async fn capture_with_options(
     snapshot: &Snapshot,
     options: &super::CaptureOptions,
 ) -> Result<History> {
-    let started = Instant::now();
+    capture_before(snapshot, options, Instant::now() + Duration::from_secs(60)).await
+}
+
+fn remaining(deadline: Instant) -> Result<Duration> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        bail!("Git declaration history exceeded its 60-second acquisition budget");
+    }
+    Ok(remaining)
+}
+
+async fn capture_before(
+    snapshot: &Snapshot,
+    options: &super::CaptureOptions,
+    deadline: Instant,
+) -> Result<History> {
+    before_deadline(deadline, capture_inner(snapshot, options, deadline)).await
+}
+
+async fn before_deadline<T>(
+    deadline: Instant,
+    future: impl std::future::Future<Output = Result<T>>,
+) -> Result<T> {
+    let result = tokio::time::timeout(remaining(deadline)?, future)
+        .await
+        .context("Git declaration history exceeded its 60-second acquisition budget")?;
+    remaining(deadline)?;
+    result
+}
+
+async fn capture_inner(
+    snapshot: &Snapshot,
+    options: &super::CaptureOptions,
+    deadline: Instant,
+) -> Result<History> {
     let root = &snapshot.root;
-    let listing = run_git(
+    let listing = run_git_before(
         root,
         &[
             "rev-list",
@@ -101,6 +150,7 @@ pub async fn capture_with_options(
             "--",
         ],
         None,
+        deadline,
     )
     .await?;
     let oids: Vec<_> = std::str::from_utf8(&listing)?.lines().collect();
@@ -112,20 +162,13 @@ pub async fn capture_with_options(
     let mut entries = 0;
     let mut commits = Vec::new();
     for oid in oids {
-        if started.elapsed() > Duration::from_secs(60) {
-            bail!("Git declaration history exceeded its 60-second acquisition budget");
-        }
-        let raw = run_git(root, &["cat-file", "commit", oid], None).await?;
-        let (headers, message) = std::str::from_utf8(&raw)?
-            .split_once("\n\n")
-            .context("Malformed Git commit object")?;
-        let parents = headers
-            .lines()
-            .filter_map(|line| line.strip_prefix("parent "))
-            .map(str::to_owned)
-            .collect();
+        remaining(deadline)?;
+        let raw = run_git_before(root, &["cat-file", "commit", oid], None, deadline).await?;
+        charge(&mut bytes, raw.len())?;
+        let (parents, message, input) =
+            tokio::task::spawn_blocking(move || decode_commit(raw, deadline)).await??;
         // --parse never adds configured trailers or invokes configured producers.
-        let parsed = run_git(
+        let parsed = run_git_before(
             root,
             &[
                 "-c",
@@ -134,38 +177,90 @@ pub async fn capture_with_options(
                 "--parse",
                 "--no-divider",
             ],
-            Some(message.as_bytes().to_vec()),
+            Some(input),
+            deadline,
         )
         .await?;
-        let mut trailers: BTreeMap<String, Vec<String>> = BTreeMap::new();
-        for line in std::str::from_utf8(&parsed)?.lines() {
-            let (name, value) = line
-                .split_once(':')
-                .context("Malformed parsed Git trailer")?;
-            trailers
-                .entry(name.trim().to_ascii_lowercase())
-                .or_default()
-                .push(value.trim().into());
-        }
-        let source = read_commit_with_options(root, oid, options).await?;
+        charge(&mut bytes, parsed.len())?;
+        let trailers =
+            tokio::task::spawn_blocking(move || decode_trailers(&parsed, deadline)).await??;
+        let mut bounded = options.clone();
+        bounded.timeout = bounded.timeout.min(remaining(deadline)?);
+        let source = read_commit_with_options(root, oid, &bounded).await?;
+        remaining(deadline)?;
         entries += source.len();
-        bytes += raw.len() + parsed.len();
-        let interned = tokio::task::spawn_blocking(move || intern(source, blobs)).await?;
+        if entries > MAX_TREE_ENTRIES {
+            bail!("Git declaration history exceeds 200000 tree entries");
+        }
+        let interned = tokio::task::spawn_blocking(move || {
+            intern(source, blobs, deadline, MAX_HISTORY_BYTES - bytes)
+        })
+        .await??;
         blobs = interned.pool;
         bytes += interned.added_bytes;
-        if bytes > MAX_HISTORY_BYTES || entries > MAX_TREE_ENTRIES {
-            bail!(
-                "Git declaration history exceeds 64 MiB of unique contents or 200000 tree entries"
-            );
-        }
+        remaining(deadline)?;
         commits.push(Commit {
             oid: oid.into(),
             parents,
             files: interned.files,
             content_digest: interned.content_digest,
-            message: message.into(),
+            message,
             trailers,
         });
     }
+    remaining(deadline)?;
     Ok(History { commits })
 }
+
+fn charge(bytes: &mut usize, added: usize) -> Result<()> {
+    *bytes = bytes.saturating_add(added);
+    if *bytes > MAX_HISTORY_BYTES {
+        bail!("Git declaration history exceeds 64 MiB of unique contents");
+    }
+    Ok(())
+}
+
+type CommitInput = (Vec<String>, String, Vec<u8>);
+
+fn decode_commit(mut raw: Vec<u8>, deadline: Instant) -> Result<CommitInput> {
+    remaining(deadline)?;
+    let (headers, _) = std::str::from_utf8(&raw)?
+        .split_once("\n\n")
+        .context("Malformed Git commit object")?;
+    let message_start = headers.len() + 2;
+    let mut parents = Vec::new();
+    for line in headers.lines() {
+        remaining(deadline)?;
+        if let Some(parent) = line.strip_prefix("parent ") {
+            parents.push(parent.to_owned());
+        }
+    }
+    // Reuse the raw allocation for the retained message. Only the subprocess
+    // stdin needs a second copy, and that copy is also made off the async worker.
+    raw.drain(..message_start);
+    let message = String::from_utf8(raw)?;
+    let input = message.as_bytes().to_vec();
+    remaining(deadline)?;
+    Ok((parents, message, input))
+}
+
+fn decode_trailers(parsed: &[u8], deadline: Instant) -> Result<BTreeMap<String, Vec<String>>> {
+    remaining(deadline)?;
+    let mut trailers: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for line in std::str::from_utf8(parsed)?.lines() {
+        remaining(deadline)?;
+        let (name, value) = line
+            .split_once(':')
+            .context("Malformed parsed Git trailer")?;
+        trailers
+            .entry(name.trim().to_ascii_lowercase())
+            .or_default()
+            .push(value.trim().into());
+    }
+    remaining(deadline)?;
+    Ok(trailers)
+}
+
+#[cfg(test)]
+#[path = "history_tests.rs"]
+mod tests;

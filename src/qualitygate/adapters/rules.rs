@@ -1,5 +1,9 @@
 //! Deterministic repository rules over immutable snapshots.
 
+#[cfg(test)]
+#[path = "builtin_limits_tests.rs"]
+mod builtin_limits_tests;
+
 use crate::{
     config::RuleSetting,
     domain::*,
@@ -85,7 +89,11 @@ pub fn evaluate_with_context(
     facts: &super::facts::RuleFacts<'_>,
 ) -> CheckResult {
     let (projects, provenance) = (facts.projects, facts.provenance);
-    let mut result = CheckResult::pending(id, setting.required, setting.severity);
+    let mut result = super::diagnostic_budget::BuiltinResult::new(CheckResult::pending(
+        id,
+        setting.required,
+        setting.severity,
+    ));
     let evaluation = (|| -> Result<()> {
         if let Some(facts) = provenance {
             facts.ensure_binding(snapshot, id)?;
@@ -100,10 +108,7 @@ pub fn evaluate_with_context(
                 .insert("git_trailers".into(), git.evidence().clone());
         }
         match implementation {
-            "line-ending" => {
-                line_endings(&mut result, snapshot);
-                Ok(())
-            }
+            "line-ending" => line_endings(&mut result, snapshot),
             "commit-message" => commits(&mut result, setting, snapshot),
             "test-annotation-dependency" => super::builtin_conventions::annotation_dependency(
                 &mut result,
@@ -140,17 +145,22 @@ pub fn evaluate_with_context(
             ),
             _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),
         }
-    })();
+    })()
+    .and_then(|()| result.check_deadline());
     match evaluation {
         Ok(()) if result.verdict != Some(Verdict::Skipped) => result.complete(),
         Ok(()) => {}
         Err(error) => result.block(ExecutionStatus::Blocked, error.to_string()),
     }
-    result
+    result.finish()
 }
 
-fn line_endings(result: &mut CheckResult, snapshot: &Snapshot) {
+fn line_endings(
+    result: &mut super::diagnostic_budget::BuiltinResult,
+    snapshot: &Snapshot,
+) -> Result<()> {
     for (path, change) in &snapshot.changes {
+        result.check_deadline()?;
         if !snapshot.includes(path) {
             continue;
         }
@@ -169,7 +179,7 @@ fn line_endings(result: &mut CheckResult, snapshot: &Snapshot) {
         let actual = eol(&file.bytes);
         result.matched_entities += 1;
         if actual != "none" && expected != "none" && actual != expected {
-            result.diagnostics.push(diagnostic(
+            result.push(diagnostic(
                 &result.id,
                 Some(path),
                 None,
@@ -177,9 +187,10 @@ fn line_endings(result: &mut CheckResult, snapshot: &Snapshot) {
                 serde_json::json!({"expected": expected, "actual": actual}),
                 "Restore the original line endings; use LF for a new file",
                 "line-ending",
-            ));
+            ))?;
         }
     }
+    Ok(())
 }
 
 fn eol(bytes: &[u8]) -> &'static str {
@@ -202,7 +213,11 @@ fn eol(bytes: &[u8]) -> &'static str {
     }
 }
 
-fn commits(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapshot) -> Result<()> {
+fn commits(
+    result: &mut super::diagnostic_budget::BuiltinResult,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+) -> Result<()> {
     let pattern = setting
         .parameters
         .get("pattern")
@@ -214,10 +229,11 @@ fn commits(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapshot)
         return Ok(());
     }
     for (oid, message) in &snapshot.commits {
+        result.check_deadline()?;
         result.matched_entities += 1;
         let subject = message.lines().next().unwrap_or_default();
         if !pattern.is_match(subject) {
-            result.diagnostics.push(diagnostic(
+            result.push(diagnostic(
                 &result.id,
                 None,
                 None,
@@ -225,13 +241,17 @@ fn commits(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapshot)
                 serde_json::json!({"commit":oid,"subject":subject,"pattern":pattern.as_str()}),
                 "Update the commit subject to the team convention",
                 oid,
-            ));
+            ))?;
         }
     }
     Ok(())
 }
 
-fn diff_size(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapshot) -> Result<()> {
+fn diff_size(
+    result: &mut super::diagnostic_budget::BuiltinResult,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+) -> Result<()> {
     let maximum = setting
         .parameters
         .get("max_added_lines")
@@ -253,7 +273,7 @@ fn diff_size(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapsho
         .sum();
     result.matched_entities = lines;
     if lines as u64 > maximum {
-        result.diagnostics.push(diagnostic(
+        result.push(diagnostic(
             &result.id,
             None,
             None,
@@ -261,7 +281,7 @@ fn diff_size(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapsho
             serde_json::json!({"added_lines":lines,"limit":maximum}),
             "Split independently reviewable changes when practical",
             "added-lines",
-        ));
+        ))?;
     }
     Ok(())
 }
@@ -270,15 +290,16 @@ fn diff_size(result: &mut CheckResult, setting: &RuleSetting, snapshot: &Snapsho
 /// review signal: a matching API or marker is evidence for inspection, not a
 /// proof of exploitability, incomplete work, or policy noncompliance.
 fn source_patterns(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
 ) -> Result<()> {
-    let deadline = super::parallel::deadline();
+    let deadline = result.deadline();
     let patterns = compiled_patterns(setting, "prohibited_patterns")?;
     let paths = path_filter(setting)?;
     let languages = string_parameter(setting, "languages")?;
     for (path, change) in &snapshot.changes {
+        result.check_deadline()?;
         if !snapshot.includes(path) || !paths.as_ref().is_none_or(|filter| filter.is_match(path)) {
             continue;
         }
@@ -324,10 +345,7 @@ fn source_patterns(
             }
             for (pattern, regex) in &selected {
                 if regex.is_match(line) {
-                    if result.diagnostics.len() >= 10_000 {
-                        bail!("Source pattern diagnostics exceed 10000");
-                    }
-                    result.diagnostics.push(diagnostic(
+                    result.push(diagnostic(
                         &result.id,
                         Some(path),
                         Some(Range {
@@ -338,7 +356,7 @@ fn source_patterns(
                         serde_json::json!({"language": language, "pattern": pattern}),
                         "Review the changed API or marker against the repository's security and quality policy",
                         &format!("{path}:{line_number}:{pattern}"),
-                    ));
+                    ))?;
                 }
             }
         }

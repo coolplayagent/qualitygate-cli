@@ -177,3 +177,59 @@ fn syntax_acquisition_propagates_the_deadline_before_parsing() {
     .unwrap_err();
     assert!(error.to_string().contains("parsed completely"));
 }
+
+#[test]
+fn every_rule_version_bounds_repeated_marker_declaration_bytes() {
+    let mut snapshot = snapshot();
+    let source = format!(
+        "// @generated {}\n{}",
+        "x".repeat(32768),
+        (0..1100)
+            .map(|index| format!("test('case_{index}', () => {{}}); "))
+            .collect::<String>()
+    );
+    // Less than 64 KiB of source previously retained over 34 MiB of marker
+    // text, even though every schema claimed the acquisition was complete.
+    assert!(source.len() < 64 * 1024);
+    const { assert!(1100 * 32768 > MAX_FACT_BYTES) };
+    snapshot.files = [(
+        "many.test.ts".into(),
+        File {
+            bytes: source.into_bytes(),
+            executable: false,
+        },
+    )]
+    .into();
+    snapshot.changes = compare_files(&snapshot.base_files, &snapshot.files);
+    let mut rule = rule("test_method");
+    rule.binding = Some(
+        serde_json::from_value(json!({"marker":{"type":"comment","name":"@generated"}})).unwrap(),
+    );
+    rule.requires_capabilities.push("comments".into());
+    rule.then.require_marker = true;
+    for version in [1, 2, 3] {
+        rule.schema_version = version;
+        let result = crate::adapters::custom_rules::evaluate(
+            &rule,
+            &crate::config::RuleSetting::default(),
+            &snapshot,
+        );
+        assert_eq!(
+            result.execution.status,
+            crate::domain::ExecutionStatus::Blocked
+        );
+        assert!(result.verdict.is_none());
+        assert!(result.diagnostics.is_empty());
+        assert!(result.execution.reason.unwrap().contains("32 MiB facts"));
+    }
+}
+
+#[test]
+fn selectors_without_an_external_budget_still_reject_excess_subjects() {
+    let mut snapshot = snapshot();
+    snapshot.commits = vec![("oid".into(), "Subject".into()); MAX_ENTITIES + 1];
+    let error = collect(&rule("commit"), &snapshot, &facts(), false, None)
+        .err()
+        .unwrap();
+    assert!(error.to_string().contains("50000 entities"));
+}

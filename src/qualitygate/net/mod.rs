@@ -82,12 +82,17 @@ impl Http {
             }
             bytes.extend_from_slice(&chunk);
         }
-        let value =
-            serde_json::from_slice(&bytes).context("Provider response is not valid JSON")?;
-        Ok(JsonResponse {
-            value,
-            digest: format!("sha256:{:x}", Sha256::digest(&bytes)),
+        // Parsing and hashing are CPU work even after bounded asynchronous I/O.
+        // Keep a full-size provider response off the orchestration worker.
+        tokio::task::spawn_blocking(move || {
+            let value =
+                serde_json::from_slice(&bytes).context("Provider response is not valid JSON")?;
+            Ok(JsonResponse {
+                value,
+                digest: format!("sha256:{:x}", Sha256::digest(&bytes)),
+            })
         })
+        .await?
     }
 }
 

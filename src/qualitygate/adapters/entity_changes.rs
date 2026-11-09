@@ -21,24 +21,7 @@ pub(super) struct FileView {
     pub tests: Vec<TestChange>,
 }
 
-pub(super) fn collect(
-    snapshot: &Snapshot,
-    paths: &[String],
-    languages: &[String],
-    cache: Option<&syntax::Cache>,
-) -> Result<Vec<FileView>> {
-    analyze(
-        (&snapshot.base_files, &snapshot.files),
-        &snapshot.changes,
-        paths,
-        languages,
-        |path| snapshot.includes(path),
-        super::parallel::deadline(),
-        cache,
-    )
-}
-
-/// A v3 source inherits its acquisition deadline; named selectors bypass feedback filtering.
+/// Every source inherits its acquisition deadline; named selectors bypass feedback filtering.
 pub(super) fn collect_before(
     snapshot: &Snapshot,
     paths: &[String],

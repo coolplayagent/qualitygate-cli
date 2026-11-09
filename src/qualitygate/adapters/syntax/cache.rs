@@ -97,6 +97,11 @@ fn retain(
 fn retained_bytes(view: &Structure) -> usize {
     let mut bytes = size_of::<Structure>() + view.language.capacity();
     bytes = bytes.saturating_add(
+        view.nonblank_lines
+            .capacity()
+            .saturating_mul(size_of::<usize>()),
+    );
+    bytes = bytes.saturating_add(
         view.tests
             .capacity()
             .saturating_mul(size_of::<super::Entity>()),

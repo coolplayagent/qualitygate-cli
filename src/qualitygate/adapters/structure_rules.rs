@@ -4,7 +4,7 @@ use super::{
     rules::diagnostic,
     syntax::{Entity, Structure},
 };
-use crate::{config::RuleSetting, domain::*, snapshot::Snapshot};
+use crate::{config::RuleSetting, snapshot::Snapshot};
 use anyhow::{Context, Result, bail};
 use regex::Regex;
 use std::collections::BTreeMap;
@@ -18,12 +18,12 @@ struct Change {
 
 pub(super) fn evaluate_with_provenance(
     id: &str,
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
     facts: &super::facts::RuleFacts<'_>,
 ) -> Result<()> {
-    let changes = collect(setting, snapshot, facts)?;
+    let changes = collect(setting, snapshot, facts, result.deadline())?;
     match id {
         "test-naming" | "test-naming-strict" => naming(result, setting, &changes),
         "parameterized-tests" => parameterized(result, setting, &changes),
@@ -38,6 +38,7 @@ fn collect(
     setting: &RuleSetting,
     snapshot: &Snapshot,
     facts: &super::facts::RuleFacts<'_>,
+    deadline: std::time::Instant,
 ) -> Result<Vec<Change>> {
     let git = facts.git_trailers;
     let strings = |key: &str| -> Result<Vec<String>> {
@@ -55,15 +56,18 @@ fn collect(
         .transpose()?;
     let mut previous_views = BTreeMap::new();
     let mut result = Vec::new();
-    for file in super::entity_changes::collect(
+    for file in super::entity_changes::collect_before(
         snapshot,
         &strings("paths")?,
         &strings("languages")?,
+        false,
+        deadline,
         facts.syntax,
     )? {
         let mut removed_declarations = Vec::new();
         if let Some(marker) = &marker {
             for test in &file.tests {
+                super::parallel::check_deadline(deadline)?;
                 if let (Some(previous), Some(path)) = (&test.previous, &test.previous_path) {
                     if !previous_views.contains_key(path) {
                         previous_views.insert(
@@ -72,7 +76,7 @@ fn collect(
                                 facts.syntax,
                                 path,
                                 &snapshot.base_files[path].bytes,
-                                super::parallel::deadline(),
+                                deadline,
                             )?
                             .context("Previous syntax is unavailable")?,
                         );
@@ -82,7 +86,6 @@ fn collect(
                         previous,
                         &previous_views[path],
                         path,
-                        snapshot,
                         true,
                         git,
                     )?;
@@ -94,7 +97,6 @@ fn collect(
                                     &test.entity,
                                     &file.view,
                                     &file.path,
-                                    snapshot,
                                     false,
                                     git,
                                 )?)
@@ -125,8 +127,14 @@ fn collect(
 #[path = "structure_rules_tests.rs"]
 mod tests;
 
-fn naming(result: &mut CheckResult, setting: &RuleSetting, changes: &[Change]) -> Result<()> {
+fn naming(
+    result: &mut super::diagnostic_budget::BuiltinResult,
+    setting: &RuleSetting,
+    changes: &[Change],
+) -> Result<()> {
+    let mut compiled = BTreeMap::new();
     for change in changes {
+        result.check_deadline()?;
         let pattern = setting
             .parameters
             .get("patterns")
@@ -145,11 +153,15 @@ fn naming(result: &mut CheckResult, setting: &RuleSetting, changes: &[Change]) -
                 "rust" => r"^[a-z][a-z0-9_]*$",
                 _ => r"^\S.+$",
             });
-        let regex = Regex::new(pattern)?;
+        if !compiled.contains_key(pattern) {
+            compiled.insert(pattern, Regex::new(pattern)?);
+        }
+        let regex = &compiled[pattern];
         for test in &change.added {
+            result.check_deadline()?;
             result.matched_entities += 1;
             if !regex.is_match(&test.name) {
-                result.diagnostics.push(diagnostic(&result.id, Some(&change.path), Some(test.range.clone()), format!("Test '{}' does not match {pattern}", test.name), serde_json::json!({"symbol":test.symbol,"language":change.view.language,"pattern":pattern}), "Rename the test while preserving the framework's discovery convention", &test.symbol));
+                result.push(diagnostic(&result.id, Some(&change.path), Some(test.range.clone()), format!("Test '{}' does not match {pattern}", test.name), serde_json::json!({"symbol":test.symbol,"language":change.view.language,"pattern":pattern}), "Rename the test while preserving the framework's discovery convention", &test.symbol))?;
             }
         }
     }
@@ -160,13 +172,14 @@ fn naming(result: &mut CheckResult, setting: &RuleSetting, changes: &[Change]) -
 /// bounded source fact; it is not a replacement for resolved dependency or
 /// runtime data-flow evidence.
 fn imports(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
 ) -> Result<()> {
     let patterns = super::rules::compiled_patterns(setting, "forbidden_imports")?;
     for change in changes {
+        result.check_deadline()?;
         let mut active = std::collections::BTreeSet::new();
         let selected: Vec<_> = patterns
             .get("all")
@@ -184,16 +197,18 @@ fn imports(
             .context("Changed syntax view is missing snapshot change lines")?
             .added_lines;
         for import in &change.view.imports {
-            if !added_lines
-                .iter()
-                .any(|line| (import.range.start_line..=import.range.end_line).contains(line))
+            result.check_deadline()?;
+            if added_lines
+                .range(import.range.start_line..=import.range.end_line)
+                .next()
+                .is_none()
             {
                 continue;
             }
             result.matched_entities += 1;
             for (pattern, regex) in &selected {
                 if regex.is_match(&import.text) {
-                    result.diagnostics.push(diagnostic(
+                    result.push(diagnostic(
                         &result.id,
                         Some(&change.path),
                         Some(import.range.clone()),
@@ -204,7 +219,7 @@ fn imports(
                             "{}:{}-{}:{pattern}",
                             change.path, import.range.start_line, import.range.end_line
                         ),
-                    ));
+                    ))?;
                 }
             }
         }
@@ -213,7 +228,7 @@ fn imports(
 }
 
 fn parameterized(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     changes: &[Change],
 ) -> Result<()> {
@@ -227,8 +242,10 @@ fn parameterized(
         bail!("minimum_similar must be at least 2");
     }
     for change in changes {
+        result.check_deadline()?;
         let mut groups: BTreeMap<_, Vec<&Entity>> = BTreeMap::new();
         for test in &change.added {
+            result.check_deadline()?;
             if test.annotations.keys().any(|name| {
                 [
                     "ParameterizedTest",
@@ -254,14 +271,14 @@ fn parameterized(
             .values()
             .filter(|tests| tests.len() as u64 >= minimum)
         {
-            result.diagnostics.push(diagnostic(&result.id, Some(&change.path), Some(tests[0].range.clone()), format!("{} new tests have the same syntax structure; consider parameterization", tests.len()), serde_json::json!({"tests":tests.iter().map(|test| &test.symbol).collect::<Vec<_>>(),"heuristic":true}), "Review whether these cases can share a parameterized test", &tests[0].shape_digest));
+            result.push(diagnostic(&result.id, Some(&change.path), Some(tests[0].range.clone()), format!("{} new tests have the same syntax structure; consider parameterization", tests.len()), serde_json::json!({"tests":tests.iter().map(|test| &test.symbol).collect::<Vec<_>>(),"heuristic":true}), "Review whether these cases can share a parameterized test", &tests[0].shape_digest))?;
         }
     }
     Ok(())
 }
 
 fn comments(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
@@ -284,11 +301,14 @@ fn comments(
         .map(|value| Regex::new(value.as_str().unwrap_or("(?!)")))
         .collect::<std::result::Result<Vec<_>, _>>()?;
     for change in changes {
+        result.check_deadline()?;
         for comment in &change.view.comments {
-            if !snapshot.changes[&change.path]
+            result.check_deadline()?;
+            if snapshot.changes[&change.path]
                 .added_lines
-                .iter()
-                .any(|line| (comment.range.start_line..=comment.range.end_line).contains(line))
+                .range(comment.range.start_line..=comment.range.end_line)
+                .next()
+                .is_none()
             {
                 continue;
             }
@@ -317,7 +337,7 @@ fn comments(
                 _ => false,
             };
             if wrong {
-                result.diagnostics.push(diagnostic(
+                result.push(diagnostic(
                     &result.id,
                     Some(&change.path),
                     Some(comment.range.clone()),
@@ -325,7 +345,7 @@ fn comments(
                     serde_json::json!({"comment":comment.text,"heuristic":true}),
                     "Use the team's comment language or a reviewed terminology exemption",
                     &comment.text,
-                ));
+                ))?;
             }
         }
     }
@@ -333,7 +353,7 @@ fn comments(
 }
 
 fn markers(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
@@ -358,18 +378,19 @@ fn markers(
     }
     let name = &marker.name;
     for change in changes {
+        result.check_deadline()?;
         for (test, retained) in change
             .added
             .iter()
             .map(|test| (test, false))
             .chain(change.removed_declarations.iter().map(|test| (test, true)))
         {
+            result.check_deadline()?;
             let declaration = super::markers::bound_declaration(
                 &marker,
                 test,
                 &change.view,
                 &change.path,
-                snapshot,
                 false,
                 facts.git_trailers,
             )?;
@@ -395,7 +416,7 @@ fn markers(
                 })
                 .collect();
             if declaration.is_none() || !missing.is_empty() {
-                result.diagnostics.push(diagnostic(&result.id, Some(&change.path), if snapshot.delivery() && retained { None } else { Some(test.range.clone()) }, format!("Test {} lacks the required {name} source declaration or fields", test.name), serde_json::json!({"symbol":test.symbol,"marker":name,"missing_fields":missing,"declaration_only":true}), "Record the actual source using the configured binding and required fields", &test.symbol));
+                result.push(diagnostic(&result.id, Some(&change.path), if snapshot.delivery() && retained { None } else { Some(test.range.clone()) }, format!("Test {} lacks the required {name} source declaration or fields", test.name), serde_json::json!({"symbol":test.symbol,"marker":name,"missing_fields":missing,"declaration_only":true}), "Record the actual source using the configured binding and required fields", &test.symbol))?;
             }
         }
     }

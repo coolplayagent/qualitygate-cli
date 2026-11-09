@@ -19,7 +19,7 @@ use std::{
 };
 
 pub(super) fn used_undeclared(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
     facts: &[ProjectFacts],
@@ -59,11 +59,11 @@ pub(super) fn used_undeclared(
                 bail!("Dependency usage rule exceeded 30 seconds");
             }
             let coordinate = format!("{}:{}", dependency.group, dependency.artifact);
-            result.diagnostics.push(diagnostic(&result.id, Some(&project.manifest), None,
+            result.push(diagnostic(&result.id, Some(&project.manifest), None,
                 format!("Compiled code uses an undeclared dependency: {coordinate} ({})", dependency.scope),
                 serde_json::json!({"dependency":dependency,"analyzer":usage.analyzer,"producer":project.producer_check,"snapshot_digest":project.snapshot_digest}),
                 "Declare the used artifact directly in this module with the appropriate scope, or remove its use; rebuild and rerun the analysis",
-                &format!("{}:{}:{}:{}",coordinate,dependency.artifact_type,dependency.classifier,dependency.scope)));
+                &format!("{}:{}:{}:{}",coordinate,dependency.artifact_type,dependency.classifier,dependency.scope)))?;
         }
     }
     result
@@ -74,7 +74,7 @@ pub(super) fn used_undeclared(
 }
 
 pub(super) fn module_boundary(
-    result: &mut CheckResult,
+    result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
     facts: &[ProjectFacts],
@@ -171,13 +171,13 @@ pub(super) fn module_boundary(
         for ((to, artifact_type, classifier, scope), mut directions) in edges {
             directions.sort_unstable();
             directions.dedup();
-            result.diagnostics.push(diagnostic(&result.id, Some(&project.manifest), None,
+            result.push(diagnostic(&result.id, Some(&project.manifest), None,
                 format!("Forbidden module dependency: {from} -> {to} ({scope})"),
                 serde_json::json!({"from":from, "to":to, "scope":scope, "type":artifact_type, "classifier":classifier,
                     "dependency_kind":policy.dependency_kind, "matching_directions":directions, "producer":project.producer_check,
                     "snapshot_digest":project.snapshot_digest}),
                 "Move the dependency or shared interface to the permitted module, repair affected callers, then rebuild and recheck",
-                &format!("{from}:{to}:{artifact_type}:{classifier}:{scope}")));
+                &format!("{from}:{to}:{artifact_type}:{classifier}:{scope}")))?;
         }
     }
     Ok(())

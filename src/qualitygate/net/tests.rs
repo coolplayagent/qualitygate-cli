@@ -161,6 +161,29 @@ async fn chunked_response_budgets_apply_without_a_content_length() {
     assert!(error.to_string().contains("exceeds"));
 }
 
+#[tokio::test(flavor = "current_thread")]
+async fn maximum_provider_body_preserves_decoded_values_and_exact_wire_identity() {
+    // Whitespace and an escape make the wire identity distinct from reserialized
+    // JSON. This exact-boundary response must remain valid after worker dispatch.
+    let prefix = " {\"payload\":\"\\n";
+    let suffix = "\"} ";
+    let payload = "x".repeat(MAX_RESPONSE_BYTES - prefix.len() - suffix.len());
+    let body = format!("{prefix}{payload}{suffix}");
+    assert_eq!(body.len(), MAX_RESPONSE_BYTES);
+    let expected = format!("sha256:{:x}", Sha256::digest(body.as_bytes()));
+    let server = Server::new(vec![format!(
+        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+        body.len()
+    )]);
+    let response = Http::new()
+        .unwrap()
+        .get(Url::parse(&server.base).unwrap(), None)
+        .await
+        .unwrap();
+    assert_eq!(response.value["payload"], format!("\n{payload}"));
+    assert_eq!(response.digest, expected);
+}
+
 #[tokio::test]
 async fn github_and_gitlab_metadata_validate_identities_and_use_current_target_heads() {
     let source = "a".repeat(40);

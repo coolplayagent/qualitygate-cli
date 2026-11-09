@@ -56,6 +56,7 @@ fn collect(
     let aggregate = rule.then.min_count.is_some()
         || rule.then.max_count.is_some()
         || rule.then.max_total_words.is_some();
+    let scope = snapshot.scope_index();
     for (path, file) in files {
         deadline_check(deadline)?;
         if !(if independent {
@@ -63,7 +64,7 @@ fn collect(
         } else if aggregate {
             snapshot.feedback_includes(path)
         } else {
-            snapshot.includes(path)
+            scope.includes(path)
         }) || (!filters.is_empty() && !filters.is_match(path))
             || (!rule.language.is_empty()
                 && syntax::language(path)

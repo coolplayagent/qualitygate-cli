@@ -1,9 +1,42 @@
 use super::limits::Acquisition;
 use super::{File, MAX_FILES};
 use anyhow::{Context, Result, bail};
-use std::{collections::BTreeMap, path::Path, time::Duration};
+use std::{
+    collections::BTreeMap,
+    path::Path,
+    time::{Duration, Instant},
+};
 
 pub async fn run_git(root: &Path, args: &[&str], input: Option<Vec<u8>>) -> Result<Vec<u8>> {
+    run_git_timeout(root, args, input, Duration::from_secs(30)).await
+}
+
+pub(super) async fn run_git_before(
+    root: &Path,
+    args: &[&str],
+    input: Option<Vec<u8>>,
+    deadline: Instant,
+) -> Result<Vec<u8>> {
+    super::changes::check_deadline(Some(deadline))?;
+    let output = run_git_timeout(
+        root,
+        args,
+        input,
+        deadline
+            .saturating_duration_since(Instant::now())
+            .min(Duration::from_secs(30)),
+    )
+    .await?;
+    super::changes::check_deadline(Some(deadline))?;
+    Ok(output)
+}
+
+async fn run_git_timeout(
+    root: &Path,
+    args: &[&str],
+    input: Option<Vec<u8>>,
+    timeout: Duration,
+) -> Result<Vec<u8>> {
     let argv: Vec<String> = [
         "git",
         "--no-replace-objects",
@@ -16,7 +49,7 @@ pub async fn run_git(root: &Path, args: &[&str], input: Option<Vec<u8>>) -> Resu
     .chain(args)
     .map(|arg| (*arg).into())
     .collect();
-    let output = crate::runner::capture(&argv, root, input, Duration::from_secs(30)).await?;
+    let output = crate::runner::capture(&argv, root, input, timeout).await?;
     if output.timed_out {
         bail!("Git operation timed out: {}", args.first().unwrap_or(&""));
     }
@@ -104,6 +137,7 @@ fn entries(listing: &[u8], index: bool, acquisition: &Acquisition) -> Result<Vec
         .split(|byte| *byte == 0)
         .filter(|entry| !entry.is_empty())
     {
+        super::changes::check_deadline(Some(acquisition.deadline))?;
         visited += 1;
         if acquisition.options.include.is_none() && visited > MAX_FILES {
             bail!("Snapshot exceeds {MAX_FILES} files");
@@ -138,6 +172,7 @@ fn entries(listing: &[u8], index: bool, acquisition: &Acquisition) -> Result<Vec
     if entries.len() > MAX_FILES {
         bail!("Snapshot exceeds {MAX_FILES} files");
     }
+    super::changes::check_deadline(Some(acquisition.deadline))?;
     Ok(entries)
 }
 
@@ -175,10 +210,13 @@ fn batches(
     sizes: &[u8],
     budget: usize,
     file_budget: usize,
+    deadline: Option<Instant>,
 ) -> Result<Vec<Vec<Entry>>> {
+    super::changes::check_deadline(deadline)?;
     let mut cursor = sizes;
     let mut total = 0;
     for entry in &mut entries {
+        super::changes::check_deadline(deadline)?;
         let (rest, size) = header(cursor, entry)?;
         if size > file_budget {
             bail!(crate::domain::snapshot_budget::file_limit_message(
@@ -204,6 +242,7 @@ fn batches(
     let mut batch = Vec::new();
     let mut bytes = 0;
     for entry in entries {
+        super::changes::check_deadline(deadline)?;
         if !batch.is_empty() && (batch.len() == BATCH_FILES || bytes + entry.size > BATCH_BYTES) {
             batches.push(std::mem::take(&mut batch));
             bytes = 0;
@@ -214,13 +253,20 @@ fn batches(
     if !batch.is_empty() {
         batches.push(batch);
     }
+    super::changes::check_deadline(deadline)?;
     Ok(batches)
 }
 
-fn blobs(entries: Vec<Entry>, output: &[u8]) -> Result<BTreeMap<String, File>> {
+fn blobs(
+    entries: Vec<Entry>,
+    output: &[u8],
+    deadline: Option<Instant>,
+) -> Result<BTreeMap<String, File>> {
+    super::changes::check_deadline(deadline)?;
     let mut cursor = output;
     let mut files = BTreeMap::new();
     for entry in entries {
+        super::changes::check_deadline(deadline)?;
         let (rest, size) = header(cursor, &entry)?;
         if size != entry.size || rest.len() <= size || rest[size] != b'\n' {
             bail!("Truncated or changed Git blob: {}", entry.path);
@@ -237,6 +283,7 @@ fn blobs(entries: Vec<Entry>, output: &[u8]) -> Result<BTreeMap<String, File>> {
     if !cursor.is_empty() {
         bail!("Unexpected trailing Git object data");
     }
+    super::changes::check_deadline(deadline)?;
     Ok(files)
 }
 
@@ -258,9 +305,11 @@ async fn read_entries(
     };
     let budget = acquisition.options.max_bytes;
     let file_budget = acquisition.options.max_file_bytes;
-    let batches =
-        tokio::task::spawn_blocking(move || batches(entries, &sizes, budget, file_budget))
-            .await??;
+    let deadline = Some(acquisition.deadline);
+    let batches = tokio::task::spawn_blocking(move || {
+        batches(entries, &sizes, budget, file_budget, deadline)
+    })
+    .await??;
     let mut pending = batches.into_iter();
     let mut tasks = tokio::task::JoinSet::new();
     let mut files = BTreeMap::new();
@@ -273,7 +322,7 @@ async fn read_entries(
                 let _permit = permits.acquire_owned().await?;
                 let output =
                     run_git(&root, &["cat-file", "--batch"], Some(requests(&batch))).await?;
-                tokio::task::spawn_blocking(move || blobs(batch, &output)).await?
+                tokio::task::spawn_blocking(move || blobs(batch, &output, deadline)).await?
             });
         }
         let Some(result) = tasks.join_next().await else {
@@ -282,21 +331,6 @@ async fn read_entries(
         files.extend(result??);
     }
     Ok(files)
-}
-
-pub(super) async fn messages(root: &Path, base: &str, head: &str) -> Result<Vec<(String, String)>> {
-    let range = format!("{base}..{head}");
-    let listing = run_git(root, &["rev-list", "--max-count=1001", &range], None).await?;
-    let listing = std::str::from_utf8(&listing)?;
-    if listing.lines().count() > 1000 {
-        bail!("Commit range exceeds 1000 commits");
-    }
-    let mut messages = Vec::new();
-    for oid in listing.lines() {
-        let message = run_git(root, &["show", "-s", "--format=%B", oid], None).await?;
-        messages.push((oid.into(), String::from_utf8(message)?));
-    }
-    Ok(messages)
 }
 
 #[cfg(test)]
