@@ -41,6 +41,13 @@ resolution still require an external analyzer. Syntax errors and resource-limit
 exhaustion produce incomplete execution. Older regex-based rules retain their
 explicit textual limitations.
 
+Internal Python V3.4, Go V3.4, Shell V2.2 and TypeScript/JavaScript V1.0 rules
+cite the corresponding internal language specifications through the
+`internal-python-coding`, `internal-go-coding`, `internal-shell-coding` and
+`internal-typescript-coding` sources. Only same-line lexical clauses are
+codified; style, type-system, resource and data-flow clauses remain review
+guidance.
+
 ## Project rule protocol
 
 Version 1 YAML packages declare identity, applicability, source review,

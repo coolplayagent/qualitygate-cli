@@ -1,0 +1,17 @@
+id: shell-eval
+version: 1
+description: Review eval usage in shell scripts
+implementation: source-pattern
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+    prohibited_patterns:
+      shell:
+        - '\beval\s+'
+standard_refs:
+  - {source_id: internal-shell-coding, controls: [commands]}
+lifecycle_inputs: [shell-eval-review]

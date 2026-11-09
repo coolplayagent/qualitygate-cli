@@ -1,0 +1,17 @@
+id: py-walrus-operator
+version: 1
+description: Review assignment expressions in Python code
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python:
+        - ':='
+standard_refs:
+  - {source_id: internal-python-coding, controls: [expressions]}
+lifecycle_inputs: [py-walrus-operator-review]

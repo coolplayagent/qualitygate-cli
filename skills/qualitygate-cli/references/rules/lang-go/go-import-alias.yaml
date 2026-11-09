@@ -1,0 +1,17 @@
+id: go-import-alias
+version: 1
+description: Review import aliases in Go code
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go:
+        - '^\s*import\s+[A-Za-z_]\w*\s+"[^"]+"'
+standard_refs:
+  - {source_id: internal-go-coding, controls: [packages]}
+lifecycle_inputs: [go-import-alias-review]

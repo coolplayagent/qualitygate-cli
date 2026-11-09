@@ -1,0 +1,17 @@
+id: ts-no-var
+version: 1
+description: Review var declarations in TypeScript or JavaScript code
+implementation: source-pattern
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+    prohibited_patterns:
+      typescript:
+        - '\bvar\s+[A-Za-z_$]'
+standard_refs:
+  - {source_id: internal-typescript-coding, controls: [declarations]}
+lifecycle_inputs: [ts-no-var-review]

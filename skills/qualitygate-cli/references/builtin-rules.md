@@ -99,7 +99,7 @@ handlers, and PEP 428 does not require every project to replace `os.path`.
 
 ## TypeScript and JavaScript review signals
 
-Select `rulesets: [lang-typescript]` and the desired rule IDs. All twelve
+Select `rulesets: [lang-typescript]` and the desired rule IDs. All fifteen
 rules are opt-in and fixed to `languages: [typescript]`, which includes
 `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` and `.cjs`. They inspect changed UTF-8
 lines with bounded `source-pattern` matching and accept `paths` and
@@ -123,10 +123,13 @@ for semantic lint results.
 | `ts-no-unsafe-postmessage` | warning | postMessage call for origin review |
 | `ts-no-commented-code` | warning | code-like line comment |
 | `ts-no-personal-info-in-comments` | warning | contact marker in same-line comment |
+| `ts-no-with` | warning | with statement |
+| `ts-no-var` | warning | var declaration |
+| `ts-no-arguments` | warning | arguments object reference |
 
 ## Go review signals
 
-Select `rulesets: [lang-go]` and the desired rule IDs. All twelve rules are
+Select `rulesets: [lang-go]` and the desired rule IDs. All fifteen rules are
 opt-in, fixed to `languages: [go]`, and inspect changed UTF-8 `.go` lines with
 bounded `source-pattern` matching. They accept `paths` and
 `prohibited_patterns.go` overrides. Comments and strings can match. SQL
@@ -149,6 +152,9 @@ for semantic lint results.
 | `go-dot-import` | warning | dot import outside reviewed exceptions |
 | `go-sensitive-info-in-log` | warning | sensitive variable name in log call |
 | `go-float-loop-counter` | warning | floating literal for-loop initializer |
+| `go-unsafe-package` | warning | unsafe package usage |
+| `go-os-exit` | warning | os.Exit or runtime.Goexit call |
+| `go-import-alias` | warning | aliased import |
 
 ## C and C++ review signals
 
@@ -233,7 +239,7 @@ or [GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
 
 ## Python review signals
 
-Select `rulesets: [lang-python]` and the desired rule IDs. All thirteen rules
+Select `rulesets: [lang-python]` and the desired rule IDs. All sixteen rules
 are opt-in, fixed to `languages: [python]`, and inspect changed UTF-8 `.py`
 lines with bounded `source-pattern` matching. They accept `paths` and
 `prohibited_patterns.python` overrides. Calls and names are review signals:
@@ -256,6 +262,9 @@ for semantic lint results.
 | `py-assert-in-production` | warning | assert statement for context review |
 | `py-sensitive-info-in-log` | warning | credential-like name in logging call |
 | `py-pickle-load` | error | pickle, shelve or marshal load call |
+| `py-none-comparison` | warning | equality comparison against None |
+| `py-walrus-operator` | warning | assignment expression |
+| `py-lambda-assignment` | warning | lambda assigned to a name |
 
 ## Rust review signals
 
@@ -274,9 +283,9 @@ same-line definitions only; comments and strings may match. Use the
 
 ## Shell conventions
 
-All eighteen Shell rules are opt-in and use a fixed `shell` scope. Source
+All twenty-one Shell rules are opt-in and use a fixed `shell` scope. Source
 patterns inspect changed lines in `.sh`, `.bash`, and extensionless scripts
-with a recognized `sh` or `bash` shebang. Each accepts `paths`; the sixteen
+with a recognized `sh` or `bash` shebang. Each accepts `paths`; the nineteen
 source-pattern rules accept `prohibited_patterns.shell` overrides. They are
 lexical review signals, not proof of an exploit or broken execution. Comments,
 strings, valid uses of `exec`, checksums, signal numbers, and continued pipelines
@@ -308,6 +317,9 @@ remain incomplete.
 | `shell-temp-file-hardcoded` | warning | Review predictable temporary paths |
 | `shell-missing-shebang` | error | first-line interpreter directive on added Shell scripts |
 | `shell-commented-dead-code` | warning | three or more consecutive code-like comment lines |
+| `shell-eval` | warning | eval usage in a script |
+| `shell-alias` | warning | alias definition in a script |
+| `shell-chmod-read` | warning | chmod removing read permission |
 
 ## Architecture rules
 

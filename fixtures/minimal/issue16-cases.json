@@ -284,5 +284,71 @@
         "src/main.py": "value = pickle.loads(data)\n"
       }
     }
+  },
+  {
+    "id": "issue16-none-comparison-pass-minimal",
+    "rule": "py-none-comparison",
+    "description": "minimal pass Python review signal py-none-comparison",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.py": "if value is None:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-none-comparison-fail-minimal",
+    "rule": "py-none-comparison",
+    "description": "minimal fail Python review signal py-none-comparison",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.py": "if value == None:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-walrus-operator-pass-minimal",
+    "rule": "py-walrus-operator",
+    "description": "minimal pass Python review signal py-walrus-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.py": "count = len(items)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-walrus-operator-fail-minimal",
+    "rule": "py-walrus-operator",
+    "description": "minimal fail Python review signal py-walrus-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.py": "if (count := len(items)) > 0:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-lambda-assignment-pass-minimal",
+    "rule": "py-lambda-assignment",
+    "description": "minimal pass Python review signal py-lambda-assignment",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.py": "def handler(x):\n    return x + 1\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-lambda-assignment-fail-minimal",
+    "rule": "py-lambda-assignment",
+    "description": "minimal fail Python review signal py-lambda-assignment",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.py": "handler = lambda x: x + 1\n"
+      }
+    }
   }
 ]

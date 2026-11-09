@@ -262,5 +262,71 @@
         "src/component.tsx": "const stable = 1;\n// email: alice@example.com\n"
       }
     }
+  },
+  {
+    "id": "issue14-no-with-pass-typical",
+    "rule": "ts-no-with",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "run(obj);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-with-fail-typical",
+    "rule": "ts-no-with",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "with (obj) { run(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-pass-typical",
+    "rule": "ts-no-var",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "let count = 0;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-fail-typical",
+    "rule": "ts-no-var",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "var count = 0;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-pass-typical",
+    "rule": "ts-no-arguments",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "function sum(...items) { return items.length; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-fail-typical",
+    "rule": "ts-no-arguments",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "function sum() { return arguments.length; }\n"
+      }
+    }
   }
 ]

@@ -262,5 +262,71 @@
         "src/main.go": "for i := 0.0; i < 10; i++ { }\n"
       }
     }
+  },
+  {
+    "id": "issue15-unsafe-package-pass-typical",
+    "rule": "go-unsafe-package",
+    "description": "typical pass Go review signal go-unsafe-package",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "p := &value\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-unsafe-package-fail-typical",
+    "rule": "go-unsafe-package",
+    "description": "typical fail Go review signal go-unsafe-package",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "p := unsafe.Pointer(&value)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-os-exit-pass-typical",
+    "rule": "go-os-exit",
+    "description": "typical pass Go review signal go-os-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "return\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-os-exit-fail-typical",
+    "rule": "go-os-exit",
+    "description": "typical fail Go review signal go-os-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "os.Exit(1)\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-import-alias-pass-typical",
+    "rule": "go-import-alias",
+    "description": "typical pass Go review signal go-import-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-import-alias-fail-typical",
+    "rule": "go-import-alias",
+    "description": "typical fail Go review signal go-import-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "import f \"fmt\"\n"
+      }
+    }
   }
 ]

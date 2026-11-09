@@ -1,0 +1,17 @@
+id: py-none-comparison
+version: 1
+description: Review equality comparisons against None in Python code
+implementation: source-pattern
+language: [python]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [python]
+    prohibited_patterns:
+      python:
+        - '(?:==|!=)\s*None\b|\bNone\s*(?:==|!=)'
+standard_refs:
+  - {source_id: internal-python-coding, controls: [operators]}
+lifecycle_inputs: [py-none-comparison-review]

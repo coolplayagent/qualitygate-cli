@@ -284,5 +284,71 @@
         "src/service.py": "value = pickle.loads(data)\n"
       }
     }
+  },
+  {
+    "id": "issue16-none-comparison-pass-typical",
+    "rule": "py-none-comparison",
+    "description": "typical pass Python review signal py-none-comparison",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "if value is None:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-none-comparison-fail-typical",
+    "rule": "py-none-comparison",
+    "description": "typical fail Python review signal py-none-comparison",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "if value == None:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-walrus-operator-pass-typical",
+    "rule": "py-walrus-operator",
+    "description": "typical pass Python review signal py-walrus-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "count = len(items)\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-walrus-operator-fail-typical",
+    "rule": "py-walrus-operator",
+    "description": "typical fail Python review signal py-walrus-operator",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "if (count := len(items)) > 0:\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-lambda-assignment-pass-typical",
+    "rule": "py-lambda-assignment",
+    "description": "typical pass Python review signal py-lambda-assignment",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "def handler(x):\n    return x + 1\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-lambda-assignment-fail-typical",
+    "rule": "py-lambda-assignment",
+    "description": "typical fail Python review signal py-lambda-assignment",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/service.py": "handler = lambda x: x + 1\n"
+      }
+    }
   }
 ]

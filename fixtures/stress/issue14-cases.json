@@ -286,5 +286,71 @@
         "src/unrelated.py": "// email: alice@example.com\n"
       }
     }
+  },
+  {
+    "id": "issue14-no-with-pass-stress",
+    "rule": "ts-no-with",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "run(obj);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-with-fail-stress",
+    "rule": "ts-no-with",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "with (obj) { run(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-pass-stress",
+    "rule": "ts-no-var",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "let count = 0;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-fail-stress",
+    "rule": "ts-no-var",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "var count = 0;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-pass-stress",
+    "rule": "ts-no-arguments",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "function sum(...items) { return items.length; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-fail-stress",
+    "rule": "ts-no-arguments",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "function sum() { return arguments.length; }\n"
+      }
+    }
   }
 ]

@@ -1,0 +1,38 @@
+schema_version: 1
+inputs:
+  - id: go-unsafe-package-review
+    status: enforced
+    rule_id: go-unsafe-package
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, security]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-go-coding]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Some low-level and interoperability code requires unsafe; this signal prompts review rather than proving a defect.
+  - id: go-os-exit-review
+    status: enforced
+    rule_id: go-os-exit
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-go-coding]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: A main entry point may intentionally terminate the process; defer and cleanup behavior need semantic review.
+  - id: go-import-alias-review
+    status: enforced
+    rule_id: go-import-alias
+    lifecycle_stage: implementation
+    languages: [go]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-go-coding]
+    evidence: [changed-go-line, regex-pattern]
+    applicability: Selected changed Go lines when this optional rule is enabled.
+    critical_adoption: Aliases can resolve real package-name collisions; this signal asks for a naming review.

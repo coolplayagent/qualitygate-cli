@@ -48,6 +48,7 @@ Source notes:
 - [Google](sources/google.md)
 - [Huawei](sources/huawei.md)
 - [Internal C/C++ standards](sources/internal-c-cpp.md)
+- [Internal Python, Go, Shell and TypeScript standards](sources/internal-language-standards.md)
 - [NVIDIA](sources/nvidia.md)
 - [AWS](sources/aws.md)
 - [Azure](sources/azure.md)

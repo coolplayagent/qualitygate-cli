@@ -1,0 +1,17 @@
+id: go-os-exit
+version: 1
+description: Review os.Exit and runtime.Goexit calls in Go code
+implementation: source-pattern
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+    prohibited_patterns:
+      go:
+        - '\b(?:os\.Exit|runtime\.Goexit)\s*\('
+standard_refs:
+  - {source_id: internal-go-coding, controls: [misc]}
+lifecycle_inputs: [go-os-exit-review]

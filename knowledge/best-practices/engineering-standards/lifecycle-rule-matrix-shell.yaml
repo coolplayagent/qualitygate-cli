@@ -1,0 +1,38 @@
+schema_version: 1
+inputs:
+  - id: shell-eval-review
+    status: enforced
+    rule_id: shell-eval
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-shell-coding]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell lines when this optional rule is enabled.
+    critical_adoption: eval can be justified for controlled generated commands; argument provenance requires semantic review.
+  - id: shell-alias-review
+    status: enforced
+    rule_id: shell-alias
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-shell-coding]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell lines when this optional rule is enabled.
+    critical_adoption: Interactive convenience aliases may be intentional; scripts should prefer functions for predictable expansion.
+  - id: shell-chmod-read-review
+    status: enforced
+    rule_id: shell-chmod-read
+    lifecycle_stage: implementation
+    languages: [shell]
+    concerns: [security, coding]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-shell-coding]
+    evidence: [changed-shell-line, regex-pattern]
+    applicability: Selected changed Shell lines when this optional rule is enabled.
+    critical_adoption: Removing read permission can be deliberate for secrets or policy; the target scope needs review.
