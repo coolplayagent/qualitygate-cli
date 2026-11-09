@@ -160,7 +160,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "int value = parse_int(text);\n"
+        "include/module.hpp": "void example() { int value = parse_int(text); }\nconst char *example = \"int f() { return atoi\\n(text); }\\n\";\n"
       }
     }
   },
@@ -171,7 +171,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "int value = atoi(text);\n"
+        "include/module.hpp": "// review example follows\nint f() { return atoi\n(text); }\n"
       }
     }
   },
@@ -182,7 +182,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "return cleanup();\n"
+        "include/module.hpp": "void example() { return cleanup(); }\nconst char *example = \"void f() { goto\\n cleanup; cleanup: return; }\\n\";\n"
       }
     }
   },
@@ -193,7 +193,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "goto cleanup;\n"
+        "include/module.hpp": "// review example follows\nvoid f() { goto\n cleanup; cleanup: return; }\n"
       }
     }
   },
@@ -204,7 +204,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "int status = run_command(command);\n"
+        "include/module.hpp": "void example() { int status = run_command(command); }\nconst char *example = \"void f() { system\\n(command); }\\n\";\n"
       }
     }
   },
@@ -215,7 +215,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "int status = system(command);\n"
+        "include/module.hpp": "// review example follows\nvoid f() { system\n(command); }\n"
       }
     }
   }

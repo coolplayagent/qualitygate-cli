@@ -117,7 +117,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [changed-cpp-line, regex-pattern]
+    evidence: [changed-cpp-syntax, syntax-node]
     applicability: Selected changed C++ lines when this optional rule is enabled.
     critical_adoption: Some low-level and ABI boundaries require reinterpret_cast; this signal prompts review rather than proving a defect.
   - id: cpp-no-const-cast-review
@@ -129,7 +129,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [changed-cpp-line, regex-pattern]
+    evidence: [changed-cpp-syntax, syntax-node]
     applicability: Selected changed C++ lines when this optional rule is enabled.
     critical_adoption: Legacy APIs may require const_cast; the signal cannot prove whether the original object is actually mutable.
   - id: cpp-no-delete-this-review
@@ -141,7 +141,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [changed-cpp-line, regex-pattern]
+    evidence: [changed-cpp-syntax, syntax-node]
     applicability: Selected changed C++ lines when this optional rule is enabled.
     critical_adoption: delete this is occasionally used in reference-counted designs; ownership and post-delete access require semantic review.
   - id: cpp-prefer-make-smart-pointer-review
@@ -153,9 +153,9 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [changed-cpp-line, regex-pattern]
+    evidence: [changed-cpp-syntax, syntax-node]
     applicability: Selected changed C++ lines when this optional rule is enabled.
-    critical_adoption: Only simple same-line unique_ptr/shared_ptr construction is recognized; custom deleters and factory boundaries need review.
+    critical_adoption: Explicit std::unique_ptr/shared_ptr construction with a direct new argument in parentheses or braces is recognized; custom deleters and factory boundaries need review.
   - id: cpp-use-nullptr-review
     status: enforced
     rule_id: cpp-use-nullptr
@@ -165,7 +165,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [changed-cpp-line, regex-pattern]
+    evidence: [changed-cpp-syntax, syntax-node]
     applicability: Selected changed C++ lines when this optional rule is enabled.
     critical_adoption: Legacy headers may define or require NULL; replacing it needs language-mode and compatibility review.
   - id: cpp-no-macro-constant-review
@@ -177,7 +177,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [changed-cpp-line, regex-pattern]
+    evidence: [changed-cpp-syntax, syntax-node]
     applicability: Selected changed C++ lines when this optional rule is enabled.
     critical_adoption: Numeric macros can be configuration switches or build contracts; constexpr and enum replacements need compatibility review.
   - id: cpp-no-using-namespace-in-header-review
@@ -189,6 +189,6 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-cpp-coding]
-    evidence: [added-cpp-file, configured-pattern]
-    applicability: Added C++ header files selected by the configured header globs.
-    critical_adoption: Added-file scanning does not inspect modified headers; using-declarations and namespace aliases need separate review.
+    evidence: [changed-cpp-syntax, syntax-node]
+    applicability: Changed C++ headers selected by the configured header globs, including modified headers.
+    critical_adoption: Syntax identifies using-directives, not using-declarations or namespace aliases; macro expansion and conditional compilation require external analysis.

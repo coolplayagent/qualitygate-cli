@@ -160,7 +160,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.c": "int value = parse_int(text);\n"
+        "src/main.c": "void example() { int value = parse_int(text); }\n"
       }
     }
   },
@@ -171,7 +171,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.c": "int value = atoi(text);\n"
+        "src/main.c": "void example() { int value = atoi(text); }\n"
       }
     }
   },
@@ -182,7 +182,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.c": "return cleanup();\n"
+        "src/main.c": "void example() { return cleanup(); }\n"
       }
     }
   },
@@ -193,7 +193,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.c": "goto cleanup;\n"
+        "src/main.c": "void example() { goto cleanup; cleanup: return; }\n"
       }
     }
   },
@@ -204,7 +204,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.c": "int status = run_command(command);\n"
+        "src/main.c": "void example() { int status = run_command(command); }\n"
       }
     }
   },
@@ -215,7 +215,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.c": "int status = system(command);\n"
+        "src/main.c": "void example() { int status = system(command); }\n"
       }
     }
   }

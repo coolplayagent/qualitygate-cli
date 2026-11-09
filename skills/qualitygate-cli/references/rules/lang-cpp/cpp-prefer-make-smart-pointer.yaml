@@ -1,7 +1,7 @@
 id: cpp-prefer-make-smart-pointer
 version: 1
 description: Review unique_ptr or shared_ptr construction from a new expression
-implementation: source-pattern
+implementation: native-syntax
 language: [cpp]
 requires_capabilities: [files]
 defaults:
@@ -9,10 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [cpp]
-    prohibited_patterns:
-      cpp:
-        - '\bstd::(?:unique_ptr|shared_ptr)\s*<[^;{}]*>\s*\([^;{}]*\bnew\b'
-        - '\bstd::(?:unique_ptr|shared_ptr)\s*<[^;{}]*>\s+[A-Za-z_]\w*\s*\([^;{}]*\bnew\b'
 standard_refs:
   - {source_id: internal-cpp-coding, controls: [resources]}
 lifecycle_inputs: [cpp-prefer-make-smart-pointer-review]

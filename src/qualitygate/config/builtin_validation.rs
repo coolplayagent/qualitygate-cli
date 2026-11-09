@@ -86,7 +86,7 @@ pub(super) fn validate(
                         regex::Regex::new(text)?;
                     } else if !(["java", "python", "typescript", "go", "rust", "shell"]
                         .contains(&text)
-                        || (["file-pattern", "source-pattern"].contains(&id)
+                        || (["file-pattern", "source-pattern", "native-syntax"].contains(&id)
                             && ["c", "cpp"].contains(&text)))
                     {
                         bail!("Unsupported rule language: {text}");
@@ -170,7 +170,7 @@ pub(super) fn validate(
     {
         bail!("python-test-naming requires languages: [python]");
     }
-    if id == "file-pattern"
+    if ["file-pattern", "native-syntax"].contains(&id)
         && rule.parameters.get("languages") != Some(&serde_json::json!(builtin_languages))
     {
         bail!("{builtin_id} requires languages: {builtin_languages:?}");

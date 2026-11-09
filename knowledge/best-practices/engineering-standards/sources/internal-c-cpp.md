@@ -15,10 +15,10 @@ placeholder URLs so the archive does not disclose the internal location.
 The archive records only reviewed summaries and the clauses used by bounded
 rules; it does not copy the full specifications.
 
-Rule adoption is deliberately narrow. Only same-line lexical clauses are
-mapped to `source-pattern` rules. Naming style, comment placement, brace and
-indent style, header self-containment, include order, switch exhaustiveness,
+Rule adoption is deliberately narrow. The ten executable rules use bounded
+C/C++ syntax nodes, excluding comments and literals. They support multiline
+syntax but do not resolve symbols, types, macro expansion or build conditions.
+Naming style, header self-containment, include order, switch exhaustiveness,
 constructor explicitness, ownership, lifetime, exception safety, integer
-overflow, taint flow and other clauses that require type, control-flow,
-multi-line or semantic evidence remain capability gaps. A matching line is a
-review signal; it does not establish conformance with the specification.
+overflow and taint flow remain capability gaps. A finding is a review signal;
+it does not establish conformance with the specification.

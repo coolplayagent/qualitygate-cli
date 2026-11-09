@@ -1,7 +1,7 @@
 id: c-no-goto
 version: 1
 description: Review goto statements in C and C++ code
-implementation: source-pattern
+implementation: native-syntax
 language: [c, cpp]
 requires_capabilities: [files]
 defaults:
@@ -9,11 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [c, cpp]
-    prohibited_patterns:
-      c:
-        - '\bgoto\b'
-      cpp:
-        - '\bgoto\b'
 standard_refs:
   - {source_id: internal-c-coding, controls: [control-flow]}
   - {source_id: internal-cpp-coding, controls: [expressions]}

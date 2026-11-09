@@ -18,7 +18,8 @@ C or C++ semantic adapter. Internal language categories and Meta
 Infer issue types are evidence that tool selection and report normalization
 must be language-aware, not a substitute for an adapter.[1] [2] [6]
 
-The built-in C and C++ packages contain bounded line-pattern review signals.
+The built-in C and C++ packages contain legacy line-pattern signals and ten
+bounded native-syntax rules that exclude comments and literals.
 They cannot evaluate type safety, ownership, lifetime, exception safety,
 templates, include order, switch exhaustiveness or data flow. Those clauses
 remain review guidance or require compiler/analyzer evidence.

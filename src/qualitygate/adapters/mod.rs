@@ -11,6 +11,7 @@ pub mod git_trailers;
 mod markers;
 pub mod maven;
 pub mod maven_usage;
+mod native_syntax;
 pub mod operators;
 pub mod operators_v3;
 mod parallel;

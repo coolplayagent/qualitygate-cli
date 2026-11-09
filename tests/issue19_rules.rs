@@ -74,8 +74,8 @@ const CASES: &[(&str, &str, &str, &str)] = &[
     (
         "cpp-no-delete-this",
         "warning",
-        "delete this;\n",
-        "owner_->release(this);\n",
+        "void release() { delete this; }\n",
+        "void release() { owner_->release(this); }\n",
     ),
     (
         "cpp-prefer-make-smart-pointer",
@@ -244,7 +244,7 @@ fn cpp_source_signals_find_only_selected_changed_lines_then_repair() {
 }
 
 #[test]
-fn cpp_header_rule_scans_only_added_headers_selected_by_paths() {
+fn cpp_header_rule_scans_headers_selected_by_paths() {
     let repository = fixture();
     let root = repository.path();
     fs::create_dir(root.join("include")).unwrap();
@@ -268,5 +268,186 @@ fn cpp_header_rule_scans_only_added_headers_selected_by_paths() {
             .as_array()
             .unwrap()
             .is_empty()
+    );
+}
+
+#[test]
+fn cpp_smart_pointer_review_covers_braced_and_parenthesized_construction() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-cpp]\nrules: {cpp-prefer-make-smart-pointer: {}}\n",
+    )
+    .unwrap();
+    for source in [
+        "std::unique_ptr<Widget> widget{new Widget()};",
+        "auto widget = std::shared_ptr<Widget>{new Widget()};",
+        "std::shared_ptr<Widget> widget(new Widget());",
+        "auto widget = std::unique_ptr<Widget>(new Widget());",
+    ] {
+        fs::write(root.join("sample.cpp"), source).unwrap();
+        assert_eq!(
+            rule(&check(root, 0), "cpp-prefer-make-smart-pointer")["diagnostics"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1,
+            "{source}"
+        );
+    }
+    for source in [
+        "auto widget = std::make_unique<Widget>();",
+        "std::unique_ptr<Widget> widget{factory()};",
+        "std::unique_ptr<Widget> widget; auto other = new Widget();",
+    ] {
+        fs::write(root.join("sample.cpp"), source).unwrap();
+        assert!(
+            rule(&check(root, 0), "cpp-prefer-make-smart-pointer")["diagnostics"]
+                .as_array()
+                .unwrap()
+                .is_empty(),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn cpp_review_signals_ignore_comments_and_string_literals() {
+    let repository = fixture();
+    let root = repository.path();
+    for (id, _, bad, _) in &CASES[9..] {
+        fs::write(
+            root.join("qualitygate.yaml"),
+            format!("schema_version: 1\nrulesets: [lang-cpp]\nrules: {{{id}: {{}}}}\n"),
+        )
+        .unwrap();
+        let source = format!("/*\n{bad}*/\nconst char *example = R\"sample(\n{bad})sample\";\n");
+        fs::write(root.join("sample.cpp"), source).unwrap();
+        assert!(
+            rule(&check(root, 0), id)["diagnostics"]
+                .as_array()
+                .unwrap()
+                .is_empty(),
+            "{id} must not diagnose documentation text"
+        );
+    }
+}
+
+#[test]
+fn native_header_rule_reviews_modified_headers_and_only_changed_syntax() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-cpp]\nrules: {cpp-no-using-namespace-in-header: {}}\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("api.h"),
+        "using namespace legacy;\nint old_value;\n",
+    )
+    .unwrap();
+    common::git(root, &["add", "."]);
+    common::git(root, &["commit", "-qm", "baseline header"]);
+    fs::write(
+        root.join("api.h"),
+        "using namespace legacy;\nusing\nnamespace std;\n",
+    )
+    .unwrap();
+    let result = check(root, 0);
+    let diagnostics = rule(&result, "cpp-no-using-namespace-in-header")["diagnostics"]
+        .as_array()
+        .unwrap();
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["range"]["start_line"], 2);
+    assert_eq!(diagnostics[0]["range"]["end_line"], 3);
+    assert_eq!(diagnostics[0]["evidence"]["node_kind"], "using_declaration");
+    fs::write(
+        root.join("api.h"),
+        "using namespace legacy;\nint new_value;\n",
+    )
+    .unwrap();
+    assert!(
+        rule(&check(root, 0), "cpp-no-using-namespace-in-header")["diagnostics"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn native_parse_errors_are_incomplete_and_path_exclusions_do_not_parse() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-cpp]\nrules: {cpp-no-const-cast: {}}\n",
+    )
+    .unwrap();
+    fs::write(root.join("broken.cpp"), "void f( { const_cast<int*>(p);").unwrap();
+    let result = check(root, 2);
+    let finding = rule(&result, "cpp-no-const-cast");
+    assert_ne!(finding["execution"]["status"], "completed");
+    assert!(finding["verdict"].is_null());
+    fs::write(root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-cpp]\nrules: {cpp-no-const-cast: {parameters: {paths: ['include/**']}}}\n").unwrap();
+    let result = check(root, 0);
+    assert_eq!(
+        rule(&result, "cpp-no-const-cast")["execution"]["status"],
+        "completed"
+    );
+}
+
+#[test]
+fn native_rules_reject_regex_overrides_and_language_scope_drift() {
+    let repository = fixture();
+    let root = repository.path();
+    for parameters in [
+        "{languages: [c]}",
+        "{languages: []}",
+        "{prohibited_patterns: {cpp: ['anything']}}",
+        "{paths: ['[']}",
+    ] {
+        fs::write(root.join("qualitygate.yaml"), format!(
+            "schema_version: 1\nrulesets: [lang-cpp]\nrules: {{cpp-no-const-cast: {{parameters: {parameters}}}}}\n"
+        )).unwrap();
+        assert_eq!(
+            cli(root, &["config", "--show", "--format", "json"])
+                .status
+                .code(),
+            Some(2),
+            "{parameters}"
+        );
+    }
+}
+
+#[test]
+fn native_syntax_ignores_comment_only_changes_and_tracks_constructor_type_changes() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-cpp]\nrules: {cpp-no-const-cast: {}, cpp-prefer-make-smart-pointer: {}}\n").unwrap();
+    fs::write(
+        root.join("sample.cpp"),
+        "auto x = const_cast<\nint*>(p);\nauto y = factory(\nnew Widget());\n",
+    )
+    .unwrap();
+    common::git(root, &["add", "."]);
+    common::git(root, &["commit", "-qm", "baseline syntax"]);
+    fs::write(root.join("sample.cpp"), "auto x = const_cast<\n// rationale only\nint*>(p);\nauto y = std::unique_ptr<Widget>(\nnew Widget());\n").unwrap();
+    let result = check(root, 0);
+    assert!(
+        rule(&result, "cpp-no-const-cast")["diagnostics"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        rule(&result, "cpp-prefer-make-smart-pointer")["diagnostics"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
     );
 }

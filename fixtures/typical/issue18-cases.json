@@ -160,7 +160,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cpp": "int value = parse_int(text);\n"
+        "src/service.cpp": "void example() { int value = parse_int(text); }\nconst char *example = \"int f() { return atoi\\n(text); }\\n\";\n"
       }
     }
   },
@@ -171,7 +171,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cpp": "int value = atoi(text);\n"
+        "src/service.cpp": "int f() { return atoi\n(text); }\n"
       }
     }
   },
@@ -182,7 +182,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cpp": "return cleanup();\n"
+        "src/service.cpp": "void example() { return cleanup(); }\nconst char *example = \"void f() { goto\\n cleanup; cleanup: return; }\\n\";\n"
       }
     }
   },
@@ -193,7 +193,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cpp": "goto cleanup;\n"
+        "src/service.cpp": "void f() { goto\n cleanup; cleanup: return; }\n"
       }
     }
   },
@@ -204,7 +204,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cpp": "int status = run_command(command);\n"
+        "src/service.cpp": "void example() { int status = run_command(command); }\nconst char *example = \"void f() { system\\n(command); }\\n\";\n"
       }
     }
   },
@@ -215,7 +215,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cpp": "int status = system(command);\n"
+        "src/service.cpp": "void f() { system\n(command); }\n"
       }
     }
   }

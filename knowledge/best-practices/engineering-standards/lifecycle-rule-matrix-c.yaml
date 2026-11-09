@@ -93,7 +93,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-c-coding, internal-cpp-coding]
-    evidence: [changed-c-family-line, regex-pattern]
+    evidence: [changed-c-family-line, syntax-node]
     applicability: Selected changed C and C++ lines when this optional rule is enabled.
     critical_adoption: The atoi family has no error channel for overflow or malformed input; a call name alone does not prove the input is untrusted.
   - id: c-no-goto-review
@@ -105,7 +105,7 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-c-coding, internal-cpp-coding]
-    evidence: [changed-c-family-line, regex-pattern]
+    evidence: [changed-c-family-line, syntax-node]
     applicability: Selected changed C and C++ lines when this optional rule is enabled.
     critical_adoption: Single-exit cleanup labels can be justified; forward-only and cross-function control flow require control-flow analysis.
   - id: c-no-process-launch-review
@@ -117,6 +117,6 @@ inputs:
     enforcement: deterministic-static
     outcome: warning
     source_ids: [internal-c-coding, internal-cpp-coding]
-    evidence: [changed-c-family-line, regex-pattern]
+    evidence: [changed-c-family-line, syntax-node]
     applicability: Selected changed C and C++ lines when this optional rule is enabled.
     critical_adoption: Process-launch calls are high-risk review signals; argument provenance, white-listing and platform APIs require semantic analysis.

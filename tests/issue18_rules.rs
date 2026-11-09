@@ -56,8 +56,8 @@ const CASES: &[(&str, &str, &str, &str)] = &[
     (
         "c-no-goto",
         "warning",
-        "goto cleanup;\n",
-        "return cleanup();\n",
+        "void f() { goto cleanup; cleanup: return; }\n",
+        "void f() { return cleanup(); }\n",
     ),
     (
         "c-no-process-launch",

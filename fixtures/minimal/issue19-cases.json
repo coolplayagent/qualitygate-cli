@@ -204,7 +204,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "auto value = static_cast<int>(pointer);\n"
+        "src/main.cpp": "void example() { auto value = static_cast<int>(pointer); }\n"
       }
     }
   },
@@ -215,7 +215,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "auto value = reinterpret_cast<int>(pointer);\n"
+        "src/main.cpp": "void example() { auto value = reinterpret_cast<int>(pointer); }\n"
       }
     }
   },
@@ -226,7 +226,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "auto value = text;\n"
+        "src/main.cpp": "void example() { auto value = text; }\n"
       }
     }
   },
@@ -237,7 +237,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "auto value = const_cast<char *>(text);\n"
+        "src/main.cpp": "void example() { auto value = const_cast<char *>(text); }\n"
       }
     }
   },
@@ -248,7 +248,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "owner_->release(this);\n"
+        "src/main.cpp": "void example() { owner_->release(this); }\n"
       }
     }
   },
@@ -259,7 +259,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "delete this;\n"
+        "src/main.cpp": "void example() { delete this; }\n"
       }
     }
   },
@@ -270,7 +270,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "auto widget = std::make_unique<Widget>();\n"
+        "src/main.cpp": "void example() { auto widget = std::make_unique<Widget>(); }\n"
       }
     }
   },
@@ -281,7 +281,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "std::unique_ptr<Widget> widget(new Widget());\n"
+        "src/main.cpp": "void example() { std::unique_ptr<Widget> widget(new Widget()); }\n"
       }
     }
   },
@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "Widget *widget = nullptr;\n"
+        "src/main.cpp": "void example() { Widget *widget = nullptr; }\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/main.cpp": "Widget *widget = NULL;\n"
+        "src/main.cpp": "void example() { Widget *widget = NULL; }\n"
       }
     }
   },

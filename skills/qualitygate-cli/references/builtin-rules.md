@@ -152,15 +152,20 @@ for semantic lint results.
 
 ## C and C++ review signals
 
-Select `rulesets: [lang-c]` and the desired rule IDs. These ten rules are
-opt-in and fixed to `languages: [c, cpp]`. They match changed UTF-8 source
-lines with bounded regular expressions. `paths`, `prohibited_patterns.c`,
-and `prohibited_patterns.cpp` may be configured, but both language keys must
-remain present. `.h` is classified as C text; `.hh`, `.hpp` and `.hxx` as C++
-text. No C/C++ syntax parser is implied. These signals can match comments or
-strings and cannot establish type safety, data flow or CERT compliance. Use
-the [GCC SARIF ratchet reference](gcc-analyzer-ratchet.yaml) for analyzer
-evidence. The repository's `docs/en/02-reference/03-projects-and-tool-reports.md` explains adoption.
+Select `rulesets: [lang-c]` and individual rule IDs. The seven original rules
+use changed-line `source-pattern` matching with `paths` and
+`prohibited_patterns.c` / `.cpp` overrides. These regex signals may match
+comments or strings. The three new rules (`c-no-atoi`, `c-no-goto`,
+`c-no-process-launch`) instead use bounded `native-syntax` parsing and accept
+only `paths` and their fixed `languages: [c, cpp]` scope. `.c` uses the C grammar; `.h`, `.cc`, `.cpp`, `.cxx`, `.hh`, `.hpp`, `.hxx`
+use the C++ grammar (which also recognizes C header syntax). This avoids
+rejecting C++ declarations in ambiguously named `.h` files.
+They ignore comments and literals, and inspect syntax intersecting changed
+lines. Direct API calls accept unqualified, global and `std::` names, but
+exclude member calls and other namespaces. Unqualified shadowing cannot be
+resolved. None of these rules establishes type safety, data flow or CERT
+compliance. Use the [GCC SARIF ratchet reference](gcc-analyzer-ratchet.yaml)
+for semantic analyzer evidence.
 The internal clauses come from the C V5.3 and C++ V5.1 language specifications;
 the older C&C++ secure coding V3.0 document is explicitly superseded
 and is not the current source.
@@ -180,17 +185,32 @@ and is not the current source.
 
 ## C++ review signals
 
-Select `rulesets: [lang-cpp]` and individual rule IDs. These sixteen opt-in
-rules fix `languages: [cpp]`. Fifteen inspect changed `.cc`, `.cpp`, `.cxx`,
-`.hh`, `.hpp` and `.hxx` lines; `cpp-no-using-namespace-in-header` instead
-scans added headers selected by `paths`. `.h` is classified as C text by the
-shared source classifier for line rules, while the added-file header rule
-accepts conventional C++ header globs. `paths` and `prohibited_patterns.cpp`
-may be configured for line rules. Same-line regex matches are review signals;
-they do not establish receiver types, ownership, exception safety, buffer
-bounds, random-number purpose or NRVO behavior. Use the
-[Clang SARIF reference](clang-static-analyzer-ratchet.yaml) or the
-[GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
+Select `rulesets: [lang-cpp]` and individual rule IDs. All sixteen rules
+are opt-in with fixed `languages: [cpp]`. The original nine use same-line
+`source-pattern` checks and accept `paths` / `prohibited_patterns.cpp`.
+The seven new rules from `cpp-no-reinterpret-cast` through
+`cpp-no-using-namespace-in-header` use `native-syntax`, accept only `paths`
+and the fixed language scope, and also parse `.h` as C++.
+
+Syntax rules skip comments, ordinary/raw strings and character literals.
+They handle multiline syntax and report nodes intersecting diff-added lines;
+unchanged syntax is not reported. The header rule covers changed `.h`, `.hh`,
+`.hpp`, `.hxx` files, including existing headers. Smart-pointer checks recognize
+explicit `std::unique_ptr` / `std::shared_ptr` construction with a direct `new`
+argument, using parentheses or braces. Numeric macros require an object-like
+macro whose replacement is a single numeric literal (optionally signed or
+parenthesized), including trailing comments; expression/function macros are
+outside that rule's scope.
+
+Parsing is limited to 4 MiB, 200,000 syntax nodes and two seconds per file,
+within the shared 30-second rule budget and diagnostic output budget.
+Invalid UTF-8, syntax errors, missing snapshot files or exhausted budgets
+produce incomplete execution, never a successful empty result. Macro expansion,
+conditional-compilation evaluation, typedefs, namespace aliases, shadowing and
+symbol/type resolution are not performed; syntax in conditional branches can
+be reported regardless of build configuration. Warning findings require review,
+not automatic replacement. Use the [Clang SARIF reference](clang-static-analyzer-ratchet.yaml)
+or [GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
 
 | Rule | Default | Review signal |
 | --- | --- | --- |
@@ -209,7 +229,7 @@ bounds, random-number purpose or NRVO behavior. Use the
 | `cpp-prefer-make-smart-pointer` | warning | `unique_ptr` or `shared_ptr` constructed from `new` |
 | `cpp-use-nullptr` | warning | `NULL` token in C++ code |
 | `cpp-no-macro-constant` | warning | numeric `#define` constant |
-| `cpp-no-using-namespace-in-header` | warning | `using namespace` in an added header |
+| `cpp-no-using-namespace-in-header` | warning | `using namespace` in a changed header |
 
 ## Python review signals
 

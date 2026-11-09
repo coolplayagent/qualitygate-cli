@@ -204,7 +204,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "auto value = static_cast<int>(pointer);\n"
+        "src/service.cc": "void example() { auto value = static_cast<int>(pointer); }\nconst char *example = \"auto value = reinterpret_cast\\n<int*>(pointer);\\n\";\n"
       }
     }
   },
@@ -215,7 +215,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "auto value = reinterpret_cast<int>(pointer);\n"
+        "src/service.cc": "auto value = reinterpret_cast\n<int*>(pointer);\n"
       }
     }
   },
@@ -226,7 +226,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "auto value = text;\n"
+        "src/service.cc": "void example() { auto value = text; }\nconst char *example = \"auto value = const_cast\\n<char*>(text);\\n\";\n"
       }
     }
   },
@@ -237,7 +237,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "auto value = const_cast<char *>(text);\n"
+        "src/service.cc": "auto value = const_cast\n<char*>(text);\n"
       }
     }
   },
@@ -248,7 +248,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "owner_->release(this);\n"
+        "src/service.cc": "void example() { owner_->release(this); }\nconst char *example = \"void release() { delete\\n(this); }\\n\";\n"
       }
     }
   },
@@ -259,7 +259,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "delete this;\n"
+        "src/service.cc": "void release() { delete\n(this); }\n"
       }
     }
   },
@@ -270,7 +270,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "auto widget = std::make_unique<Widget>();\n"
+        "src/service.cc": "void example() { auto widget = std::make_unique<Widget>(); }\nconst char *example = \"std::unique_ptr<std::vector<int>> value{new std::vector<int>()};\\n\";\n"
       }
     }
   },
@@ -281,7 +281,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "std::unique_ptr<Widget> widget(new Widget());\n"
+        "src/service.cc": "std::unique_ptr<std::vector<int>> value{new std::vector<int>()};\n"
       }
     }
   },
@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "Widget *widget = nullptr;\n"
+        "src/service.cc": "void example() { Widget *widget = nullptr; }\nconst char *example = \"auto value =\\nNULL;\\n\";\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "Widget *widget = NULL;\n"
+        "src/service.cc": "auto value =\nNULL;\n"
       }
     }
   },
@@ -314,7 +314,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "constexpr int kMaxItems = 16;\n"
+        "src/service.cc": "constexpr int kMaxItems = 16;\nconst char *example = \"#define MAX_ITEMS (-1.5e-2) // bound\\n\";\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.cc": "#define MAX_ITEMS 16\n"
+        "src/service.cc": "#define MAX_ITEMS (-1.5e-2) // bound\n"
       }
     }
   },
@@ -336,7 +336,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.hpp": "using std::string;\n"
+        "src/service.hpp": "using std::string;\nconst char *example = \"using\\nnamespace std;\\n\";\n"
       }
     }
   },
@@ -347,7 +347,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "src/service.hpp": "using namespace std;\n"
+        "src/service.hpp": "using\nnamespace std;\n"
       }
     }
   }

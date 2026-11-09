@@ -124,6 +124,25 @@ heuristic: examples can match and other dead code shapes can evade it.
 
 ## Added-line implementation
 
+### `native-syntax`
+
+The ten internal C/C++ rules use `adapters::native_syntax`. Each selected
+immutable file is parsed with Tree-sitter C or C++ under a 4 MiB, two-second
+budget and at most 200,000 visited nodes. The shared rule deadline (30 seconds)
+and diagnostic output limits still apply. Traversal is iterative and skips
+comments and literals. Findings carry language, node kind and the full syntax
+range; only nodes intersecting diff-added lines are reported. Header directives
+are checked in both added and modified headers. Invalid UTF-8, parse errors,
+missing files and budget exhaustion propagate as incomplete execution.
+
+The rules inspect goto statements, direct calls, cast call nodes, delete/this,
+NULL expressions, explicit smart-pointer construction and using-directives.
+Numeric object macros are parsed as single literal expressions, including
+optional signs, parentheses and trailing comments. Member calls and unrelated
+qualified APIs are excluded; symbol resolution, aliases, preprocessing and
+conditional branch evaluation are unavailable. Fixed language scopes and path
+globs are the only parameters; regex overrides are rejected.
+
 ### `source-pattern`
 
 `source-pattern` is for inexpensive, auditable signals such as a direct API

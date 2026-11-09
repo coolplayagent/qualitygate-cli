@@ -1,7 +1,7 @@
 id: c-no-process-launch
 version: 1
 description: Review process-launch API calls in C and C++ code
-implementation: source-pattern
+implementation: native-syntax
 language: [c, cpp]
 requires_capabilities: [files]
 defaults:
@@ -9,11 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [c, cpp]
-    prohibited_patterns:
-      c:
-        - '\b(?:system|popen|execl|execlp|execle|execv|execve|execvp|execvpe|WinExec|CreateProcess[AW]?|ShellExecute[AW]?)\s*\('
-      cpp:
-        - '\b(?:system|popen|execl|execlp|execle|execv|execve|execvp|execvpe|WinExec|CreateProcess[AW]?|ShellExecute[AW]?)\s*\('
 standard_refs:
   - {source_id: internal-c-coding, controls: [function-usage]}
   - {source_id: internal-cpp-coding, controls: [standard-library]}

@@ -1,7 +1,7 @@
 id: cpp-no-using-namespace-in-header
 version: 1
-description: Review using namespace directives in added C++ headers
-implementation: file-pattern
+description: Review using namespace directives in changed C++ headers
+implementation: native-syntax
 language: [cpp]
 requires_capabilities: [files]
 defaults:
@@ -9,7 +9,6 @@ defaults:
   severity: warning
   parameters:
     languages: [cpp]
-    pattern: '^\s*using\s+namespace\b'
     paths: ['**/*.h', '**/*.hh', '**/*.hpp', '**/*.hxx', '*.h', '*.hh', '*.hpp', '*.hxx']
 standard_refs:
   - {source_id: internal-cpp-coding, controls: [includes]}

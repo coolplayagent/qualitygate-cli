@@ -204,7 +204,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "auto value = static_cast<int>(pointer);\n"
+        "include/module.hpp": "void example() { auto value = static_cast<int>(pointer); }\nconst char *example = \"auto value = reinterpret_cast\\n<int*>(pointer);\\n\";\n"
       }
     }
   },
@@ -215,7 +215,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "auto value = reinterpret_cast<int>(pointer);\n"
+        "include/module.hpp": "// review example follows\nauto value = reinterpret_cast\n<int*>(pointer);\n"
       }
     }
   },
@@ -226,7 +226,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "auto value = text;\n"
+        "include/module.hpp": "void example() { auto value = text; }\nconst char *example = \"auto value = const_cast\\n<char*>(text);\\n\";\n"
       }
     }
   },
@@ -237,7 +237,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "auto value = const_cast<char *>(text);\n"
+        "include/module.hpp": "// review example follows\nauto value = const_cast\n<char*>(text);\n"
       }
     }
   },
@@ -248,7 +248,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "owner_->release(this);\n"
+        "include/module.hpp": "void example() { owner_->release(this); }\nconst char *example = \"void release() { delete\\n(this); }\\n\";\n"
       }
     }
   },
@@ -259,7 +259,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "delete this;\n"
+        "include/module.hpp": "// review example follows\nvoid release() { delete\n(this); }\n"
       }
     }
   },
@@ -270,7 +270,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "auto widget = std::make_unique<Widget>();\n"
+        "include/module.hpp": "void example() { auto widget = std::make_unique<Widget>(); }\nconst char *example = \"std::unique_ptr<std::vector<int>> value{new std::vector<int>()};\\n\";\n"
       }
     }
   },
@@ -281,7 +281,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "std::unique_ptr<Widget> widget(new Widget());\n"
+        "include/module.hpp": "// review example follows\nstd::unique_ptr<std::vector<int>> value{new std::vector<int>()};\n"
       }
     }
   },
@@ -292,7 +292,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "Widget *widget = nullptr;\n"
+        "include/module.hpp": "void example() { Widget *widget = nullptr; }\nconst char *example = \"auto value =\\nNULL;\\n\";\n"
       }
     }
   },
@@ -303,7 +303,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "Widget *widget = NULL;\n"
+        "include/module.hpp": "// review example follows\nauto value =\nNULL;\n"
       }
     }
   },
@@ -314,7 +314,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "constexpr int kMaxItems = 16;\n"
+        "include/module.hpp": "constexpr int kMaxItems = 16;\nconst char *example = \"#define MAX_ITEMS (-1.5e-2) // bound\\n\";\n"
       }
     }
   },
@@ -325,7 +325,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "#define MAX_ITEMS 16\n"
+        "include/module.hpp": "// review example follows\n#define MAX_ITEMS (-1.5e-2) // bound\n"
       }
     }
   },
@@ -336,7 +336,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "using std::string;\n"
+        "include/module.hpp": "using std::string;\nconst char *example = \"using\\nnamespace std;\\n\";\n"
       }
     }
   },
@@ -347,7 +347,7 @@
     "input": {
       "kind": "rule",
       "files": {
-        "include/module.hpp": "using namespace std;\n"
+        "include/module.hpp": "// review example follows\nusing\nnamespace std;\n"
       }
     }
   }
