@@ -41,6 +41,16 @@ resolution still require an external analyzer. Syntax errors and resource-limit
 exhaustion produce incomplete execution. Older regex-based rules retain their
 explicit textual limitations.
 
+Internal Python V3.4, Go V3.4, Shell V2.2 and TypeScript/JavaScript V1.0 rules
+cite the corresponding internal language specifications through the
+`internal-python-coding`, `internal-go-coding`, `internal-shell-coding` and
+`internal-typescript-coding` sources. The twelve new rules use bounded `language-syntax` parsing, with Go import
+bindings, TypeScript lexical scopes and Shell command operands. Comments and
+literal text are excluded; executable interpolations remain in scope. Malformed
+syntax and exhausted budgets remain incomplete. Cross-file types, runtime
+expansion and data flow remain external-analyzer or human-review concerns.
+See the [bundled rule guide](../../../skills/qualitygate-cli/references/builtin-rules.md#structured-language-reviews) for exact boundaries.
+
 ## Project rule protocol
 
 Version 1 YAML packages declare identity, applicability, source review,

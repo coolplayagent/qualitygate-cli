@@ -156,3 +156,39 @@ inputs:
     evidence: [changed-python-line, regex-pattern]
     applicability: Selected changed Python lines when this optional rule is enabled.
     critical_adoption: Deserialization calls are flagged without proving that input is untrusted.
+  - id: py-none-comparison-review
+    status: enforced
+    rule_id: py-none-comparison
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-python-coding]
+    evidence: [changed-python-line, syntax-node, file-local-context]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Comparing a value to None with equality is usually a style or correctness signal; operator overloading can make it intentional.
+  - id: py-walrus-operator-review
+    status: enforced
+    rule_id: py-walrus-operator
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-python-coding]
+    evidence: [changed-python-line, syntax-node, file-local-context]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: Assignment expressions can improve short helpers; this signal asks for readability review rather than proving a defect.
+  - id: py-lambda-assignment-review
+    status: enforced
+    rule_id: py-lambda-assignment
+    lifecycle_stage: implementation
+    languages: [python]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [internal-python-coding]
+    evidence: [changed-python-line, syntax-node, file-local-context]
+    applicability: Selected changed Python lines when this optional rule is enabled.
+    critical_adoption: A named lambda can be a deliberate local shorthand; a def is preferred when a stable name and traceback matter.

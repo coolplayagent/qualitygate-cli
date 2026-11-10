@@ -170,7 +170,7 @@ pub(super) fn validate(
     {
         bail!("python-test-naming requires languages: [python]");
     }
-    if ["file-pattern", "native-syntax"].contains(&id)
+    if ["file-pattern", "native-syntax", "language-syntax"].contains(&id)
         && rule.parameters.get("languages") != Some(&serde_json::json!(builtin_languages))
     {
         bail!("{builtin_id} requires languages: {builtin_languages:?}");

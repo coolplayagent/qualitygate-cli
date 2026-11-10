@@ -1,0 +1,14 @@
+id: go-unsafe-package
+version: 1
+description: Review unsafe package usage in Go code
+implementation: language-syntax
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+standard_refs:
+  - {source_id: internal-go-coding, controls: [memory]}
+lifecycle_inputs: [go-unsafe-package-review]

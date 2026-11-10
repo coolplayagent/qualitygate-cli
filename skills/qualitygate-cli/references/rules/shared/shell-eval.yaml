@@ -1,0 +1,14 @@
+id: shell-eval
+version: 1
+description: Review eval usage in shell scripts
+implementation: language-syntax
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+standard_refs:
+  - {source_id: internal-shell-coding, controls: [commands]}
+lifecycle_inputs: [shell-eval-review]

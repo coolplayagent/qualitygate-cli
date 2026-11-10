@@ -141,5 +141,41 @@
     "/verdict": "fail",
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/language": "python"
+  },
+  "issue16-none-comparison-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue16-none-comparison-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python",
+    "/diagnostics/0/evidence/node_kind": "comparison_operator"
+  },
+  "issue16-walrus-operator-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue16-walrus-operator-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python",
+    "/diagnostics/0/evidence/node_kind": "named_expression"
+  },
+  "issue16-lambda-assignment-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue16-lambda-assignment-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python",
+    "/diagnostics/0/evidence/node_kind": "assignment"
   }
 }

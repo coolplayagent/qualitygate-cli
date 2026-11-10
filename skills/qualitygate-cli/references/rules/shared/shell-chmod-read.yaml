@@ -1,0 +1,14 @@
+id: shell-chmod-read
+version: 1
+description: Review symbolic chmod modes removing read permission for all user classes
+implementation: language-syntax
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+standard_refs:
+  - {source_id: internal-shell-coding, controls: [security]}
+lifecycle_inputs: [shell-chmod-read-review]

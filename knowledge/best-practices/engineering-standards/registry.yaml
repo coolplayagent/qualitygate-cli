@@ -440,6 +440,50 @@ sources:
     concerns: [coding, security, reliability]
     controls: [naming, comments, formatting, functions, classes, constants, enums, expressions, resources, errors, templates, concurrency, preprocessing, includes, standard-library]
     summary: Internal C++ coding specification, effective 2022-12-26, aligns with ISO 5055 and merges the former C++ general and C/C++ secure coding guidance. It defines style, class, resource, exception, template, concurrency, preprocessor, header and standard-library clauses; many clauses require type, ownership, control-flow or multi-line evidence and remain review guidance rather than regex enforcement.
+  - id: internal-python-coding
+    organization: Internal
+    title: Internal Python Language Coding Specification V3.4
+    authority: official-company
+    kind: standard
+    url: https://example.invalid/standards/python-v3.4
+    languages: [python]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, security, reliability]
+    controls: [naming, comments, formatting, types, operators, expressions, control-flow, functions, variables, classes, errors, concurrency, imports, standard-library, project, files, serialization, external-data, logging, performance, testing, data-security]
+    summary: Internal Python coding specification, effective 2025-12-30, consolidates style, secure coding and Clean Code expectations for Python 3.10 and later. It covers naming, formatting, data models, expressions, exceptions, concurrency, imports, files, serialization, validation, logging, resources, testing and sensitive-data handling; selected clauses use bounded syntax and file-local context.
+  - id: internal-go-coding
+    organization: Internal
+    title: Internal Go Language Coding Specification V3.4
+    authority: official-company
+    kind: standard
+    url: https://example.invalid/standards/go-v3.4
+    languages: [go]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, security, reliability]
+    controls: [naming, comments, formatting, declarations, types, expressions, control-flow, functions, structs, packages, errors, concurrency, io, external-data, resources, memory, cgo, misc]
+    summary: Internal Go coding specification, effective 2025-12-30, consolidates style, error handling, concurrency, resource and security guidance. It covers naming, comments, formatting, declarations, slices and maps, control flow, functions, interfaces, packages, errors, synchronization, files, validation, memory and CGO; syntax and file-local binding findings remain review signals rather than proof of safety.
+  - id: internal-shell-coding
+    organization: Internal
+    title: Internal Shell Language Coding Specification V2.2
+    authority: official-company
+    kind: standard
+    url: https://example.invalid/standards/shell-v2.2
+    languages: [shell]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, security, reliability]
+    controls: [naming, comments, formatting, syntax, declarations, types, expressions, control-flow, functions, errors, io, external-data, logging, performance, security, privilege, project, commands]
+    summary: Internal Shell coding specification, effective 2025-12, consolidates style, secure scripting and operational guidance. It covers naming, comments, formatting, syntax, variables, expressions, control flow, functions, signals, redirection, validation, logging, permissions, privilege boundaries, project layout and command usage; selected clauses use bounded command syntax review.
+  - id: internal-typescript-coding
+    organization: Internal
+    title: Internal TypeScript and JavaScript Language Coding Specification V1.0
+    authority: official-company
+    kind: standard
+    url: https://example.invalid/standards/typescript-v1.0
+    languages: [typescript]
+    lifecycle_stages: [implementation, review, static-analysis]
+    concerns: [coding, security, reliability]
+    controls: [environment, naming, formatting, declarations, types, expressions, functions, objects, errors, async, security]
+    summary: Internal TypeScript and JavaScript coding specification for terminal and HarmonyOS development. It covers strict mode, naming, formatting, declarations, data types, expressions, functions, objects, exceptions, async behavior and security restrictions; many clauses require type or control-flow evidence and remain review guidance.
   - id: nvidia-cuda
     organization: NVIDIA
     title: CUDA C++ Best Practices Guide

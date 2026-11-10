@@ -394,5 +394,71 @@
         "scripts/check.sh": "#!/bin/sh\n# if broken\n# for item\n# exit 1\n"
       }
     }
+  },
+  {
+    "id": "issue12-eval-pass",
+    "rule": "shell-eval",
+    "description": "minimal pass shell review signal shell-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/check.sh": "#!/bin/sh\nrun \"$cmd\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-eval-fail",
+    "rule": "shell-eval",
+    "description": "minimal fail shell review signal shell-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/check.sh": "#!/bin/sh\neval \"$cmd\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-alias-pass",
+    "rule": "shell-alias",
+    "description": "minimal pass shell review signal shell-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/check.sh": "#!/bin/sh\nll() { ls -l \"$@\"; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-alias-fail",
+    "rule": "shell-alias",
+    "description": "minimal fail shell review signal shell-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/check.sh": "#!/bin/sh\nalias ll='ls -l'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-chmod-read-pass",
+    "rule": "shell-chmod-read",
+    "description": "minimal pass shell review signal shell-chmod-read",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/check.sh": "#!/bin/sh\nchmod u-r secret.txt\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-chmod-read-fail",
+    "rule": "shell-chmod-read",
+    "description": "minimal fail shell review signal shell-chmod-read",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/check.sh": "#!/bin/sh\nchmod a-r secret.txt\n"
+      }
+    }
   }
 ]

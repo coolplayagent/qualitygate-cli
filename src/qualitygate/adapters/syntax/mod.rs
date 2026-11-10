@@ -1,6 +1,7 @@
 //! Framework-aware syntax facts from bounded Tree-sitter parsing.
 
 mod cache;
+pub(crate) mod review;
 mod tests_in_source;
 pub use cache::Cache;
 pub(super) use cache::parse_cached;

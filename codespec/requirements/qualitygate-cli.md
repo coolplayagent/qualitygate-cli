@@ -954,3 +954,7 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 进程取消边界是 Unix 进程组及 Windows Job；Unix 后代可通过新会话/进程组脱离，不承诺任意进程树沙箱。
 阻塞 worker 使用协作截止时间并保留并发许可直到退出，已进入的操作系统文件调用不保证可被强制中断。
 平台原生 CI、完整稳定检查、覆盖率、Miri 和 ASan 需独立记录；Linux 单元证据不能代替 Windows 结果。
+
+## LANGUAGE-SYNTAX-01：新增语言规则的结构证据
+
+十二条 Python/Go/Shell/TypeScript 规则必须使用选定快照的有界语法树及文件内绑定证据，区分注释、文本、属性、局部遮蔽与实际表达式/命令；变更导入需复核保留调用。拒绝正则覆盖；解析错误、无效编码、超时或工作预算耗尽必须未完成。不可宣称跨文件语义或动态执行完备性。验收见 `adapters::language_syntax::tests`、`tests/internal_language_rules.rs` 及双语需求证据索引。

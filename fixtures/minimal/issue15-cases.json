@@ -262,5 +262,71 @@
         "src/main.go": "for i := 0.0; i < 10; i++ { }\n"
       }
     }
+  },
+  {
+    "id": "issue15-unsafe-package-pass-minimal",
+    "rule": "go-unsafe-package",
+    "description": "minimal pass Go review signal go-unsafe-package",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "package sample\nfunc example() { p := &value }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-unsafe-package-fail-minimal",
+    "rule": "go-unsafe-package",
+    "description": "minimal fail Go review signal go-unsafe-package",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "package sample\nimport \"unsafe\"\nfunc example() { p := unsafe.Pointer(&value) }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-os-exit-pass-minimal",
+    "rule": "go-os-exit",
+    "description": "minimal pass Go review signal go-os-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "package sample\nfunc example() { return }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-os-exit-fail-minimal",
+    "rule": "go-os-exit",
+    "description": "minimal fail Go review signal go-os-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "package sample\nimport \"os\"\nfunc example() { os.Exit(1) }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-import-alias-pass-minimal",
+    "rule": "go-import-alias",
+    "description": "minimal pass Go review signal go-import-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "package sample\nimport \"fmt\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-import-alias-fail-minimal",
+    "rule": "go-import-alias",
+    "description": "minimal fail Go review signal go-import-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.go": "package sample\nimport f \"fmt\"\n"
+      }
+    }
   }
 ]

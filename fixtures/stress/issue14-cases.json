@@ -286,5 +286,71 @@
         "src/unrelated.py": "// email: alice@example.com\n"
       }
     }
+  },
+  {
+    "id": "issue14-no-with-pass-stress",
+    "rule": "ts-no-with",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "run(obj);\nconst example = \"function f(){ with\\n(obj) { run(); } }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-with-fail-stress",
+    "rule": "ts-no-with",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "function f(){ with\n(obj) { run(); } }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-pass-stress",
+    "rule": "ts-no-var",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "let count = 0;\nconst example = \"for (var value of items) { run(value); }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-fail-stress",
+    "rule": "ts-no-var",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "for (var value of items) { run(value); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-pass-stress",
+    "rule": "ts-no-arguments",
+    "description": "stress pass TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "function sum(...items) { return items.length; }\nconst example = \"function f(){ return `${arguments[0]}`; }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-fail-stress",
+    "rule": "ts-no-arguments",
+    "description": "stress fail TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.mjs": "function f(){ return `${arguments[0]}`; }\n"
+      }
+    }
   }
 ]

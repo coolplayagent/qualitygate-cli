@@ -1,0 +1,14 @@
+id: shell-alias
+version: 1
+description: Review alias definitions in shell scripts
+implementation: language-syntax
+language: [shell]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [shell]
+standard_refs:
+  - {source_id: internal-shell-coding, controls: [expressions]}
+lifecycle_inputs: [shell-alias-review]

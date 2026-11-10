@@ -262,5 +262,71 @@
         "src/component.tsx": "const stable = 1;\n// email: alice@example.com\n"
       }
     }
+  },
+  {
+    "id": "issue14-no-with-pass-typical",
+    "rule": "ts-no-with",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "run(obj);\nconst example = \"function f(){ with\\n(obj) { run(); } }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-with-fail-typical",
+    "rule": "ts-no-with",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "function f(){ with\n(obj) { run(); } }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-pass-typical",
+    "rule": "ts-no-var",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "let count = 0;\nconst example = \"var {value} = object;\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-fail-typical",
+    "rule": "ts-no-var",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "var {value} = object;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-pass-typical",
+    "rule": "ts-no-arguments",
+    "description": "typical pass TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "function sum(...items) { return items.length; }\nconst example = \"function f(){ return (() => arguments[0])(); }\\n\";\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-fail-typical",
+    "rule": "ts-no-arguments",
+    "description": "typical fail TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/component.tsx": "function f(){ return (() => arguments[0])(); }\n"
+      }
+    }
   }
 ]

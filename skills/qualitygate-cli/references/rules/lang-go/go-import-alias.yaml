@@ -1,0 +1,14 @@
+id: go-import-alias
+version: 1
+description: Review named import aliases in Go code
+implementation: language-syntax
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+standard_refs:
+  - {source_id: internal-go-coding, controls: [packages]}
+lifecycle_inputs: [go-import-alias-review]

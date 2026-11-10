@@ -1,0 +1,14 @@
+id: ts-no-with
+version: 1
+description: Review with statements in TypeScript or JavaScript code
+implementation: language-syntax
+language: [typescript]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [typescript]
+standard_refs:
+  - {source_id: internal-typescript-coding, controls: [environment]}
+lifecycle_inputs: [ts-no-with-review]

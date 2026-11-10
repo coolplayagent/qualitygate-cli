@@ -196,5 +196,41 @@
     "/verdict": "fail",
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/assertion": "forbid_commented_code_block"
+  },
+  "issue12-eval-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-eval-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell",
+    "/diagnostics/0/evidence/node_kind": "command"
+  },
+  "issue12-alias-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-alias-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell",
+    "/diagnostics/0/evidence/node_kind": "command"
+  },
+  "issue12-chmod-read-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-chmod-read-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell",
+    "/diagnostics/0/evidence/node_kind": "command"
   }
 }

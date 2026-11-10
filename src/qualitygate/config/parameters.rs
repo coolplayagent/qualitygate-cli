@@ -12,7 +12,9 @@ pub(super) fn names(implementation: &str) -> Result<&'static [&'static str]> {
         "test-naming-strict" => &["pattern", "paths", "languages"],
         "test-annotation-dependency" => &["annotation", "group", "artifact", "paths", "languages"],
         "file-pattern" => &["pattern", "paths", "languages"],
-        "native-syntax" | "shell-shebang" | "shell-commented-code" => &["paths", "languages"],
+        "language-syntax" | "native-syntax" | "shell-shebang" | "shell-commented-code" => {
+            &["paths", "languages"]
+        }
         "parameterized-tests" => &["minimum_similar", "paths", "languages"],
         "comment-language" => &["language", "exempt_patterns", "paths", "languages"],
         "ai-code-traceability" => &["marker", "provenance_scope", "paths", "languages"],
@@ -34,7 +36,7 @@ pub fn describe(implementation: &str, defaults: &Value) -> Result<Vec<Value>> {
             "prohibited_patterns" | "forbidden_imports" => ("object", "Supported language names (or all) mapped to 1..32 distinct regular expressions, each 1..512 bytes.", json!({"type":"object","minProperties":1,"maxProperties":32,"additionalProperties":{"type":"array","minItems":1,"maxItems":32,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":512}}})),
             "paths" => ("array", "Repository-relative glob patterns selecting source files.", strings()),
             "languages" if ["test-naming-strict", "test-annotation-dependency"].contains(&implementation) => ("array", "Fixed Java syntax scope for this built-in.", json!({"type":"array","const":["java"]})),
-            "languages" if ["file-pattern", "native-syntax"].contains(&implementation) => ("array", "Fixed language scope for this built-in.", json!({"type":"array","const":defaults["languages"]})),
+            "languages" if ["file-pattern", "native-syntax", "language-syntax"].contains(&implementation) => ("array", "Fixed language scope for this built-in.", json!({"type":"array","const":defaults["languages"]})),
             "languages" if ["shell-shebang", "shell-commented-code"].contains(&implementation) => ("array", "Fixed Shell language scope for this built-in.", json!({"type":"array","const":["shell"]})),
             "languages" => ("array", "Source review languages: java, python, typescript, go, rust, shell; text-only C and C++ for source-pattern.", strings()),
             "exempt_patterns" => ("array", "Regular expressions exempting matching comments.", strings()),

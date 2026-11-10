@@ -164,3 +164,14 @@ Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Car
 | MR resources do not hide source violations | `tests/merge_request.rs::merge_request_excludes_large_documents_from_source_without_hiding_source_findings` |
 | Bootstrap/custom source protection and retained resource read failures | `tests/custom_rules.rs::custom_rule_sources_are_protected_even_with_a_document_suffix`; `tests/delivery_scope/resources.rs::bootstrap_protects_configuration_with_a_resource_suffix`, `restored_resources_do_not_bypass_confined_path_failures` (Unix) |
 | Complete counts with bounded details and restored over-budget resources | `snapshot::selected_preflight::tests::resource_counts_and_protected_overrides_survive_detail_truncation` |
+
+## LANGUAGE-SYNTAX-01：可选语言规则的结构证据
+
+| Requirement | Evidence |
+| --- | --- |
+| 语法、绑定、插值、纯注释变更与有界未完成 | `adapters::language_syntax::tests` |
+| 排除文档、属性和文件名误报 | `tests/internal_language_rules.rs::review_rules_ignore_documentation_properties_and_non_command_arguments` |
+| 变更导入绑定与局部遮蔽 | `tests/internal_language_rules.rs::changed_go_imports_review_retained_calls_and_local_shadowing_removes_the_signal` |
+| 不可变选定策略与源码 | `tests/internal_language_rules.rs::syntax_rules_use_selected_source_and_policy_not_dirty_worktree_bytes` |
+| 错误语法、严格参数与路径排除 | `tests/internal_language_rules.rs::syntax_errors_and_regex_overrides_are_incomplete_but_excluded_sources_are_not_parsed` |
+| 最小、典型和压力案例的独立节点类型预期 | `fixtures/golden/issue12-typical.json`, `fixtures/golden/issue14-stress.json`, `fixtures/golden/issue15-stress.json`, `fixtures/golden/issue16-typical.json`; full selfcheck |

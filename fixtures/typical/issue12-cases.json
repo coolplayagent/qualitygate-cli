@@ -394,5 +394,71 @@
         "ci/check.bash": "#!/bin/sh\n# if broken\n# for item\n# exit 1\n"
       }
     }
+  },
+  {
+    "id": "issue12-eval-pass-typical",
+    "rule": "shell-eval",
+    "description": "typical pass shell review signal shell-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nrun \"$cmd\"\nexample='e'\"'\"'va'\"'\"'l \"$cmd\"\n'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-eval-fail-typical",
+    "rule": "shell-eval",
+    "description": "typical fail shell review signal shell-eval",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "e'va'l \"$cmd\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-alias-pass-typical",
+    "rule": "shell-alias",
+    "description": "typical pass shell review signal shell-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nll() { ls -l \"$@\"; }\nexample='alias ll=\"$cmd\"\n'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-alias-fail-typical",
+    "rule": "shell-alias",
+    "description": "typical fail shell review signal shell-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "alias ll=\"$cmd\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-chmod-read-pass-typical",
+    "rule": "shell-chmod-read",
+    "description": "typical pass shell review signal shell-chmod-read",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "#!/bin/sh\nchmod u-r secret.txt\nexample='chmod --recursive \"a-rw\" file\n'\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-chmod-read-fail-typical",
+    "rule": "shell-chmod-read",
+    "description": "typical fail shell review signal shell-chmod-read",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "ci/check.bash": "chmod --recursive \"a-rw\" file\n"
+      }
+    }
   }
 ]

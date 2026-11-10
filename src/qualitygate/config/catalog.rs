@@ -214,6 +214,15 @@ const LIFECYCLE_SUPPLEMENTS: &[&str] = &[
     include_str!(
         "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-java.yaml"
     ),
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-go.yaml"
+    ),
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-shell.yaml"
+    ),
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-typescript.yaml"
+    ),
 ];
 
 const SOURCE_AUTHORITIES: &[&str] = &[

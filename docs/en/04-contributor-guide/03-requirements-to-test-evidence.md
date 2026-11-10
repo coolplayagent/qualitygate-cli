@@ -175,3 +175,14 @@ Windows shell acceptance. See [runtime/preflight](../02-reference/06-runtime-and
 | MR resources do not hide source violations | `tests/merge_request.rs::merge_request_excludes_large_documents_from_source_without_hiding_source_findings` |
 | Bootstrap/custom source protection and retained resource read failures | `tests/custom_rules.rs::custom_rule_sources_are_protected_even_with_a_document_suffix`; `tests/delivery_scope/resources.rs::bootstrap_protects_configuration_with_a_resource_suffix`, `restored_resources_do_not_bypass_confined_path_failures` (Unix) |
 | Complete counts with bounded details and restored over-budget resources | `snapshot::selected_preflight::tests::resource_counts_and_protected_overrides_survive_detail_truncation` |
+
+## LANGUAGE-SYNTAX-01: Structured optional language reviews
+
+| Requirement | Evidence |
+| --- | --- |
+| Syntax, bindings, interpolations, comment-only edits and bounded incomplete execution | `adapters::language_syntax::tests` |
+| Ignore documentation, properties and filenames | `tests/internal_language_rules.rs::review_rules_ignore_documentation_properties_and_non_command_arguments` |
+| Changed import bindings and local shadowing | `tests/internal_language_rules.rs::changed_go_imports_review_retained_calls_and_local_shadowing_removes_the_signal` |
+| Immutable selected policy and source | `tests/internal_language_rules.rs::syntax_rules_use_selected_source_and_policy_not_dirty_worktree_bytes` |
+| Malformed source, strict parameters and path exclusions | `tests/internal_language_rules.rs::syntax_errors_and_regex_overrides_are_incomplete_but_excluded_sources_are_not_parsed` |
+| Independent node-kind expectations across minimal, typical and stress cases | `fixtures/golden/issue12-typical.json`, `fixtures/golden/issue14-stress.json`, `fixtures/golden/issue15-stress.json`, `fixtures/golden/issue16-typical.json`; full selfcheck |

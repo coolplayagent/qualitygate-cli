@@ -130,5 +130,41 @@
     "/verdict": "fail",
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/language": "go"
+  },
+  "issue15-unsafe-package-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue15-unsafe-package-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "go",
+    "/diagnostics/0/evidence/node_kind": "import_spec"
+  },
+  "issue15-os-exit-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue15-os-exit-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "go",
+    "/diagnostics/0/evidence/node_kind": "import_spec"
+  },
+  "issue15-import-alias-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue15-import-alias-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "go",
+    "/diagnostics/0/evidence/node_kind": "import_spec"
   }
 }

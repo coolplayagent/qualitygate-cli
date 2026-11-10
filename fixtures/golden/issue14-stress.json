@@ -130,5 +130,41 @@
     "/verdict": "fail",
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/language": "typescript"
+  },
+  "issue14-no-with-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue14-no-with-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "typescript",
+    "/diagnostics/0/evidence/node_kind": "with_statement"
+  },
+  "issue14-no-var-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue14-no-var-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "typescript",
+    "/diagnostics/0/evidence/node_kind": "for_in_statement"
+  },
+  "issue14-no-arguments-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue14-no-arguments-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "typescript",
+    "/diagnostics/0/evidence/node_kind": "identifier"
   }
 }

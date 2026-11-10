@@ -1,0 +1,14 @@
+id: go-os-exit
+version: 1
+description: Review os.Exit and runtime.Goexit calls in Go code
+implementation: language-syntax
+language: [go]
+requires_capabilities: [files]
+defaults:
+  required: true
+  severity: warning
+  parameters:
+    languages: [go]
+standard_refs:
+  - {source_id: internal-go-coding, controls: [misc]}
+lifecycle_inputs: [go-os-exit-review]

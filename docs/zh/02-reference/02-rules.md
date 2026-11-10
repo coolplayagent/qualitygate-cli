@@ -27,6 +27,13 @@ C++ 规则将 `.h` 按 C++ 解析。只支持 `paths` 与固定的 `languages` �
 API 规则排除成员调用和其他命名空间，但不能解析非限定名称的遮蔽关系。宏展开、条件编译和
 类型/符号解析仍需外部分析器。语法错误和资源超限报告未完成。原有正则规则继续保留明确的文本局限。
 
+内部 Python V3.4、Go V3.4、Shell V2.2 与 TypeScript/JavaScript V1.0 规则分别引用
+`internal-python-coding`、`internal-go-coding`、`internal-shell-coding` 和
+`internal-typescript-coding` 来源。新增十二条规则采用有界 `language-syntax` 语法树分析，结合 Go 导入绑定、
+TypeScript 局部作用域和 Shell 命令操作数。注释与字面文本不触发诊断，插值中的执行表达式仍受检查。
+解析失败或预算耗尽报告未完成；跨文件类型、运行时展开和数据流仍需外部分析器或人工复核。
+具体边界见[内置规则指南](../../../skills/qualitygate-cli/references/builtin-rules.md#structured-language-reviews)。
+
 ## 项目规则协议
 
 版本 1 YAML 规则包声明身份、适用范围、来源审核、实体、断言、消息与资源边界。断言可要求或禁止

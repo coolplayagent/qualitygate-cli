@@ -346,3 +346,16 @@ ambiguity, snapshot mismatch, missing facts, timeout, and malformed tool output.
 ---
 
 [Previous: +1 Scenarios](05-scenarios.md) · [Contents](../README.md) · [Next: Rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md)
+
+### `language-syntax`
+
+`adapters::language_syntax` evaluates the twelve Python/Go/Shell/TypeScript
+reviews against immutable snapshot bytes. `syntax::review` owns bounded parsing
+and changed-token traversal; `language_bindings` owns file-local Go imports and
+TypeScript scopes; `language_shell` decodes static command operands without
+executing expansions. Literals and comments do not trigger findings; nested
+executable interpolations do. Evidence records language, node kind and lexical
+resolution limits. Fixed-language validation rejects regex overrides.
+Each selected file is limited to 4 MiB, 200,000 work steps and two seconds;
+shared built-in time/output limits still apply. Parse errors, invalid UTF-8 and
+budget exhaustion remain incomplete, never successful empty results.

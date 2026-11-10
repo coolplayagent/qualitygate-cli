@@ -262,5 +262,71 @@
         "src/main.ts": "// email: alice@example.com\n"
       }
     }
+  },
+  {
+    "id": "issue14-no-with-pass-minimal",
+    "rule": "ts-no-with",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "run(obj);\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-with-fail-minimal",
+    "rule": "ts-no-with",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-with",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "with (obj) { run(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-pass-minimal",
+    "rule": "ts-no-var",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "let count = 0;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-var-fail-minimal",
+    "rule": "ts-no-var",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-var",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "var count = 0;\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-pass-minimal",
+    "rule": "ts-no-arguments",
+    "description": "minimal pass TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "function sum(...items) { return items.length; }\n"
+      }
+    }
+  },
+  {
+    "id": "issue14-no-arguments-fail-minimal",
+    "rule": "ts-no-arguments",
+    "description": "minimal fail TypeScript or JavaScript review signal ts-no-arguments",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/main.ts": "function sum() { return arguments.length; }\n"
+      }
+    }
   }
 ]

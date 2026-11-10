@@ -286,5 +286,71 @@
         "src/unrelated.py": "for i := 0.0; i < 10; i++ { }\n"
       }
     }
+  },
+  {
+    "id": "issue15-unsafe-package-pass-stress",
+    "rule": "go-unsafe-package",
+    "description": "stress pass Go review signal go-unsafe-package",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "package sample\nfunc example() { p := &value }\nvar example = \"package sample\\nimport . \\\"unsafe\\\"\\nvar pointer Pointer\\n\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-unsafe-package-fail-stress",
+    "rule": "go-unsafe-package",
+    "description": "stress fail Go review signal go-unsafe-package",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "package sample\nimport . \"unsafe\"\nvar pointer Pointer\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-os-exit-pass-stress",
+    "rule": "go-os-exit",
+    "description": "stress pass Go review signal go-os-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "package sample\nfunc example() { return }\nvar example = \"package sample\\nimport . \\\"runtime\\\"\\nfunc f(){ Goexit() }\\n\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-os-exit-fail-stress",
+    "rule": "go-os-exit",
+    "description": "stress fail Go review signal go-os-exit",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "package sample\nimport . \"runtime\"\nfunc f(){ Goexit() }\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-import-alias-pass-stress",
+    "rule": "go-import-alias",
+    "description": "stress pass Go review signal go-import-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "package sample\nimport \"fmt\"\nvar example = \"package sample\\nimport (\\n    f \\\"fmt\\\"\\n    \\\"os\\\"\\n)\\n\"\n"
+      }
+    }
+  },
+  {
+    "id": "issue15-import-alias-fail-stress",
+    "rule": "go-import-alias",
+    "description": "stress fail Go review signal go-import-alias",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/module.go": "package sample\nimport (\n    f \"fmt\"\n    \"os\"\n)\n"
+      }
+    }
   }
 ]
