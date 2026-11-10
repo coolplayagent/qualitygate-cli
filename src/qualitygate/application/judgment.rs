@@ -359,3 +359,7 @@ pub async fn run(options: Options) -> Result<(Value, u8)> {
 
 mod pilot;
 pub use pilot::{Options as PilotOptions, summarize};
+
+#[cfg(test)]
+#[path = "judgment_tests.rs"]
+mod tests;

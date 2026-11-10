@@ -958,3 +958,17 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 ## LANGUAGE-SYNTAX-01：新增语言规则的结构证据
 
 十二条 Python/Go/Shell/TypeScript 规则必须使用选定快照的有界语法树及文件内绑定证据，区分注释、文本、属性、局部遮蔽与实际表达式/命令；变更导入需复核保留调用。拒绝正则覆盖；解析错误、无效编码、超时或工作预算耗尽必须未完成。不可宣称跨文件语义或动态执行完备性。验收见 `adapters::language_syntax::tests`、`tests/internal_language_rules.rs` 及双语需求证据索引。
+
+## UT-SCENARIO-01：面向场景的独立单元覆盖率
+
+仅使用 `cargo llvm-cov --lib --bins --all-features --fail-under-lines 97.01` 验证严格高于 97% 的
+Rust 单元行覆盖率；不得混入集成 profile 或排除未覆盖生产模块。场景须断言通过、违规、未完成、超时、
+策略变化、快照不匹配时的决策、证据和输入完整性；协议替身不替代真实工具验收。
+CI 保留独立 UT LCOV 与原有 all-target 90% 门禁，Miri/ASan 和集成门禁继续独立。
+可重复证据见[场景单元证据索引](../../docs/zh/04-contributor-guide/03-requirements-to-test-evidence.md)。
+
+慢 UT 的预算组合使用同一解析路径和显式小预算；各格式公开入口保留真实 16 MiB 接受/拒绝边界。
+测量须区分编译、并行争用与单用例执行，不得为提速删除场景或降低生产限制。
+子进程组 SIGTERM 只造成检查未完成、CLI 退出 2，不能传播到 runner 或调用者；后续正常检查退出 0。
+通过结论同时要求完整报告和 CLI 退出 0，外层 143 必须独立调查，不能由报告覆盖。
+证据见 `adapters::reports::diagnostic_budget_tests`、`runner::tests` 和 `tests/execution.rs`。

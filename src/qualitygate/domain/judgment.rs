@@ -604,4 +604,107 @@ mod tests {
             }
         }
     }
+    #[test]
+    fn invalid_questions_calibrations_and_provider_contracts_cannot_enter_assessment() {
+        for case in 0..4 {
+            let mut q = question();
+            match case {
+                0 => q.text.clear(),
+                1 => q.choices.push("true".into()),
+                2 => q.positive_choice = "missing".into(),
+                3 => q.source_digest = digest(b"different"),
+                _ => unreachable!(),
+            }
+            assert!(q.validate().is_err());
+        }
+        for case in 0..5 {
+            let mut c = calibration(&question());
+            match case {
+                0 => c.id.clear(),
+                1 => c.brier_score = f64::NAN,
+                2 => c.log_loss = -1.0,
+                3 => c.risk_coverage.clear(),
+                4 => c.risk_coverage[0].risk = 2.0,
+                _ => unreachable!(),
+            }
+            assert!(c.validate_metrics().is_err());
+        }
+        let mut p = JudgmentPolicy {
+            schema_version: 1,
+            mode: JudgmentMode::Shadow,
+            argv: vec!["provider".into()],
+            version_argv: vec!["provider".into()],
+            provider_inputs: vec![],
+            timeout_seconds: 5,
+            question: question(),
+            calibration: Some(calibration(&question())),
+            review_priority_threshold: None,
+        };
+        p.review_priority_threshold = Some(1.1);
+        assert!(p.validate().is_err());
+        p.review_priority_threshold = None;
+        p.version_argv = vec!["different-provider".into()];
+        assert!(p.validate().is_err());
+    }
+
+    #[test]
+    fn abstention_and_execution_gaps_cannot_be_substituted_with_unbound_probabilities() {
+        let p = JudgmentPolicy {
+            schema_version: 1,
+            mode: JudgmentMode::Shadow,
+            argv: vec!["provider".into()],
+            version_argv: vec!["provider".into()],
+            provider_inputs: vec![],
+            timeout_seconds: 5,
+            question: question(),
+            calibration: Some(calibration(&question())),
+            review_priority_threshold: None,
+        };
+        let context = EvaluationContext {
+            evidence_id: "evidence",
+            provider_digest: &digest(b"provider"),
+            repository_digest: &digest(b"repo"),
+            language: "rust",
+            rule_id: "warning",
+            now_unix: 300,
+        };
+        for reason in ["", "provider unavailable"] {
+            assert_eq!(
+                Assessment::ExecutionGap {
+                    reason: reason.into()
+                }
+                .validate(&p, &context)
+                .is_ok(),
+                !reason.is_empty()
+            );
+        }
+        for id in ["qg.review", "other"] {
+            let a:Assessment=serde_json::from_value(json!({"kind":"abstained","question_id":id,"reason":"insufficient_evidence","evidence_refs":["evidence"]})).unwrap();
+            assert_eq!(a.validate(&p, &context).is_ok(), id == "qg.review");
+        }
+        let base = json!({"kind":"probabilistic","question_id":"qg.review","primitive":"boolean","selected":"true","distribution":{"true":0.8,"false":0.2},"target_event":"finding_valid","applicability":"in_domain","calibration_ref":"cal","model_digest":digest(b"model"),"evidence_refs":["evidence"]});
+        for (field, value) in [
+            ("question_id", json!("other")),
+            ("applicability", json!("out_of_domain")),
+            ("calibration_ref", json!("other")),
+            ("model_digest", json!(digest(b"other model"))),
+        ] {
+            let mut a = base.clone();
+            a[field] = value;
+            assert!(
+                serde_json::from_value::<Assessment>(a)
+                    .unwrap()
+                    .validate(&p, &context)
+                    .is_err()
+            );
+        }
+        let mut missing = p;
+        missing.calibration = None;
+        assert!(
+            serde_json::from_value::<Assessment>(base)
+                .unwrap()
+                .validate(&missing, &context)
+                .is_err()
+        );
+    }
 }

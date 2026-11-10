@@ -12,6 +12,10 @@ use sha2::{Digest, Sha256};
 pub const SCHEMA_URI: &str = "urn:qualitygate:decision:1";
 pub const PROTOCOL_VERSION: &str = "1.0.0";
 
+#[cfg(test)]
+#[path = "decision_envelope_tests.rs"]
+mod tests;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CommandKind {

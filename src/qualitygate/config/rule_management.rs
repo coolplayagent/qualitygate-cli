@@ -10,6 +10,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(test)]
+#[path = "rule_management_tests.rs"]
+mod scenario_tests;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "operation", content = "arguments", rename_all = "snake_case")]
 pub enum Mutation {

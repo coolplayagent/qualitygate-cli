@@ -8,6 +8,10 @@ use crate::{
 use anyhow::{Error, Result};
 use std::path::{Path, PathBuf};
 
+#[cfg(test)]
+#[path = "policy_guidance_tests.rs"]
+mod tests;
+
 #[derive(Debug, Clone, Copy)]
 pub enum SelectionKind {
     Worktree,

@@ -57,6 +57,39 @@ async fn captures_both_streams_input_and_exit_status() {
 
 #[cfg(unix)]
 #[tokio::test]
+async fn child_group_sigterm_does_not_terminate_the_runner_or_its_next_command() {
+    let root = tempfile::tempdir().unwrap();
+    let interrupted = capture(
+        &[
+            "sh".into(),
+            "-c".into(),
+            "printf started; kill -TERM 0".into(),
+        ],
+        root.path(),
+        None,
+        Duration::from_secs(2),
+    )
+    .await
+    .unwrap();
+    assert_eq!(interrupted.stdout, b"started");
+    assert_eq!(interrupted.exit_code, None);
+    assert!(!interrupted.timed_out);
+    assert!(interrupted.capture_error.is_none());
+
+    let completed = capture(
+        &["sh".into(), "-c".into(), "printf survived".into()],
+        root.path(),
+        None,
+        Duration::from_secs(2),
+    )
+    .await
+    .unwrap();
+    assert_eq!(completed.exit_code, Some(0));
+    assert_eq!(completed.stdout, b"survived");
+}
+
+#[cfg(unix)]
+#[tokio::test]
 async fn closed_stdin_is_incomplete_even_when_the_child_exits_successfully() {
     let root = tempfile::tempdir().unwrap();
     let output = capture(

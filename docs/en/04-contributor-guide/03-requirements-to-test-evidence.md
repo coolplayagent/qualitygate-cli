@@ -186,3 +186,22 @@ Windows shell acceptance. See [runtime/preflight](../02-reference/06-runtime-and
 | Immutable selected policy and source | `tests/internal_language_rules.rs::syntax_rules_use_selected_source_and_policy_not_dirty_worktree_bytes` |
 | Malformed source, strict parameters and path exclusions | `tests/internal_language_rules.rs::syntax_errors_and_regex_overrides_are_incomplete_but_excluded_sources_are_not_parsed` |
 | Independent node-kind expectations across minimal, typical and stress cases | `fixtures/golden/issue12-typical.json`, `fixtures/golden/issue14-stress.json`, `fixtures/golden/issue15-stress.json`, `fixtures/golden/issue16-typical.json`; full selfcheck |
+
+## Scenario-driven unit evidence
+
+`UT-SCENARIO-01` uses the independent `--lib --bins --all-features` coverage gate
+at 97.01%. Integration profiles are not included in this measurement. The rows
+below identify observable contracts; protocol doubles do not replace live tool
+or end-to-end acceptance.
+
+| Scenario contract | Unit evidence |
+| --- | --- |
+| Invalid configuration, bounded discovery, immutable candidate packages and source changes | `config::input_scenarios`, `config::project_inventory::scenario_tests`, `config::rule_authoring::tests`, `config::policy_candidates::tests`, `config::custom_validation::scenario_tests` |
+| Syntax versus comments/literals, framework discovery, retained declaration and dependency obligations | `adapters::markers::tests`, `adapters::language_syntax::tests`, `adapters::native_syntax::tests`, `adapters::structure_rules::tests`, `adapters::custom_rules::scenario_tests`, `adapters::git_trailers::tests` |
+| Commands fail, time out, exceed output limits or mutate inputs/executables; current and baseline reports remain independently bound | `application::commands::tests`, `application::generated_reports::tests`, `application::doctor::tests`, `application::rule_execution::tests`, `application::tests` |
+| Missing history, paired evaluation timeout, different acquisition policies, live trust and archived verification assets | `application::policy_validation::tests`, `application::policy_promotion::tests`; disposable Git and signed synthetic records |
+| Bounded agent repair, contract/checkout changes, incomplete evaluator protocol and immutable delivery | `application::agent_host::scenario_tests`, `interfaces::cli::tests::agent_dispatch_keeps_invalid_evaluator_protocol_incomplete_with_retained_ledger`; fixed executable protocol doubles |
+| Negative review labels, abstention, calibrated review priority, failed attempts and pilot matrix integrity | `application::judgment::tests`, `application::judgment::pilot::tests`, `domain::pilot::tests`, `application::pilot::tests`; no automatic gate changes or real pilot acceptance claimed |
+| Staged/diff/MR identities, dirty worktrees, resource budgets and report/CLI boundaries | `snapshot::merge_request::tests`, `snapshot::selected_preflight::scenario_tests`, `snapshot::delivery::tests`, `domain::report::comparison_tests`, `interfaces::render::tests`, binary `tests::process_boundary_distinguishes_help_parser_failure_success_and_execution_gap` |
+| Small-budget shared-path, cross-file and escaping scenarios retain real public 16 MiB boundaries | `adapters::reports::diagnostic_budget_tests`, `adapters::reports::json_budget::tests` |
+| Child-group SIGTERM does not terminate the runner; CLI emits incomplete evidence and exits 2, then a passing run exits 0 | `runner::tests::child_group_sigterm_does_not_terminate_the_runner_or_its_next_command`; integration `tests/execution.rs::unix::child_group_sigterm_leaves_cli_alive_with_an_incomplete_report_and_exit_two` |

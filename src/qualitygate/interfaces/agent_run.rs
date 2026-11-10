@@ -102,4 +102,54 @@ mod tests {
         .unwrap_err();
         assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
     }
+    #[test]
+    fn controller_arguments_preserve_fixed_inputs_resume_and_explicit_feedback_mode() {
+        for mode in ["compact", "full"] {
+            let parsed = Command::try_parse_from([
+                "agent-run",
+                "--qualitygate",
+                "cli",
+                "--base",
+                "base",
+                "--policy-ref",
+                "policy",
+                "--task",
+                "task.yaml",
+                "--prompt-file",
+                "prompt.txt",
+                "--agent-command",
+                "agent.json",
+                "--output-dir",
+                "/evidence",
+                "--feedback-mode",
+                mode,
+                "--max-attempts",
+                "2",
+                "--timeout-seconds",
+                "30",
+                "--resume",
+                "previous.json",
+                "--replacement-file",
+                "src/lib.rs",
+                "--trust-store",
+                "/trust.json",
+                "--evidence-dir",
+                "/records",
+            ])
+            .unwrap();
+            let options = parsed.args.options("/repo".into(), "custom.yaml".into());
+            assert_eq!(options.base, "base");
+            assert_eq!(options.policy_ref, "policy");
+            assert_eq!(options.max_attempts, 2);
+            assert_eq!(options.timeout_seconds, 30);
+            assert_eq!(options.resume, Some("previous.json".into()));
+            assert_eq!(options.replacement_file, Some("src/lib.rs".into()));
+            assert_eq!(
+                matches!(options.feedback_mode, FeedbackMode::Compact),
+                mode == "compact"
+            );
+            assert_eq!(options.trust_store, Some("/trust.json".into()));
+            assert_eq!(options.evidence_dir, Some("/records".into()));
+        }
+    }
 }

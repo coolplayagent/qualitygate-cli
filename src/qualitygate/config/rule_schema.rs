@@ -245,3 +245,46 @@ pub fn parse(bytes: &[u8]) -> Result<CustomRule> {
         ),
     }
 }
+
+#[cfg(test)]
+mod scenario_tests {
+    use super::*;
+
+    #[test]
+    fn published_family_resolves_each_pinned_schema_and_rejects_unsupported_versions() {
+        let family = family_document().unwrap();
+        assert_eq!(family["$id"], FAMILY_SCHEMA_ID);
+        let validator = jsonschema::draft202012::new(&family).unwrap();
+        assert!(!validator.is_valid(&serde_json::json!({"schema_version":99})));
+        for version in [1, 2, 3] {
+            let (id, digest) = schema_identity(version).unwrap();
+            assert_eq!(document_version(version).unwrap()["$id"], id);
+            assert_eq!(digest.len(), 71);
+        }
+        assert_eq!(family_digest().unwrap(), family_digest().unwrap());
+        assert!(schema_identity(4).is_err());
+        assert!(document_version(0).is_err());
+    }
+
+    #[test]
+    fn malformed_author_input_has_bounded_diagnostics_instead_of_executable_rule() {
+        for bytes in [
+            b"1: value".as_slice(),
+            b"rule: !Unknown tagged",
+            b"number: .inf",
+            b"schema_version: 4",
+            b"[invalid",
+            b"schema_version: 1\nschema_version: 2",
+        ] {
+            let (rule, issues) = inspect(bytes).unwrap();
+            assert!(rule.is_none());
+            assert!(!issues.is_empty());
+        }
+        let (rule, issues) = inspect(&vec![b' '; super::super::MAX_CONFIG_BYTES + 1]).unwrap();
+        assert!(rule.is_none());
+        assert_eq!(issues.len(), 1);
+        let nested = serde_norway::Value::Sequence(vec![serde_norway::Value::Null]);
+        assert!(yaml_shape(&nested, 64, &mut 0).is_err());
+        assert!(yaml_shape(&nested, 0, &mut 50_000).is_err());
+    }
+}

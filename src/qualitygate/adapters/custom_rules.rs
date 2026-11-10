@@ -499,3 +499,7 @@ fn dependencies(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "custom_rules_scenario_tests.rs"]
+mod scenario_tests;

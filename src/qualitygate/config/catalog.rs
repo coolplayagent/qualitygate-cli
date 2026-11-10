@@ -924,3 +924,7 @@ mod supplement_tests {
         assert!(standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, &[&duplicate]).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "catalog_scenario_tests.rs"]
+mod scenario_tests;

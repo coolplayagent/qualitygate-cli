@@ -494,6 +494,27 @@ mod unix {
     }
 
     #[test]
+    fn child_group_sigterm_leaves_cli_alive_with_an_incomplete_report_and_exit_two() {
+        let root = fixture();
+        policy(root.path(), json!([command("signal", "kill -TERM 0")]));
+        let interrupted = report(&cli(root.path(), &["check", "--format", "json"]), 2);
+        assert_eq!(interrupted["gate"]["complete"], false);
+        assert_eq!(
+            interrupted["checks"][0]["execution"]["status"],
+            "tool_error"
+        );
+        assert!(interrupted["checks"][0]["verdict"].is_null());
+
+        policy(
+            root.path(),
+            json!([command("completed", "printf survived")]),
+        );
+        let completed = report(&cli(root.path(), &["check", "--format", "json"]), 0);
+        assert_eq!(completed["gate"]["complete"], true);
+        assert_eq!(completed["gate"]["decision"], "pass");
+    }
+
+    #[test]
     fn signal_termination_and_failed_source_revalidation_retain_completed_evidence() {
         let root = fixture();
         policy(root.path(), json!([command("signal", "kill -TERM $$")]));

@@ -13,6 +13,10 @@ use std::{
     path::Path,
 };
 
+#[cfg(test)]
+#[path = "compatibility_inputs_tests.rs"]
+mod tests;
+
 pub(super) async fn read(path: &Path) -> Result<Vec<u8>> {
     let metadata = tokio::fs::symlink_metadata(path).await.with_context(|| {
         format!(

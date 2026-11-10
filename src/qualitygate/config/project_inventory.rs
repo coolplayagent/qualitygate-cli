@@ -225,3 +225,71 @@ mod tests {
         assert!(parse(&config, [("elsewhere.yaml", b"ignored".as_slice())], 4).is_err());
     }
 }
+
+#[cfg(test)]
+mod scenario_tests {
+    use super::*;
+    #[test]
+    fn discovery_bounds_nested_packages_and_does_not_accept_missing_or_non_directory_roots() {
+        let root = tempfile::tempdir().unwrap();
+        let config: Config =
+            serde_norway::from_str("schema_version: 1\ncustom_rules: rules\n").unwrap();
+        assert!(
+            read(root.path(), &config)
+                .unwrap_err()
+                .to_string()
+                .contains("does not exist")
+        );
+        std::fs::write(root.path().join("rules"), b"not a directory").unwrap();
+        assert!(
+            read(root.path(), &config)
+                .unwrap_err()
+                .to_string()
+                .contains("not a directory")
+        );
+        std::fs::remove_file(root.path().join("rules")).unwrap();
+        std::fs::create_dir_all(root.path().join("rules/nested")).unwrap();
+        assert!(
+            read(root.path(), &config)
+                .unwrap_err()
+                .to_string()
+                .contains("no YAML")
+        );
+        std::fs::write(root.path().join("rules/nested/ignored.txt"), b"ignored").unwrap();
+        std::fs::write(root.path().join("rules/nested/a.yml"), b"selected").unwrap();
+        let inventory = read(root.path(), &config).unwrap();
+        assert_eq!(inventory.len(), 1);
+        assert_eq!(inventory["rules/nested/a.yml"], b"selected");
+        let large = std::fs::File::create(root.path().join("rules/large.yaml")).unwrap();
+        large
+            .set_len(super::super::MAX_CONFIG_BYTES as u64 + 1)
+            .unwrap();
+        assert!(
+            read(root.path(), &config)
+                .unwrap_err()
+                .to_string()
+                .contains("1 MiB")
+        );
+        std::fs::remove_file(root.path().join("rules/large.yaml")).unwrap();
+        for n in 0..256 {
+            std::fs::write(root.path().join(format!("rules/{n}.yaml")), b"{}").unwrap();
+        }
+        assert!(
+            read(root.path(), &config)
+                .unwrap_err()
+                .to_string()
+                .contains("256 files")
+        );
+        let other = tempfile::tempdir().unwrap();
+        std::fs::create_dir(other.path().join("rules")).unwrap();
+        for n in 0..4097 {
+            std::fs::write(other.path().join(format!("rules/{n}.txt")), b"").unwrap();
+        }
+        assert!(
+            read(other.path(), &config)
+                .unwrap_err()
+                .to_string()
+                .contains("discovery budget")
+        );
+    }
+}

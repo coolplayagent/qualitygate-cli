@@ -1,5 +1,9 @@
 mod check;
 
+#[cfg(test)]
+#[path = "cli_tests.rs"]
+mod tests;
+
 use crate::{application, config, domain::Severity};
 use anyhow::{Context, Result, bail};
 use clap::{Args, Parser, Subcommand, ValueEnum};

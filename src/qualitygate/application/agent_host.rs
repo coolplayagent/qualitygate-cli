@@ -519,3 +519,7 @@ fn record_execution_error(ledger: &mut Value, error: &anyhow::Error) {
 #[cfg(test)]
 #[path = "agent_host_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "agent_host_loop_tests.rs"]
+mod scenario_tests;

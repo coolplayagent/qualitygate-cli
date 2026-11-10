@@ -320,3 +320,23 @@ fn c_family_rules_accept_both_c_and_cpp_header_syntax() {
         );
     }
 }
+
+#[test]
+fn changed_token_selection_ignores_comments_and_bounds_traversal_even_without_a_match() {
+    let source = b"void f() {\n// changed rationale\nauto value = NULL;\n}\n";
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let tree = parse(source, "cpp", deadline).unwrap();
+    assert!(!changed_token(tree.root_node(), &[2].into(), deadline, &mut 0).unwrap());
+    assert!(changed_token(tree.root_node(), &[3].into(), deadline, &mut 0).unwrap());
+    assert!(!changed_token(tree.root_node(), &[99].into(), deadline, &mut 0).unwrap());
+    let mut visited = MAX_NODES;
+    assert!(changed_token(tree.root_node(), &[99].into(), deadline, &mut visited).is_err());
+    for replacement in ["16; int extra", "16, extra=2", "-(-16)", "+(+16)"] {
+        let expected = replacement.starts_with(['-', '+']);
+        assert_eq!(
+            numeric_macro(replacement, deadline, &mut 0).unwrap(),
+            expected,
+            "{replacement}"
+        );
+    }
+}

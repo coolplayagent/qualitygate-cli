@@ -106,3 +106,93 @@ pub(super) fn apply(parameters: &mut Value, edits: &[String], implementation: &s
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn dotted_edits_preserve_siblings_and_reject_ambiguous_or_unbounded_updates() {
+        let original = json!({"patterns":{"rust":"^test_","python":"^test_"}});
+        let mut changed = original.clone();
+        apply(
+            &mut changed,
+            &[r#"patterns.rust="^scenario_""#.into()],
+            "test-naming",
+        )
+        .unwrap();
+        assert_eq!(changed["patterns"]["rust"], "^scenario_");
+        assert_eq!(changed["patterns"]["python"], "^test_");
+        for edits in [
+            vec!["patterns.rust=1".into(), "patterns={}".into()],
+            vec!["patterns={}".into(), "patterns.rust=1".into()],
+            vec!["paths=[]".into(), "paths=[]".into()],
+            vec!["unknown=true".into()],
+            vec!["patterns..rust=1".into()],
+            vec!["pattern".into()],
+            vec!["paths=not-json".into()],
+            vec!["paths=[]".into(); 129],
+            vec![format!("{}=1", "patterns.".repeat(17))],
+            vec![format!(
+                "paths=\"{}\"",
+                "x".repeat(super::super::MAX_CONFIG_BYTES)
+            )],
+        ] {
+            assert!(apply(&mut original.clone(), &edits, "test-naming").is_err());
+        }
+        assert!(
+            apply(
+                &mut json!({"patterns":[]}),
+                &["patterns.rust=1".into()],
+                "test-naming"
+            )
+            .is_err()
+        );
+        assert!(apply(&mut json!([]), &["paths=[]".into()], "test-naming").is_err());
+        let mut created = json!({});
+        apply(
+            &mut created,
+            &["patterns.rust=\"test\"".into()],
+            "test-naming",
+        )
+        .unwrap();
+        assert_eq!(created, json!({"patterns":{"rust":"test"}}));
+    }
+    #[test]
+    fn discoverable_contracts_expose_types_defaults_and_fixed_scopes() {
+        for implementation in [
+            "line-ending",
+            "commit-message",
+            "diff-size",
+            "test-naming",
+            "test-naming-strict",
+            "test-annotation-dependency",
+            "file-pattern",
+            "language-syntax",
+            "native-syntax",
+            "shell-shebang",
+            "shell-commented-code",
+            "parameterized-tests",
+            "comment-language",
+            "ai-code-traceability",
+            "source-pattern",
+            "import-boundary",
+            "used-undeclared",
+            "module-boundary",
+        ] {
+            let descriptions = describe(
+                implementation,
+                &json!({"languages":["java"],"max_added_lines":42}),
+            )
+            .unwrap();
+            assert_eq!(descriptions.len(), names(implementation).unwrap().len());
+            for item in descriptions {
+                assert!(item["description"].as_str().unwrap().len() > 10);
+                assert!(item["schema"].is_object());
+            }
+        }
+        assert!(describe("unknown", &json!({})).is_err());
+        let sizes = describe("diff-size", &json!({"max_added_lines":42})).unwrap();
+        assert_eq!(sizes[0]["default"], 42);
+        assert_eq!(sizes[0]["has_default"], true);
+    }
+}

@@ -13,6 +13,10 @@ use std::{
     path::Path,
 };
 
+#[cfg(test)]
+#[path = "rule_authoring_tests.rs"]
+mod tests;
+
 pub(super) fn read_file(root: &Path, name: &str) -> Result<Vec<u8>> {
     let path = paths::confined(root, name.as_ref())?;
     if !std::fs::metadata(&path)

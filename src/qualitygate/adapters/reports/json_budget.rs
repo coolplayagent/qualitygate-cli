@@ -8,13 +8,19 @@ pub(super) const MAX_BYTES: usize = 16 * 1024 * 1024;
 
 pub(super) struct Budget {
     remaining: usize,
+    limit: usize,
     subject: &'static str,
 }
 
 impl Budget {
     pub(super) fn new(subject: &'static str) -> Self {
+        Self::with_limit(subject, MAX_BYTES)
+    }
+
+    pub(super) fn with_limit(subject: &'static str, limit: usize) -> Self {
         Self {
-            remaining: MAX_BYTES,
+            remaining: limit,
+            limit,
             subject,
         }
     }
@@ -33,10 +39,14 @@ impl Budget {
 
 impl Write for Budget {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.remaining = self
-            .remaining
-            .checked_sub(bytes.len())
-            .ok_or_else(|| io::Error::other(format!("{} exceed 16 MiB", self.subject)))?;
+        self.remaining = self.remaining.checked_sub(bytes.len()).ok_or_else(|| {
+            let limit = if self.limit == MAX_BYTES {
+                "16 MiB".to_owned()
+            } else {
+                format!("{} bytes", self.limit)
+            };
+            io::Error::other(format!("{} exceed {limit}", self.subject))
+        })?;
         Ok(bytes.len())
     }
 
@@ -51,10 +61,7 @@ mod tests {
 
     #[test]
     fn serialized_budget_counts_json_escaping_and_rejects_before_copying_output() {
-        let mut budget = Budget {
-            remaining: 8,
-            subject: "results",
-        };
+        let mut budget = Budget::with_limit("results", 8);
         budget.charge(&"\u{0001}").unwrap();
         assert_eq!(budget.remaining, 0);
         assert!(
@@ -62,7 +69,7 @@ mod tests {
                 .charge(&0)
                 .unwrap_err()
                 .to_string()
-                .contains("16 MiB")
+                .contains("8 bytes")
         );
 
         let mut budget = Budget::new("locations");
@@ -73,10 +80,7 @@ mod tests {
 
     #[test]
     fn rejected_values_are_not_appended_to_retained_evidence() {
-        let mut budget = Budget {
-            remaining: 8,
-            subject: "Normalized diagnostics",
-        };
+        let mut budget = Budget::with_limit("Normalized diagnostics", 8);
         let mut retained = Vec::new();
         budget.push(&mut retained, "1234").unwrap();
         assert!(budget.push(&mut retained, "abc").is_err());

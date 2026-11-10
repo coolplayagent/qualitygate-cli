@@ -87,3 +87,7 @@ pub(super) async fn select(
     })
     .await?
 }
+
+#[cfg(test)]
+#[path = "change_selection_tests.rs"]
+mod tests;

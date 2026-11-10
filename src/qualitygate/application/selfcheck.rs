@@ -24,6 +24,10 @@ use std::{
 /// for the complete run rather than letting individual fixtures drift.
 const CORPUS_BUDGET: Duration = Duration::from_secs(120);
 
+#[cfg(test)]
+#[path = "selfcheck_tests.rs"]
+mod tests;
+
 pub async fn run(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
     let (selected_fixture, selected_rule) = (fixture.clone(), rule.clone());
     match tokio::task::spawn_blocking(move || execute(selected_fixture, selected_rule)).await {

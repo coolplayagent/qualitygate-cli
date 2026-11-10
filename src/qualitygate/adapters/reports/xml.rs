@@ -4,11 +4,18 @@ use anyhow::{Context, Result, bail};
 use roxmltree::Node;
 
 pub(super) fn parse(format: ReportFormat, text: &str) -> Result<Data> {
+    parse_with_budget(format, text, Budget::new("Normalized diagnostics"))
+}
+
+pub(super) fn parse_with_budget(
+    format: ReportFormat,
+    text: &str,
+    mut budget: Budget,
+) -> Result<Data> {
     let text = super::xml_header::normalize(format, text)?;
     let document = crate::adapters::xml_document::parse(&text)?;
     let root = document.root_element();
     let mut data = Data::default();
-    let mut budget = Budget::new("Normalized diagnostics");
     let valid_root = match format {
         ReportFormat::Junit => ["testsuite", "testsuites"].contains(&root.tag_name().name()),
         ReportFormat::Checkstyle => root.has_tag_name("checkstyle"),

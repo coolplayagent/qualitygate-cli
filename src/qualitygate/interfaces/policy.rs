@@ -430,3 +430,7 @@ pub(super) async fn run(
     })
     .await?
 }
+
+#[cfg(test)]
+#[path = "policy_tests.rs"]
+mod tests;

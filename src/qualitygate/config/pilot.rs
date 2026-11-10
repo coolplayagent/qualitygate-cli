@@ -239,3 +239,7 @@ pub fn load(input: &Path) -> Result<(Manifest, Reports)> {
     }
     Ok((manifest, reports))
 }
+
+#[cfg(test)]
+#[path = "pilot_tests.rs"]
+mod tests;

@@ -241,3 +241,7 @@ pub async fn summarize(
     })
     .await?
 }
+
+#[cfg(test)]
+#[path = "pilot_tests.rs"]
+mod tests;

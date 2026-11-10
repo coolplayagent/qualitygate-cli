@@ -339,3 +339,7 @@ async fn run(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "compatibility_tests.rs"]
+mod tests;

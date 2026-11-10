@@ -546,3 +546,7 @@ fn validation_recheck(options: &ValidateOptions) -> Vec<String> {
     }
     argv
 }
+
+#[cfg(test)]
+#[path = "policy_validation_tests.rs"]
+pub(super) mod tests;

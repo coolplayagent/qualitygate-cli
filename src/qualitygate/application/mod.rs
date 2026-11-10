@@ -49,6 +49,13 @@ mod test_counts;
 mod test_effectiveness;
 mod tool_evidence;
 
+#[cfg(test)]
+mod test_support;
+
+#[cfg(test)]
+#[path = "orchestration_tests.rs"]
+mod tests;
+
 use crate::{
     config::{self, Plan},
     domain::*,
@@ -657,3 +664,6 @@ fn recheck(options: &CheckOptions, base: &str, policy_commit: Option<&str>) -> V
     }
     argv
 }
+
+#[cfg(test)]
+mod project_policy_tests;

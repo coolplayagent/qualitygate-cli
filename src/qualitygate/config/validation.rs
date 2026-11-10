@@ -289,3 +289,7 @@ pub(super) fn layout(config: &Config, resolved: bool) -> Result<()> {
 pub(super) fn validate_id(id: &str) -> Result<()> {
     constraints::id(id)
 }
+
+#[cfg(test)]
+#[path = "validation_scenario_tests.rs"]
+mod scenario_tests;

@@ -458,3 +458,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "selected_preflight_scenarios.rs"]
+mod scenario_tests;

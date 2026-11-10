@@ -173,3 +173,42 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod compatibility_scenarios {
+    use super::*;
+
+    #[test]
+    fn policy_reports_upgrade_requirements_separately_from_invalid_version_syntax() {
+        for (version, code) in [
+            ("not-semver", "config.type"),
+            ("999.0.0", "runtime.version_too_old"),
+        ] {
+            let error = validate(&Requirements {
+                min_cli_version: Some(version.into()),
+                ..Default::default()
+            })
+            .unwrap_err();
+            let diagnostic = error.downcast_ref::<ConfigurationError>().unwrap();
+            assert_eq!(diagnostic.code, code);
+            assert_eq!(
+                diagnostic.field.as_deref(),
+                Some("requires.min_cli_version")
+            );
+        }
+        validate(&Requirements {
+            min_cli_version: Some(env!("CARGO_PKG_VERSION").into()),
+            capabilities: vec![CAPABILITIES[0].into()],
+        })
+        .unwrap();
+        let error = validate(&Requirements {
+            capabilities: vec!["future.capability.v99".into()],
+            ..Default::default()
+        })
+        .unwrap_err();
+        assert_eq!(
+            error.downcast_ref::<ConfigurationError>().unwrap().code,
+            "runtime.capability_missing"
+        );
+    }
+}

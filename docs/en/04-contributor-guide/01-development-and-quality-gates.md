@@ -28,6 +28,7 @@ cargo fmt --all -- --check
 cargo check --all-targets --all-features
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --all-features
+cargo llvm-cov --lib --bins --all-features --fail-under-lines 97.01
 cargo llvm-cov --all-targets --all-features --fail-under-lines 90
 ```
 
@@ -123,3 +124,31 @@ The project is distributed under the MIT license.
 ---
 
 [Previous: Rule capabilities and Agent behavior contracts](../03-architecture/07-rule-capabilities-and-agent-contracts.md) · [Contents](../README.md) · [Next: Selfcheck and fixtures](02-selfcheck-and-fixtures.md)
+
+## Scenario-driven unit coverage
+
+The unit-only line gate is **97.01%**, enforcing strictly more than 97% with
+`--lib --bins --all-features`. It runs independently of integration tests and
+keeps its own LCOV artifact. The existing all-target 90% gate remains required.
+Do not merge integration profiles into the unit measurement or exclude uncovered
+production modules to meet the threshold.
+
+Unit cases assert observable decisions, retained evidence and unchanged inputs
+for success, violations, incomplete execution, timeouts, policy changes and
+snapshot mismatches. Native boundary tests use disposable Git repositories and
+bounded executable protocol doubles. These do not establish real compiler,
+provider, Maven, Bazel or end-to-end behavior; the separate integration gates
+remain necessary. The selfcheck unit corpus exercises in-memory evaluator
+scenarios; native workflow fixtures remain separate integration evidence.
+
+Measure slow unit cases separately from compilation and repeat them with one test thread.
+Budget scenario matrices may inject a small budget into the same private parser,
+provided public-entry tests still verify acceptance and rejection at the real 16 MiB
+boundary for every affected format. Do not skip scenarios or reduce production limits.
+
+A saved passing report does not establish successful process completion. Retain both
+the CLI exit status and any outer wrapper status: shell status 143 usually denotes
+SIGTERM, but does not identify its sender. Child process-group termination must remain
+an incomplete check with CLI exit 2, without terminating the CLI or caller. Use a
+separate Cargo target directory for a materialized snapshot; sharing it with another
+checkout can reuse executables containing a deleted compile-time resource path.

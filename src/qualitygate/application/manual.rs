@@ -170,4 +170,4 @@ pub(super) async fn revalidate(
 
 #[cfg(test)]
 #[path = "manual_tests.rs"]
-mod tests;
+pub(in crate::application) mod tests;

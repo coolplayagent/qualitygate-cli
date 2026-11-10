@@ -25,6 +25,7 @@ cargo fmt --all -- --check
 cargo check --all-targets --all-features
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --all-features
+cargo llvm-cov --lib --bins --all-features --fail-under-lines 97.01
 cargo llvm-cov --all-targets --all-features --fail-under-lines 90
 ```
 
@@ -98,3 +99,23 @@ cargo test --test quality --all-features
 ---
 
 [上一章：规则能力与 Agent 行为契约](../03-architecture/07-rule-capabilities-and-agent-contracts.md) · [全书目录](../README.md) · [下一章：自检与 fixtures](02-selfcheck-and-fixtures.md)
+
+## 面向场景的单元覆盖率
+
+仅 UT 的行覆盖率门槛为 **97.01%**，使用 `--lib --bins --all-features`，保证严格高于 97%。
+该门禁独立于集成测试运行，并保留单独的 LCOV 产物；原有 all-target 90% 门禁仍然必需。
+不得把集成测试 profile 合并进 UT 测量，也不得排除未覆盖的生产模块来满足门槛。
+
+单测针对通过、违规、执行未完成、超时、策略变化和快照不匹配，断言可观察的决策、保留证据和输入完整性。
+原生边界场景使用临时 Git 仓库和有界的可执行协议替身。这些单测不能证明真实编译器、供应商、Maven、
+Bazel 或端到端行为，独立集成门禁仍需通过。selfcheck 单元语料验证内存中的求值场景，原生工作流夹具
+仍属于独立的集成证据。
+
+慢 UT 需排除编译时间，并使用单测试线程复测。预算场景矩阵可以向同一个私有解析器
+注入小预算，但每种受影响格式的公开入口必须保留真实 16 MiB 边界的接受与拒绝测试；
+不得通过跳过场景或降低生产限制提速。
+
+保存的通过报告不能单独证明进程成功结束。必须分别保留 CLI 与外层包装器退出状态：
+shell 状态 143 通常表示 SIGTERM，但不能据此识别信号发送方。子进程组终止必须保持为
+未完成检查和 CLI 退出码 2，不得终止 CLI 或调用者。物化快照需使用独立的 Cargo target
+目录；与其他检出目录共享缓存可能复用包含已删除编译期资源路径的可执行文件。

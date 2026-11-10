@@ -69,3 +69,23 @@ pub fn validate_feedback(value: &Value) -> Result<()> {
         Err(anyhow!("Feedback violates schema: {}", errors.join("; ")))
     }
 }
+
+#[cfg(test)]
+mod validation_tests {
+    use super::*;
+    #[test]
+    fn incomplete_or_mistyped_protocol_documents_cannot_pass_as_valid_decisions_or_feedback() {
+        for value in [
+            serde_json::json!({}),
+            serde_json::json!({"schema_version":99,"decision":"pass"}),
+            serde_json::json!([]),
+            serde_json::Value::Null,
+        ] {
+            let error = validate_decision(&value).unwrap_err().to_string();
+            assert!(error.contains("Decision envelope violates schema"));
+            let error = validate_feedback(&value).unwrap_err().to_string();
+            assert!(error.contains("Feedback violates schema"));
+            assert!(error.len() < 16_384);
+        }
+    }
+}

@@ -11,13 +11,14 @@ fn load(root: &Path, store: &Path, directory: &Path, checks: &[CommandCheck]) ->
     external::load(root, store, directory, &requests)
 }
 
-fn fixture() -> (tempfile::TempDir, tempfile::TempDir, Vec<CommandCheck>) {
+pub(in crate::application) fn fixture() -> (tempfile::TempDir, tempfile::TempDir, Vec<CommandCheck>)
+{
     let root = tempfile::tempdir().unwrap();
     let external = tempfile::tempdir().unwrap();
     let public = ed25519_dalek::SigningKey::from_bytes(&[7; 32]).verifying_key();
     std::fs::write(external.path().join("trust.json"), serde_json::to_vec(&json!({
         "schema_version":1,"repository":"example/project","max_age_seconds":3600,
-        "keys":[{"id":"review","public_key":base64::engine::general_purpose::STANDARD.encode(public.as_bytes()),"checks":["manual"],"allow_repository_checks":true}]
+        "keys":[{"id":"review","public_key":base64::engine::general_purpose::STANDARD.encode(public.as_bytes()),"checks":["manual"],"tasks":["release"],"allow_repository_checks":true}]
     })).unwrap()).unwrap();
     let checks = vec![
         serde_json::from_value(
@@ -123,4 +124,139 @@ fn external_inputs_reject_symlinks_and_special_files() {
         )
         .is_err()
     );
+}
+
+pub(in crate::application) fn signed_record(
+    subject: ManualSubject,
+    decision: ManualDecision,
+) -> Vec<u8> {
+    use ed25519_dalek::Signer;
+    let timestamp = now().unwrap();
+    let record = ManualRecord {
+        schema_version: 1,
+        record_id: "review-1".into(),
+        subject,
+        reviewer: "independent-reviewer".into(),
+        decision,
+        reason: "Reviewed acceptance evidence".into(),
+        issued_at: timestamp - 1,
+        expires_at: timestamp + 600,
+    };
+    let payload = serde_json::to_vec(&record).unwrap();
+    let signature = ed25519_dalek::SigningKey::from_bytes(&[7; 32])
+        .sign(&attestation::pae(attestation::PAYLOAD_TYPE, &payload));
+    let base64 = base64::engine::general_purpose::STANDARD;
+    serde_json::to_vec(&json!({"payloadType":attestation::PAYLOAD_TYPE,
+        "payload":base64.encode(payload),"signatures":[{"keyid":"review","sig":base64.encode(signature.to_bytes())}]})).unwrap()
+}
+
+#[tokio::test]
+async fn signed_review_distinguishes_approval_rejection_and_invalid_evidence() {
+    let (root, external, checks) = fixture();
+    let snapshot = super::super::test_support::snapshot(root.path());
+    let policy = super::super::test_support::policy();
+    let config = crate::config::parse(b"schema_version: 1\n").unwrap();
+    let mut plan = Plan::build(&config, None, "full").unwrap();
+    plan.commands = checks.clone();
+    plan.task_id = Some("release".into());
+    plan.acceptance
+        .insert("review-release".into(), "manual".into());
+    let expected = subject(&checks[0], &plan, &snapshot, &policy, "example/project");
+    assert_eq!(
+        expected.task.as_ref().unwrap().acceptance_id,
+        "review-release"
+    );
+    let artifacts = tempfile::tempdir().unwrap();
+    let missing = execute(
+        &checks[0],
+        &plan,
+        &snapshot,
+        &policy,
+        None,
+        artifacts.path(),
+    )
+    .await;
+    assert_eq!(missing.execution.status, ExecutionStatus::Blocked);
+    for (decision, verdict) in [
+        (ManualDecision::Approved, Verdict::Pass),
+        (ManualDecision::Rejected, Verdict::Fail),
+    ] {
+        std::fs::write(
+            external.path().join("review.json"),
+            signed_record(expected.clone(), decision),
+        )
+        .unwrap();
+        let inputs = Arc::new(
+            load(
+                root.path(),
+                &external.path().join("trust.json"),
+                external.path(),
+                &checks,
+            )
+            .unwrap(),
+        );
+        let result = execute(
+            &checks[0],
+            &plan,
+            &snapshot,
+            &policy,
+            Some(&inputs),
+            artifacts.path(),
+        )
+        .await;
+        assert_eq!(
+            result.execution.status,
+            ExecutionStatus::Completed,
+            "{:?}",
+            result.execution
+        );
+        assert_eq!(result.verdict, Some(verdict));
+        assert_eq!(result.execution.artifacts.len(), 2);
+        assert_eq!(result.metadata["manual_acceptance"]["verified"], true);
+        let mut results = vec![result];
+        revalidate(inputs.clone(), &plan, &snapshot, &policy, &mut results)
+            .await
+            .unwrap();
+        assert_eq!(
+            results[0].metadata["manual_acceptance"]["valid_at_completion"],
+            true
+        );
+        let mut changed = policy.clone();
+        changed.rules_digest = snapshot::digest(b"new rules");
+        revalidate(inputs.clone(), &plan, &snapshot, &changed, &mut results)
+            .await
+            .unwrap();
+        assert_eq!(results[0].execution.status, ExecutionStatus::Blocked);
+        assert_eq!(
+            results[0].metadata["manual_acceptance"]["valid_at_completion"],
+            false
+        );
+        std::fs::write(external.path().join("review.json"), b"tampered").unwrap();
+        assert!(
+            revalidate(inputs, &plan, &snapshot, &policy, &mut results)
+                .await
+                .is_err()
+        );
+    }
+    let inputs = Arc::new(
+        load(
+            root.path(),
+            &external.path().join("trust.json"),
+            external.path(),
+            &checks,
+        )
+        .unwrap(),
+    );
+    let invalid = execute(
+        &checks[0],
+        &plan,
+        &snapshot,
+        &policy,
+        Some(&inputs),
+        artifacts.path(),
+    )
+    .await;
+    assert_eq!(invalid.execution.status, ExecutionStatus::Blocked);
+    assert_eq!(invalid.metadata["manual_acceptance"]["verified"], false);
+    assert_eq!(invalid.execution.artifacts.len(), 2);
 }

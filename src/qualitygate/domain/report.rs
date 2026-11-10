@@ -283,3 +283,46 @@ impl Summary {
         summary
     }
 }
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::*;
+    #[test]
+    fn provider_refresh_preserves_comparison_only_when_all_repository_and_branch_pins_match() {
+        let original = MergeRequest {
+            provider: "github".into(),
+            url: "https://example.invalid/a/b/pull/1".into(),
+            repository: "a/b".into(),
+            number: 1,
+            source_branch: "feature".into(),
+            target_branch: "main".into(),
+            source_head: "source".into(),
+            target_head: "target".into(),
+            merge_base: "base".into(),
+            api_response_digests: vec!["first-response".into()],
+        };
+        let mut refreshed = original.clone();
+        refreshed.url = "https://example.invalid/a/b/pull/1?refresh".into();
+        refreshed.api_response_digests = vec!["refreshed-response".into()];
+        assert!(original.same_comparison(&refreshed));
+        for field in [
+            "provider",
+            "repository",
+            "number",
+            "source_head",
+            "target_head",
+            "merge_base",
+            "source_branch",
+            "target_branch",
+        ] {
+            let mut changed = serde_json::to_value(&original).unwrap();
+            changed[field] = if field == "number" {
+                serde_json::json!(2)
+            } else {
+                serde_json::json!("other")
+            };
+            let changed: MergeRequest = serde_json::from_value(changed).unwrap();
+            assert!(!original.same_comparison(&changed), "{field}");
+        }
+    }
+}

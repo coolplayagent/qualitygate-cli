@@ -148,3 +148,7 @@ fn check_budget(index: usize, deadline: Instant) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "preflight_tests.rs"]
+mod tests;

@@ -112,3 +112,122 @@ pub(super) async fn execute(
     .await
     .map_err(Into::into)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn rule_evaluation_consumes_only_declared_project_producers_and_rejects_malformed_facts()
+    {
+        let root = tempfile::tempdir().unwrap();
+        let context = Context::new(Arc::new(super::super::test_support::snapshot(root.path())));
+        let config = config::parse(b"schema_version: 1\nrules: {line-ending: {}}\n").unwrap();
+        let catalog = config::catalog::Catalog::load(&config, []).unwrap();
+        let entry = &catalog.entries["line-ending"];
+        let mut setting = entry.defaults();
+        let mut producer = CheckResult::pending("producer", true, Severity::Error);
+        producer.complete();
+        producer
+            .metadata
+            .insert("projects".into(), json!({"not":"project facts"}));
+        let ignored = execute(
+            "line-ending",
+            &setting,
+            entry,
+            &context,
+            std::slice::from_ref(&producer),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(ignored.execution.status, ExecutionStatus::Completed);
+        setting.depends_on = vec!["producer".into()];
+        assert!(
+            execute(
+                "line-ending",
+                &setting,
+                entry,
+                &context,
+                std::slice::from_ref(&producer),
+                None,
+                None
+            )
+            .await
+            .is_err()
+        );
+        producer.metadata.insert("projects".into(), json!([]));
+        let result = execute(
+            "line-ending",
+            &setting,
+            entry,
+            &context,
+            &[producer],
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.metadata["depends_on"], json!(["producer"]));
+        assert_eq!(result.verdict, Some(Verdict::Pass));
+    }
+
+    #[tokio::test]
+    async fn missing_git_association_and_stale_normative_source_block_an_otherwise_passing_rule() {
+        let root = tempfile::tempdir().unwrap();
+        let mut input = super::super::test_support::snapshot(root.path());
+        let mut source = super::super::test_support::source(&mut input);
+        source.content_hash = format!("sha256:{}", "0".repeat(64));
+        let context = Context::new(Arc::new(input));
+        let config = config::parse(b"schema_version: 1\nrules: {line-ending: {}}\n").unwrap();
+        let catalog = config::catalog::Catalog::load(&config, []).unwrap();
+        let entry = &catalog.entries["line-ending"];
+        let mut setting = entry.defaults();
+        setting
+            .parameters
+            .insert("marker".into(), json!({"type":"git_trailer"}));
+        for unavailable in [None, Some(Err("shallow history".into()))] {
+            let result = execute(
+                "line-ending",
+                &setting,
+                entry,
+                &context,
+                &[],
+                None,
+                unavailable.as_ref(),
+            )
+            .await
+            .unwrap();
+            assert_eq!(result.execution.status, ExecutionStatus::Blocked);
+            assert!(
+                result
+                    .execution
+                    .reason
+                    .unwrap()
+                    .contains(if unavailable.is_some() {
+                        "shallow history"
+                    } else {
+                        "history is unavailable"
+                    })
+            );
+            assert_eq!(result.verdict, None);
+        }
+        setting.parameters.clear();
+        setting.source = Some(source);
+        let result = execute("line-ending", &setting, entry, &context, &[], None, None)
+            .await
+            .unwrap();
+        assert_eq!(result.execution.status, ExecutionStatus::Blocked);
+        assert!(
+            result
+                .execution
+                .reason
+                .unwrap()
+                .contains("source requires review")
+        );
+        assert_eq!(result.verdict, None);
+    }
+}

@@ -103,3 +103,14 @@ fn guidance_command(argv: &[String]) -> (&'static str, String) {
         .join(" ");
     (shell, format!("{prefix}{command}"))
 }
+
+#[cfg(test)]
+#[path = "failure_tests.rs"]
+mod failure_tests;
+
+#[cfg(test)]
+mod judgment_pilot_tests;
+#[cfg(test)]
+mod judgment_tests;
+#[cfg(test)]
+mod policy_workflow_tests;

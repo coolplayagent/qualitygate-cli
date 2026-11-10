@@ -516,3 +516,36 @@ fn ts_pattern<'a>(view: &View<'a>, pattern: Node<'a>) -> Result<Vec<Node<'a>>> {
     }
     Ok(names)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn go_import_literal_decoding_preserves_actual_package_identity() {
+        for literal in [
+            r#""os""#,
+            r#""\x6fs""#,
+            r#""\u006fs""#,
+            r#""\U0000006fs""#,
+            r#""\157s""#,
+            "`o\rs`",
+        ] {
+            assert_eq!(go_string(literal).as_deref(), Some("os"), "{literal}");
+        }
+        assert_eq!(
+            go_string(r#""\a\b\f\n\r\t\v\\\"""#).unwrap(),
+            "\x07\x08\x0c\n\r\t\x0b\\\""
+        );
+        for invalid in [
+            "os",
+            r#""\q""#,
+            r#""\x0""#,
+            r#""\uD800""#,
+            r#""\U00110000""#,
+            r#""\xZZ""#,
+        ] {
+            assert!(go_string(invalid).is_none(), "{invalid}");
+        }
+    }
+}

@@ -13,6 +13,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::path::Path;
 
+#[cfg(test)]
+#[path = "policy_validation_tests.rs"]
+mod tests;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Attempt {

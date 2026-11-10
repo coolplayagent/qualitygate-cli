@@ -16,6 +16,10 @@ use std::{
     path::Path,
 };
 
+#[cfg(test)]
+#[path = "policy_candidates_tests.rs"]
+pub(super) mod tests;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FrozenCatalog {

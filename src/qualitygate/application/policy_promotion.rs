@@ -115,3 +115,7 @@ pub async fn promote(root: PathBuf, id: String) -> Result<serde_json::Value> {
     })
     .await?
 }
+
+#[cfg(test)]
+#[path = "policy_promotion_tests.rs"]
+mod tests;

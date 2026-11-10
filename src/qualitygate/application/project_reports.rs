@@ -79,3 +79,7 @@ pub(super) async fn collect(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "project_reports_tests.rs"]
+mod tests;

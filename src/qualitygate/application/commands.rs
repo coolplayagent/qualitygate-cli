@@ -3,6 +3,10 @@ use crate::{
 };
 use std::{path::Path, sync::Arc, time::Duration};
 
+#[cfg(test)]
+#[path = "commands_tests.rs"]
+mod tests;
+
 pub(super) async fn execute(
     check: &CommandCheck,
     workspace: &Path,

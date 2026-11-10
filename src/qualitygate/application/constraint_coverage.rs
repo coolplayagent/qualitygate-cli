@@ -3,6 +3,10 @@ use crate::domain::constraint::{self, Coverage, CoverageStatus as Status, Realiz
 use crate::{domain::*, snapshot::Snapshot};
 use anyhow::Result;
 
+#[cfg(test)]
+#[path = "constraint_coverage_tests.rs"]
+mod tests;
+
 pub(super) fn evaluate(
     constraints: &[constraint::Constraint],
     bindings: &std::collections::BTreeMap<String, String>,

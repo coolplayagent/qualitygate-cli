@@ -109,3 +109,61 @@ fn valid_digest(value: &str) -> bool {
                 .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
     })
 }
+
+#[cfg(test)]
+mod scenario_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn paired_build_contract_rejects_unpinned_ambiguous_or_unbounded_analyzers() {
+        let base = json!({"id":"abi","argv":["build"],"tools":[{"id":"jdk","argv":["java","-version"]}],
+            "compatibility":{"tool":"japicmp","analyzer_jar":"tools/analyzer.jar","analyzer_sha256":format!("sha256:{}", "a".repeat(64)),"artifacts":[{"baseline":"old.jar","current":"new.jar"}]}});
+        let check: CommandCheck = serde_json::from_value(base.clone()).unwrap();
+        validate(&check).unwrap();
+        for (field, value) in [
+            ("analyzer_sha256", json!("sha256:ABC")),
+            ("analyzer_jar", json!("")),
+            ("java", json!("java\ncommand")),
+            ("timeout_seconds", json!(0)),
+            ("timeout_seconds", json!(3601)),
+            ("artifacts", json!([])),
+            (
+                "artifacts",
+                json!([{"baseline":"../outside.jar","current":"new.jar"}]),
+            ),
+            (
+                "artifacts",
+                json!([{"baseline":"old.zip","current":"new.jar"}]),
+            ),
+            (
+                "artifacts",
+                json!([{"baseline":"old.jar","current":"new.jar"},{"baseline":"old.jar","current":"other.jar"}]),
+            ),
+            (
+                "classpath",
+                json!([{"baseline":"old.jar","current":"dependency.jar"}]),
+            ),
+        ] {
+            let mut value_base = base.clone();
+            value_base["compatibility"][field] = value;
+            let check: CommandCheck = serde_json::from_value(value_base).unwrap();
+            assert!(validate(&check).is_err(), "{field}");
+        }
+        for (field, value) in [
+            ("expected_exit_code", json!(1)),
+            ("tools", json!([])),
+            ("findings_exit_codes", json!([2])),
+        ] {
+            let mut changed = base.clone();
+            changed[field] = value;
+            assert!(
+                validate(&serde_json::from_value(changed).unwrap()).is_err(),
+                "{field}"
+            );
+        }
+        let mut none = check;
+        none.compatibility = None;
+        validate(&none).unwrap();
+    }
+}

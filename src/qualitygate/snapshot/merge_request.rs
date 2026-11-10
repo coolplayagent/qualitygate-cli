@@ -66,3 +66,7 @@ async fn ensure_objects(root: &Path, target: &str, source: &str) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "merge_request_tests.rs"]
+mod tests;

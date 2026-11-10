@@ -8,6 +8,10 @@ use anyhow::{Result, bail};
 use serde_json::{Value, json};
 use std::path::Path;
 
+#[cfg(test)]
+#[path = "rule_query_tests.rs"]
+mod tests;
+
 fn languages(entry: &Entry) -> &[String] {
     entry
         .builtin

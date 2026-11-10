@@ -200,3 +200,60 @@ pub(super) fn validate(rule: &CustomRule) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod scenario_tests {
+    use super::*;
+    use serde_json::json;
+    fn rule() -> CustomRule {
+        serde_json::from_value(json!({"id":"meaningful-tests","version":1,"source":{"document":"AGENTS.md","section":"Tests","content_hash":format!("sha256:{}","0".repeat(64))},"language":["python"],"requires_capabilities":["test_methods","comments"],"when":{"entity":"test_method"},"then":{"min_count":1},"fix":"Add a scenario test"})).unwrap()
+    }
+    #[test]
+    fn schema_generation_and_marker_scope_cannot_silently_change_assertion_semantics() {
+        let expression = json!({"op":"compare","left":{"op":"count","input":{"op":"entities"}},"relation":"ge","right":{"op":"number","value":1}});
+        for (case, message) in [
+            (0, "Unsupported custom rule schema"),
+            (1, "v1 cannot"),
+            (2, "requires a typed expression"),
+            (3, "Named sources require"),
+            (4, "Commit rules cannot"),
+            (5, "test_method entities"),
+            (6, "explicit provenance_scope"),
+            (7, "require a marker assertion"),
+        ] {
+            let mut candidate = rule();
+            match case {
+                0=>candidate.schema_version=99,
+                1=>candidate.expression=Some(serde_json::from_value(expression.clone()).unwrap()),
+                2=>candidate.schema_version=2,
+                3=>candidate.sources=serde_json::from_value(json!({"tests":{"when":{"entity":"file","change":"all"},"requires_capabilities":["files"]}})).unwrap(),
+                4=>{candidate.when.entity="commit".into();candidate.requires_capabilities.push("commits".into());},
+                5=>{candidate.when.entity="comment".into();candidate.then.require_marker=true;},
+                6=>{candidate.then.require_marker=true;candidate.binding=Some(serde_json::from_value(json!({"marker":{"type":"comment","name":"Generated","fields":[]}})).unwrap());},
+                _=>candidate.applies_to.provenance_scope=Some("all_added_tests".into()),
+            }
+            assert!(
+                validate(&candidate)
+                    .unwrap_err()
+                    .to_string()
+                    .contains(message),
+                "{case}"
+            );
+        }
+        for version in [2, 3] {
+            let mut candidate = rule();
+            candidate.schema_version = version;
+            candidate.expression = Some(serde_json::from_value(expression.clone()).unwrap());
+            if version == 3 {
+                candidate.sources=serde_json::from_value(json!({"tests":{"when":{"entity":"file","change":"all"},"requires_capabilities":["files"]}})).unwrap();
+            }
+            validate(&candidate).unwrap();
+            let bytes = serde_json::to_vec(&candidate).unwrap();
+            let (actual, parsed, issues) =
+                crate::config::rule_schema::inspect_versioned(&bytes).unwrap();
+            assert_eq!(actual, version);
+            assert!(issues.is_empty(), "{issues:?}");
+            assert_eq!(parsed.unwrap().id, candidate.id);
+        }
+    }
+}

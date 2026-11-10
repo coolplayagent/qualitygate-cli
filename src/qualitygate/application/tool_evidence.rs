@@ -10,6 +10,10 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path, time::Duration};
 
+#[cfg(test)]
+#[path = "tool_evidence_tests.rs"]
+mod tests;
+
 #[derive(Debug)]
 pub(super) struct ProbeError {
     pub code: &'static str,

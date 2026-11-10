@@ -440,3 +440,117 @@ fn sign_request(
     )?;
     Ok(path)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn candidate_fixture_observations_distinguish_corruption_rejection_and_immutable_edits() {
+        tokio::task::spawn_blocking(|| {
+            let edited = candidate(CandidateAction::Edit).unwrap();
+            assert_eq!(edited["parent_unchanged"], true);
+            assert_eq!(edited["original_unchanged"], true);
+            assert_eq!(edited["revision_changed"], true);
+            assert_eq!(edited["rule"]["enabled"], true);
+            assert!(edited["active_policy"].is_null());
+            let rejected = candidate(CandidateAction::Reject).unwrap();
+            assert_eq!(rejected["state"], "rejected");
+            assert!(rejected["active_policy"].is_null());
+            assert_ne!(rejected["operation"], edited["operation"]);
+            for action in [
+                CandidateAction::SourceMismatch,
+                CandidateAction::MissingEvidence,
+                CandidateAction::CorruptObject,
+                CandidateAction::WrongRecordKind,
+                CandidateAction::UnapprovedPromotion,
+                CandidateAction::LifecycleWrongActor,
+                CandidateAction::LifecycleWrongEvidence,
+            ] {
+                let observed = candidate(action).unwrap();
+                let operation = observed.get("operation").unwrap_or(&observed);
+                assert_eq!(operation["status"], "incomplete", "{observed}");
+            }
+            for state in [
+                RuleState::Revalidate,
+                RuleState::Demoted,
+                RuleState::Deprecated,
+                RuleState::Retired,
+                RuleState::Revoked,
+            ] {
+                let observed = candidate(CandidateAction::Lifecycle { state }).unwrap();
+                assert_eq!(observed["parent_unchanged"], true);
+                assert!(observed["active_policy"].is_null());
+                assert!(observed["history_actions"].as_array().unwrap().len() >= 2);
+            }
+        })
+        .await
+        .unwrap();
+    }
+}
+
+#[cfg(test)]
+mod workflow_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn workflow_fixture_retains_failed_producer_evidence_and_never_activates_incomplete_candidate()
+     {
+        let runtime = tokio::runtime::Handle::current();
+        let observed = tokio::task::spawn_blocking(move || {
+            runtime.block_on(workflow(WorkflowScenario::MissingTool, 2))
+        })
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(observed["exit_code"], 2);
+        assert_eq!(observed["has_active"], false);
+        assert!(
+            observed["probe_statuses"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|s| s == "tool_error")
+        );
+        assert_eq!(
+            observed["validation"]["evaluation"]["cases"]
+                .as_array()
+                .unwrap()
+                .len(),
+            3
+        );
+        assert!(observed["effectiveness"].is_object());
+    }
+
+    #[tokio::test]
+    async fn rollback_fixture_reports_stale_authorization_separately_from_successful_restoration() {
+        let runtime = tokio::runtime::Handle::current();
+        tokio::task::spawn_blocking(move || {
+            runtime.block_on(async {
+                for stale in [false, true] {
+                    let observed = workflow(
+                        if stale {
+                            WorkflowScenario::StaleRollback
+                        } else {
+                            WorkflowScenario::Rollback
+                        },
+                        2,
+                    )
+                    .await
+                    .unwrap();
+                    assert_eq!(observed["exit_code"], 0);
+                    assert_eq!(observed["approval_state"], "approved");
+                    assert_eq!(observed["promoted_candidate"], true);
+                    assert_eq!(
+                        observed["rollback"]["status"],
+                        if stale { "incomplete" } else { "completed" }
+                    );
+                    assert_eq!(observed["active_is_parent"], !stale);
+                    assert_eq!(observed["active_is_candidate"], stale);
+                }
+            })
+        })
+        .await
+        .unwrap();
+    }
+}

@@ -175,3 +175,20 @@ Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Car
 | 不可变选定策略与源码 | `tests/internal_language_rules.rs::syntax_rules_use_selected_source_and_policy_not_dirty_worktree_bytes` |
 | 错误语法、严格参数与路径排除 | `tests/internal_language_rules.rs::syntax_errors_and_regex_overrides_are_incomplete_but_excluded_sources_are_not_parsed` |
 | 最小、典型和压力案例的独立节点类型预期 | `fixtures/golden/issue12-typical.json`, `fixtures/golden/issue14-stress.json`, `fixtures/golden/issue15-stress.json`, `fixtures/golden/issue16-typical.json`; full selfcheck |
+
+## 面向场景的单元证据
+
+`UT-SCENARIO-01` 使用独立的 `--lib --bins --all-features` 覆盖率门禁，门槛为 97.01%，
+不计入集成测试 profile。下表对应可观察的行为契约；协议替身不能替代真实工具和端到端验收。
+
+| 场景契约 | 单元证据 |
+| --- | --- |
+| 配置异常、有界发现、不可变候选包、规范来源变化 | `config::input_scenarios`、`config::project_inventory::scenario_tests`、`config::rule_authoring::tests`、`config::policy_candidates::tests`、`config::custom_validation::scenario_tests` |
+| 语法与注释/字面量区分、测试框架发现、保留声明与依赖义务 | `adapters::markers::tests`、`adapters::language_syntax::tests`、`adapters::native_syntax::tests`、`adapters::structure_rules::tests`、`adapters::custom_rules::scenario_tests`、`adapters::git_trailers::tests` |
+| 命令失败、超时、输出超限、输入/可执行文件变化；当前和基线报告独立绑定 | `application::commands::tests`、`application::generated_reports::tests`、`application::doctor::tests`、`application::rule_execution::tests`、`application::tests` |
+| 历史缺失、配对评估超时、采集策略不同、实时信任与归档验证资产 | `application::policy_validation::tests`、`application::policy_promotion::tests`；使用临时 Git 和签名合成记录 |
+| 有界 Agent 修复、契约/checkout 变化、求值器协议未完成与不可变交付 | `application::agent_host::scenario_tests`、`interfaces::cli::tests::agent_dispatch_keeps_invalid_evaluator_protocol_incomplete_with_retained_ledger`；使用固定可执行协议替身 |
+| 独立负标签、弃权、校准审查优先级、失败尝试与试点矩阵完整性 | `application::judgment::tests`、`application::judgment::pilot::tests`、`domain::pilot::tests`、`application::pilot::tests`；不自动改变门禁，不宣称真实试点验收 |
+| staged/diff/MR 身份、脏工作区、资源预算、报告与 CLI 边界 | `snapshot::merge_request::tests`、`snapshot::selected_preflight::scenario_tests`、`snapshot::delivery::tests`、`domain::report::comparison_tests`、`interfaces::render::tests`、二进制 `tests::process_boundary_distinguishes_help_parser_failure_success_and_execution_gap` |
+| 小预算共享路径、跨文件和转义场景保留公开入口真实 16 MiB 边界 | `adapters::reports::diagnostic_budget_tests`、`adapters::reports::json_budget::tests` |
+| 子进程组 SIGTERM 不终止 runner；CLI 输出未完成证据并返回 2，随后通过的检查返回 0 | `runner::tests::child_group_sigterm_does_not_terminate_the_runner_or_its_next_command`；集成 `tests/execution.rs::unix::child_group_sigterm_leaves_cli_alive_with_an_incomplete_report_and_exit_two` |

@@ -10,6 +10,10 @@ use crate::{
 use anyhow::{Context, Result, bail};
 use std::{collections::BTreeMap, path::Path, sync::Arc, time::Duration};
 
+#[cfg(test)]
+#[path = "generated_reports_tests.rs"]
+mod tests;
+
 pub(super) fn validate_outputs(
     check: &CommandCheck,
     files: &BTreeMap<String, snapshot::File>,

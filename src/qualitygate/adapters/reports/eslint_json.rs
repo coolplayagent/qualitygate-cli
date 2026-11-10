@@ -1,17 +1,21 @@
 //! Normalize ESLint's built-in JSON formatter without treating configuration or parse errors as lint debt.
 
+use super::json_budget::Budget;
 use super::{Data, Issue};
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 use std::collections::BTreeSet;
 
 pub(super) fn parse(text: &str) -> Result<Data> {
+    parse_with_budget(text, Budget::new("Normalized diagnostics"))
+}
+
+pub(super) fn parse_with_budget(text: &str, mut budget: Budget) -> Result<Data> {
     let files: Vec<Value> = serde_json::from_str(text).context("Invalid ESLint JSON report")?;
     if files.is_empty() {
         bail!("ESLint report has no analyzed files");
     }
     let mut data = Data::default();
-    let mut budget = super::json_budget::Budget::new("Normalized diagnostics");
     let mut seen = BTreeSet::new();
     for file in files {
         let path = file["filePath"]

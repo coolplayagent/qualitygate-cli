@@ -245,3 +245,61 @@ fn unchanged_tests_with_historical_trailers_keep_dependency_obligations() {
     project.resolved.push(dependency);
     assert_eq!(run(&project).verdict, Some(Verdict::Pass));
 }
+
+#[test]
+fn baseline_declarations_bind_the_original_entity_and_duplicate_or_empty_trailers_are_not_authority()
+ {
+    let (snapshot, history, marker) = setup();
+    let base_entity = super::super::syntax::parse(
+        "test_example.py",
+        &snapshot.base_files["test_example.py"].bytes,
+    )
+    .unwrap()
+    .unwrap()
+    .tests
+    .remove(0);
+    let facts = analyze(&snapshot, &history).unwrap();
+    assert!(
+        facts
+            .declaration(&marker, "test_example.py", &base_entity, true)
+            .unwrap()
+            .unwrap()
+            .contains("past")
+    );
+    assert!(
+        facts
+            .declaration(&marker, "unrelated.py", &base_entity, true)
+            .is_err()
+    );
+    for values in [vec!["author=a".into(), "author=b".into()], vec![" ".into()]] {
+        let (_, mut history, _) = setup();
+        history.commits[1]
+            .trailers
+            .insert("ai".into(), values.clone());
+        let facts = analyze(&snapshot, &history).unwrap();
+        let declaration = facts.declaration(&marker, "test_example.py", &entity(&snapshot), false);
+        if values.len() == 2 {
+            assert!(
+                declaration
+                    .unwrap_err()
+                    .to_string()
+                    .contains("Ambiguous duplicate")
+            );
+        } else {
+            assert!(declaration.unwrap().is_none());
+        }
+    }
+    let mut local = snapshot.clone();
+    local.identity.mode = "worktree".into();
+    local.files.get_mut("test_example.py").unwrap().bytes =
+        b"def test_existing():\n    assert 1 == 2\n".to_vec();
+    local.identity.content_digest = snapshot::content_digest(&local.files);
+    local.changes = snapshot::compare_files(&local.base_files, &local.files);
+    let facts = analyze(&local, &history).unwrap();
+    assert!(
+        facts
+            .declaration(&marker, "test_example.py", &entity(&local), false)
+            .unwrap()
+            .is_none()
+    );
+}

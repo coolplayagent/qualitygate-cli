@@ -477,3 +477,69 @@ fn type_only_parameters_and_unrelated_qualified_types_do_not_change_runtime_bind
         2,
     );
 }
+
+#[test]
+fn go_import_review_respects_parameter_type_switch_and_range_shadowing() {
+    for source in [
+        "package p\nimport \"os\"\nfunc f(os interface{ Exit(int) }) { os.Exit(1) }\n",
+        "package p\nimport \"os\"\nfunc f(value interface{}) { switch os := value.(type) { case interface{ Exit(int) }: os.Exit(1) } }\n",
+        "package p\nimport \"os\"\nfunc f(values []interface{ Exit(int) }) { for _, os := range values { os.Exit(1) } }\n",
+        "package p\nimport _ \"os\"\nfunc f() {}\n",
+    ] {
+        check("go-os-exit", "main.go", source, 0);
+    }
+    check(
+        "go-os-exit",
+        "main.go",
+        r#"package p
+import "\u006fs"
+func f() { os.Exit(1) }
+"#,
+        1,
+    );
+}
+
+#[test]
+fn implicit_arguments_respects_destructured_bindings_and_arrow_lexical_ownership() {
+    for source in [
+        "function f({value: arguments}) { return arguments; }",
+        "function f([arguments = []]) { return arguments; }",
+        "function f(...arguments) { return arguments; }",
+        "const f = arguments => arguments;",
+        "import { value as arguments } from 'pkg'; const f = () => arguments;",
+        "function f() { for (var arguments of list) { use(arguments); } }",
+    ] {
+        check("ts-no-arguments", "main.ts", source, 0);
+    }
+}
+
+#[test]
+fn shell_wrappers_quoting_and_permission_operations_preserve_literal_command_meaning() {
+    for (id, source, count) in [
+        ("shell-eval", "command -p -- eval 'echo unsafe'", 1),
+        ("shell-eval", "builtin -- eval 'echo unsafe'", 1),
+        ("shell-eval", "command -v eval", 0),
+        ("shell-eval", "command --", 0),
+        ("shell-eval", "command -- \"$cmd\"", 0),
+        ("shell-eval", "command \"$flag\" eval", 0),
+        ("shell-eval", "\"e\\qval\" true", 0),
+        ("shell-alias", "alias name=\"$value\"", 1),
+        ("shell-alias", "alias \"$name\"=value", 0),
+        (
+            "shell-chmod-read",
+            "chmod --recursive --verbose -- ugo-r file",
+            1,
+        ),
+        ("shell-chmod-read", "chmod -Rcfv a+r-w-r file", 1),
+        ("shell-chmod-read", "chmod --reference=other file", 0),
+        ("shell-chmod-read", "chmod -Z a-r file", 0),
+        ("shell-chmod-read", "chmod \"$mode\" file", 0),
+        ("shell-chmod-read", "chmod --recursive", 0),
+        ("shell-chmod-read", "chmod 000 file", 0),
+        ("shell-chmod-read", "chmod z-r file", 0),
+        ("shell-chmod-read", "chmod a-q file", 0),
+        ("shell-chmod-read", "chmod a-r,u+x file", 1),
+    ] {
+        check(id, "script.sh", source, count);
+    }
+}

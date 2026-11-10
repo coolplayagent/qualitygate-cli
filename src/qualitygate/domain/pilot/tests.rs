@@ -882,3 +882,56 @@ fn strict_contract_rejects_malformed_duplicate_and_over_budget_observation_inven
     data["unexpected"] = json!(true);
     assert!(serde_json::from_value::<Manifest>(data).is_err());
 }
+
+#[test]
+fn token_observations_reject_impossible_components_without_dropping_failed_attempts() {
+    let (mut m, mut reports) = (manifest(), Reports::new());
+    append(&mut m, &mut reports, 0, Workflow::Qualitygate, false);
+    for usage in [
+        json!({"input_tokens":1000000000001u64,"output_tokens":1}),
+        json!({"input_tokens":1,"output_tokens":1000000000001u64}),
+        json!({"input_tokens":1,"output_tokens":1,"cached_input_tokens":2}),
+        json!({"input_tokens":1,"output_tokens":1,"reasoning_output_tokens":2}),
+        json!({"input_tokens":1,"output_tokens":1,"cache_write_input_tokens":1000000000001u64}),
+    ] {
+        m.observations[0].attempts[0].usage = Some(serde_json::from_value(usage).unwrap());
+        assert!(
+            validate(&m)
+                .unwrap_err()
+                .to_string()
+                .contains("token usage")
+        );
+    }
+    m.observations[0].attempts[0].usage=Some(serde_json::from_value(json!({"input_tokens":10,"output_tokens":5,"cached_input_tokens":3,"reasoning_output_tokens":2,"cache_write_input_tokens":1})).unwrap());
+    validate(&m).unwrap();
+    m.observations[0].attempts[0].status = AttemptStatus::Failed;
+    let observed = summary(&m, &reports);
+    assert_eq!(observed["groups"][0]["usage"]["input_tokens"]["known"], 10);
+}
+
+#[test]
+fn sealing_rejects_duplicate_cohorts_and_unequal_input_matrices_before_observation() {
+    let mut repeated = sealable_manifest();
+    let mut duplicate = repeated.assignments[0].clone();
+    duplicate.id = "duplicate-cohort".into();
+    repeated.assignments.push(duplicate);
+    assert!(
+        seal(repeated, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate planned cohort")
+    );
+    let mut unequal = sealable_manifest();
+    let mut second = unequal.assignments[0].clone();
+    second.id = "second-input".into();
+    second.input_id = "other-input".into();
+    second.task_id = "other-task".into();
+    unequal.assignments.push(second);
+    unequal.protocol.task_count = 2;
+    assert!(
+        seal(unequal, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("same planned cohort matrix")
+    );
+}

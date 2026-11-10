@@ -19,6 +19,10 @@ use std::{
 const MAX_RUNS: usize = 256;
 const MAX_TOTAL_BYTES: usize = 64 * 1024 * 1024;
 
+#[cfg(test)]
+#[path = "pilot_tests.rs"]
+mod tests;
+
 pub struct Options {
     pub runs: PathBuf,
     pub labels: PathBuf,

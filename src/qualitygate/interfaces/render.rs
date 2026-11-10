@@ -360,4 +360,152 @@ mod tests {
             path
         );
     }
+
+    #[test]
+    fn rule_tables_escape_cells_and_keep_mandatory_baseline_visible_after_filtering() {
+        let row = serde_json::json!({"id":"rule|name\nforged", "enabled":true,
+            "definition":{"origin":"skill:rules", "custom":{"requires_capabilities":["files"]}},
+            "source":"project", "language":["rust"], "categories":["team", "audit"]});
+        let value = serde_json::json!({"rules":[row], "mandatory":[{"id":"required", "enabled":true,
+            "definition":{"origin":"builtin", "builtin":{"requires_capabilities":["files"]}},
+            "source":"builtin", "language":[], "category":"core"}], "mandatory_checks":[{"id":"unit"}]});
+        for format in [Format::Table, Format::Markdown] {
+            let rendered = super::metadata(&value, format).unwrap();
+            assert!(rendered.contains("rule\\|name forged"));
+            assert!(rendered.contains("team, audit"));
+            assert!(rendered.contains("Mandatory policy rules"));
+            assert!(rendered.contains("required"));
+            assert!(rendered.contains("Mandatory command checks"));
+            assert!(rendered.contains("unit"));
+        }
+        let json: serde_json::Value =
+            serde_json::from_str(&super::metadata(&value, Format::Json).unwrap()).unwrap();
+        assert_eq!(json, value);
+    }
+
+    #[test]
+    fn human_report_retains_pending_delivery_task_mapping_and_exclusion_limits() {
+        let mut report = sample_report();
+        report.plan.task_id = Some("task\nunsafe".into());
+        report
+            .plan
+            .acceptance
+            .insert("behavior".into(), "error".into());
+        report
+            .plan
+            .acceptance_descriptions
+            .insert("behavior".into(), "meaningful\ntests".into());
+        report
+            .plan
+            .pending_delivery_checks
+            .push("full-suite".into());
+        report.selection = Some(crate::domain::check_scope::ScopeEvidence {
+            excluded_paths: (0..101).map(|i| format!("excluded-{i}")).collect(),
+            ..Default::default()
+        });
+        report.checks[0].metadata.insert(
+            "test_effectiveness_files".into(),
+            serde_json::json!([{"file":"test.rs", "counterexamples":1, "executed":2}]),
+        );
+        for format in [Format::Table, Format::Markdown] {
+            let output = super::report(report.clone(), format, None).unwrap();
+            assert!(output.contains("Task: task unsafe"));
+            assert!(output.contains("Acceptance behavior (error): meaningful tests"));
+            assert!(output.contains("Pending delivery checks: full-suite"));
+            assert!(output.contains("excluded-99"));
+            assert!(!output.contains("excluded-100"));
+            assert!(output.contains("Excluded input list truncated"));
+            assert!(output.contains("1 counterexamples / 2 executed tests"));
+        }
+    }
+    #[test]
+    fn selfcheck_renderer_keeps_missing_assertions_and_execution_errors_distinct() {
+        use crate::domain::{
+            Decision, VerificationBoundary,
+            selfcheck::{AssertionMismatch, FixtureResult, SelfcheckReport},
+        };
+        let report = SelfcheckReport {
+            schema_version: 1,
+            tool_version: "unit".into(),
+            corpus_digest: "corpus".into(),
+            rules_digest: "rules".into(),
+            fixture_filter: None,
+            rule_filter: None,
+            decision: Decision::Incomplete,
+            complete: false,
+            fixtures: vec![FixtureResult {
+                fixture: "failure".into(),
+                suite: "unit".into(),
+                rule: "line-ending".into(),
+                input: "fixture.yaml".into(),
+                input_digest: "input".into(),
+                golden_digest: "golden".into(),
+                decision: Decision::Fail,
+                mismatches: vec![
+                    AssertionMismatch {
+                        assertion: "/verdict".into(),
+                        expected: serde_json::json!("fail"),
+                        actual: Some(serde_json::json!("pass")),
+                    },
+                    AssertionMismatch {
+                        assertion: "/diagnostics/0".into(),
+                        expected: serde_json::json!("finding"),
+                        actual: None,
+                    },
+                ],
+                error: Some("parser execution failed".into()),
+                observed: None,
+            }],
+            errors: vec!["corpus incomplete".into()],
+            verification: VerificationBoundary::default(),
+        };
+        for format in [Format::Table, Format::Markdown] {
+            let output = super::selfcheck(&report, format).unwrap();
+            for fragment in [
+                "complete: false",
+                "actual \"pass\"",
+                "<missing>",
+                "parser execution failed",
+                "Error: corpus incomplete",
+            ] {
+                assert!(output.contains(fragment), "{output}");
+            }
+        }
+        let json: serde_json::Value =
+            serde_json::from_str(&super::selfcheck(&report, Format::Json).unwrap()).unwrap();
+        assert_eq!(json["decision"], "incomplete");
+        assert_eq!(
+            json["fixtures"][0]["mismatches"].as_array().unwrap().len(),
+            2
+        );
+    }
+    #[test]
+    fn merge_request_rendering_preserves_provider_pins_and_preflight_repair_guidance() {
+        let mut report = sample_report();
+        report.snapshot.merge_request = Some(crate::domain::MergeRequest {
+            provider: "github".into(),
+            url: "https://example.invalid/team/repo/pull/7".into(),
+            repository: "team/repo".into(),
+            number: 7,
+            source_branch: "feature".into(),
+            target_branch: "main".into(),
+            source_head: "source-pin".into(),
+            target_head: "target-pin".into(),
+            merge_base: "merge-base".into(),
+            api_response_digests: vec!["response".into()],
+        });
+        for format in [Format::Table, Format::Markdown] {
+            let output = super::report(report.clone(), format, None).unwrap();
+            for expected in [
+                "pull/7",
+                "Target: target-pin",
+                "Source: source-pin",
+                "Merge base: merge-base",
+            ] {
+                assert!(output.contains(expected));
+            }
+            let output=super::metadata(&serde_json::json!({"snapshot_preflight":{"next_steps":["Review excluded dependencies","Retry with an explicit budget"]}}),format).unwrap();
+            assert!(output.contains("Review excluded dependencies\nRetry with an explicit budget"));
+        }
+    }
 }

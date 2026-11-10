@@ -8,6 +8,10 @@ use crate::{
 use anyhow::{Result, ensure};
 use std::sync::Arc;
 
+#[cfg(test)]
+#[path = "doctor_tests.rs"]
+mod tests;
+
 pub async fn invalid_request(profile: String, probe_tools: bool, message: &str) -> Report {
     let mut report = Report::new(profile, probe_tools);
     match capabilities::report().await {

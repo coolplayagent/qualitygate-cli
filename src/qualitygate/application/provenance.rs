@@ -117,3 +117,7 @@ pub(super) fn revalidate(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "provenance_tests.rs"]
+mod tests;

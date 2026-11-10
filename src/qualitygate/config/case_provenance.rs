@@ -125,3 +125,7 @@ pub fn validate_suite(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "case_provenance_tests.rs"]
+mod tests;

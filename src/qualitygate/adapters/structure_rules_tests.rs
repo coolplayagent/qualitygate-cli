@@ -322,3 +322,76 @@ fn shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics() {
     assert_eq!(changed.diagnostics.len(), 1);
     assert!(changed.diagnostics[0].message.contains("BadName"));
 }
+
+#[test]
+fn delivery_comparison_retains_existing_marker_obligations_without_requiring_unchanged_declarations()
+ {
+    let before = "# Generated: author=reviewer\ndef test_behavior():\n    assert True\n";
+    for (after, expected) in [
+        (
+            "# Generated: author=reviewer\ndef test_behavior():\n    assert False\n",
+            Verdict::Pass,
+        ),
+        ("def test_behavior():\n    assert False\n", Verdict::Fail),
+    ] {
+        let mut input = snapshot("tests/test_behavior.py", Some(before), after);
+        input.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;
+        let result = run(
+            "ai-code-traceability",
+            &input,
+            serde_json::json!({"marker":{"type":"comment","name":"Generated","fields":["author"]}}),
+        );
+        assert_eq!(result.verdict, Some(expected), "{:?}", result.execution);
+        if expected == Verdict::Fail {
+            assert_eq!(result.diagnostics.len(), 1);
+            assert!(result.diagnostics[0].range.is_none());
+        }
+    }
+}
+
+#[test]
+fn framework_defaults_and_per_language_overrides_preserve_test_discovery_conventions() {
+    for (path, source, parameters, expected) in [
+        (
+            "sample_test.go",
+            "package sample\nimport \"testing\"\nfunc TestBehavior(t *testing.T) {}",
+            serde_json::json!({}),
+            Verdict::Pass,
+        ),
+        (
+            "sample.test.ts",
+            "test('works', () => {});",
+            serde_json::json!({}),
+            Verdict::Pass,
+        ),
+        (
+            "test_sample.py",
+            "def test_behavior(): pass",
+            serde_json::json!({"patterns":{"python":"^scenario_"}}),
+            Verdict::Fail,
+        ),
+    ] {
+        let result = run("test-naming", &snapshot(path, None, source), parameters);
+        assert_eq!(result.verdict, Some(expected), "{:?}", result.execution);
+    }
+    let input = snapshot("a.py", None, "import os\n# hello\n");
+    assert_eq!(
+        run(
+            "import-boundary",
+            &input,
+            serde_json::json!({"forbidden_imports":{"java":[".*"]}})
+        )
+        .verdict,
+        Some(Verdict::Pass)
+    );
+    assert_eq!(
+        run(
+            "comment-language",
+            &input,
+            serde_json::json!({"language":"unknown"})
+        )
+        .execution
+        .status,
+        ExecutionStatus::Blocked
+    );
+}

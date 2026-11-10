@@ -480,3 +480,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "doctor_context_tests.rs"]
+mod scenario_tests;

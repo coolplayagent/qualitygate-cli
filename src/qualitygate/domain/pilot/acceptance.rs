@@ -461,3 +461,55 @@ mod tests {
         assert!(threshold_assessment(&value, &protocol).is_err());
     }
 }
+
+#[cfg(test)]
+mod subject_scenarios {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn acceptance_subject_binds_evidence_and_authority_and_requires_independent_review() {
+        let mut manifest: Manifest = serde_json::from_slice(br#"{"schema_version":1,"id":"qualitygate-eight-task-seven-day-pilot","protocol":{"project":"qualitygate-cli","sampling":"Before execution select four bug fixes and four refactors; assign each to both model groups and both workflows","owner":null,"reviewer":null,"archive":null,"sealed_at":null,"start_at":null,"end_at":null,"task_count":8,"days":7,"max_attempts":3,"max_seconds":1800,"review_fraction_min":1.0,"monetary_cap":null,"thresholds":{"detection_min":0.9,"false_positive_max":0.05,"repair_min":0.8,"completion_min":0.95,"review_reduction_min":0.1,"full_p95_ratio_max":1.2,"cost_ratio_max":1.0}},"assignments":[],"observations":[]}"#)
+        .unwrap();
+        manifest.protocol.owner = Some("owner".into());
+        manifest.protocol.reviewer = Some("reviewer".into());
+        manifest.protocol.end_at = Some(100);
+        manifest.plan_seal = Some(
+            serde_json::from_value(json!({"algorithm":"sha256","digest":digest(&"plan").unwrap()}))
+                .unwrap(),
+        );
+        let authorization:PlanAuthorizationRecord=serde_json::from_value(json!({"schema_version":1,"record_id":"start","subject":{"repository":"repo","pilot_id":manifest.id,"plan_seal":manifest.plan_seal,"owner":"owner","reviewer":"reviewer","sealed_at":1,"start_at":2,"end_at":100,"task_count":1,"assignment_count":4},"authorizer":{"id":"owner","kind":"human"},"reason":"Start declared experiment","issued_at":1,"expires_at":200})).unwrap();
+        let verified = VerifiedPlanAuthorization {
+            record: authorization,
+            signer_key_id: "owner".into(),
+            public_key_digest: digest(&"key").unwrap(),
+        };
+        let summary = json!({"complete":true,"protocol_ready":true,"groups":[],"comparisons":[]});
+        let subject = subject_from_summary(&manifest, &summary, &verified).unwrap();
+        assert_eq!(subject.assessment.outcome, ThresholdStatus::Unknown);
+        assert_eq!(subject.observation_end, 100);
+        assert_eq!(subject.start_signer_key_id, "owner");
+        assert!(acceptance_decision(&subject, PilotAcceptanceDecision::Accepted).is_err());
+        acceptance_decision(&subject, PilotAcceptanceDecision::Rejected).unwrap();
+        let mut altered = manifest.clone();
+        altered.protocol.project = "another-repository".into();
+        assert_ne!(
+            subject.manifest_digest,
+            subject_from_summary(&altered, &summary, &verified)
+                .unwrap()
+                .manifest_digest
+        );
+        for case in 0..5 {
+            let mut changed = manifest.clone();
+            match case {
+                0 => changed.protocol.owner = None,
+                1 => changed.protocol.reviewer = None,
+                2 => changed.protocol.reviewer = changed.protocol.owner.clone(),
+                3 => changed.plan_seal = None,
+                4 => changed.protocol.end_at = None,
+                _ => unreachable!(),
+            }
+            assert!(subject_from_summary(&changed, &summary, &verified).is_err());
+        }
+    }
+}

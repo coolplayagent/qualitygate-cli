@@ -282,3 +282,7 @@ fn pattern_map(key: &str, value: &serde_json::Value, text_source: bool) -> Resul
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "builtin_validation_tests.rs"]
+mod tests;

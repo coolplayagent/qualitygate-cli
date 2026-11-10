@@ -176,3 +176,7 @@ pub fn identify(path: &Path) -> Result<Artifact> {
         digest: format!("sha256:{:x}", digest.finalize()),
     })
 }
+
+#[cfg(test)]
+#[path = "delivery_tests.rs"]
+mod tests;

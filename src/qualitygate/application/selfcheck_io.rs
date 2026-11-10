@@ -147,3 +147,60 @@ pub(super) async fn runner(scenario: RunnerScenario) -> Result<Value> {
         },
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn snapshot_fixture_builder_creates_the_declared_index_and_worktree_conditions() {
+        let runtime = tokio::runtime::Handle::current();
+        tokio::task::spawn_blocking(move || {
+            runtime.block_on(async {
+                let staged = snapshot(SnapshotScenario::Staged).await.unwrap();
+                assert_eq!(staged["status"], "completed");
+                assert_eq!(staged["mode"], "staged");
+                assert_eq!(staged["files"]["fixture.txt"], "staged\n");
+                let normal = snapshot(SnapshotScenario::Normal).await.unwrap();
+                assert_eq!(normal["mode"], "worktree");
+                assert_eq!(normal["files"]["fixture.txt"], "staged\n");
+                let long = snapshot(SnapshotScenario::LongPath).await.unwrap();
+                assert_eq!(long["status"], "completed");
+                assert!(
+                    long["files"]
+                        .as_object()
+                        .unwrap()
+                        .keys()
+                        .any(|p| p.contains("特殊 空间!"))
+                );
+                for (scenario, reason) in [
+                    (SnapshotScenario::ChangedInput, "mutation rejected"),
+                    (SnapshotScenario::Oversized, "exceeds"),
+                    (SnapshotScenario::Symlink, "120000"),
+                    (SnapshotScenario::MissingObject, "object"),
+                ] {
+                    let observed = snapshot(scenario).await.unwrap();
+                    assert_eq!(observed["status"], "incomplete");
+                    assert!(
+                        observed["reason"]
+                            .as_str()
+                            .unwrap()
+                            .to_lowercase()
+                            .contains(&reason.to_lowercase()),
+                        "{observed}"
+                    );
+                }
+                let missing = runner(RunnerScenario::MissingTool).await.unwrap();
+                assert_eq!(missing["status"], "incomplete");
+                assert!(
+                    missing["reason"]
+                        .as_str()
+                        .unwrap()
+                        .contains("missing-fixture-tool")
+                );
+            })
+        })
+        .await
+        .unwrap();
+    }
+}

@@ -4,6 +4,10 @@ use crate::{config, domain::agent_contract::*, snapshot};
 use anyhow::{Result, ensure};
 use std::sync::Arc;
 
+#[cfg(test)]
+#[path = "agent_contract_tests.rs"]
+mod tests;
+
 pub async fn project(mut options: CheckOptions, role: String) -> Result<Projection> {
     config::agent_contract::role(&role)?;
     ensure!(

@@ -101,3 +101,79 @@ fn history_decoding_charges_before_expansion_and_preserves_messages_and_trailers
     assert!(charge(&mut bytes, 1).is_err());
     assert!(charge(&mut bytes, usize::MAX).is_err());
 }
+
+#[tokio::test]
+async fn captured_history_pins_parents_reuses_blobs_and_parses_only_input_trailers() {
+    let root = tempfile::tempdir().unwrap();
+    super::super::run_git(root.path(), &["init", "--quiet", "--template="], None)
+        .await
+        .unwrap();
+    std::fs::write(root.path().join("unchanged.rs"), b"shared\n").unwrap();
+    for (name, message) in [
+        ("first.rs", "first\n\nAgent-Run: run-1\nAgent-Run: run-2"),
+        ("second.rs", "second\n\nReviewed-By: human"),
+    ] {
+        std::fs::write(root.path().join(name), name).unwrap();
+        super::super::run_git(root.path(), &["add", "."], None)
+            .await
+            .unwrap();
+        super::super::run_git(
+            root.path(),
+            &[
+                "-c",
+                "user.name=Unit Test",
+                "-c",
+                "user.email=unit@example.invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "--quiet",
+                "-m",
+                message,
+            ],
+            None,
+        )
+        .await
+        .unwrap();
+    }
+    let snapshot = super::super::capture_with_options(
+        root.path(),
+        &super::super::Selection::Diff {
+            base: "HEAD^".into(),
+            head: "HEAD".into(),
+        },
+        &Default::default(),
+    )
+    .await
+    .unwrap();
+    let history = capture(&snapshot).await.unwrap();
+    assert_eq!(history.commits.len(), 2);
+    let first = &history.commits[0];
+    let second = &history.commits[1];
+    assert!(first.parents.is_empty());
+    assert_eq!(second.parents.as_slice(), std::slice::from_ref(&first.oid));
+    assert_eq!(first.trailers["agent-run"], ["run-1", "run-2"]);
+    assert_eq!(second.trailers["reviewed-by"], ["human"]);
+    assert!(Arc::ptr_eq(
+        &first.files["unchanged.rs"],
+        &second.files["unchanged.rs"]
+    ));
+    assert!(!first.files.contains_key("second.rs"));
+    assert_eq!(second.content_digest, snapshot.identity.content_digest);
+    let filtered = capture_with_options(
+        &snapshot,
+        &super::super::CaptureOptions {
+            exclude: vec!["unchanged.rs".into()],
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert!(
+        filtered
+            .commits
+            .iter()
+            .all(|commit| !commit.files.contains_key("unchanged.rs"))
+    );
+    assert_ne!(filtered.commits[1].content_digest, second.content_digest);
+}

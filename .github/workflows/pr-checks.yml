@@ -143,6 +143,8 @@ jobs:
       - run: rustup show
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
+      - name: Scenario unit line coverage gate
+        run: cargo llvm-cov --locked --lib --bins --all-features --fail-under-lines 97.01 --lcov --output-path target/coverage-unit.lcov
       - name: Rust line coverage gate
         run: cargo llvm-cov --locked --all-targets --all-features --fail-under-lines 90 --lcov --output-path target/coverage.lcov
       - name: Upload coverage evidence
@@ -150,7 +152,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: coverage
-          path: target/coverage.lcov
+          path: |
+            target/coverage-unit.lcov
+            target/coverage.lcov
           if-no-files-found: error
 
   maven-project:

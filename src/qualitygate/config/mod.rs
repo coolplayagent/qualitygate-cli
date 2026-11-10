@@ -143,3 +143,10 @@ pub mod agent_contract;
 #[cfg(test)]
 #[path = "config_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod contract_scenario_tests;
+
+#[cfg(test)]
+#[path = "input_scenario_tests.rs"]
+mod input_scenarios;

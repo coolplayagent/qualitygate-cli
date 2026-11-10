@@ -277,3 +277,7 @@ fn violation(result: &mut CheckResult, file: Option<&str>, message: &str, kind: 
         "Add or repair a test that passes on the current code and asserts the changed behavior on the old code", &format!("{kind}:{}", file.unwrap_or("")),
     ));
 }
+
+#[cfg(test)]
+#[path = "test_effectiveness_tests.rs"]
+mod tests;
