@@ -1,0 +1,328 @@
+//! Versioned execution results; a successful tool exit alone is not a gate pass.
+
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+
+/// Retained diagnostics per check; byte size uses compact UTF-8 JSON with replay arguments.
+pub const MAX_DIAGNOSTICS: usize = 10_000;
+pub const MAX_DIAGNOSTIC_BYTES: usize = 8 * 1024 * 1024;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SnapshotIdentity {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_digest: Option<String>,
+    pub mode: String,
+    pub base: String,
+    pub head: String,
+    pub content_digest: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub merge_request: Option<MergeRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MergeRequest {
+    pub provider: String,
+    pub url: String,
+    pub repository: String,
+    pub number: u64,
+    pub source_branch: String,
+    pub target_branch: String,
+    pub source_head: String,
+    pub target_head: String,
+    pub merge_base: String,
+    pub api_response_digests: Vec<String>,
+}
+
+impl MergeRequest {
+    pub fn same_comparison(&self, other: &Self) -> bool {
+        self.provider == other.provider
+            && self.repository == other.repository
+            && self.number == other.number
+            && self.source_head == other.source_head
+            && self.target_head == other.target_head
+            && self.merge_base == other.merge_base
+            && self.source_branch == other.source_branch
+            && self.target_branch == other.target_branch
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PolicyEvidence {
+    pub source: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolved_commit: Option<String>,
+    pub config_digest: String,
+    pub rules_digest: String,
+    pub task_contract_digest: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_contract_source: Option<String>,
+    pub trust: String,
+    pub changes: Vec<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub source_reviews: BTreeMap<String, crate::domain::SourceReviewEvidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanSummary {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_id: Option<String>,
+    #[serde(default)]
+    pub execution_order: Vec<String>,
+    pub required_checks: Vec<String>,
+    pub pending_delivery_checks: Vec<String>,
+    pub acceptance: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub acceptance_descriptions: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Report {
+    pub schema_version: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selection: Option<crate::domain::check_scope::ScopeEvidence>,
+    pub run_id: String,
+    pub scope: String,
+    pub profile: String,
+    #[serde(default)]
+    pub evaluator_digest: String,
+    #[serde(default)]
+    pub environment_digest: String,
+    pub snapshot: SnapshotIdentity,
+    pub policy: PolicyEvidence,
+    pub plan: PlanSummary,
+    pub gate: crate::domain::Gate,
+    pub checks: Vec<CheckResult>,
+    pub summary: Summary,
+    #[serde(default)]
+    pub verification: crate::domain::VerificationBoundary,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ReportContext>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReportContext {
+    pub report_path: String,
+    pub recheck: Recheck,
+    pub delivery_recheck: Recheck,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Severity {
+    #[default]
+    Error,
+    Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Applicability {
+    Applicable,
+    NotApplicable,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecutionStatus {
+    Completed,
+    NotRun,
+    Blocked,
+    TimedOut,
+    ToolError,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Verdict {
+    Pass,
+    Fail,
+    Skipped,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Range {
+    pub start_line: usize,
+    pub end_line: usize,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Recheck {
+    pub argv: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Diagnostic {
+    pub id: String,
+    pub fingerprint: String,
+    pub file: Option<String>,
+    pub range: Option<Range>,
+    pub message: String,
+    pub evidence: serde_json::Value,
+    pub fix: String,
+    pub recheck: Recheck,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Execution {
+    pub status: ExecutionStatus,
+    pub reason: Option<String>,
+    pub argv: Vec<String>,
+    pub cwd: Option<String>,
+    pub started_at_ms: Option<u64>,
+    #[serde(default)]
+    pub ended_at_ms: Option<u64>,
+    pub duration_ms: Option<u64>,
+    pub exit_code: Option<i32>,
+    pub artifacts: Vec<Artifact>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Artifact {
+    pub path: String,
+    pub digest: String,
+    pub bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CheckResult {
+    pub id: String,
+    pub rule_version: u32,
+    pub required: bool,
+    pub severity: Severity,
+    pub applicability: Applicability,
+    pub execution: Execution,
+    pub verdict: Option<Verdict>,
+    pub matched_entities: usize,
+    pub diagnostics: Vec<Diagnostic>,
+    pub metadata: BTreeMap<String, serde_json::Value>,
+}
+
+impl CheckResult {
+    /// Creates an unexecuted result. Callers must supply evidence before passing.
+    pub fn pending(id: impl Into<String>, required: bool, severity: Severity) -> Self {
+        Self {
+            id: id.into(),
+            rule_version: 1,
+            required,
+            severity,
+            applicability: Applicability::Unknown,
+            execution: Execution {
+                status: ExecutionStatus::NotRun,
+                reason: Some("Check has not run".into()),
+                argv: Vec::new(),
+                cwd: None,
+                started_at_ms: None,
+                ended_at_ms: None,
+                duration_ms: None,
+                exit_code: None,
+                artifacts: Vec::new(),
+            },
+            verdict: None,
+            matched_entities: 0,
+            diagnostics: Vec::new(),
+            metadata: BTreeMap::new(),
+        }
+    }
+
+    /// A completed check may still fail its acceptance conditions.
+    pub fn complete(&mut self) {
+        self.applicability = Applicability::Applicable;
+        self.execution.status = ExecutionStatus::Completed;
+        self.execution.reason = None;
+        self.verdict = Some(if self.diagnostics.is_empty() {
+            Verdict::Pass
+        } else {
+            Verdict::Fail
+        });
+    }
+
+    /// Capability or execution gaps never become a skipped/pass verdict.
+    pub fn block(&mut self, status: ExecutionStatus, reason: impl Into<String>) {
+        self.execution.status = status;
+        self.execution.reason = Some(reason.into());
+        self.verdict = None;
+    }
+
+    /// A skip requires a positive non-applicability explanation.
+    pub fn skip(&mut self, reason: impl Into<String>) {
+        self.applicability = Applicability::NotApplicable;
+        self.execution.status = ExecutionStatus::NotRun;
+        self.execution.reason = Some(reason.into());
+        self.verdict = Some(Verdict::Skipped);
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Summary {
+    pub checks_total: usize,
+    pub pass: usize,
+    pub fail: usize,
+    pub skipped: usize,
+    pub incomplete: usize,
+    pub diagnostics_total: usize,
+    pub diagnostics_filtered: usize,
+}
+
+impl Summary {
+    pub fn from_checks(checks: &[CheckResult]) -> Self {
+        let mut summary = Self {
+            checks_total: checks.len(),
+            ..Self::default()
+        };
+        for check in checks {
+            match check.verdict {
+                Some(Verdict::Pass) => summary.pass += 1,
+                Some(Verdict::Fail) => summary.fail += 1,
+                Some(Verdict::Skipped) => summary.skipped += 1,
+                None => summary.incomplete += 1,
+            }
+            summary.diagnostics_total += check.diagnostics.len();
+        }
+        summary
+    }
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::*;
+    #[test]
+    fn provider_refresh_preserves_comparison_only_when_all_repository_and_branch_pins_match() {
+        let original = MergeRequest {
+            provider: "github".into(),
+            url: "https://example.invalid/a/b/pull/1".into(),
+            repository: "a/b".into(),
+            number: 1,
+            source_branch: "feature".into(),
+            target_branch: "main".into(),
+            source_head: "source".into(),
+            target_head: "target".into(),
+            merge_base: "base".into(),
+            api_response_digests: vec!["first-response".into()],
+        };
+        let mut refreshed = original.clone();
+        refreshed.url = "https://example.invalid/a/b/pull/1?refresh".into();
+        refreshed.api_response_digests = vec!["refreshed-response".into()];
+        assert!(original.same_comparison(&refreshed));
+        for field in [
+            "provider",
+            "repository",
+            "number",
+            "source_head",
+            "target_head",
+            "merge_base",
+            "source_branch",
+            "target_branch",
+        ] {
+            let mut changed = serde_json::to_value(&original).unwrap();
+            changed[field] = if field == "number" {
+                serde_json::json!(2)
+            } else {
+                serde_json::json!("other")
+            };
+            let changed: MergeRequest = serde_json::from_value(changed).unwrap();
+            assert!(!original.same_comparison(&changed), "{field}");
+        }
+    }
+}

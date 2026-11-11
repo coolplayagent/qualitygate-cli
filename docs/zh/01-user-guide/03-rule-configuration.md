@@ -76,7 +76,7 @@ checks:
 保守地选中计划内全部命令。可复用核心的 repository 范围也执行全部计划命令。适用检查的依赖会
 递归执行，包括选中规则需要的命令。人工验收和任务契约 verification 不允许声明 `when_changed`。
 
-[全局输入清单](../../../src/qualitygate/config/change_selection.rs)覆盖 Cargo、Maven/Gradle、
+[全局输入清单](../../../src/qualitygate/resource_selection/trigger_selection.rs)覆盖 Cargo、Maven/Gradle、
 Python 包与测试配置、Node/TypeScript、Go、CMake/Make 和 Bazel 输入。例如 `Cargo.lock`、
 `package.json`、`requirements*.txt`、`tsconfig*.json`、`.bzl` 和 `.cmake` 变化，即使位于
 所声明项目之外，也会保守触发。项目专有输入仍需显式声明；该清单不等同于依赖图。

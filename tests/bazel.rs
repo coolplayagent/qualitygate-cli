@@ -14,32 +14,14 @@ const RUST_TOOLCHAIN: &str = include_str!("../rust-toolchain.toml");
 const SOURCE_ROOT_BUILD: &str = include_str!("../src/qualitygate/BUILD.bazel");
 
 const OWNER_BUILDS: &[(&str, &str)] = &[
-    (
-        "adapters",
-        include_str!("../src/qualitygate/adapters/BUILD.bazel"),
-    ),
-    (
-        "application",
-        include_str!("../src/qualitygate/application/BUILD.bazel"),
-    ),
-    (
-        "config",
-        include_str!("../src/qualitygate/config/BUILD.bazel"),
-    ),
-    (
-        "domain",
-        include_str!("../src/qualitygate/domain/BUILD.bazel"),
-    ),
-    ("env", include_str!("../src/qualitygate/env/BUILD.bazel")),
-    (
-        "interfaces",
-        include_str!("../src/qualitygate/interfaces/BUILD.bazel"),
-    ),
+    ("adapters", SOURCE_ROOT_BUILD),
+    ("application", SOURCE_ROOT_BUILD),
+    ("config", SOURCE_ROOT_BUILD),
+    ("domain", SOURCE_ROOT_BUILD),
+    ("env", SOURCE_ROOT_BUILD),
+    ("interfaces", SOURCE_ROOT_BUILD),
     ("net", include_str!("../src/qualitygate/net/BUILD.bazel")),
-    (
-        "paths",
-        include_str!("../src/qualitygate/paths/BUILD.bazel"),
-    ),
+    ("paths", SOURCE_ROOT_BUILD),
     (
         "runner",
         include_str!("../src/qualitygate/runner/BUILD.bazel"),
@@ -52,16 +34,16 @@ const OWNER_BUILDS: &[(&str, &str)] = &[
 
 const NESTED_SOURCE_BUILDS: &[(&str, &str)] = &[
     (
-        "adapters/reports",
-        include_str!("../src/qualitygate/adapters/reports/BUILD.bazel"),
+        "report_evidence/tool_reports",
+        include_str!("../src/qualitygate/report_evidence/tool_reports/BUILD.bazel"),
     ),
     (
-        "adapters/syntax",
-        include_str!("../src/qualitygate/adapters/syntax/BUILD.bazel"),
+        "source_analysis/syntax",
+        include_str!("../src/qualitygate/source_analysis/syntax/BUILD.bazel"),
     ),
     (
-        "config/discovery",
-        include_str!("../src/qualitygate/config/discovery/BUILD.bazel"),
+        "check_planning/discovery",
+        include_str!("../src/qualitygate/check_planning/discovery/BUILD.bazel"),
     ),
 ];
 
@@ -87,6 +69,40 @@ const OWNER_DEPENDENCIES: &[(&str, &[&str])] = &[
         &["application", "config", "domain", "snapshot"],
     ),
 ];
+
+const FLAT_OWNERS: &[&str] = &[
+    "adapters",
+    "application",
+    "config",
+    "domain",
+    "env",
+    "interfaces",
+    "paths",
+];
+
+fn owner_label(owner: &str) -> String {
+    if FLAT_OWNERS.contains(&owner) {
+        format!("//src/qualitygate:{owner}")
+    } else {
+        format!("//src/qualitygate/{owner}")
+    }
+}
+
+fn owner_build(owner: &str) -> &'static str {
+    OWNER_BUILDS
+        .iter()
+        .find_map(|(name, source)| (*name == owner).then_some(*source))
+        .unwrap_or_else(|| panic!("missing Bazel package for {owner}"))
+}
+
+fn target<'a>(source: &'a str, kind: &str, name: &str) -> &'a str {
+    source
+        .split(&format!("{kind}("))
+        .skip(1)
+        .map(|block| block.split("\n)").next().unwrap())
+        .find(|block| quoted_value(block, "name") == name)
+        .unwrap_or_else(|| panic!("missing {kind} target {name}"))
+}
 
 fn quoted_value(source: &str, key: &str) -> String {
     let prefix = format!("{key} = \"");
@@ -120,19 +136,12 @@ fn bazel_uses_the_pinned_rust_toolchain_and_cargo_dependency_graph() {
             .contains("knowledge/best-practices/engineering-standards/lifecycle-rule-matrix*.yaml")
     );
     assert!(
-        OWNER_BUILDS
-            .iter()
-            .find(|(owner, _)| *owner == "config")
-            .unwrap()
-            .1
+        target(owner_build("config"), "rust_library", "config")
             .contains("//:engineering_standard_assets")
     );
     assert!(CARGO_ROOT_DEPS.contains(&format!("_CARGO_PACKAGE_VERSION = \"{package_version}\"")));
     for owner in VERSIONED_OWNER_BUILDS {
-        let source = OWNER_BUILDS
-            .iter()
-            .find_map(|(name, source)| (*name == *owner).then_some(*source))
-            .unwrap_or_else(|| panic!("missing Bazel package for {owner}"));
+        let source = target(owner_build(owner), "rust_library", owner);
         assert!(
             source.contains("rustc_env = package_rustc_env()"),
             "Bazel {owner} must receive the Cargo package version"
@@ -143,20 +152,19 @@ fn bazel_uses_the_pinned_rust_toolchain_and_cargo_dependency_graph() {
 #[test]
 fn bazel_domain_dependencies_match_the_owner_contract() {
     for (owner, expected) in OWNER_DEPENDENCIES {
-        let source = OWNER_BUILDS
-            .iter()
-            .find_map(|(name, source)| (*name == *owner).then_some(*source))
-            .unwrap_or_else(|| panic!("missing Bazel package for {owner}"));
+        let source = target(owner_build(owner), "rust_library", owner);
         let actual: Vec<_> = source
+            .split_once("\n    deps = [")
+            .map(|(_, dependencies)| dependencies.split("\n    ]").next().unwrap())
+            .unwrap_or("")
             .lines()
             .map(str::trim)
-            .map(|line| line.trim_end_matches(',').trim_matches('"'))
-            .filter(|label| label.starts_with("//src/qualitygate/") && !label.contains(':'))
-            .map(str::to_owned)
+            .filter_map(|line| line.strip_prefix('"'))
+            .map(|label| label.trim_end_matches(',').trim_end_matches('"').to_owned())
             .collect();
         let expected: Vec<_> = expected
             .iter()
-            .map(|dependency| format!("//src/qualitygate/{dependency}"))
+            .map(|dependency| owner_label(dependency))
             .collect();
         assert_eq!(
             actual, expected,
@@ -179,28 +187,66 @@ fn bazel_exposes_cached_domain_libraries_and_dependency_contract_test() {
     assert!(SOURCE_ROOT_BUILD.contains("name = \"qualitygate_lib\""));
     assert!(SOURCE_ROOT_BUILD.contains("crate_root = \"bazel_lib.rs\""));
     for (owner, source) in OWNER_BUILDS {
-        assert!(
-            source.contains("name = \"sources\""),
-            "missing source group for {owner}"
+        let flattened = FLAT_OWNERS.contains(owner);
+        let source_group = if flattened {
+            format!("{owner}_sources")
+        } else {
+            "sources".to_owned()
+        };
+        let sources = target(source, "filegroup", &source_group);
+        let library = target(source, "rust_library", owner);
+        assert_eq!(
+            quoted_value(library, "crate_name"),
+            format!("qualitygate_{owner}")
         );
-        assert!(
-            source.contains("rust_library("),
-            "missing library target for {owner}"
-        );
-        assert!(
-            source.contains("crate_root = \"bazel_lib.rs\""),
-            "missing domain entry point for {owner}"
-        );
+        let entry = if flattened {
+            format!("//bazel:owners/{owner}.rs")
+        } else {
+            "bazel_lib.rs".to_owned()
+        };
+        assert_eq!(quoted_value(library, "crate_root"), entry);
+        assert!(library.contains(&format!("srcs = [\":{source_group}\"]")));
+        if flattened {
+            assert!(sources.contains(&format!("\"{owner}.rs\"")));
+            assert!(sources.contains(&format!("\"{entry}\"")));
+        }
+        let test_name = if flattened {
+            format!("{owner}_unit_tests")
+        } else {
+            "unit_tests".to_owned()
+        };
+        let unit_tests = target(source, "rust_test", &test_name);
+        assert_eq!(quoted_value(unit_tests, "crate"), format!(":{owner}"));
+        let test_label = if flattened {
+            format!("//src/qualitygate:{test_name}")
+        } else {
+            format!("//src/qualitygate/{owner}:{test_name}")
+        };
+        assert!(BUILD.contains(&format!("\"{test_label}\"")));
     }
     for (directory, source) in NESTED_SOURCE_BUILDS {
-        assert!(
-            source.contains("name = \"sources\""),
-            "missing nested source group for {directory}"
-        );
+        target(source, "filegroup", "sources");
+        assert!(SOURCE_ROOT_BUILD.contains(&format!("//src/qualitygate/{directory}:sources")));
     }
     assert!(QUALITYGATE_POLICY.contains("id: bazel-module-lock"));
     assert!(QUALITYGATE_POLICY.contains("id: bazel-build"));
     assert!(QUALITYGATE_POLICY.contains("id: bazel-test"));
     // Cargo's complete integration selector includes this contract target.
     assert!(QUALITYGATE_POLICY.contains("--test, \"*\""));
+}
+
+#[test]
+fn business_adapter_paths_preserve_the_public_report_contract() {
+    use qualitygate::config::ReportFormat;
+    use qualitygate::report_evidence::tool_reports;
+
+    // Assignment across the two paths proves this is the same public type,
+    // not a copied contract that can drift between Cargo and Bazel builds.
+    let report: qualitygate::adapters::reports::Data = tool_reports::parse(
+        ReportFormat::Junit,
+        br#"<testsuite tests="1"><testcase name="kept"/></testsuite>"#,
+    )
+    .unwrap();
+    assert_eq!(report.tests.unwrap().executed, 1);
+    assert!(tool_reports::parse(ReportFormat::Junit, b"<testsuite").is_err());
 }

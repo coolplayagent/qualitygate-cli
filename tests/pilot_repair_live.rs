@@ -9,7 +9,7 @@ use qualitygate::snapshot;
 use serde_json::{Value, json};
 use std::{path::Path, process::Command};
 
-const SOURCE: &str = include_str!("../src/qualitygate/domain/ratchet.rs");
+const SOURCE: &str = include_str!("../src/qualitygate/report_evidence/ratchet.rs");
 const REGRESSION: &str = r#"
 use pilot_fixture::ratchet::{compare, Key};
 use std::collections::BTreeMap;
@@ -197,7 +197,7 @@ async fn codex_models_repair_and_refactor_real_module_with_full_external_recheck
                 "index_digest":snapshot::digest(&bytes),"attempts":index["attempts"].as_array().unwrap().len(),
                 "initial_gate":index["initial"]["gate"],"independent_tests":3}));
             let manifest = json!({"schema_version":1,"origin":"live_codex_on_extracted_module",
-                "source_path":"src/qualitygate/domain/ratchet.rs","source_digest":snapshot::digest(SOURCE.as_bytes()),
+                "source_path":"src/qualitygate/report_evidence/ratchet.rs","source_digest":snapshot::digest(SOURCE.as_bytes()),
                 "regression_digest":snapshot::digest(REGRESSION.as_bytes()),"feedback_mode":"compact",
                 "business_trial":false,"records":records,"known_limits":[
                     "Controlled fault injection and specified refactor; not eight independent production tasks",

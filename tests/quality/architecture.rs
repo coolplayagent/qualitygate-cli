@@ -27,6 +27,31 @@ const OWNERS: &[(&str, &[&str])] = &[
     ("main", &["interfaces"]),
 ];
 
+// Business roots contain concrete modules; capability ownership is independent
+// of the physical directory layout and remains an explicit reviewed contract.
+#[path = "architecture_owners.rs"]
+mod owner_contract;
+use owner_contract::{FEATURES, SINGLE_MODULE_FEATURES};
+
+fn owner_of(location: &[String]) -> Option<&str> {
+    let first = location.first()?.as_str();
+    if OWNERS.iter().any(|(owner, _)| *owner == first) {
+        return Some(first);
+    }
+    if let Some((_, owner)) = SINGLE_MODULE_FEATURES
+        .iter()
+        .find(|(feature, _)| *feature == first)
+    {
+        return Some(*owner);
+    }
+    let (_, modules) = FEATURES.iter().find(|(feature, _)| *feature == first)?;
+    let module = location.get(1)?.as_str();
+    modules
+        .iter()
+        .find(|(name, _)| *name == module)
+        .map(|(_, owner)| *owner)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
 struct Edge {
     from: String,
@@ -53,7 +78,7 @@ impl Graph {
                 .iter()
                 .map(|error| format!("{file}: {error}")),
         );
-        let owner = location.first().map(String::as_str).unwrap_or("lib");
+        let owner = owner_of(&location).unwrap_or("lib");
         if matches!(owner, "domain" | "interfaces") {
             for (method, line) in &references.methods {
                 if path_io_method(method) {
@@ -66,20 +91,21 @@ impl Graph {
         for reference in &references.paths {
             let path = &reference.path;
             if path.first().is_some_and(|part| part == "crate") && path.len() > 1 {
-                let target = &path[1];
-                if target == "*" || !OWNERS.iter().any(|(name, _)| *name == target) {
+                if let Some(target) = owner_of(&path[1..]) {
+                    if owner != target {
+                        self.edges.insert(Edge {
+                            from: owner.into(),
+                            to: target.into(),
+                            file: file.into(),
+                            line: reference.line,
+                        });
+                    }
+                } else {
                     self.errors.push(format!(
                         "{file}:{}: unknown root dependency {}",
                         reference.line,
                         path.join("::")
                     ));
-                } else if owner != target {
-                    self.edges.insert(Edge {
-                        from: owner.into(),
-                        to: target.clone(),
-                        file: file.into(),
-                        line: reference.line,
-                    });
                 }
             }
             self.capability(owner, file, reference.line, path);
@@ -176,6 +202,12 @@ impl Graph {
                 .iter()
                 .filter(|(name, _)| *name != "main")
                 .map(|(name, _)| name.to_string())
+                .chain(FEATURES.iter().map(|(name, _)| name.to_string()))
+                .chain(
+                    SINGLE_MODULE_FEATURES
+                        .iter()
+                        .map(|(name, _)| name.to_string()),
+                )
                 .collect();
             assert_eq!(
                 declared, expected,
@@ -187,6 +219,27 @@ impl Graph {
                     .iter()
                     .all(|item| matches!(item, syn::Item::Mod(_))),
                 "crate root must only declare owners, without hidden root re-exports"
+            );
+        }
+        if location.len() == 1
+            && let Some((_, modules)) = FEATURES.iter().find(|(name, _)| *name == location[0])
+        {
+            let parsed = syn::parse_file(&text).unwrap();
+            let mut declared = BTreeSet::new();
+            for item in parsed.items {
+                let syn::Item::Mod(module) = item else {
+                    panic!("business roots must only declare concrete modules: {name}");
+                };
+                assert!(module.content.is_none(), "inline business module in {name}");
+                declared.insert(module.ident.to_string());
+            }
+            assert_eq!(
+                declared,
+                modules
+                    .iter()
+                    .map(|(module, _)| module.to_string())
+                    .collect(),
+                "business root must declare every reviewed module: {name}"
             );
         }
         let references = self.source(&name, location.clone(), &text);
@@ -486,4 +539,213 @@ fn architecture_follows_declared_production_files_even_with_test_names() {
             .iter()
             .any(|error| error.contains("generated production source inside macro"))
     );
+}
+
+#[test]
+fn architecture_business_modules_preserve_capability_and_dependency_boundaries() {
+    for (feature, module) in [
+        ("agent_runtime", "obligation_contracts"),
+        ("policy_lifecycle", "rollback_contracts"),
+        ("report_evidence", "report"),
+    ] {
+        let mut graph = Graph::default();
+        graph.source(
+            "sample.rs",
+            vec![feature.into(), module.into()],
+            "use std::fs; use crate::agent_runtime::host_controller;",
+        );
+        let errors = graph.violations();
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("domain owns external I/O"))
+        );
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("domain -> application"))
+        );
+    }
+    let mut graph = Graph::default();
+    graph.source(
+        "sample.rs",
+        vec!["snapshot_preflight".into(), "readiness_args".into()],
+        "use crate::snapshot_preflight::readiness_check; use std::fs;",
+    );
+    assert!(
+        graph
+            .violations()
+            .iter()
+            .any(|error| error.contains("interfaces must delegate"))
+    );
+    assert!(owner_of(&["agent_runtime".into(), "unknown".into()]).is_none());
+    assert!(owner_of(&["unknown_feature".into(), "domain".into()]).is_none());
+    let mut single_module = Graph::default();
+    single_module.source(
+        "content_digest.rs",
+        vec!["content_digest".into()],
+        "use std::fs; use crate::gate_execution::workflow;",
+    );
+    let errors = single_module.violations().join("\n");
+    assert!(errors.contains("domain owns external I/O"));
+    assert!(errors.contains("domain -> application"));
+}
+
+#[test]
+fn architecture_adapter_features_cannot_depend_on_cli_or_orchestration() {
+    for (feature, module) in [
+        ("rule_evaluation", "builtin_rules"),
+        ("source_analysis", "syntax"),
+        ("report_evidence", "tool_reports"),
+        ("xml_parsing", "document"),
+    ] {
+        let mut graph = Graph::default();
+        graph.source(
+            "sample.rs",
+            vec![feature.into(), module.into()],
+            "use crate::cli_dispatch::cli; use crate::gate_execution::workflow;",
+        );
+        let errors = graph.violations();
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("adapters -> interfaces"))
+        );
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("adapters -> application"))
+        );
+    }
+}
+
+#[test]
+fn architecture_business_ownership_inventory_is_unique_and_miri_covers_pure_modules() {
+    let mut features = BTreeSet::new();
+    let mut pure_modules = BTreeSet::new();
+    for (feature, owner) in SINGLE_MODULE_FEATURES {
+        assert!(
+            features.insert(feature),
+            "duplicate business owner: {feature}"
+        );
+        assert!(
+            OWNERS.iter().any(|(name, _)| name == owner),
+            "unknown capability owner: {feature} -> {owner}"
+        );
+        if *owner == "domain" {
+            pure_modules.insert(format!("{feature}::"));
+        }
+    }
+    for (feature, modules) in FEATURES {
+        assert!(
+            features.insert(feature),
+            "duplicate business owner: {feature}"
+        );
+        let mut names = BTreeSet::new();
+        for (module, owner) in *modules {
+            assert!(
+                names.insert(module),
+                "ambiguous capability ownership: {feature}::{module}"
+            );
+            assert!(
+                OWNERS.iter().any(|(name, _)| name == owner),
+                "unknown capability owner: {feature}::{module} -> {owner}"
+            );
+            if *owner == "domain" {
+                pure_modules.insert(format!("{feature}::{module}::"));
+            }
+        }
+    }
+
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let text = std::fs::read_to_string(root.join(".github/workflows/pr-checks.yml")).unwrap();
+    let workflow: serde_norway::Value = serde_norway::from_str(&text).unwrap();
+    let configured: Vec<_> = workflow["jobs"]["miri"]["env"]["PURE_DOMAIN_MODULES"]
+        .as_str()
+        .expect("Miri must declare its complete pure-module inventory")
+        .split_whitespace()
+        .map(str::to_owned)
+        .collect();
+    let selected: BTreeSet<_> = configured.iter().cloned().collect();
+    assert_eq!(configured.len(), selected.len(), "duplicate Miri selector");
+    assert_eq!(
+        selected, pure_modules,
+        "Miri must track every pure module after ownership or path changes"
+    );
+}
+
+#[test]
+fn architecture_source_layout_has_consistent_names_and_no_empty_directories() {
+    fn snake_case(name: &str) -> bool {
+        name.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
+            && name
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+            && !name.ends_with('_')
+            && !name.contains("__")
+    }
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/qualitygate");
+    for owner in [
+        "adapters",
+        "application",
+        "config",
+        "domain",
+        "env",
+        "interfaces",
+        "paths",
+    ] {
+        assert!(
+            root.join(format!("{owner}.rs")).is_file() && !root.join(owner).exists(),
+            "single-module owners must use files without wrapper directories: {owner}"
+        );
+    }
+    for (feature, _) in SINGLE_MODULE_FEATURES {
+        assert!(
+            root.join(format!("{feature}.rs")).is_file() && !root.join(feature).exists(),
+            "single-module features must use files without wrapper directories: {feature}"
+        );
+    }
+    for role in ["adapters", "application", "config", "domain", "interfaces"] {
+        for (feature, _) in FEATURES {
+            assert!(
+                !root.join(feature).join(role).exists()
+                    && !root.join(feature).join(format!("{role}.rs")).exists(),
+                "business modules must not reintroduce role wrappers: {feature}/{role}"
+            );
+        }
+    }
+    let mut pending = vec![root];
+    while let Some(directory) = pending.pop() {
+        let entries: Vec<_> = std::fs::read_dir(&directory)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert!(
+            !entries.is_empty(),
+            "empty source directory: {}",
+            directory.display()
+        );
+        for entry in entries {
+            let path = entry.path();
+            if entry.file_type().unwrap().is_dir() {
+                assert!(
+                    snake_case(path.file_name().unwrap().to_str().unwrap()),
+                    "{}",
+                    path.display()
+                );
+                pending.push(path);
+            } else if path.extension().is_some_and(|ext| ext == "rs") {
+                assert!(
+                    snake_case(path.file_stem().unwrap().to_str().unwrap()),
+                    "{}",
+                    path.display()
+                );
+                assert!(
+                    !path.with_extension("").is_dir(),
+                    "modules with children must use directory/mod.rs: {}",
+                    path.display()
+                );
+            }
+        }
+    }
 }

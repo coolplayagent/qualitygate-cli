@@ -16,8 +16,8 @@ rust_library(
     aliases = aliases(),
     edition = crate_edition(),
     deps = [
-        "//src/qualitygate/domain",
-        "//src/qualitygate/env",
+        "//src/qualitygate:domain",
+        "//src/qualitygate:env",
     ] + all_crate_deps(normal = True),
     proc_macro_deps = all_crate_deps(proc_macro = True),
 )

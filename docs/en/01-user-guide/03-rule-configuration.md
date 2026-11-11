@@ -91,7 +91,7 @@ core evaluations also run all planned commands. An active check's dependencies
 run transitively, including commands needed by selected rules. Manual acceptance
 and task-contract verification cannot declare `when_changed`.
 
-The [global-input inventory](../../../src/qualitygate/config/change_selection.rs)
+The [global-input inventory](../../../src/qualitygate/resource_selection/trigger_selection.rs)
 includes Cargo, Maven/Gradle, Python packaging/test configuration, Node/TypeScript,
 Go, CMake/Make and Bazel inputs. For example, `Cargo.lock`, `package.json`,
 `requirements*.txt`, `tsconfig*.json`, `.bzl` and `.cmake` changes trigger the
