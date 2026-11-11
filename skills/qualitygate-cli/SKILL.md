@@ -2,7 +2,7 @@
 name: qualitygate-cli
 description: "Verify implementation, bug-fix and refactor changes with Qualitygate CLI, author source-bound repository rules, and review design contracts with evidence. Also use for rule configuration, runtime verification and selfcheck."
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   homepage: "https://github.com/coolplayagent/qualitygate-cli"
 ---
 
