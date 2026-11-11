@@ -1,11 +1,15 @@
-# Runtime compatibility and preflight
+# Runtime compatibility and doctor evidence
 
-Resolve the executable first. Compare `--version` with Skill metadata, inspect
+Use [runtime startup](runtime-startup.md) to select the executable. Compare
+`--version` with Skill metadata, inspect
 `--help`, then query `capabilities --format json` when advertised. Validate with
 [capabilities schema](schemas/capabilities.schema.json). Record the executable
 SHA-256, not just the version: builds with equal versions may differ. If the
 capability command is absent, use the history table and `check --help`; do not
 invent a capabilities response or relabel an arbitrary parse error as age.
+Identity and compatibility evidence do not authenticate the binary's provenance.
+Require capabilities for the requested operation; reading this reference does
+not turn a runtime query or selfcheck into repository verification.
 
 | Capability | First published version | Verified history |
 | --- | --- | --- |
@@ -23,23 +27,19 @@ Compare `snapshot.unstructured-documents.v1` when relying on this behavior.
 Restore command dependencies with `unstructured_documents.retain`, or set
 `enabled: false` to disable defaults. See [operations](operations.md#default-document-and-media-acquisition-exclusions).
 
-This workflow requires v0.5.7 or a later compatible runtime. A version match
-alone is insufficient. Require `runtime.capabilities.v1`,
-`config.requires.v1`, `command.required-env.v1`, `doctor.static.v1`, and
-`doctor.tool-probes.v1` for this workflow. Old runtime conclusions remain valid
-only for the inspected build. Select an already verified compatible install or
-report the capability gap; do not install tools, build untrusted checkouts,
-delete unsupported fields, or lower requirements automatically.
+Repository preflight uses v0.5.7 or a later compatible runtime. Require
+`runtime.capabilities.v1` and `doctor.static.v1`; require `config.requires.v1`,
+`command.required-env.v1` and `doctor.tool-probes.v1` when using those contracts.
+Old runtime conclusions remain valid only for the inspected build. Select an
+already verified compatible install or report the capability gap. Existing
+authorization may cover selecting or updating a development build; use the
+[implementation workflow](selfcheck.md) for its verification. Do not delete
+unsupported fields or lower requirements to accommodate an incompatible binary.
 
-After checking configuration existence/compatibility, run doctor with exactly
-the intended selector, profile, task, policy reference and acquisition budgets:
-
-```bash
-"$QUALITYGATE_BIN" doctor --root "$REPOSITORY_ROOT" \
-  --diff origin/1.8.x-alpha..HEAD --profile full --format json
-"$QUALITYGATE_BIN" doctor --root "$REPOSITORY_ROOT" \
-  --diff origin/1.8.x-alpha..HEAD --profile full --probe-tools --format json
-```
+The [verification workflow](verification.md) owns configuration prerequisites,
+doctor invocation and final-check acceptance. Preserve its selected root/config,
+snapshot, profile, task, policy and acquisition budgets. Doctor currently has no
+MR selector; retain that preflight gap without changing the requested comparison.
 
 Default doctor only inspects prerequisites. `--probe-tools` executes selected
 `tools[].argv` in private snapshots, in sequence, with a shared 120-second budget
@@ -51,12 +51,8 @@ names embedded in scripts; declare `required_env` in command checks or task
 verification. Names must exist and have nonempty values; never print values.
 Formal check enforces the declarations too.
 
-For a runtime advertising `doctor.summary.v1`, avoid terminal truncation directly:
-
-```bash
-"$QUALITYGATE_BIN" doctor --root "$REPOSITORY_ROOT" \
-  --diff origin/1.8.x-alpha..HEAD --profile full --summary --format json
-```
+For a runtime advertising `doctor.summary.v1`, `--summary --format json` avoids
+terminal truncation. Apply it to the requested doctor invocation.
 
 Default table/Markdown output also uses this summary. The
 [summary schema](schemas/doctor-summary.schema.json) is separate from the full
@@ -76,37 +72,30 @@ capture the CLI exit status before parsing it. Do not pass an unsupported flag.
 
 Validate the report with [doctor schema](schemas/doctor.schema.json). Retain
 `scope: preflight`, identities, requested probe scope, diagnostics, unexecuted
-items, pending checks and `next_steps`. Invoke `next_steps[].command` as argv.
+items, pending checks and `next_steps`. Treat `next_steps[].command` as argv and
+check it against the requested scope and existing authorization before execution.
 Exit 0 means the requested preflight passed, not delivery acceptance. Exit 2 is
 blocked/incomplete. Doctor's temporary probe evidence is not a check credential.
-Always finish with the formal unfiltered full check on the final snapshot.
+For a repository verification task, return to the verification workflow for the
+formal check. A doctor-only request ends with its preflight evidence and limits.
 
 `runtime.version_too_old` and `runtime.capability_missing` require a compatible
 build; `config.unknown_field`, `config.type` and `config.syntax` require inspection
-of the original error and available field/line/column. Do not repeatedly init an
-existing valid configuration or overwrite invalid YAML. Follow the existing
-initialization prerequisite only when the required configuration is absent.
+of the original error and available field/line/column. These are distinct from
+an absent selected policy; use the verification workflow to handle that case.
 
-## Large repository template
+## Acquisition diagnostics
 
-First inspect selected-snapshot budgets. A valid repository configuration does
-not require another init; `init.snapshot_preflight` is only the advisory
-HEAD/worktree discovery report. Doctor distinguishes base/index/diff inventories,
+Inspect selected-snapshot budgets. `init.snapshot_preflight` is the advisory
+HEAD/worktree discovery report; doctor distinguishes base/index/diff inventories,
 full counts, total bytes, unsupported entries and protected exclusions.
-
-For repositories whose metadata or explicit instructions justify 8 MiB:
-
-```bash
-"$QUALITYGATE_BIN" doctor --root "$REPOSITORY_ROOT" --profile full \
-  --diff origin/1.8.x-alpha..HEAD --snapshot-max-file-mib 8 --format json
-"$QUALITYGATE_BIN" check --root "$REPOSITORY_ROOT" --profile full \
-  --diff origin/1.8.x-alpha..HEAD --snapshot-max-file-mib 8 --format json
-```
 
 Default capacity remains 2 MiB; the maximum is 8 MiB. Prefer the smallest
 sufficient integer MiB suggestion. Raising total `--snapshot-max-mib` does not
-raise the per-file limit. Above 8 MiB, review explicit policy exclusions for
+raise the per-file limit. Use metadata or repository instructions to justify a
+capacity change. Above 8 MiB, review explicit policy exclusions for
 unrelated resources; never automatically exclude or alter verification inputs.
 Excluded files are unavailable to commands. Base-only oversize still matters,
-and truncated detail lists retain complete counts. Stage/commit a reviewed
-policy for index/diff selection; never switch to worktree to evade that boundary.
+and truncated detail lists retain complete counts. Follow
+[snapshot and policy selection](operations.md#snapshot-and-policy-selection)
+and [repository verification](verification.md) when applying a reviewed change.

@@ -1,6 +1,9 @@
 use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 use serde::Deserialize;
-use std::path::Path;
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
 #[derive(Deserialize)]
 struct CargoManifest {
@@ -44,6 +47,74 @@ struct SkillPolicy {
 
 fn read(root: &Path, relative: &str) -> String {
     std::fs::read_to_string(root.join(relative)).unwrap()
+}
+
+fn linked_files(package: &Path, file: &Path) -> BTreeSet<PathBuf> {
+    Parser::new(&std::fs::read_to_string(file).unwrap())
+        .filter_map(|event| match event {
+            Event::Start(Tag::Link { dest_url, .. }) => {
+                let destination = dest_url.split('#').next().unwrap();
+                if destination.is_empty() {
+                    return None;
+                }
+                let path = file
+                    .parent()
+                    .unwrap()
+                    .join(destination)
+                    .canonicalize()
+                    .unwrap();
+                assert!(
+                    path.starts_with(package) && path.is_file(),
+                    "unbundled Skill link: {destination}"
+                );
+                Some(path)
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+fn reachable_files(package: &Path, entry: &str) -> BTreeSet<PathBuf> {
+    let mut pending = vec![package.join(entry)];
+    let mut reached = BTreeSet::new();
+    while let Some(file) = pending.pop() {
+        if reached.insert(file.clone())
+            && file.extension().is_some_and(|extension| extension == "md")
+        {
+            pending.extend(linked_files(package, &file));
+        }
+    }
+    reached
+}
+
+#[test]
+fn skill_reachability_requires_links_and_traverses_reference_cycles() {
+    let temp = tempfile::tempdir().unwrap();
+    let package = temp.path().canonicalize().unwrap();
+    std::fs::create_dir(package.join("references")).unwrap();
+    std::fs::write(
+        package.join("SKILL.md"),
+        "[Workflow](references/workflow.md)\n`references/unrouted.md`\n",
+    )
+    .unwrap();
+    std::fs::write(
+        package.join("references/workflow.md"),
+        "[Entry](../SKILL.md)\n[Details](details.md#contract)\n",
+    )
+    .unwrap();
+    std::fs::write(package.join("references/details.md"), "# Contract\n").unwrap();
+    std::fs::write(package.join("references/unrouted.md"), "# Unrouted\n").unwrap();
+    assert_eq!(
+        reachable_files(&package, "SKILL.md"),
+        [
+            "SKILL.md",
+            "references/workflow.md",
+            "references/details.md"
+        ]
+        .map(|file| package.join(file))
+        .into_iter()
+        .collect()
+    );
 }
 
 fn frontmatter(text: &str) -> Result<&str, &'static str> {
@@ -92,72 +163,54 @@ fn skill_frontmatter_accepts_lf_and_crlf_without_accepting_malformed_delimiters(
 #[test]
 fn skill_initialization_contract_requires_auto_init_stop_and_recheck() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let skill = read(root, "skills/qualitygate-cli/SKILL.md");
-    let manifest: SkillManifest = serde_norway::from_str(frontmatter(&skill).unwrap()).unwrap();
-    assert!(
-        manifest
-            .description
-            .contains("run init automatically without asking")
-    );
-    let prerequisite = skill
-        .split("## Initialization prerequisite")
-        .nth(1)
-        .unwrap()
-        .split("## Resolve the executable")
-        .next()
-        .unwrap()
+    let package = root.join("skills/qualitygate-cli").canonicalize().unwrap();
+    // Check the authoritative workflow once, independently of router wording.
+    let prerequisite = read(&package, "references/verification.md")
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ");
     for obligation in [
-        "Use file/Git inspection or a read-only `config --show`",
+        "file/Git inspection or a read-only `config --show`",
         "Run this prerequisite separately",
-        "run ordinary `init` automatically without asking the user",
+        "ordinary `init` automatically without asking",
         "preserving any explicitly selected configuration path",
         "does not authorize `--with-checks`, rule enabling or policy adoption",
-        "Until required `init` has run successfully and the required policy is available, stop",
-        "If `init` cannot run, fails, or leaves the required configuration unavailable",
-        "Recheck configuration availability after initialization before proceeding",
-        "An existing valid policy does not require another `init`",
-        "Report malformed or unreadable configuration as an error",
-        "must also be present in the selected index/commit before checking",
+        "stop this Qualitygate verification workflow",
+        "`init` cannot run, fails, or leaves the required configuration unavailable",
+        "Recheck configuration availability",
+        "existing valid policy does not require another `init`",
+        "malformed or unreadable configuration as an error; do not overwrite",
+        "present in the selected index/commit before checking",
         "Do not silently stage, commit or change the snapshot selector",
+        "does not stop independently authorized implementation, repository tests or read-only discovery",
     ] {
         assert!(
             prerequisite.contains(obligation),
             "missing initialization obligation: {obligation}"
         );
     }
-    let startup = read(root, "skills/qualitygate-cli/references/runtime-startup.md");
-    let bootstrap = startup
-        .split("## Continue from the configuration result")
-        .next()
-        .unwrap();
-    assert!(bootstrap.contains(
-        "config --show --root $RepositoryRoot --config $QualitygateConfig --format json"
-    ));
-    assert!(bootstrap.contains(
-        "config --show --root \"$REPOSITORY_ROOT\" --config \"$QUALITYGATE_CONFIG\" --format json"
-    ));
-    assert!(!bootstrap.contains(" init --root"));
-    assert!(!bootstrap.contains(" doctor --root"));
-    let operations = read(root, "skills/qualitygate-cli/references/operations.md")
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ");
     for obligation in [
-        "run ordinary `init` automatically without asking",
-        "Until initialization succeeds and the required policy is available, stop subsequent Qualitygate workflow actions",
-        "If initialization cannot run, fails, or leaves configuration unavailable",
-        "Recheck configuration availability after initialization",
-        "Report malformed or unreadable configuration as an error instead of overwriting it",
-        "For staged/diff/MR, place the configuration in the selected index/commit first",
+        "check --profile full",
+        "profile: full",
+        "scope: delivery",
+        "scope: task",
+        "never `scope: path`",
+        "empty `plan.pending_delivery_checks`",
+        "gate.complete: true",
+        "gate.decision: pass",
+        "exit code `0`",
+        "all separately required repository checks pass",
     ] {
         assert!(
-            operations.contains(obligation),
-            "missing operations obligation: {obligation}"
+            prerequisite.contains(obligation),
+            "missing verification boundary: {obligation}"
         );
     }
+    assert!(
+        linked_files(&package, &package.join("references/operations.md"))
+            .contains(&package.join("references/verification.md")),
+        "operations must route to the authoritative verification workflow"
+    );
 }
 
 #[test]
@@ -173,7 +226,12 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     let rule_guide = read(root, "skills/qualitygate-cli/references/builtin-rules.md");
     let authoring = read(root, "skills/qualitygate-cli/references/rule-authoring.md");
     let release = read(root, ".github/workflows/release.yml");
+    let package = root.join("skills/qualitygate-cli").canonicalize().unwrap();
+    let reachable = reachable_files(&package, "SKILL.md");
     for reference in [
+        "verification",
+        "operations",
+        "rule-authoring",
         "file-contracts",
         "diagnostic-ratchets",
         "rule-management",
@@ -181,11 +239,12 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "runtime-compatibility",
         "runtime-startup",
         "review-pack",
+        "design-review",
     ] {
         let path = format!("references/{reference}.md");
         assert!(!read(&root.join("skills/qualitygate-cli"), &path).is_empty());
         assert!(
-            skill_text.contains(&path),
+            reachable.contains(&package.join(&path)),
             "unreachable Skill reference: {path}"
         );
     }
@@ -194,30 +253,22 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     assert_eq!(skill.metadata.version, cargo.package.version);
     assert!(skill.description.len() <= 1024);
     assert!(!skill.description.contains('\n'));
-    for expected in [
-        "implementation",
-        "bug-fix",
-        "refactor",
-        "full snapshot-bound check",
-        "recheck the final snapshot",
-        "AGENTS.md",
-        "schema-validated",
-        "matching CLI",
-    ] {
-        assert!(
-            skill.description.contains(expected),
-            "missing code-task discovery term: {expected}"
-        );
-    }
-    assert!(skill_text.contains("untrusted repository checkout"));
-    assert!(skill_text.contains("Exit code `0`"));
     let startup = read(root, "skills/qualitygate-cli/references/runtime-startup.md");
     assert!(startup.contains("linux-aarch64"));
     assert!(startup.contains("windows-aarch64"));
-    assert!(skill_text.contains("QUALITYGATE_BUILTIN_RULES_DIR"));
+    assert!(startup.contains("QUALITYGATE_BUILTIN_RULES_DIR"));
+    assert!(startup.contains("Do not build a repository checkout"));
     assert!(!skill_text.contains("TODO"));
-    assert!(skill_text.contains("references/schemas/project-rule.schema.json"));
-    assert!(skill_text.contains("references/decision-protocol.md"));
+    for required in [
+        "references/schemas/project-rule.schema.json",
+        "references/decision-protocol.md",
+        "references/examples/design-review-obligations.yaml",
+    ] {
+        assert!(
+            reachable.contains(&package.join(required)),
+            "unreachable Skill contract: {required}"
+        );
+    }
     for expected in [
         "rules validate candidate.yaml",
         "rules generate --input",
@@ -250,23 +301,23 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
             .default_prompt
             .starts_with("Use $qualitygate-cli")
     );
-    for expected in [
-        "unfiltered full check",
-        "final snapshot",
-        "complete pass",
-        "separately required checks",
-        "AGENTS.md",
-        "exported Schema",
-        "exact source binding",
-        "candidate generation",
+    for (surface, text) in [
+        ("description", &skill.description),
+        ("default prompt", &openai.interface.default_prompt),
     ] {
+        let text = text.to_ascii_lowercase();
         assert!(
-            openai.interface.default_prompt.contains(expected),
-            "missing final verification prompt term: {expected}"
+            ["verify", "verification", "check"]
+                .iter()
+                .any(|topic| text.contains(topic)),
+            "{surface} must expose repository verification"
+        );
+        assert!(
+            text.contains("rule"),
+            "{surface} must expose rule authoring"
         );
     }
     for expected in [
-        "--profile full",
         "profile: full",
         "scope: delivery",
         "scope: task",
@@ -291,7 +342,11 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/capabilities.schema.json",
         "references/schemas/doctor.schema.json",
         "references/decision-protocol.md",
+        "references/verification.md",
+        "references/runtime-startup.md",
         "references/review-pack.md",
+        "references/design-review.md",
+        "references/examples/design-review-obligations.yaml",
         "references/examples/review-obligations.yaml",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
@@ -308,9 +363,6 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "--trust-store",
         "--evidence-dir",
         "incomplete validation",
-        "plan.pending_delivery_checks",
-        "gate.complete: true",
-        "gate.decision: pass",
     ] {
         assert!(operations.contains(expected), "missing {expected}");
     }
@@ -412,8 +464,12 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/decision.schema.json",
         "references/schemas/feedback.schema.json",
         "decision-protocol",
+        "verification",
+        "runtime-startup",
         "references/pilot-evidence.md",
         "references/review-pack.md",
+        "references/design-review.md",
+        "references/examples/design-review-obligations.yaml",
         "references/examples/review-obligations.yaml",
         "assets/pilot/observation-v7.json",
         "assets/pilot/observation-v8.json",
@@ -745,7 +801,6 @@ fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
         "MSYS2_ARG_CONV_EXCL",
         "MINGW*|MSYS*",
         "Linux and WSL",
-        "--probe-tools",
         "capabilities",
     ] {
         assert!(
@@ -758,8 +813,9 @@ fn runtime_preflight_package_preserves_compatibility_and_delivery_boundaries() {
         "98c0a66",
         "v0.5.7",
         "82f51a8",
-        "--snapshot-max-file-mib 8",
+        "--snapshot-max-file-mib",
         "120-second",
+        "--probe-tools",
         "not delivery acceptance",
         "config.unknown_field",
         "schemas/doctor.schema.json",

@@ -2,6 +2,9 @@
 
 The [clean contract maintenance supplement](clean-contracts.md) binds the
 Clean Architecture/DRY/SOLID audit to compatibility and executable evidence.
+The [Skill guidance supplement](skill-guidance.md) binds mode routing, four
+design-review cards and source-bound instruction adoption to distinct package,
+CLI and behavioral evidence.
 
 This directory is governed by `codespec/codespec-map.yaml`. Update its map entry through `relay-knowledge map directory` and keep reviewed source material within the declared content scope.
 

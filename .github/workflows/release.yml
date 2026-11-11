@@ -220,11 +220,13 @@ jobs:
           test -s "dist/$package/references/pilot-evidence.md"
           test -s "dist/$package/references/review-pack.md"
           test -s "dist/$package/references/examples/review-obligations.yaml"
+          test -s "dist/$package/references/design-review.md"
+          test -s "dist/$package/references/examples/design-review-obligations.yaml"
           test -s "dist/$package/assets/pilot/observation-v7.json"
           test -s "dist/$package/assets/pilot/observation-v8.json"
           test -s "dist/$package/assets/pilot/observation-v9.json"
           test -s "dist/$package/assets/pilot/observation-v10.json"
-          for reference in file-contracts diagnostic-ratchets decision-protocol rule-management selfcheck runtime-compatibility; do
+          for reference in file-contracts diagnostic-ratchets decision-protocol rule-management selfcheck runtime-compatibility runtime-startup verification; do
             test -s "dist/$package/references/$reference.md"
           done
           test -s "dist/$package/references/schemas/project-rule.schema.json"
@@ -279,11 +281,13 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/pilot-evidence.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/review-pack.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/examples/review-obligations.yaml" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/design-review.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/examples/design-review-obligations.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v7.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v8.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v9.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v10.json" >/dev/null
-          for reference in file-contracts diagnostic-ratchets decision-protocol rule-management selfcheck runtime-compatibility; do
+          for reference in file-contracts diagnostic-ratchets decision-protocol rule-management selfcheck runtime-compatibility runtime-startup verification; do
             tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/$reference.md" >/dev/null
           done
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/schemas/project-rule.schema.json" >/dev/null

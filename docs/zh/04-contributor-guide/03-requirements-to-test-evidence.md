@@ -31,6 +31,24 @@
 稳定工具链本地检查和 nightly Miri/ASan 结果单独记录。
 
 
+## Skill 指引与设计评审
+
+[SKILL-GUIDANCE-01–06](../../../codespec/requirements/skill-guidance.md) 区分指令路由、
+确定性规则证据与需要上下文的原则评审。[研究记录](../../../knowledge/best-practices/engineering-standards/guides/skill-contracts.md)
+将原有缺口映射到四张卡片及其可执行边界。
+
+| 需求 | 证据及边界 |
+| --- | --- |
+| 模式与单一验证流程归属 | `tests/quality/skill_package.rs` 验证真实 Markdown 链接可达性及唯一初始化/最终检查契约，不要求每份文档重复完整指令。 |
+| 独立运行时与显式选择 | `tests/quality/skill_startup.rs` 使用真实 CLI 执行随包示例：runtime-only 不需要仓库/配置，配置检查独立执行，保留显式可执行文件/资产、失败分类与平台选择。各原生平台证据分别记录。 |
+| 四张来源绑定设计卡 | `tests/review_pack.rs` 通过导出的 Schema/来源绑定使用原公共包与设计包，覆盖默认可选且未采用、夹具采用、角色选择、来源失效与迁移。它证明指令处理，不证明语义设计质量。 |
+| 初始化和最终证据不变式 | `tests/init.rs` 覆盖自定义配置、指定策略引用、index/commit 可用性及格式错误；`tests/feedback.rs` 验证修复反馈仍保留完整报告范围、快照/策略绑定、待完成验收与未完成执行。 |
+| 原则覆盖与 Agent 行为 | 独立前向测试使用目标任务及相邻任务，保留提示、Skill 版本/运行时/模型、动作轨迹、原始产物与结果。此证据单独记录；打包/Schema 成功不等于行为验证成功。 |
+
+四条示例义务默认可选、未采用且仅传递指令，其投影或评审结论均不改变确定性门禁。
+前向测试和最终检查执行后才能记录结果；缺少轨迹仍是未验证。本表是验收证据索引，
+不宣称列出的所有检查或模型行为已经通过。
+
 ## 原生语法审查规则
 
 `NATIVE-SYNTAX-01` 对应 `adapters::native_syntax::tests`（语法形状、注释/字面量、无关名称、数值宏、

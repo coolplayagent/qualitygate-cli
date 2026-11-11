@@ -1,0 +1,76 @@
+# Merge selected entries into an existing policy; this fragment does not enable rules.
+# Rebind each source with `rules source` after copying its card into another repository.
+# Adoption is intentionally absent. Optional unadopted entries do not enter the prompt.
+agent_obligations:
+  - schema_version: 1
+    id: design-responsibility
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/design-review.md
+      section: Responsibility and dependency direction
+      content_hash: sha256:d42c02b5adb0a782c0c6057330a1de94248846a9bb10486aa405f3374ea30e35
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterevidence and evidence limits."
+      - "Identify the actor and policy responsible for the change; cite the repository ownership contract and trace source dependencies and data crossing the boundary, including errors, annotations and serialization formats."
+      - "Distinguish source dependency direction from runtime control flow; identify consumers affected by filesystem, network, process or UI changes, and check existing isolation before proposing another layer or trait."
+      - "Record the snapshot, reviewed scope, card ID/version, file/line or symbol evidence, concrete change/failure scenario and checked counterevidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two."
+    must_not:
+      - "Infer correct responsibility from allowed imports, impose a universal layer count, or invent forbidden dependencies when ownership is unknown; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: design-knowledge
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/design-review.md
+      section: Shared knowledge and authority
+      content_hash: sha256:439d7a7e990782dc21a6528da360da59af980e642934b73b2f424b1378832429
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterevidence and evidence limits."
+      - "Identify a repeated policy, schema, invariant, default or algorithm and its authoritative owner; demonstrate a realistic policy change requiring coordinated edits across independent representations."
+      - "Compare success, error and compatibility paths; propose one authoritative representation with explicit consumers or justify separate contracts, preserving trust-boundary validation and independent test expectations."
+      - "Record the snapshot, reviewed scope, card ID/version, file/line or symbol evidence, concrete change/failure scenario and checked counterevidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two."
+    must_not:
+      - "Treat textual similarity as proof of duplicated knowledge or derive golden expectations from the implementation merely to remove repetition; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: design-behavior
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/design-review.md
+      section: Behavioral substitution and consumer interfaces
+      content_hash: sha256:9cf8e1913c3878dd73ab86411c694daa4ad5c4f8b19090ba4ccd35187a24e176
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterevidence and evidence limits."
+      - "Choose actual consumers and compare accepted inputs, outputs, errors, side effects, ordering, resource ownership and bounds across implementations; check strengthened preconditions, weakened guarantees and timeout/incomplete evidence handling."
+      - "Identify each consumer's required capabilities and unrelated dependencies or fake/no-op implementations; inspect representative contract tests including failure and resource boundaries, and identify untested paths before claiming compatibility."
+      - "Record the snapshot, reviewed scope, card ID/version, file/line or symbol evidence, concrete change/failure scenario and checked counterevidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two."
+    must_not:
+      - "Declare substitutability from matching signatures or successful-path tests, or split cohesive interfaces without consumer evidence; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: design-evolution
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/design-review.md
+      section: Evolution and clear intent
+      content_hash: sha256:0cd94d92b4b28e85cedc2ea3b806ee4ba327d03ecb1336c90fe6474ac7a5d78c
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterevidence and evidence limits."
+      - "Identify the demonstrated axis of change and current requirement; compare a direct solution with the proposed extension point, including policy ownership, evaluator branches, state, invalidation, errors and migration cost."
+      - "Check names and comments against actual units, ownership, effects and failure semantics; require measurements for performance-driven complexity and preserve existing validation, resource budgets and behavior tests."
+      - "Record the snapshot, reviewed scope, card ID/version, file/line or symbol evidence, concrete change/failure scenario and checked counterevidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two."
+    must_not:
+      - "Treat structural thresholds as proof of clarity or demand extensibility for unsupported future variants; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}

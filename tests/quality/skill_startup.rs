@@ -1,4 +1,4 @@
-//! Execute the packaged startup examples against an isolated real CLI install.
+//! Execute runtime selection and repository inspection as separate Skill steps.
 
 #[cfg(any(target_os = "linux", windows))]
 mod native {
@@ -7,11 +7,11 @@ mod native {
         process::{Command, Output},
     };
 
-    fn snippet(heading: &str, language: &str) -> String {
-        let text = std::fs::read_to_string(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/skills/qualitygate-cli/references/runtime-startup.md"
-        ))
+    fn snippet(reference: &str, heading: &str, language: &str) -> String {
+        let text = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join(format!("skills/qualitygate-cli/references/{reference}.md")),
+        )
         .unwrap();
         code_block(&text, heading, language)
     }
@@ -104,6 +104,22 @@ mod native {
         }
 
         fn run(&self, prefix: &str, override_path: Option<&Path>) -> Output {
+            self.run_steps(prefix, override_path, None, true)
+        }
+
+        fn run_steps(
+            &self,
+            prefix: &str,
+            override_path: Option<&Path>,
+            runtime: Option<&Path>,
+            inspect_configuration: bool,
+        ) -> Output {
+            let language = if cfg!(windows) { "powershell" } else { "bash" };
+            let inspection = if inspect_configuration {
+                snippet("verification", "## Inspect configuration", language)
+            } else {
+                String::new()
+            };
             #[cfg(target_os = "linux")]
             let mut command = {
                 let mut command = Command::new("bash");
@@ -111,7 +127,10 @@ mod native {
                     "--noprofile",
                     "--norc",
                     "-c",
-                    &format!("{prefix}\n{}", snippet("## Linux and WSL: Bash", "bash")),
+                    &format!(
+                        "{prefix}\n{}\n{inspection}",
+                        snippet("runtime-startup", "## Linux and WSL: Bash", "bash")
+                    ),
                 ]);
                 command
             };
@@ -120,10 +139,11 @@ mod native {
                 let mut command = Command::new("pwsh");
                 let script = format!(
                     "$QualitygateSkillRoot = $env:QUALITYGATE_SKILL_ROOT\n\
+                     $QualitygateBin = $env:QUALITYGATE_BIN\n\
                      $RepositoryRoot = $env:REPOSITORY_ROOT\n\
                      $QualitygateConfig = $env:QUALITYGATE_CONFIG\n\
-                     {prefix}\n{}\nexit $LASTEXITCODE",
-                    snippet("## Windows: PowerShell", "powershell")
+                     {prefix}\n{}\n{inspection}\nexit $LASTEXITCODE",
+                    snippet("runtime-startup", "## Windows: PowerShell", "powershell")
                 );
                 command.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
                 command
@@ -133,10 +153,19 @@ mod native {
             command
                 .env("PATH", std::env::join_paths(paths).unwrap())
                 .env("QUALITYGATE_SKILL_ROOT", &self.skill)
-                .env("REPOSITORY_ROOT", &self.repo)
-                .env("QUALITYGATE_CONFIG", "policy checks.yaml")
+                .env_remove("REPOSITORY_ROOT")
+                .env_remove("QUALITYGATE_CONFIG")
+                .env_remove("QUALITYGATE_BIN")
                 .env_remove("QUALITYGATE_BUILTIN_RULES_DIR")
                 .current_dir(&self.path_bin);
+            if inspect_configuration {
+                command
+                    .env("REPOSITORY_ROOT", &self.repo)
+                    .env("QUALITYGATE_CONFIG", "policy checks.yaml");
+            }
+            if let Some(runtime) = runtime {
+                command.env("QUALITYGATE_BIN", runtime);
+            }
             if let Some(path) = override_path {
                 command.env("QUALITYGATE_BUILTIN_RULES_DIR", path);
             }
@@ -144,18 +173,7 @@ mod native {
         }
 
         fn assert_configuration(&self, output: Output) {
-            assert!(
-                output.status.success(),
-                "stdout={} stderr={}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            );
-            let text = String::from_utf8(output.stdout).unwrap();
-            let json = &text[text.find('{').unwrap()..];
-            let values: Vec<serde_json::Value> = serde_json::Deserializer::from_str(json)
-                .into_iter()
-                .collect::<Result<_, _>>()
-                .unwrap();
+            let values = Self::reports(output);
             assert_eq!(values.len(), 2, "capabilities then configuration");
             assert_eq!(values[1]["source"], "policy checks.yaml");
             assert!(!self.repo.join("qualitygate.yaml").exists());
@@ -164,6 +182,78 @@ mod native {
                 "schema_version: 1\n"
             );
         }
+
+        fn reports(output: Output) -> Vec<serde_json::Value> {
+            assert!(
+                output.status.success(),
+                "stdout={} stderr={}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let text = String::from_utf8(output.stdout).unwrap();
+            let json = &text[text.find('{').unwrap()..];
+            serde_json::Deserializer::from_str(json)
+                .into_iter()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        }
+    }
+
+    #[test]
+    fn skill_runtime_only_needs_no_repository_or_configuration_and_never_initializes() {
+        let install = Install::new();
+        std::fs::remove_dir_all(&install.repo).unwrap();
+        let values = Install::reports(install.run_steps("", None, None, false));
+        assert_eq!(values.len(), 1, "runtime selection emits only capabilities");
+        assert!(values[0]["capabilities"].is_array());
+        assert_eq!(
+            values[0]["limits"]["snapshot_default_file_bytes"],
+            2 * 1024 * 1024
+        );
+        assert_eq!(
+            values[0]["limits"]["snapshot_max_file_bytes"],
+            8 * 1024 * 1024
+        );
+        assert!(!install.repo.exists());
+        assert!(!install.path_bin.join("qualitygate.yaml").exists());
+    }
+
+    #[test]
+    fn skill_explicit_runtime_is_retained_and_invalid_selection_does_not_fall_back() {
+        let install = Install::new();
+        let binary = install.bin.file_name().unwrap();
+        let directory = install.skill.join("explicit runtime");
+        std::fs::create_dir(&directory).unwrap();
+        let selected = directory.join(binary);
+        std::fs::hard_link(&install.bin, &selected).unwrap();
+        // Both bundled and PATH binaries remain usable; neither may override this choice.
+        let values = Install::reports(install.run_steps("", None, Some(&selected), true));
+        assert_eq!(values.len(), 2);
+        assert_eq!(
+            Path::new(values[0]["executable"]["path"].as_str().unwrap())
+                .canonicalize()
+                .unwrap(),
+            selected.canonicalize().unwrap()
+        );
+        assert_eq!(values[1]["source"], "policy checks.yaml");
+        let missing = install.skill.join("missing runtime");
+        assert!(
+            !install
+                .run_steps("", None, Some(&missing), false)
+                .status
+                .success()
+        );
+        let empty_selection = if cfg!(windows) {
+            "$QualitygateBin = ''"
+        } else {
+            "QUALITYGATE_BIN=''"
+        };
+        assert!(
+            !install
+                .run_steps(empty_selection, None, None, false)
+                .status
+                .success()
+        );
     }
 
     #[test]

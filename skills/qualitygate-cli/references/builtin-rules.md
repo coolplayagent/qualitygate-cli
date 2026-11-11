@@ -11,14 +11,17 @@ rules, while the executable owns evaluation.
 
 Use `rules list --language java --source builtin --format json` for built-ins,
 `--source project` for `qualitygate/rules` (or an explicit legacy policy path),
-and `--source all` for both. Empty definition language scopes apply to every
-language. Inventory queries need no initialized policy and include all shipped
+and `--source all` for both. An empty definition language scope adds no language
+filter; each implementation still determines supported files and capabilities.
+Built-in inventory queries need no initialized policy and include all shipped
 packages, even unselected ones; listing does not enable enforcement. When IDs
 overlap, both origins remain visible and only the selected one can be enabled.
 
-Listing a rule is read-only. Adding a rule to `qualitygate.yaml`, running
-`qualitygate init`, or using `qualitygate rules enable` changes a candidate
-policy and needs the user's explicit authorization. A rule's archived
+Listing a rule is read-only. Adding or enabling rules changes candidate policy
+and must be covered by the task's authorization; do not ask again when it is
+already provided. Ordinary initialization follows the automatic missing-config
+prerequisite in [repository verification](verification.md); it does not authorize
+`--with-checks`, rule enabling, or policy adoption. A rule's archived
 `standard_refs` and `lifecycle_inputs` are provenance for the packaged
 definition, not an implicit mandate for every repository.
 
@@ -53,7 +56,10 @@ source lines: Java process launch APIs, Python `eval`/`exec` and pickle loads,
 Rust `unsafe` blocks, TypeScript dynamic evaluation/process execution, and Go
 process execution. A match is a review signal, not proof of an exploitable
 path. Override `parameters.prohibited_patterns` only with reviewed,
-language-keyed regex arrays; `paths` and `languages` can scope it.
+language-keyed regex arrays. `paths` can narrow files; `languages` must remain a
+nonempty subset of the declared languages. An omitted override inherits the
+scope; `languages: []` is rejected. Consult `rules describe security-sensitive-api`
+for the runtime parameter contract before editing.
 
 `todo-marker` uses the same bounded changed-line engine. It asks for an
 explicit decision about deferred work rather than assuming that every marker is
@@ -191,9 +197,10 @@ and is not the current source.
 
 ## C++ review signals
 
-Select `rulesets: [lang-cpp]` and individual rule IDs. All sixteen rules
-are opt-in with fixed `languages: [cpp]`. The original nine use same-line
-`source-pattern` checks and accept `paths` / `prohibited_patterns.cpp`.
+Select `rulesets: [lang-cpp]` and individual rule IDs. These rules
+are opt-in with fixed `languages: [cpp]`; `cpp-disabled-test` is described under
+[historical review signals](#historical-review-signals). The original nine use
+same-line `source-pattern` checks and accept `paths` / `prohibited_patterns.cpp`.
 The seven new rules from `cpp-no-reinterpret-cast` through
 `cpp-no-using-namespace-in-header` use `native-syntax`, accept only `paths`
 and the fixed language scope, and also parse `.h` as C++.
@@ -388,10 +395,11 @@ mapping is a configuration error rather than an empty successful check.
 1. Read the relevant file under `references/rules/` and this guide.
 2. Run `rules list --format json` using the selected bundled executable.
 3. Explain the rule's snapshot evidence, default severity, and limits.
-4. Ask for authorization before changing the candidate policy; do not select a
-   severity or architecture pattern on the user's behalf.
-5. Run the requested snapshot check and report warnings, violations, and
-   incomplete evidence separately.
+4. Confirm that the task covers the candidate-policy change; use existing
+   authorization and ask only for a missing material choice or required approval.
+   Do not invent a severity or architecture boundary.
+5. Follow [repository verification](verification.md) and report warnings,
+   violations, and incomplete evidence separately.
 
 The optional `lang-java` package adds twelve fixed-Java source-pattern reviews for direct concurrency, resource, locale, exception and security signals. See the repository Java rule triage guide for exact scope; comments, strings, aliases and multiline forms limit lexical findings.
 
@@ -413,8 +421,11 @@ can remove its signal; deleting explanatory comments alone does not prove repair
 Comments/literals can match, multiline/indirect calls can escape detection, and
 `.h` is classified as C (outside `cpp-disabled-test`). Markdown is not scanned.
 
-Use the [review cards](review-pack.md) for contextual review. Existing parameter
-configuration can select an ecosystem-specific CAS API; this override replaces
+Use the [review cards](review-pack.md) for contextual review and
+[design review](design-review.md) for Clean Code, Clean Architecture, DRY and SOLID
+tradeoffs. Literal diagnostic message/fix metadata belongs to the built-in YAML;
+it provides guidance without proving the concern or changing the verdict.
+Existing parameter configuration can select an ecosystem-specific CAS API; this override replaces
 the default patterns, so retain standard patterns explicitly if both are needed:
 
 ```yaml

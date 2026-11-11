@@ -3,3 +3,4 @@
 
 # The shipped review obligation digests bind these exact source bytes.
 /skills/qualitygate-cli/references/review-pack.md text eol=lf
+/skills/qualitygate-cli/references/design-review.md text eol=lf

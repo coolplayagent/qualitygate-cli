@@ -3,7 +3,10 @@
 Requires `agent.contracts.v1`, available from v0.5.8.
 Compare capabilities and executable digest. Export `schema agent-obligation`
 and compare the [packaged schema](schemas/agent-obligation.schema.json).
-Project-rule v1/v2 remain separate artifact rule protocols.
+Project-rule V1/V2/V3 remain separate artifact rule protocols. Use
+[rule authoring](rule-authoring.md) for those executable artifact constraints;
+[review cards](review-pack.md) and [design review](design-review.md) provide
+source-bound instruction examples for contextual judgments.
 
 When effective configuration has `agent_obligations`, obtain the current
 `qualitygate agent-contract --worktree --base <base> --policy-ref <policy-commit>

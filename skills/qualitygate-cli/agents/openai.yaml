@@ -1,6 +1,6 @@
 interface:
   display_name: "Qualitygate CLI"
   short_description: "Verify changes and structure repository rules"
-  default_prompt: "Use $qualitygate-cli as the guidance layer over the matching CLI: for code work run an unfiltered full check on the final snapshot and claim completion only after a complete pass plus separately required checks; for rule work translate explicit AGENTS.md clauses through exported Schema, exact source binding, validation, and candidate generation while preserving separate adoption authority."
+  default_prompt: "Use $qualitygate-cli to verify my changes or author evidence-backed repository rules with the matching CLI."
 policy:
   allow_implicit_invocation: true

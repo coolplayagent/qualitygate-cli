@@ -1,7 +1,10 @@
 # Named collections and lexical lambdas
 
-Use `rules.operators.v3` and `schema operator-rule-v3`. Install the matching
-precompiled CLI; evaluating these YAML/JSON rules needs no Rust, Node.js or
+Require `rules.operators.v3`, export `schema operator-rule-v3 --format json`, and
+compare parsed JSON with the complete [V3 Schema](schemas/operator-rule-v3.schema.json).
+Follow [rule authoring](rule-authoring.md#extraction-sequence) for the shared
+source-binding, validation, generation and separate adoption workflow.
+Install the matching precompiled CLI; evaluating these YAML/JSON rules needs no Rust, Node.js or
 Python installation. The embedded evaluator runs bounded declarative operations,
 not JavaScript/Python callbacks. Custom programs remain command checks.
 V1 and V2 retain their schemas and original evaluation path; `schema operator-rule`
