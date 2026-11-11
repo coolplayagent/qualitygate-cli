@@ -7,7 +7,6 @@ use reqwest::{
     Client, Url,
     header::{AUTHORIZATION, HeaderValue},
 };
-use sha2::{Digest, Sha256};
 use std::time::Duration;
 
 pub const MAX_RESPONSE_BYTES: usize = 1_048_576;
@@ -89,7 +88,7 @@ impl Http {
                 serde_json::from_slice(&bytes).context("Provider response is not valid JSON")?;
             Ok(JsonResponse {
                 value,
-                digest: format!("sha256:{:x}", Sha256::digest(&bytes)),
+                digest: crate::domain::digest::sha256(&bytes),
             })
         })
         .await?

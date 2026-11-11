@@ -94,7 +94,7 @@ pub async fn baseline(snapshot: std::sync::Arc<Snapshot>) -> Result<Snapshot> {
 }
 
 pub fn digest(bytes: &[u8]) -> String {
-    format!("sha256:{:x}", Sha256::digest(bytes))
+    crate::domain::digest::sha256(bytes)
 }
 
 /// Includes path, executable bit and length framing, not only concatenated bytes.

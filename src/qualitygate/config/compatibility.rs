@@ -102,12 +102,7 @@ pub(super) fn validate(check: &CommandCheck) -> Result<()> {
 }
 
 fn valid_digest(value: &str) -> bool {
-    value.strip_prefix("sha256:").is_some_and(|digest| {
-        digest.len() == 64
-            && digest
-                .bytes()
-                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    })
+    crate::domain::digest::is_sha256(value)
 }
 
 #[cfg(test)]

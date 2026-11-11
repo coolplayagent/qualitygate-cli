@@ -14,6 +14,21 @@
 `tests/review_pack.rs` 使用真实随包卡片和义务，验证 Schema/来源、独立夹具采用、角色选择和输入失效。
 文档与 Skill 打包门禁验证发布资产。指令投影不是语义验证；这些测试不证明并发或生命周期正确性。
 
+## Clean contract 维护
+
+[CLEAN-01–06](../../../codespec/requirements/clean-contracts.md) 的可重复证据：
+
+| 契约 | 测试证据 |
+| --- | --- |
+| 领域独立与 CLI 兼容 | `interfaces::value_parsers::tests`，`architecture_rejects_cli_framework_and_path_io_in_pure_owners` 及完整生产源码依赖图。 |
+| 语言/模式共享约束与诊断归属 | `domain::rule_parameters::tests`、`domain::rule_guidance::tests`、配置参数/catalog 测试、适配器规则测试、`tests/issue64_rules.rs` 和完整 selfcheck。直接适配器的 C/C++ import 模式缺少支持时保持 incomplete。 |
+| 精确摘要 | `domain::digest::tests`、`net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`、签名公钥摘要断言和策略绑定测试。 |
+| 包清单与具名夹具登记 | `tests/selfcheck.rs`、配置 selfcheck/catalog-asset 测试和同一 checkout 的 corpus 比较；独立 golden 不由实际执行结果生成。 |
+| 根路径解析的阻塞边界 | `application::repository_root::tests`、`paths::tests::repository_roots_keep_native_resolution_and_errors`、Unix symlink-root 测试和架构回归样例。 |
+
+覆盖率、Bazel 与最终快照报告补充上述测试，不将启发式审查信号变为语义证明。
+稳定工具链本地检查和 nightly Miri/ASan 结果单独记录。
+
 
 ## 原生语法审查规则
 

@@ -92,7 +92,14 @@ fn packaged_review_signals_retain_actionable_evidence_without_claiming_semantic_
     for (yaml, path, source, line, expected_guidance) in cases {
         let rule: crate::config::catalog::Builtin = serde_norway::from_str(yaml).unwrap();
         let mut input = snapshot(path, "", source, &[line]);
-        let result = evaluate_as(&rule.id, &rule.implementation, &rule.defaults, &input);
+        let result = evaluate_with_guidance(
+            &rule.id,
+            &rule.implementation,
+            &rule.defaults,
+            &input,
+            &super::super::facts::RuleFacts::default(),
+            rule.diagnostic.as_ref(),
+        );
         assert_eq!(result.execution.status, ExecutionStatus::Completed);
         assert_eq!(result.verdict, Some(Verdict::Fail));
         assert!(!result.required);
@@ -107,10 +114,74 @@ fn packaged_review_signals_retain_actionable_evidence_without_claiming_semantic_
 
         // Optionality does not turn unavailable source evidence into a pass.
         input.files.clear();
-        let unavailable = evaluate_as(&rule.id, &rule.implementation, &rule.defaults, &input);
+        let unavailable = evaluate_with_guidance(
+            &rule.id,
+            &rule.implementation,
+            &rule.defaults,
+            &input,
+            &super::super::facts::RuleFacts::default(),
+            rule.diagnostic.as_ref(),
+        );
         assert_eq!(unavailable.execution.status, ExecutionStatus::Blocked);
         assert_eq!(unavailable.verdict, None);
     }
+}
+
+#[test]
+fn presentation_comes_from_the_definition_and_cannot_mask_execution_gaps() {
+    let settings = setting(serde_json::json!({"prohibited_patterns":{"rust":["risk"]}}));
+    let input = snapshot("src/lib.rs", "", "risk();", &[1]);
+    let guidance = crate::domain::rule_guidance::Diagnostic {
+        message: "Review the selected API".into(),
+        fix: "Check the failure path".into(),
+    };
+    let facts = super::super::facts::RuleFacts::default();
+    let result = evaluate_with_guidance(
+        "any-reviewed-id",
+        "source-pattern",
+        &settings,
+        &input,
+        &facts,
+        Some(&guidance),
+    );
+    assert_eq!(result.verdict, Some(Verdict::Fail));
+    assert_eq!(
+        result.diagnostics[0].message,
+        "Review the selected API; matched pattern \"risk\""
+    );
+    assert_eq!(result.diagnostics[0].fix, guidance.fix);
+    let generic = evaluate_as("any-reviewed-id", "source-pattern", &settings, &input);
+    assert_eq!(
+        generic.diagnostics[0].message,
+        "Changed source line matches configured review pattern \"risk\""
+    );
+    assert_eq!(
+        generic.diagnostics[0].fingerprint,
+        result.diagnostics[0].fingerprint
+    );
+    for (implementation, guidance) in [
+        ("line-ending", guidance.clone()),
+        (
+            "source-pattern",
+            crate::domain::rule_guidance::Diagnostic {
+                message: " ".into(),
+                ..guidance
+            },
+        ),
+    ] {
+        let result = evaluate_with_guidance(
+            "review",
+            implementation,
+            &settings,
+            &input,
+            &facts,
+            Some(&guidance),
+        );
+        assert_eq!(result.execution.status, ExecutionStatus::Blocked);
+        assert_eq!(result.verdict, None);
+    }
+    let syntax_patterns = setting(serde_json::json!({"forbidden_imports":{"cpp":["risk"]}}));
+    assert!(compiled_patterns(&syntax_patterns, "forbidden_imports").is_err());
 }
 
 #[test]

@@ -76,12 +76,14 @@ pub(super) async fn execute(
             crate::adapters::custom_rules::evaluate_with_context(rule, &setting, &snapshot, &facts)
         } else {
             let builtin = entry.builtin.as_ref().expect("resolved builtin");
-            crate::adapters::rules::evaluate_with_context(
+            let guidance = builtin.effective_diagnostic();
+            crate::adapters::rules::evaluate_with_guidance(
                 &id,
                 &builtin.implementation,
                 &setting,
                 &snapshot,
                 &facts,
+                guidance.as_deref(),
             )
         };
         result.rule_version = entry.version();

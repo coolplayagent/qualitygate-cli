@@ -17,6 +17,7 @@ pub(super) struct Reference {
 #[derive(Default)]
 pub(super) struct References {
     pub paths: Vec<Reference>,
+    pub methods: Vec<(String, usize)>,
     pub errors: Vec<String>,
     pub modules: Vec<(Vec<String>, syn::ItemMod)>,
     pub location: Vec<String>,
@@ -225,6 +226,13 @@ impl References {
             let TokenTree::Ident(first) = token else {
                 continue;
             };
+            if index > 0
+                && matches!(&tokens[index - 1], TokenTree::Punct(value) if value.as_char() == '.')
+                && matches!(tokens.get(index + 1), Some(TokenTree::Group(group)) if group.delimiter() == proc_macro2::Delimiter::Parenthesis)
+            {
+                self.methods
+                    .push((first.to_string(), first.span().start().line));
+            }
             if first == "use"
                 && let Some(end) = tokens[index..].iter().position(
                     |token| matches!(token, TokenTree::Punct(value) if value.as_char() == ';'),
@@ -263,6 +271,19 @@ impl References {
 }
 
 impl<'ast> Visit<'ast> for References {
+    fn visit_attribute(&mut self, attribute: &'ast Attribute) {
+        if let Meta::List(list) = &attribute.meta {
+            self.tokens(list.tokens.clone());
+        }
+        visit::visit_attribute(self, attribute);
+    }
+
+    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
+        self.methods
+            .push((call.method.to_string(), call.method.span().start().line));
+        visit::visit_expr_method_call(self, call);
+    }
+
     fn visit_item(&mut self, item: &'ast Item) {
         if test_only(attributes(item)) {
             return;

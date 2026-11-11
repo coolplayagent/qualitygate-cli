@@ -9,6 +9,7 @@ mod pilot;
 mod policy;
 mod render;
 mod rule_lifecycle;
+mod value_parsers;
 
 /// Early discovery/execution failures still carry the report's claim boundary.
 pub fn incomplete_report(error: &str) -> serde_json::Value {

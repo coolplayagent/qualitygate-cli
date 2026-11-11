@@ -144,7 +144,22 @@ import paths (including grouped, aliased, macro, and conditional references),
 checks owner edges and forbidden capabilities, detects cycles, and writes a
 reviewable source-digest/line report plus DOT graph. It rejects hidden root
 re-exports, ambiguous module files, unknown owners, broad external globs, and
-I/O from pure domain code.
+I/O from pure domain code. Clap imports/derives belong to `interfaces`, not
+`domain`. Reserved path-I/O method names (`canonicalize`, `try_exists`, `exists`,
+`metadata`, `symlink_metadata`, `read_dir`, `read_link`, `is_file`, `is_dir`) are
+rejected in domain/interfaces, including ordinary method calls, macro tokens and
+explicit `std::path::Path`/`PathBuf` calls. This is a conservative syntactic
+contract, not receiver type inference or proof of all possible I/O.
+
+CLI root resolution delegates to `application::repository_root`, which uses
+`spawn_blocking` and the `paths` owner while preserving native canonicalization
+and error context. `domain::digest` owns canonical byte hashing and format
+validation; callers retain serialization and streaming framing. Pure
+`domain::rule_parameters` contracts serve configuration discovery and validation
+as well as adapter pattern compilation. Literal diagnostic metadata belongs to
+the builtin definition; the evaluator consumes it without rule-ID branches.
+The [clean contract review](../../../knowledge/best-practices/engineering-standards/guides/clean-contracts.md)
+explains these ownership decisions and their limits.
 
 Documentation, examples, tests, and build metadata may exercise the public
 surface but do not create another production owner. When module ownership or

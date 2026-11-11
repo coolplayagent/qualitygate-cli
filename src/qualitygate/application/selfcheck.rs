@@ -46,7 +46,7 @@ fn empty_report(fixture: Option<String>, rule: Option<String>) -> SelfcheckRepor
     SelfcheckReport {
         schema_version: 1,
         tool_version: env!("CARGO_PKG_VERSION").into(),
-        corpus_digest: snapshot::digest(config::selfcheck::SUITES.iter().flat_map(|(suite, path, cases, golden_path, golden)| [*suite, *path, *cases, *golden_path, *golden]).collect::<String>().as_bytes()),
+        corpus_digest: snapshot::digest(config::selfcheck::SUITES.iter().flat_map(|suite| suite.digest_parts()).collect::<String>().as_bytes()),
         rules_digest: String::new(),
         fixture_filter: fixture,
         rule_filter: rule,
@@ -76,16 +76,10 @@ fn execute(fixture: Option<String>, rule: Option<String>) -> SelfcheckReport {
     let result = (|| -> Result<()> {
         let started = Instant::now();
         let config = Config {
-            rulesets: vec![
-                "core".into(),
-                "shared".into(),
-                "lang-java".into(),
-                "lang-python".into(),
-                "lang-typescript".into(),
-                "lang-go".into(),
-                "lang-c".into(),
-                "lang-cpp".into(),
-            ],
+            rulesets: config::RULESETS
+                .iter()
+                .map(|package| (*package).into())
+                .collect(),
             ..Config::default()
         };
         let catalog = Catalog::load(&config, std::iter::empty())
@@ -310,12 +304,17 @@ fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
                     .context("Fixture rule is absent from active catalog")?;
                 let mut setting = builtin.defaults.clone();
                 setting.parameters.extend(parameters.clone());
-                adapters::rules::evaluate_with_projects(
+                let guidance = builtin.effective_diagnostic();
+                adapters::rules::evaluate_with_guidance(
                     &case.fixture.rule,
                     &builtin.implementation,
                     &setting,
                     &snapshot,
-                    &projects,
+                    &adapters::facts::RuleFacts {
+                        projects: &projects,
+                        ..Default::default()
+                    },
+                    guidance.as_deref(),
                 )
             };
             let mut observed = serde_json::to_value(&check)?;

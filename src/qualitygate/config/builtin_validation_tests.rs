@@ -199,14 +199,29 @@ fn language_specific_rules_refuse_scope_changes_and_missing_required_contracts()
         );
     }
     let both = json!({"languages":["c","cpp"],"prohibited_patterns":{"c":["x"],"cpp":["x"]}});
-    validate("c-fixture", "source-pattern", &[], &setting(both.clone())).unwrap();
+    let c_languages = ["c".into(), "cpp".into()];
+    validate(
+        "c-fixture",
+        "source-pattern",
+        &c_languages,
+        &setting(both.clone()),
+    )
+    .unwrap();
     for (key, value) in [
         ("languages", json!(["c"])),
         ("prohibited_patterns", json!({"c":["x"]})),
     ] {
         let mut changed = both.clone();
         changed[key] = value;
-        assert!(validate("c-fixture", "source-pattern", &[], &setting(changed)).is_err());
+        assert!(
+            validate(
+                "c-fixture",
+                "source-pattern",
+                &c_languages,
+                &setting(changed)
+            )
+            .is_err()
+        );
     }
     for implementation in [
         "test-naming-strict",
@@ -228,28 +243,31 @@ fn language_specific_rules_refuse_scope_changes_and_missing_required_contracts()
         );
     }
     assert!(
-        validate(
+        validate_with_scope(
             "python-test-naming",
             "test-naming",
-            &[],
+            &["python".into()],
+            Some(LanguageScope::Fixed),
             &setting(json!({"languages":["java"]}))
         )
         .is_err()
     );
     assert!(
-        validate(
+        validate_with_scope(
             "security-sensitive-api",
             "source-pattern",
             &["java".into()],
+            Some(LanguageScope::Subset),
             &setting(json!({"languages":["rust"],"prohibited_patterns":{"all":["x"]}}))
         )
         .is_err()
     );
     assert!(
-        validate(
+        validate_with_scope(
             "security-sensitive-api",
             "source-pattern",
             &["java".into()],
+            Some(LanguageScope::Subset),
             &setting(json!({"languages":["java"],"prohibited_patterns":{"rust":["x"]}}))
         )
         .is_err()

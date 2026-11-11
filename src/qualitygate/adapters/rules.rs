@@ -12,7 +12,7 @@ use crate::{
 use anyhow::{Context, Result, bail};
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use regex::Regex;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 pub fn diagnostic(
     rule: &str,
@@ -88,6 +88,18 @@ pub fn evaluate_with_context(
     snapshot: &Snapshot,
     facts: &super::facts::RuleFacts<'_>,
 ) -> CheckResult {
+    evaluate_with_guidance(id, implementation, setting, snapshot, facts, None)
+}
+
+/// Evaluate with literal presentation owned by the selected builtin definition.
+pub fn evaluate_with_guidance(
+    id: &str,
+    implementation: &str,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    facts: &super::facts::RuleFacts<'_>,
+    guidance: Option<&crate::domain::rule_guidance::Diagnostic>,
+) -> CheckResult {
     let (projects, provenance) = (facts.projects, facts.provenance);
     let mut result = super::diagnostic_budget::BuiltinResult::new(CheckResult::pending(
         id,
@@ -95,6 +107,13 @@ pub fn evaluate_with_context(
         setting.severity,
     ));
     let evaluation = (|| -> Result<()> {
+        if let Some(guidance) = guidance {
+            anyhow::ensure!(
+                implementation == "source-pattern",
+                "Builtin diagnostic presentation is supported only by source-pattern"
+            );
+            guidance.validate()?;
+        }
         if let Some(facts) = provenance {
             facts.ensure_binding(snapshot, id)?;
         }
@@ -132,7 +151,7 @@ pub fn evaluate_with_context(
             }
             "language-syntax" => super::language_syntax::evaluate(&mut result, setting, snapshot),
             "native-syntax" => super::native_syntax::evaluate(&mut result, setting, snapshot),
-            "source-pattern" => source_patterns(&mut result, setting, snapshot),
+            "source-pattern" => source_patterns(&mut result, setting, snapshot, guidance),
             "test-naming"
             | "test-naming-strict"
             | "parameterized-tests"
@@ -295,6 +314,7 @@ fn source_patterns(
     result: &mut super::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
+    guidance: Option<&crate::domain::rule_guidance::Diagnostic>,
 ) -> Result<()> {
     let deadline = result.deadline();
     let patterns = compiled_patterns(setting, "prohibited_patterns")?;
@@ -347,7 +367,7 @@ fn source_patterns(
             }
             for (pattern, regex) in &selected {
                 if regex.is_match(line) {
-                    let (message, fix) = source_pattern_guidance(&result.id, pattern);
+                    let (message, fix) = source_pattern_guidance(guidance, pattern);
                     result.push(diagnostic(
                         &result.id,
                         Some(path),
@@ -370,73 +390,37 @@ fn source_patterns(
     Ok(())
 }
 
-fn source_pattern_guidance(id: &str, pattern: &str) -> (String, &'static str) {
-    let (signal, fix) = match id {
-        "cpp-disabled-test" => (
-            "Disabled-test marker requires review; this is a review signal, not proof of missing coverage",
-            "Confirm the reason, tracking issue, and replacement coverage; restore the test when appropriate. Tracking text alone does not suppress this marker signal",
+fn source_pattern_guidance<'a>(
+    guidance: Option<&'a crate::domain::rule_guidance::Diagnostic>,
+    pattern: &str,
+) -> (String, &'a str) {
+    match guidance {
+        Some(guidance) => (
+            format!("{}; matched pattern {pattern:?}", guidance.message),
+            &guidance.fix,
         ),
-        "c-ignored-atomic-cas" => (
-            "Configured compare-exchange result discard requires review; this is a review signal, not proof of a data race or lost update",
-            "Verify the selected API's success and failure semantics and handle failure or document why ignoring it is valid; check retry behavior and supporting tests",
+        None => (
+            format!("Changed source line matches configured review pattern {pattern:?}"),
+            "Review the changed API or marker against the repository's security and quality policy",
         ),
-        "workaround-marker" => (
-            "Temporary-workaround marker requires review; this is a review signal, not proof of a defect",
-            "Confirm a root-cause issue, an owner or expiry condition, and a removal plan; remove the workaround only after fixing its cause. Tracking text alone does not suppress this marker signal",
-        ),
-        _ => {
-            return (
-                format!("Changed source line matches configured review pattern {pattern:?}"),
-                "Review the changed API or marker against the repository's security and quality policy",
-            );
-        }
-    };
-    (format!("{signal}; matched pattern {pattern:?}"), fix)
+    }
 }
 
 pub(super) fn compiled_patterns(
     setting: &RuleSetting,
     key: &str,
-) -> Result<BTreeMap<String, Vec<(String, Regex)>>> {
-    let values: BTreeMap<String, Vec<String>> = setting
+) -> Result<crate::domain::rule_parameters::CompiledPatterns> {
+    use crate::domain::rule_parameters::{PatternLanguages, compile_patterns};
+    let value = setting
         .parameters
         .get(key)
-        .context(format!("{key} requires language-keyed regex arrays"))
-        .and_then(|value| serde_json::from_value(value.clone()).map_err(Into::into))?;
-    if values.is_empty() || values.len() > 32 {
-        bail!("{key} requires 1..32 language entries");
-    }
-    let mut result = BTreeMap::new();
-    for (language, entries) in values {
-        if language != "all"
-            && ![
-                "java",
-                "python",
-                "typescript",
-                "go",
-                "rust",
-                "shell",
-                "c",
-                "cpp",
-            ]
-            .contains(&language.as_str())
-        {
-            bail!("{key} has unsupported language: {language}");
-        }
-        if entries.is_empty() || entries.len() > 32 {
-            bail!("{key}.{language} requires 1..32 regex patterns");
-        }
-        let mut unique = BTreeSet::new();
-        let mut compiled = Vec::new();
-        for pattern in entries {
-            if pattern.is_empty() || pattern.len() > 512 || !unique.insert(pattern.clone()) {
-                bail!("{key}.{language} requires distinct regex patterns of 1..512 bytes");
-            }
-            compiled.push((pattern.clone(), Regex::new(&pattern)?));
-        }
-        result.insert(language, compiled);
-    }
-    Ok(result)
+        .with_context(|| format!("{key} requires language-keyed regex arrays"))?;
+    let languages = if key == "forbidden_imports" {
+        PatternLanguages::Syntax
+    } else {
+        PatternLanguages::Text
+    };
+    compile_patterns(key, value, languages)
 }
 
 fn string_parameter(setting: &RuleSetting, key: &str) -> Result<Vec<String>> {

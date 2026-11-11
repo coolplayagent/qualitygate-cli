@@ -1,6 +1,7 @@
 //! Strict configuration contracts, plan validation and repository discovery.
 
 pub mod attestation;
+mod builtin_compatibility;
 mod builtin_validation;
 pub mod case_provenance;
 pub mod catalog;

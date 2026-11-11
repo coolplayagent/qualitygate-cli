@@ -8,7 +8,6 @@ use anyhow::{Context, Result, bail};
 use base64::{Engine, engine::general_purpose};
 use ed25519_dalek::{Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeSet,
     time::{Duration, Instant},
@@ -132,10 +131,7 @@ pub(super) fn authenticate(
             let signature = Signature::from_slice(&signature)
                 .map_err(|_| anyhow::anyhow!("Invalid Ed25519 signature length"))?;
             if verifier.verify_strict(&message, &signature).is_ok() {
-                signer = Some((
-                    key.id.clone(),
-                    format!("sha256:{:x}", Sha256::digest(public_key)),
-                ));
+                signer = Some((key.id.clone(), crate::domain::digest::sha256(&public_key)));
                 break;
             }
         }

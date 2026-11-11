@@ -6,7 +6,7 @@ use crate::{
     config,
     snapshot::Selection,
 };
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use std::path::PathBuf;
 
 pub(super) async fn run(
@@ -19,9 +19,7 @@ pub(super) async fn run(
     if envelope && format != Format::Json {
         bail!("--envelope requires --format json");
     }
-    let root = root
-        .canonicalize()
-        .context("Repository root does not exist")?;
+    let root = application::repository_root::resolve(root).await?;
     let selection = if let Some(url) = args.mr {
         Selection::MergeRequest {
             url,

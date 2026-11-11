@@ -4,7 +4,6 @@ use super::{Config, categories, rule_query::Inventory};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -142,7 +141,7 @@ fn publish(root: &Path, path: &Path, target: &Path, original: &[u8], bytes: &[u8
 }
 
 fn digest(bytes: &[u8]) -> String {
-    format!("sha256:{:x}", Sha256::digest(bytes))
+    crate::domain::digest::sha256(bytes)
 }
 
 fn object<'a>(value: &'a mut Value, name: &str) -> Result<&'a mut serde_json::Map<String, Value>> {

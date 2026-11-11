@@ -22,7 +22,7 @@ pub(super) struct Change {
     candidate: String,
     #[arg(long)]
     actor: String,
-    #[arg(long, value_enum, default_value = "agent")]
+    #[arg(long, value_parser = super::value_parsers::actor_kind(), default_value = "agent")]
     actor_kind: ActorKind,
     #[arg(long)]
     reason: String,

@@ -420,7 +420,6 @@ mod tests;
 
 /// Comparable executable/version identities, excluding per-run paths and source inputs.
 pub fn tool_inventory_digest(report: &super::Report) -> String {
-    use sha2::{Digest, Sha256};
     let mut producers = super::policy_evaluation::producer_environment(report);
     producers.retain(|_, value| {
         !value["command_executable"].is_null()
@@ -437,8 +436,5 @@ pub fn tool_inventory_digest(report: &super::Report) -> String {
             }
         }
     }
-    format!(
-        "sha256:{:x}",
-        Sha256::digest(serde_json::to_vec(&producers).expect("producer facts"))
-    )
+    super::digest::sha256(&serde_json::to_vec(&producers).expect("producer facts"))
 }

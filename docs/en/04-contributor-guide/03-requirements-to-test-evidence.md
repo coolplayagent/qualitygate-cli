@@ -18,6 +18,22 @@ through schema/source validation, independent fixture adoption, role selection a
 handling. Documentation and Skill packaging gates cover published assets. Instruction projection
 is not semantic verification; these tests do not establish concurrency or lifetime correctness.
 
+## Clean contract maintenance
+
+[CLEAN-01–06](../../../codespec/requirements/clean-contracts.md) map to:
+
+| Contract | Repeatable evidence |
+| --- | --- |
+| Framework independence and CLI compatibility | `interfaces::value_parsers::tests`; `architecture_rejects_cli_framework_and_path_io_in_pure_owners` and the full production-source graph. |
+| Shared language/pattern constraints and diagnostic ownership | `domain::rule_parameters::tests`, `domain::rule_guidance::tests`, config parameter/catalog tests, adapter rule tests, `tests/issue64_rules.rs` and full selfcheck. Invalid direct-adapter C/C++ import patterns remain incomplete. |
+| Exact canonical identities | `domain::digest::tests`, `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`, attestation public-key digest assertions and policy binding tests. |
+| Single package inventory and typed fixture registry | `tests/selfcheck.rs`, config selfcheck/catalog-asset tests and same-checkout corpus comparison; independent goldens are not generated from actual evaluator output. |
+| Root resolution at the blocking boundary | `application::repository_root::tests`, `paths::tests::repository_roots_keep_native_resolution_and_errors`, Unix symlink-root test and architecture regression fixtures. |
+
+Coverage, Bazel and the final snapshot report supplement these focused tests.
+They do not turn heuristic review signals into semantic proof. Stable local
+checks and nightly Miri/ASan results are recorded separately.
+
 
 ## Native syntax review rules
 

@@ -4,6 +4,9 @@ description: Review disabled test markers for a reason, tracking issue, and repl
 implementation: source-pattern
 language: [cpp]
 requires_capabilities: [files]
+diagnostic:
+  message: Disabled-test marker requires review; this is a review signal, not proof of missing coverage
+  fix: Confirm the reason, tracking issue, and replacement coverage; restore the test when appropriate. Tracking text alone does not suppress this marker signal
 defaults:
   required: false
   severity: warning

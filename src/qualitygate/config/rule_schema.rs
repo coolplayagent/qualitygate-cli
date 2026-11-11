@@ -4,7 +4,6 @@ use super::CustomRule;
 use crate::domain::RuleIssue;
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::sync::LazyLock;
 
 pub const SCHEMA_ID: &str = "urn:qualitygate:project-rule:1";
@@ -43,7 +42,7 @@ static VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> = LazyLock::ne
 });
 
 pub fn digest() -> String {
-    format!("sha256:{:x}", Sha256::digest(SCHEMA.as_bytes()))
+    crate::domain::digest::sha256(SCHEMA.as_bytes())
 }
 
 pub fn document() -> Result<Value> {
@@ -70,11 +69,11 @@ pub fn schema_identity(version: u32) -> Result<(&'static str, String)> {
         1 => Ok((SCHEMA_ID, digest())),
         2 => Ok((
             OPERATOR_SCHEMA_ID,
-            format!("sha256:{:x}", Sha256::digest(OPERATOR_SCHEMA.as_bytes())),
+            crate::domain::digest::sha256(OPERATOR_SCHEMA.as_bytes()),
         )),
         3 => Ok((
             V3_SCHEMA_ID,
-            format!("sha256:{:x}", Sha256::digest(V3_SCHEMA.as_bytes())),
+            crate::domain::digest::sha256(V3_SCHEMA.as_bytes()),
         )),
         _ => bail!("Unsupported project-rule schema version: {version}"),
     }
@@ -125,10 +124,9 @@ pub fn family_document() -> Result<Value> {
 }
 
 pub fn family_digest() -> Result<String> {
-    Ok(format!(
-        "sha256:{:x}",
-        Sha256::digest(serde_json::to_vec(&family_document()?)?)
-    ))
+    Ok(crate::domain::digest::sha256(&serde_json::to_vec(
+        &family_document()?,
+    )?))
 }
 
 fn validator() -> Result<&'static jsonschema::Validator> {

@@ -62,7 +62,8 @@ The archive is organized for review from three directions:
 
 - [lifecycle rulebook](guides/lifecycle-rulebook.md) and
   [critical adoption](guides/critical-adoption.md), plus the
-  [research method](guides/research-method.md);
+  [research method](guides/research-method.md) and
+  [clean code and executable contracts](guides/clean-contracts.md);
 - [language lanes](languages/java.md) for Java,
   [Python](languages/python.md), [Rust](languages/rust.md),
   [C++ and CUDA](languages/cpp-cuda.md), and

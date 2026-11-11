@@ -4,6 +4,9 @@ description: Review explicitly discarded C11 compare-exchange results in C and C
 implementation: source-pattern
 language: [c, cpp]
 requires_capabilities: [files]
+diagnostic:
+  message: Configured compare-exchange result discard requires review; this is a review signal, not proof of a data race or lost update
+  fix: Verify the selected API's success and failure semantics and handle failure or document why ignoring it is valid; check retry behavior and supporting tests
 defaults:
   required: false
   severity: warning

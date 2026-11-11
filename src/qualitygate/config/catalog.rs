@@ -20,6 +20,10 @@ pub struct Builtin {
     pub implementation: String,
     #[serde(default)]
     pub language: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language_scope: Option<crate::domain::rule_parameters::LanguageScope>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diagnostic: Option<crate::domain::rule_guidance::Diagnostic>,
     pub requires_capabilities: Vec<String>,
     pub defaults: RuleSetting,
     #[serde(default)]
@@ -694,6 +698,17 @@ pub(super) fn validate_required_archive_coverage(registry_yaml: &str) -> Result<
 }
 
 fn validate_builtin_standards(rule: &Builtin, standards: &Standards) -> Result<BTreeSet<String>> {
+    crate::domain::rule_parameters::LanguageContract::builtin(
+        &rule.implementation,
+        &rule.language,
+        rule.effective_language_scope(),
+    )?;
+    if let Some(diagnostic) = rule.effective_diagnostic() {
+        if rule.implementation != "source-pattern" {
+            bail!("Builtin diagnostic presentation is supported only by source-pattern");
+        }
+        diagnostic.validate()?;
+    }
     if rule.standard_refs.is_empty() || rule.lifecycle_inputs.is_empty() {
         bail!(
             "Built-in rule {} must declare standard references and lifecycle inputs",
@@ -877,10 +892,11 @@ impl Catalog {
                         .entry("languages".into())
                         .or_insert_with(|| serde_json::json!(builtin.language));
                 }
-                super::builtin_validation::validate(
+                super::builtin_validation::validate_with_scope(
                     &builtin.id,
                     &builtin.implementation,
                     &builtin.language,
+                    builtin.effective_language_scope(),
                     setting,
                 )?;
             }
