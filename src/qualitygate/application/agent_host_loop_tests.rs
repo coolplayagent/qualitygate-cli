@@ -6,7 +6,7 @@ use crate::domain::{CheckResult, Diagnostic, Severity, Summary, evaluate};
 async fn fixture(scenario: &str) -> (tempfile::TempDir, tempfile::TempDir, Options) {
     use std::os::unix::fs::PermissionsExt;
     let root = super::super::test_support::repository("schema_version: 1\n").await;
-    let external = tempfile::tempdir().unwrap();
+    let external = super::super::test_support::tempdir();
     let mut options = super::tests::options(root.path(), external.path());
     options.timeout_seconds = 20;
     options.base = resolve(root.path(), "HEAD").await.unwrap();
@@ -92,7 +92,7 @@ exit BEFORE_EXIT
         final_report.gate = evaluate(&final_report.checks, &["behavior".into()], &[]);
     }
     std::fs::write(external.path().join("after-report.json"), serde_json::to_vec(&json!({"schema_version":1,"kind":"delivery_check","report":final_report,"delivery":delivered})).unwrap()).unwrap();
-    let projection = json!({"schema_version":1,"kind":"agent_contract_projection","repository":root.path(),"role":"implementer","task_id":"task",
+    let projection = json!({"schema_version":1,"kind":"agent_contract_projection","repository":options.root,"role":"implementer","task_id":"task",
         "snapshot":initial.snapshot,"policy":policy,"contract_digest":snapshot::digest(b"contract"),"prompt":"Bound instructions",
         "prompt_digest":snapshot::digest(b"Bound instructions"),"ready":scenario != "contract_gap","obligations":[],"gaps":[],"known_limits":[]});
     std::fs::write(
@@ -287,7 +287,7 @@ async fn replacement_mode_applies_only_controller_validated_file_from_plain_or_e
 #[tokio::test]
 async fn controller_rechecks_contract_checkout_and_timeout_after_agent_execution() {
     for scenario in ["contract-change", "checkout-change", "timeout", "resume"] {
-        let (root, external, mut options) = fixture(if scenario == "contract-change" {
+        let (_repository, external, mut options) = fixture(if scenario == "contract-change" {
             "no_progress"
         } else {
             "accepted"
@@ -322,7 +322,7 @@ async fn controller_rechecks_contract_checkout_and_timeout_after_agent_execution
             }
             _ => {
                 let previous = external.path().join("previous.json");
-                std::fs::write(&previous,json!({"kind":"external_agent_loop","root":root.path(),"attempts":[],"agent_argv":["sh","-c","old agent"],"termination":"attempt_budget"}).to_string()).unwrap();
+                std::fs::write(&previous,json!({"kind":"external_agent_loop","root":options.root,"attempts":[],"agent_argv":["sh","-c","old agent"],"termination":"attempt_budget"}).to_string()).unwrap();
                 options.resume = Some(previous);
                 options.trust_store = Some(external.path().join("trust.json"));
                 options.evidence_dir = Some(external.path().into());

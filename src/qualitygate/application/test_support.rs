@@ -2,6 +2,11 @@
 use crate::snapshot::{Identity, Snapshot};
 use std::path::Path;
 
+/// Fixture trust paths must not inherit platform aliases such as macOS /var.
+pub(super) fn tempdir() -> tempfile::TempDir {
+    tempfile::tempdir_in(dunce::canonicalize(std::env::temp_dir()).unwrap()).unwrap()
+}
+
 pub(super) fn snapshot(root: &Path) -> Snapshot {
     Snapshot {
         root: root.into(),
@@ -64,8 +69,11 @@ pub(super) fn adoption(binding: &str) -> crate::domain::SourceReview {
 }
 
 pub(super) async fn repository(policy: &str) -> tempfile::TempDir {
-    let root = tempfile::tempdir().unwrap();
+    let root = tempdir();
     crate::snapshot::run_git(root.path(), &["init", "--quiet", "--template="], None)
+        .await
+        .unwrap();
+    crate::snapshot::run_git(root.path(), &["config", "core.autocrlf", "false"], None)
         .await
         .unwrap();
     std::fs::write(root.path().join("qualitygate.yaml"), policy).unwrap();

@@ -16,7 +16,7 @@
 
 ## Clean contract 维护
 
-[CLEAN-01–06](../../../codespec/requirements/clean-contracts.md) 的可重复证据：
+[CLEAN-01–07](../../../codespec/requirements/clean-contracts.md) 的可重复证据：
 
 | 契约 | 测试证据 |
 | --- | --- |
@@ -25,6 +25,7 @@
 | 精确摘要 | `domain::digest::tests`、`net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`、签名公钥摘要断言和策略绑定测试。 |
 | 包清单与具名夹具登记 | `tests/selfcheck.rs`、配置 selfcheck/catalog-asset 测试和同一 checkout 的 corpus 比较；独立 golden 不由实际执行结果生成。 |
 | 根路径解析的阻塞边界 | `application::repository_root::tests`、`paths::tests::repository_roots_keep_native_resolution_and_errors`、Unix symlink-root 测试和架构回归样例。 |
+| 跨平台夹具前提 | policy/agent-host 夹具使用规范临时根目录并断言 Git 提交的 CRLF 原始字节；CLI 测试检查索引字节。command/probe 测试分别验证 Unix 内容篡改、Windows 拒写后属性变更导致失效。`env::tests` 使用真实环境入口共用的摘要函数验证 4,096/4,097 项和 1 MiB/+1 字节边界。 |
 
 覆盖率、Bazel 与最终快照报告补充上述测试，不将启发式审查信号变为语义证明。
 稳定工具链本地检查和 nightly Miri/ASan 结果单独记录。

@@ -39,8 +39,13 @@ pub fn current_executable() -> anyhow::Result<PathBuf> {
 
 /// Bind inherited process inputs without disclosing environment values.
 pub fn environment_digest() -> anyhow::Result<String> {
+    digest_environment(std::env::vars_os().collect())
+}
+
+fn digest_environment(
+    mut variables: Vec<(std::ffi::OsString, std::ffi::OsString)>,
+) -> anyhow::Result<String> {
     use sha2::{Digest, Sha256};
-    let mut variables: Vec<_> = std::env::vars_os().collect();
     variables.sort();
     let total: usize = variables
         .iter()
@@ -135,7 +140,49 @@ fn token_from(provider: &str, host: &str, read: impl Fn(&str) -> Option<String>)
 
 #[cfg(test)]
 mod tests {
-    use super::token_from;
+    use super::{digest_environment, token_from};
+
+    #[test]
+    fn environment_identity_enforces_exact_count_and_byte_limits() {
+        // An OS may reject oversized process environments before Rust runs.
+        let at_count_limit = (0..4096)
+            .map(|index| (format!("KEY_{index}").into(), "x".into()))
+            .collect::<Vec<_>>();
+        assert!(digest_environment(at_count_limit.clone()).is_ok());
+        let mut above_count_limit = at_count_limit;
+        above_count_limit.push(("KEY_4096".into(), "x".into()));
+        assert_eq!(
+            digest_environment(above_count_limit)
+                .unwrap_err()
+                .to_string(),
+            "Environment identity exceeds 4096 variables or 1 MiB"
+        );
+
+        let key = "BOUND";
+        let value = "x".repeat(1024 * 1024 - key.len());
+        assert!(digest_environment(vec![(key.into(), value.clone().into())]).is_ok());
+        assert_eq!(
+            digest_environment(vec![(key.into(), format!("{value}x").into())])
+                .unwrap_err()
+                .to_string(),
+            "Environment identity exceeds 4096 variables or 1 MiB"
+        );
+    }
+
+    #[test]
+    fn environment_identity_sorts_and_frames_inherited_values() {
+        let variables = vec![("B".into(), "two".into()), ("A".into(), "one".into())];
+        let mut reversed = variables.clone();
+        reversed.reverse();
+        assert_eq!(
+            digest_environment(variables).unwrap(),
+            digest_environment(reversed).unwrap()
+        );
+        assert_ne!(
+            digest_environment(vec![("ab".into(), "c".into())]).unwrap(),
+            digest_environment(vec![("a".into(), "bc".into())]).unwrap()
+        );
+    }
 
     #[test]
     fn provider_credentials_are_bound_to_exact_api_authorities() {
@@ -181,73 +228,47 @@ mod process_scenarios {
     #[test]
     fn inherited_inputs_are_bounded_and_do_not_disclose_credentials() {
         if let Ok(case) = std::env::var("QUALITYGATE_ENV_UNIT_CASE") {
-            match case.as_str() {
-                "overrides" => {
-                    assert!(
-                        require_isolated_git_environment()
-                            .unwrap_err()
-                            .to_string()
-                            .contains("GIT_INDEX_FILE")
-                    );
-                    assert_eq!(artifact_base(), PathBuf::from("/unit/artifacts"));
-                    assert_eq!(
-                        builtin_rule_assets_override(),
-                        Some(PathBuf::from("/unit/rules"))
-                    );
-                    assert!(builtin_rule_asset_candidates().contains(&PathBuf::from(
-                        "/unit/runfiles/workspace/skills/qualitygate-cli/references/rules"
-                    )));
-                    assert!(required_present("QUALITYGATE_ENV_UNIT_CASE"));
-                    assert!(!required_present("QUALITYGATE_UNIT_EMPTY"));
-                    assert_eq!(
-                        missing_required(&["QUALITYGATE_UNIT_EMPTY".into()]),
-                        vec!["QUALITYGATE_UNIT_EMPTY"]
-                    );
-                    let identity = environment_digest().unwrap();
-                    assert_eq!(identity.len(), 71);
-                    assert!(!identity.contains("overrides"));
-                }
-                "count" | "bytes" => assert!(
-                    environment_digest()
-                        .unwrap_err()
-                        .to_string()
-                        .contains("4096 variables or 1 MiB")
-                ),
-                _ => panic!("unexpected child scenario"),
-            }
+            assert_eq!(case, "overrides");
+            assert!(
+                require_isolated_git_environment()
+                    .unwrap_err()
+                    .to_string()
+                    .contains("GIT_INDEX_FILE")
+            );
+            assert_eq!(artifact_base(), PathBuf::from("/unit/artifacts"));
+            assert_eq!(
+                builtin_rule_assets_override(),
+                Some(PathBuf::from("/unit/rules"))
+            );
+            assert!(builtin_rule_asset_candidates().contains(&PathBuf::from(
+                "/unit/runfiles/workspace/skills/qualitygate-cli/references/rules"
+            )));
+            assert!(required_present("QUALITYGATE_ENV_UNIT_CASE"));
+            assert!(!required_present("QUALITYGATE_UNIT_EMPTY"));
+            assert_eq!(
+                missing_required(&["QUALITYGATE_UNIT_EMPTY".into()]),
+                vec!["QUALITYGATE_UNIT_EMPTY"]
+            );
+            let identity = environment_digest().unwrap();
+            assert_eq!(identity.len(), 71);
+            assert!(!identity.contains("overrides"));
             return;
         }
-        for case in ["overrides", "count", "bytes"] {
-            let mut child = std::process::Command::new(current_executable().unwrap());
-            child.args(["--exact","env::process_scenarios::inherited_inputs_are_bounded_and_do_not_disclose_credentials","--nocapture"])
-                .env("QUALITYGATE_ENV_UNIT_CASE",case);
-            if case == "overrides" {
-                child
-                    .env("GIT_INDEX_FILE", "/unit/index")
-                    .env("QUALITYGATE_HOME", "/unit/artifacts")
-                    .env(BUILTIN_RULES_DIR_ENV, "/unit/rules")
-                    .env("RUNFILES_DIR", "/unit/runfiles")
-                    .env("TEST_WORKSPACE", "workspace")
-                    .env("QUALITYGATE_UNIT_EMPTY", "");
-            } else {
-                let count = if case == "count" { 4097 } else { 1100 };
-                for i in 0..count {
-                    child.env(
-                        format!("QUALITYGATE_UNIT_BOUND_{i}"),
-                        if case == "count" {
-                            "x".into()
-                        } else {
-                            "x".repeat(1024)
-                        },
-                    );
-                }
-            }
-            let output = child.output().unwrap();
-            assert!(
-                output.status.success(),
-                "{case}: {}",
-                String::from_utf8_lossy(&output.stdout)
-            );
-        }
+        let output = std::process::Command::new(current_executable().unwrap())
+            .args(["--exact", "env::process_scenarios::inherited_inputs_are_bounded_and_do_not_disclose_credentials", "--nocapture"])
+            .env("QUALITYGATE_ENV_UNIT_CASE", "overrides")
+            .env("GIT_INDEX_FILE", "/unit/index")
+            .env("QUALITYGATE_HOME", "/unit/artifacts")
+            .env(BUILTIN_RULES_DIR_ENV, "/unit/rules")
+            .env("RUNFILES_DIR", "/unit/runfiles")
+            .env("TEST_WORKSPACE", "workspace")
+            .env("QUALITYGATE_UNIT_EMPTY", "")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "overrides: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
     }
 }

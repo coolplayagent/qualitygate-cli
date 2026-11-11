@@ -20,7 +20,7 @@ is not semantic verification; these tests do not establish concurrency or lifeti
 
 ## Clean contract maintenance
 
-[CLEAN-01–06](../../../codespec/requirements/clean-contracts.md) map to:
+[CLEAN-01–07](../../../codespec/requirements/clean-contracts.md) map to:
 
 | Contract | Repeatable evidence |
 | --- | --- |
@@ -29,6 +29,7 @@ is not semantic verification; these tests do not establish concurrency or lifeti
 | Exact canonical identities | `domain::digest::tests`, `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`, attestation public-key digest assertions and policy binding tests. |
 | Single package inventory and typed fixture registry | `tests/selfcheck.rs`, config selfcheck/catalog-asset tests and same-checkout corpus comparison; independent goldens are not generated from actual evaluator output. |
 | Root resolution at the blocking boundary | `application::repository_root::tests`, `paths::tests::repository_roots_keep_native_resolution_and_errors`, Unix symlink-root test and architecture regression fixtures. |
+| Portable fixture preconditions | Policy/agent-host fixtures create canonical temporary roots and preserve exact committed CRLF bytes; CLI tests inspect index bytes. Command/probe tests separately assert Unix content tampering and Windows write denial followed by attribute invalidation. `env::tests` covers 4,096/4,097 variables and 1 MiB/+1 byte using the same digest function as the live inherited-environment test. |
 
 Coverage, Bazel and the final snapshot report supplement these focused tests.
 They do not turn heuristic review signals into semantic proof. Stable local

@@ -84,6 +84,16 @@ evidence. Cover pass, violation, incomplete execution, timeout, policy change,
 and snapshot mismatch where applicable. Never weaken a failing check or its test
 to claim completion.
 
+Fixtures must establish their own platform preconditions. Create protected
+external evidence under a canonical temporary root, and configure newline
+conversion only in the isolated Git repository when testing exact committed
+bytes. Never relax production symlink rejection to accommodate a temporary-path
+alias. A denied Windows write is protection evidence; Unix content changes and
+Windows attribute changes each need an independent invalidation assertion.
+Exercise environment count/byte limits through the shared digest function when
+the operating system rejects the oversized environment before a child can run;
+retain a bounded real child test for inheritance and credential non-disclosure.
+
 All authored source, tests, documentation, and workflow files must be at most
 1,000 lines and 2 MiB; generated lockfiles are exempt where documented.
 Markdown links, anchors, references, HTML links, and fenced blocks are parsed by
