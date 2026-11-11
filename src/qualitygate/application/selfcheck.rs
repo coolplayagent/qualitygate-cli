@@ -305,7 +305,7 @@ fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
                 let mut setting = builtin.defaults.clone();
                 setting.parameters.extend(parameters.clone());
                 let guidance = builtin.effective_diagnostic();
-                adapters::rules::evaluate_with_guidance(
+                let mut result = adapters::rules::evaluate_with_guidance(
                     &case.fixture.rule,
                     &builtin.implementation,
                     &setting,
@@ -315,7 +315,9 @@ fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
                         ..Default::default()
                     },
                     guidance.as_deref(),
-                )
+                );
+                result.rule_version = builtin.version;
+                result
             };
             let mut observed = serde_json::to_value(&check)?;
             observed["diagnostic_count"] = json!(check.diagnostics.len());

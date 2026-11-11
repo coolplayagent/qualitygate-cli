@@ -331,6 +331,8 @@ Invalid UTF-8, malformed syntax outside the specific comparison recovery, and
 exhausted budgets produce incomplete execution. Version 1 frozen definitions of
 the four migrated rules retain their original `source-pattern` implementation
 and regex parameters; version 2 definitions reject regex overrides.
+Selfcheck observations report the selected definition's version, including failed
+and incomplete evaluations.
 
 ## Rust review signals
 

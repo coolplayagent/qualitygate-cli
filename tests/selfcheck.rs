@@ -12,7 +12,45 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
     assert_eq!(result["decision"], "pass");
     assert!(result["errors"].as_array().unwrap().is_empty());
     let cases = result["fixtures"].as_array().unwrap();
-    assert_eq!(cases.len(), 1082, "Shipped fixture inventory changed");
+    assert_eq!(cases.len(), 1118, "Shipped fixture inventory changed");
+    for suite in ["minimal", "typical", "stress"] {
+        for (fixture, verdict) in [
+            ("issue12-assignment-empty-pass", Some("pass")),
+            ("issue12-comparison-array-glob-pass", Some("pass")),
+            ("issue12-trap-action-text-pass", Some("pass")),
+            ("issue12-trap-unprefixed-signal-fail", Some("fail")),
+            ("issue12-trap-platform-number-pass", Some("pass")),
+            ("issue12-comparison-mixed-syntax-incomplete", None),
+            ("issue12-assignment-quoted-data-pass", Some("pass")),
+            ("issue16-sql-format-placeholder-pass", Some("pass")),
+            ("issue16-sql-named-placeholder-pass", Some("pass")),
+            ("issue16-sql-percent-operation-fail", Some("fail")),
+            ("issue16-sql-format-call-fail", Some("fail")),
+            ("issue16-sql-malformed-incomplete", None),
+        ] {
+            let id = format!("{fixture}-{suite}");
+            let retained: Vec<_> = cases
+                .iter()
+                .filter(|case| case["suite"] == suite && case["fixture"] == id)
+                .collect();
+            assert_eq!(retained.len(), 1, "exactly one retained case: {id}");
+            let case = retained[0];
+            assert_eq!(case["decision"], "pass", "{id}");
+            assert_eq!(case["observed"]["verdict"].as_str(), verdict, "{id}");
+            assert_eq!(case["observed"]["rule_version"], 2, "{id}");
+            assert_eq!(case["observed"]["required"], true, "{id}");
+            assert_eq!(case["observed"]["severity"], "error", "{id}");
+            assert_eq!(
+                case["observed"]["execution"]["status"],
+                if verdict.is_some() {
+                    "completed"
+                } else {
+                    "blocked"
+                },
+                "{id}"
+            );
+        }
+    }
     for suite in ["minimal", "typical", "stress"] {
         let case = cases
             .iter()

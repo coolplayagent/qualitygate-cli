@@ -63,6 +63,37 @@ fn deleting_a_negative_oracle_is_detected_before_running_a_selfcheck() {
     );
 }
 
+#[test]
+fn builtin_observations_preserve_selected_definition_versions_for_every_execution_outcome() {
+    let mut catalog = catalog();
+    let cases = config::selfcheck::load().unwrap();
+    let selected = [
+        "issue16-sql-format-placeholder-pass-minimal",
+        "issue16-sql-string-format-fail-minimal",
+        "issue16-sql-malformed-incomplete-minimal",
+    ]
+    .map(|id| cases.iter().find(|case| case.fixture.id == id).unwrap());
+    for version in [2, 7] {
+        catalog
+            .entries
+            .get_mut("py-sql-string-format")
+            .unwrap()
+            .builtin
+            .as_mut()
+            .unwrap()
+            .version = version;
+        for case in selected {
+            let observed = observe(case, &catalog).unwrap();
+            assert_eq!(observed["rule_version"], version, "{}", case.fixture.id);
+            assert!(
+                compare_golden(&case.golden, &observed).is_empty(),
+                "{}",
+                case.fixture.id
+            );
+        }
+    }
+}
+
 #[tokio::test]
 async fn empty_filter_is_incomplete_and_small_selected_suite_retains_its_claim_boundary() {
     let missing = run(Some("does-not-exist".into()), None).await;
