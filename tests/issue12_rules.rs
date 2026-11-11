@@ -230,3 +230,81 @@ fn source_pattern_diagnostic_budget_blocks_excessive_matches() {
             .contains("diagnostics exceed 10000")
     );
 }
+
+#[test]
+fn shell_spacing_and_traps_respect_shell_operand_boundaries() {
+    let repository = fixture();
+    let root = repository.path();
+    for (id, source, code, verdict) in [
+        ("shell-assignment-spaces", "IFS= read -r line\n", 0, "pass"),
+        ("shell-assignment-spaces", "VALUE= command\n", 0, "pass"),
+        ("shell-assignment-spaces", "VALUE = bad\n", 1, "fail"),
+        ("shell-assignment-spaces", "VALUE =bad\n", 1, "fail"),
+        (
+            "shell-comparison-spaces",
+            "items=(one two)\nprintf '%s' \"${items[0]}\" [ab]*\n",
+            0,
+            "pass",
+        ),
+        ("shell-comparison-spaces", "[[$a == $b]]\n", 1, "fail"),
+        (
+            "shell-comparison-spaces",
+            "[ \"$a\" = \"$b\" ]\n",
+            0,
+            "pass",
+        ),
+        (
+            "shell-trap-uncapturable",
+            "trap 'printf 9' EXIT\n",
+            0,
+            "pass",
+        ),
+        ("shell-trap-uncapturable", "trap cleanup KILL\n", 1, "fail"),
+        ("shell-trap-uncapturable", "trap cleanup STOP\n", 1, "fail"),
+        (
+            "shell-trap-uncapturable",
+            "trap cleanup SIGKILL\n",
+            1,
+            "fail",
+        ),
+        ("shell-trap-uncapturable", "trap cleanup 19\n", 0, "pass"),
+    ] {
+        fs::write(
+            root.join("qualitygate.yaml"),
+            format!("schema_version: 1\nrules: {{{id}: {{}}}}\n"),
+        )
+        .unwrap();
+        fs::write(root.join("script.sh"), format!("#!/bin/bash\n{source}")).unwrap();
+        let result = check(root, code);
+        let selected = rule(&result, id);
+        assert_eq!(selected["verdict"], verdict, "{id}: {source}");
+        assert_eq!(selected["required"], true);
+        assert_eq!(selected["severity"], "error");
+    }
+}
+
+#[test]
+fn shell_syntax_recovery_is_specific_and_invalid_evidence_stays_incomplete() {
+    let repository = fixture();
+    let root = repository.path();
+    for (id, malformed) in [
+        ("shell-comparison-spaces", "[[$a == $b]]\nif (\n"),
+        ("shell-comparison-spaces", "[[ $a == 'quoted]]'\n"),
+        ("shell-trap-uncapturable", "trap 'unterminated\n"),
+        ("shell-assignment-spaces", "VALUE 'unterminated\n"),
+    ] {
+        fs::write(
+            root.join("qualitygate.yaml"),
+            format!("schema_version: 1\nrules: {{{id}: {{}}}}\n"),
+        )
+        .unwrap();
+        for bytes in [malformed.as_bytes(), &[255]] {
+            fs::write(root.join("script.sh"), bytes).unwrap();
+            let result = check(root, 2);
+            assert_eq!(result["gate"]["decision"], "incomplete");
+            assert!(rule(&result, id)["verdict"].is_null());
+        }
+        fs::write(root.join("qualitygate.yaml"), format!("schema_version: 1\nrules: {{{id}: {{parameters: {{prohibited_patterns: {{shell: ['trap']}}}}}}}}\n")).unwrap();
+        report(&cli(root, &["config", "--show", "--format", "json"]), 2);
+    }
+}

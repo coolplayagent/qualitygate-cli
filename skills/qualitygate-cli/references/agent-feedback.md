@@ -34,8 +34,10 @@ before following its JSON Pointer references or original artifact paths.
 - Full report locations and artifact references do not promise continued
   availability. Missing evidence remains a gap. A model's claim is not a gate.
 
-The CLI never calls a model. An external loop may manage retries, resource
-limits, no-progress termination, patches and human review records. Preserve all
-failed/unfinished attempts and original full reports; compact feedback is not
+`check --feedback` does not invoke a model. The separately authorized
+[Agent host](agent-host.md) and [judgment workflow](decision-protocol.md) can
+launch configured agent or provider commands. An external loop may manage retries,
+resource limits, no-progress termination, patches and human review records.
+Preserve all failed/unfinished attempts and original full reports; compact feedback is not
 an evidence replacement. Output bytes alone do not establish token savings or
 business benefit.

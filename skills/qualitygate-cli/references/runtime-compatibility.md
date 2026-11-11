@@ -11,6 +11,24 @@ Identity and compatibility evidence do not authenticate the binary's provenance.
 Require capabilities for the requested operation; reading this reference does
 not turn a runtime query or selfcheck into repository verification.
 
+## Legacy runtime inspection
+
+The startup scripts require the capabilities command. To inspect an explicitly
+selected trusted binary whose help does not advertise it, retain that executable
+and read `--version`, `--help` and the requested subcommand's `--help` directly.
+Use the history below only to identify potential support; confirm the exact
+requested syntax and schema exports from that build. Do not invoke unsupported
+capabilities/doctor flags or interpret an arbitrary command failure as an old
+version. This inspection needs no repository policy or initialization.
+
+A legacy build may support a narrower operation, such as V1 schema export, while
+lacking the capabilities required for this Skill's repository-verification
+workflow. Report that gap and preserve the narrower result. Selecting, building,
+installing or replacing a runtime still needs authorization within the task;
+legacy inspection does not grant it.
+
+## Capability history
+
 | Capability | First published version | Verified history |
 | --- | --- | --- |
 | Declared bounded tool version probes | v0.3.0 | `a7f9550` belongs to v0.3.0 |

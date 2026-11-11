@@ -460,5 +460,82 @@
         "ci/check.bash": "chmod --recursive \"a-rw\" file\n"
       }
     }
+  },
+  {
+    "id": "issue12-assignment-empty-pass-typical",
+    "rule": "shell-assignment-spaces",
+    "description": "typical semantic boundary assignment-empty-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\nIFS= read -r line\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-array-glob-pass-typical",
+    "rule": "shell-comparison-spaces",
+    "description": "typical semantic boundary comparison-array-glob-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\nitems=(one two)\nprintf '%s' \"${items[0]}\" [ab]*\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-action-text-pass-typical",
+    "rule": "shell-trap-uncapturable",
+    "description": "typical semantic boundary trap-action-text-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\ntrap 'printf 9' EXIT\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-unprefixed-signal-fail-typical",
+    "rule": "shell-trap-uncapturable",
+    "description": "typical semantic boundary trap-unprefixed-signal-fail",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\ntrap cleanup kill\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-platform-number-pass-typical",
+    "rule": "shell-trap-uncapturable",
+    "description": "typical semantic boundary trap-platform-number-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\ntrap cleanup 19\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-mixed-syntax-incomplete-typical",
+    "rule": "shell-comparison-spaces",
+    "description": "typical semantic boundary comparison-mixed-syntax-incomplete",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\n[[$a == $b]]\nif (\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-assignment-quoted-data-pass-typical",
+    "rule": "shell-assignment-spaces",
+    "description": "typical assignment-like text is data inside multiline strings and heredocs",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/sh\nprintf '%s' '\nVALUE = text\n'\ncat <<'EOF'\nVALUE = text\nEOF\n"
+      }
+    }
   }
 ]

@@ -64,7 +64,8 @@ The archive is organized for review from three directions:
   [critical adoption](guides/critical-adoption.md), plus the
   [research method](guides/research-method.md) and
   [clean code and executable contracts](guides/clean-contracts.md), plus
-  [design principles in Skill guidance](guides/skill-contracts.md);
+  [design principles in Skill guidance](guides/skill-contracts.md) and
+  [Skill and rule evidence boundaries](guides/skill-rule-boundaries.md);
 - [language lanes](languages/java.md) for Java,
   [Python](languages/python.md), [Rust](languages/rust.md),
   [C++ and CUDA](languages/cpp-cuda.md), and

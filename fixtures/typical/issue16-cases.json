@@ -350,5 +350,60 @@
         "src/service.py": "handler: Callable = (\n    lambda x: x + 1\n)\n"
       }
     }
+  },
+  {
+    "id": "issue16-sql-format-placeholder-pass-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical semantic boundary sql-format-placeholder-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id=%s\", (user_id,))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-named-placeholder-pass-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical semantic boundary sql-named-placeholder-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id=%(id)s\", {\"id\": user_id})\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-percent-operation-fail-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical semantic boundary sql-percent-operation-fail",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id=%s\" % (user_id,))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-format-call-fail-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical semantic boundary sql-format-call-fail",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id={}\".format(user_id))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-malformed-incomplete-typical",
+    "rule": "py-sql-string-format",
+    "description": "typical semantic boundary sql-malformed-incomplete",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\n"
+      }
+    }
   }
 ]

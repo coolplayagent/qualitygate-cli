@@ -4,12 +4,16 @@ use anyhow::Result;
 use tree_sitter::Node;
 
 pub(super) fn matches(id: &str, node: Node<'_>, view: &View<'_>) -> Result<bool> {
+    if id == "shell-comparison-spaces" {
+        return Ok(node.kind() == "test_command" && missing_test_spaces(node, view));
+    }
     if node.kind() != "command" {
         return Ok(false);
     }
     let Some(name) = node.child_by_field_name("name") else {
         return Ok(false);
     };
+    let mut command_name = name;
     let Some(mut command) = literal(name, view)? else {
         return Ok(false);
     };
@@ -46,10 +50,13 @@ pub(super) fn matches(id: &str, node: Node<'_>, view: &View<'_>) -> Result<bool>
             return Ok(false);
         };
         command = word;
+        command_name = *name;
         offset += 1;
     }
     let args = &args[offset..];
     match (id, command.as_str()) {
+        ("shell-assignment-spaces", _) => Ok(split_assignment(command_name, args, view)),
+        ("shell-trap-uncapturable", "trap") => uncapturable_trap(args, view),
         ("shell-eval", "eval") => Ok(true),
         ("shell-alias", "alias") => {
             for arg in args {
@@ -115,6 +122,75 @@ pub(super) fn matches(id: &str, node: Node<'_>, view: &View<'_>) -> Result<bool>
     }
 }
 
+fn split_assignment(name: Node<'_>, args: &[Node<'_>], view: &View<'_>) -> bool {
+    let raw_name = view.text(name).as_bytes();
+    let identifier = raw_name
+        .first()
+        .is_some_and(|byte| byte.is_ascii_alphabetic() || *byte == b'_')
+        && raw_name
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'_');
+    let Some(argument) = args.first() else {
+        return false;
+    };
+    let text = view.text(*argument);
+    identifier
+        && name.end_byte() < argument.start_byte()
+        && matches!(argument.kind(), "word" | "concatenation")
+        && (text.starts_with('=') || text.starts_with("+="))
+}
+
+fn missing_test_spaces(node: Node<'_>, view: &View<'_>) -> bool {
+    let text = view.text(node).as_bytes();
+    let width = if text.starts_with(b"[[") { 2 } else { 1 };
+    text.get(width)
+        .is_some_and(|byte| !byte.is_ascii_whitespace())
+        || text
+            .len()
+            .checked_sub(width + 1)
+            .and_then(|index| text.get(index))
+            .is_some_and(|byte| !byte.is_ascii_whitespace())
+}
+
+fn uncapturable_trap(args: &[Node<'_>], view: &View<'_>) -> Result<bool> {
+    let mut index = 0;
+    let Some(first) = args.first() else {
+        return Ok(false);
+    };
+    let Some(mut action) = literal(*first, view)? else {
+        return Ok(false);
+    };
+    if action == "--" {
+        index += 1;
+        let Some(argument) = args.get(index) else {
+            return Ok(false);
+        };
+        let Some(value) = literal(*argument, view)? else {
+            return Ok(false);
+        };
+        action = value;
+    } else if action.starts_with('-') {
+        // -p/-P/-l query traps, and '-' restores default handling.
+        return Ok(false);
+    }
+    if action == "-" || action.chars().all(|ch| ch.is_ascii_digit()) && !action.is_empty() {
+        // With a numeric first operand Bash omits the action and resets signals.
+        return Ok(false);
+    }
+    for argument in &args[index + 1..] {
+        let Some(signal) = literal(*argument, view)? else {
+            continue;
+        };
+        if matches!(
+            signal.to_ascii_uppercase().as_str(),
+            "KILL" | "SIGKILL" | "STOP" | "SIGSTOP" | "9"
+        ) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 fn removes_all_read(mode: &str) -> bool {
     let mut found = false;
     for clause in mode.split(',') {
@@ -163,7 +239,7 @@ pub(super) fn literal(node: Node<'_>, view: &View<'_>) -> Result<Option<String>>
                 let text = view.text(node);
                 result.push_str(&text[1..text.len() - 1]);
             }
-            "word" | "string_content" => {
+            "word" | "string_content" | "number" => {
                 let quoted = node.kind() == "string_content";
                 let mut chars = view.text(node).chars().peekable();
                 while let Some(ch) = chars.next() {

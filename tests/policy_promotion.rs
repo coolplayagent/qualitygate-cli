@@ -214,7 +214,21 @@ fn only_independent_signed_exact_validation_can_activate_a_policy_and_history_is
     assert_eq!(history["events"][0]["event"]["action"], "policy_promoted");
     let config = run(fixture.root.path(), &["config", "--show"], 0);
     assert_eq!(config["source"], expected.candidate_policy);
+    assert_eq!(config["review_trust"], "signed_active_policy");
     assert_eq!(config["config"]["rules"]["line-ending"]["enabled"], true);
+    let local_config = fixture.root.path().join("qualitygate.yaml");
+    let alternate_config = fixture.root.path().join("alternate-policy.yaml");
+    std::fs::remove_file(&local_config).unwrap();
+    for args in [
+        vec!["config", "--show"],
+        vec!["--config", "alternate-policy.yaml", "config", "--show"],
+    ] {
+        let selected = run(fixture.root.path(), &args, 0);
+        assert_eq!(selected, config);
+        assert!(!local_config.exists());
+        assert!(!alternate_config.exists());
+    }
+    std::fs::write(&local_config, &original).unwrap();
     let case = &fixture.suite.cases[0];
     let diff = format!("{}..{}", case.base, case.head);
     let preflight = run(

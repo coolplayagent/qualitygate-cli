@@ -57,6 +57,27 @@ Record forward-test and final-check results only after execution; absent traces
 remain unverified. The mapping above is an acceptance inventory, not a claim
 that all listed checks or model behaviors have already passed.
 
+## Skill and rule evidence boundaries
+
+[SKILL-BOUNDARY-01–07](../../../codespec/requirements/skill-rule-boundaries.md)
+address demonstrated syntax false positives and instructions that replace selected
+inputs or overstate scope. The [research record](../../../knowledge/best-practices/engineering-standards/guides/skill-rule-boundaries.md)
+separates primary sources, local Bash help and repository counterexamples.
+
+| Requirement | Repeatable evidence and limit |
+| --- | --- |
+| Versioned SQL/Shell operand boundaries | `adapters::language_syntax::tests::{sql_formatting_distinguishes_python_operators_from_database_placeholders, shell_brackets_are_checked_only_in_test_commands, shell_assignment_review_uses_command_position_instead_of_physical_lines, shell_traps_check_signal_operands_instead_of_action_text, bounded_comparison_recovery_cannot_hide_other_syntax_errors}`; `tests/issue12_rules.rs::{shell_spacing_and_traps_respect_shell_operand_boundaries, shell_syntax_recovery_is_specific_and_invalid_evidence_stays_incomplete}`; `tests/issue16_rules.rs::sql_query_review_accepts_bound_parameters_and_reports_actual_formatting`. Syntax signals do not prove query safety or complete shell correctness. |
+| Frozen version-1 compatibility | `adapters::language_syntax::tests::frozen_v1_review_definitions_keep_their_original_source_pattern_behavior` round-trips the four original definitions and preserves their old matcher outcomes. New catalog definitions advance to version 2 without weakening severity or requiredness. |
+| Active/ref/local authority and repairable initialization | `tests/policy_promotion.rs::only_independent_signed_exact_validation_can_activate_a_policy_and_history_is_immutable` preserves signed-active source/trust with missing local/default and alternate configuration paths, without creating either file. `tests/init.rs::{explicit_policy_reference_never_suggests_local_initialization, snapshot_guidance_depends_on_local_policy_and_selection, unreadable_or_malformed_configuration_does_not_suggest_init}` retains reference/snapshot/error distinctions. |
+| Captured lookup versus delivery findings | `tests/file_contracts.rs::cli_file_contracts_distinguish_complete_lookup_from_delivery_findings` contrasts historical missing/overlong files in CLI full and core repository scope, selected deletions/changes and path feedback. Whole-repository obligations need additional adequate evidence. |
+| Existing rule packages and runtime capability | `tests/custom_rules.rs::{private_rule_runs_on_java_and_python_with_stable_diagnostics_and_snapshot_isolation, project_rule_directory_is_loaded_from_selected_policy_snapshot}`; `tests/quality/skill_startup.rs`; `tests/operators/v3.rs`. These prove their executable contracts; preservation/migration and legacy/no-install decisions need separate forward traces. |
+| Sealed nondefault pilot controls | `domain::pilot::tests::v6::v6_preserves_nondefault_sealed_controls_and_uses_the_selected_stop_limit` preserves a 1+1 mix and limit 3, accepts the third attempt's verified progress, retains incomplete overall evidence and rejects post-seal mutation. |
+| Feedback and provider execution scope | `tests/feedback.rs::compact_feedback_retains_full_unfiltered_evidence_and_pinned_delivery_commands`; `tests/agent_host.rs::consuming_agent_receives_the_current_prompt_on_start_and_repair_before_immutable_delivery`; `tests/judgment_provider.rs::advisory_provider_retains_original_gate_and_binds_calibrated_warning_evidence`. Feedback rendering does not invoke a model; host/provider execution does not replace the original gate. |
+
+This is an acceptance mapping, not a full-check or forward-test pass record.
+Record final snapshot checks and independently retained behavioral traces after
+execution; omitted platforms and incomplete runs remain explicit gaps.
+
 ## Native syntax review rules
 
 `NATIVE-SYNTAX-01` maps to `adapters::native_syntax::tests` (syntax shapes,
@@ -165,8 +186,8 @@ represented as passing integration evidence.
 
 Pilot fixtures prove the machine contracts for plan sealing, source artifacts,
 run order, stopping rules, per-attempt model/execution records, old-schema
-compatibility, and v10 nonfinancial thresholds. They do not supply the eight
-real tasks, external owner/reviewer signatures, observation window, original
+compatibility, and v10 nonfinancial thresholds. They do not supply the declared
+real-task inventory, external owner/reviewer signatures, observation window, original
 provider logs, or human benefit measurements.
 
 For a change, link each requirement to the narrowest pure/unit test and an

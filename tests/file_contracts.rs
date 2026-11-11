@@ -94,6 +94,74 @@ fn full_file_contracts_detect_unchanged_debt_missing_files_and_staged_repairs() 
 }
 
 #[test]
+fn cli_file_contracts_distinguish_complete_lookup_from_delivery_findings() {
+    let temp = fixture();
+    let root = temp.path();
+    configure(root, json!({"max_lines":1,"required_paths":["owner.rs"]}));
+    std::fs::write(root.join("instructions/a.md"), "historical\nexcess\n").unwrap();
+    git(root, &["add", "."]);
+    git(
+        root,
+        &["commit", "-qm", "required path absent before delivery"],
+    );
+    std::fs::write(root.join("hello.txt"), "changed delivery\n").unwrap();
+
+    let args = [
+        "check",
+        "--worktree",
+        "--profile",
+        "full",
+        "--format",
+        "json",
+    ];
+    let delivered = report(&cli(root, &args), 0);
+    assert_eq!(delivered["scope"], "delivery");
+    assert_eq!(delivered["checks"][0]["metadata"]["delivery_filtered"], 1);
+    assert_eq!(delivered["checks"][0]["matched_entities"], 0);
+    assert!(
+        delivered["checks"][0]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    // The reusable core's repository scope still enforces both obligations.
+    let whole = check(root, 1, &[]);
+    for assertion in ["max_lines", "required_paths"] {
+        assert!(
+            whole["checks"][0]["diagnostics"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|diagnostic| diagnostic["evidence"]["assertion"] == assertion)
+        );
+    }
+
+    std::fs::write(root.join("owner.rs"), "pub fn owns() {}\n").unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "required path exists in baseline"]);
+    std::fs::remove_file(root.join("owner.rs")).unwrap();
+    std::fs::write(root.join("hello.txt"), "next delivery\n").unwrap();
+    let deleted = report(&cli(root, &args), 1);
+    assert_eq!(deleted["checks"][0]["diagnostics"][0]["file"], "owner.rs");
+
+    std::fs::write(root.join("instructions/a.md"), "changed\nexcess\nlines\n").unwrap();
+    let changed = report(&cli(root, &args), 1);
+    assert!(
+        changed["checks"][0]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|diagnostic| diagnostic["evidence"]["assertion"] == "max_lines")
+    );
+
+    let mut scoped = args.to_vec();
+    scoped.extend(["--path", "hello.txt"]);
+    let feedback = report(&cli(root, &scoped), 0);
+    assert_eq!(feedback["scope"], "path");
+    assert_eq!(feedback["checks"][0]["metadata"]["delivery_filtered"], 1);
+}
+
+#[test]
 fn file_contracts_reject_binary_input_and_measure_unicode_words_and_empty_files() {
     let temp = fixture();
     let root = temp.path();

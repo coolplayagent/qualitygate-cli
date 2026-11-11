@@ -27,8 +27,9 @@ Use this workflow when the task authorizes project-rule creation or edits.
 Authorization already provided in the session remains valid; ask only when a
 material policy choice or required approval is still missing.
 Read-only language discovery and schema/source inspection need no policy write.
-New project rule files belong in `qualitygate/rules`, never in the installed
-Skill's built-in asset directory.
+CLI-generated candidates go to `qualitygate/rules`, never to the installed
+Skill's built-in asset directory. Adoption into an existing selected legacy
+package follows step 7 without silently replacing that package.
 
 ## Contract and compatibility
 
@@ -68,19 +69,21 @@ YAML.
 
 | Example clause | Route |
 |---|---|
-| Authored files stay within a stated line/word budget | Project DSL `file` + `change: all` + `max_lines` or `max_total_words`. |
-| Named owner/test files must exist | Project DSL full file inventory + `required_paths`. |
+| Changed authored files stay within a stated line budget; selected inventory stays within a total word budget | Project DSL `file` + `change: all` + `max_lines` or `max_total_words`, respecting their different delivery/aggregate scopes. |
+| Named owner/test files must not be deleted in the selected delivery | Project DSL `file` + `change: all` + `required_paths`; pre-existing absence is outside delivery findings. |
+| Every authored file meets its budget, or every named file exists, regardless of Git changes | An existing complete-inventory command check with that evidence; otherwise retain the unsupported gap rather than claim per-file delivery rules satisfy it. |
 | Test, comment, import, or commit text follows an explicit bounded convention | Matching structured entity and assertion, with declared capabilities. |
 | An import or dependency crosses a reviewed boundary | Parsed import assertion or project-fact `module-boundary`, depending on what must be proved. |
 | The dependency graph is acyclic, code type-checks, or a native lint passes | Existing analyzer/project adapter or bounded command check. |
 | Clean Code, Clean Architecture, DRY or SOLID design tradeoffs | [Design review](design-review.md), with project evidence and counterexamples; no universal score or inferred threshold. |
 | Design quality or an exception is acceptable | Manual/reviewer decision with its existing trust contract. |
 
-For example, this repository's `AGENTS.md` line-limit clause can be represented
-as a complete-inventory file rule with `max_lines: 1000`. Its acyclic module
-ownership clause requires the architecture gate; a filename or import regex is
-not an equivalent proof. Its Cargo quality commands belong to policy command
-checks. Preserve that classification in the authoring report so omitted prose
+For example, `max_lines: 1000` can check changed files against this repository's
+`AGENTS.md` line limit, but it does not replace the existing repository-wide
+quality test for all authored files. Its acyclic module ownership clause
+requires the architecture gate; a filename or import regex is not an equivalent
+proof. Its Cargo quality commands belong to policy command checks. Preserve
+that classification and each scope gap in the authoring report so omitted prose
 does not silently disappear.
 
 ## Extraction sequence
@@ -157,9 +160,15 @@ does not silently disappear.
    scanned entries; symlink inputs and output ancestors are rejected.
 
 7. Report created/updated files, language scope, exact source, validation result
-   and unsupported obligations. To adopt the rules, a separate authorized
-   policy change must select `custom_rules: qualitygate/rules`, enable each ID,
-   select profiles and obtain the repository's normal bound source review.
+   and unsupported obligations. For a new project-rule package, authorized
+   adoption selects `custom_rules: qualitygate/rules`, enables each ID,
+   selects profiles and obtains the repository's normal bound source review.
+   If `custom_rules` already selects another directory, preserve that package:
+   generation still writes to `qualitygate/rules` and does not migrate existing
+   definitions. Integrate the generated candidate into the selected directory
+   within the authorized task, or use an explicitly authorized migration that
+   retains existing rules. Validate that directory with `rules validate <path>`;
+   the no-argument validation command only reads `qualitygate/rules`.
    A fresh hash or clean schema report does not constitute that review. Then
    follow [repository verification](verification.md) for the selected snapshot;
    never invent approval evidence.
