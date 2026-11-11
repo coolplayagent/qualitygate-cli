@@ -6,6 +6,9 @@ Export `qualitygate schema operator-rule` and compare it with the packaged
 [v2 schema](schemas/operator-rule.schema.json). Default `rules schema` and
 `schema project-rule` still export strict v1; v1 rejects `expression`.
 
+Follow the shared [authoring sequence](rule-authoring.md#extraction-sequence) for
+source binding, validation, generation and separate adoption.
+
 Use `schema_version: 2` with the usual identity/version, source from `rules source`,
 language, capability declarations, `when`, scope and fix. A v2 rule requires
 `expression`. Optional `then` retains the existing fixed assertions; these and
@@ -76,11 +79,11 @@ omitted observations are counted. A false subexpression can be expected in an
 aggregate violation, preserving collection-wide checks under delivery filtering.
 The normal report binds policy, source review and snapshot; changes need recheck.
 
-For packages containing v2, `rules validate` binds the exported
-`schema project-rule-family` union of both pinned schemas, and v2 file entries
+For packages containing V2 or V3, `rules validate` binds the exported
+`schema project-rule-family` union of the three pinned schemas. V2/V3 file entries
 include their actual schema ID/digest. The family digest uses canonical compact
 JSON bytes from the exported parsed document. V1-only reports retain their
-existing schema identity. Generated candidates identify their actual v1 or v2
+existing schema identity. Generated candidates identify their actual V1, V2 or V3
 schema. Neither validation nor examples constitute independent approval.
 
 ## V3 extension

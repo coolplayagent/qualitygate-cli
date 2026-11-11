@@ -1,6 +1,9 @@
 # Fixture regression workflow
 
-Use the resolved Qualitygate binary and the active Skill rule asset directory:
+For installation or evaluator regression, resolve the binary and matching rule
+assets through [runtime startup](runtime-startup.md), then run the requested
+selfcheck. No repository root, configuration inspection, `init` or doctor is
+required. Runtime compatibility gaps remain distinct from fixture mismatches.
 
 ```bash
 "$QUALITYGATE_BIN" selfcheck --format json
@@ -49,11 +52,19 @@ editing. Do not regenerate goldens from current output or weaken rule assets
 to turn the result green. An intended policy change needs its own reviewed
 contract and fixtures.
 
-For authorized implementation work, repair the implementation, rerun the
-targeted case and then the full corpus plus repository-required gates. Update
-the tracked skill with demonstrated behavior and limits, synchronize the
-requested installed copy, and rerun its own executable's selfcheck. Preserve
-the prior installed runtime for recovery when replacing a development build.
+For authorized Qualitygate implementation work, repair the implementation,
+rerun the targeted case and then the full corpus plus repository-required gates.
+Use the explicitly selected development executable and matching assets; retain
+its executable and corpus digests. Update tracked guidance when demonstrated
+behavior or limits change.
+
+Repairing the checkout does not itself request an installed-runtime update.
+When the user has authorized that update, synchronize the requested installed
+copy, preserve the prior runtime for recovery, and rerun the installed
+executable's own selfcheck. Reuse existing authorization for that scope and
+identify the installed executable as a development build, not a release.
+An installation-only selfcheck does not require building the checkout or running
+its repository verification workflow.
 
 Report the tested shapes and unverified assumptions. Synthetic facts do not
 prove live producer behavior; a Linux run does not prove Windows behavior;

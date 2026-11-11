@@ -13,8 +13,11 @@ The tracked skill directory is intentionally lightweight:
 
 - [SKILL.md](SKILL.md) contains executable-agent guidance and version metadata.
 - [agents/openai.yaml](agents/openai.yaml) supplies optional UI metadata.
-- [operations](references/operations.md) records task, snapshot, trust, and
-  result-handling boundaries.
+- [verification](references/verification.md) owns repository initialization,
+  preflight, final checks and completion requirements; [operations](references/operations.md)
+  records task, snapshot and trust boundaries.
+- [runtime startup](references/runtime-startup.md) resolves and identifies the
+  runtime independently of repository configuration.
 - [bundled rule guide](references/builtin-rules.md) tells agents how to select
   the shipped general-language, quality, security, and architecture rules.
 - `references/rules/**` contains the versioned built-in YAML assets read by the
@@ -33,6 +36,11 @@ The tracked skill directory is intentionally lightweight:
   [Agent obligation example](references/examples/review-obligations.yaml).
   Instructions request evidence and counterexamples; they do not prove code
   correctness or change deterministic gates.
+- [design review](references/design-review.md) applies Clean Code, Clean Architecture,
+  DRY and SOLID principles through evidence-based review, with an unadopted
+  [source-bound obligation example](references/examples/design-review-obligations.yaml).
+  These instructions guide design review without automatically adopting policy
+  or treating a principle checklist as proof of design quality.
 - [file contracts](references/file-contracts.md) cover instruction budgets,
   unchanged file inventories, required files and evidence-driven repair.
 - [diagnostic ratchets](references/diagnostic-ratchets.md) cover comparable
@@ -56,6 +64,8 @@ qualitygate-cli-skill-<tag>/
 ├── README.md
 ├── agents/openai.yaml
 ├── references/operations.md
+├── references/verification.md
+├── references/runtime-startup.md
 ├── references/builtin-rules.md
 ├── references/rule-authoring.md
 ├── references/file-contracts.md
@@ -70,6 +80,8 @@ qualitygate-cli-skill-<tag>/
 ├── references/decision-protocol.md
 ├── references/review-pack.md
 ├── references/examples/review-obligations.yaml
+├── references/design-review.md
+├── references/examples/design-review-obligations.yaml
 ├── references/schemas/project-rule.schema.json
 ├── references/schemas/decision.schema.json
 ├── references/schemas/feedback.schema.json
@@ -95,9 +107,11 @@ their own rule assets. PATH fallback or custom layouts can set
 `QUALITYGATE_BUILTIN_RULES_DIR`; agents compare the loaded catalog with `rules list`
 before recommending a policy change. The Skill provides PowerShell and Linux Bash
 startup examples that select the matching bundled architecture. Follow
-[runtime startup](references/runtime-startup.md) to retain the executable and
-configuration bindings across commands, preserve explicit asset overrides,
-and inspect configuration before doctor or formal checks.
+[runtime startup](references/runtime-startup.md) to retain executable and asset
+bindings across commands and preserve explicit runtime and asset overrides.
+For repository verification, continue with [verification](references/verification.md)
+to inspect configuration before doctor or formal checks. Runtime-only operations
+do not initialize a repository.
 
 ## Release contract
 

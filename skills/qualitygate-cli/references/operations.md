@@ -1,7 +1,8 @@
 # Qualitygate operational boundaries
 
-Read this reference when the request requires more than listing rules or
-showing the effective configuration.
+Read this reference for snapshot selection, acquisition limits, exclusions,
+tasks and trusted evidence. [Verification](verification.md) owns initialization,
+preflight, final-check completion and result handling.
 
 For the check's configuration and repair evidence, read
 [file contracts](file-contracts.md) when bounding instruction files or checking
@@ -73,13 +74,10 @@ historical resources. Use the matching Skill/runtime; an old executable rejectin
 `exclude` is a compatibility gap, not permission to omit it. Verify that reports
 contain delivery selection evidence before claiming the requested boundary.
 
-1. Identify the repository, selector, policy source and intended delivery. Use
-   `init --with-checks` only when candidate command adoption is authorized;
+1. Identify the repository, selector, policy source and intended delivery. Apply
+   the [configuration prerequisite](verification.md#initialization-prerequisite).
+   Use `init --with-checks` only when candidate command adoption is authorized;
    existing configurations are preserved, not augmented automatically.
-   Otherwise, when configuration is missing, run ordinary `init` automatically
-   without asking. When initialization is required, stop here until it succeeds
-   and the required policy is available. Follow the
-   [initialization prerequisite](../SKILL.md#initialization-prerequisite).
 2. Read `snapshot_preflight`: large/unsupported entries, excluded paths, truncation
    and incomplete reasons. This is HEAD/worktree metadata, not proof that a chosen
    MR, index, arbitrary refs or the build tools are ready.
@@ -131,35 +129,10 @@ pattern; editing local YAML without committing it does not fix an MR capture.
 
 ## Commands and mutations
 
-For repository verification, inspect configuration first; do not batch this
-prerequisite with later CLI commands:
-
-```bash
-qualitygate --root "$REPOSITORY_ROOT" config --show --format json
-```
-
-If configuration is missing, run ordinary `init` automatically without asking,
-reporting the exact command, repository and candidate configuration path. Preserve
-any explicitly selected configuration path. Until initialization succeeds and the
-required policy is available, stop subsequent Qualitygate workflow actions,
-including rule discovery, planning and checks. If initialization cannot run,
-fails, or leaves configuration unavailable, report the prerequisite and stop.
-Report malformed or unreadable configuration as an error instead of overwriting
-it. Do not substitute repository tests or another review unless separately
-requested. See the [initialization prerequisite](../SKILL.md#initialization-prerequisite)
-for selected-snapshot requirements. Recheck configuration availability after
-initialization; once the prerequisite is satisfied, read-only rule discovery
-can continue:
-
-```bash
-qualitygate --root "$REPOSITORY_ROOT" rules list --format json
-```
-
-Ordinary `qualitygate init` creates a missing candidate config automatically.
-`qualitygate rules enable <id>` changes a candidate config and still requires
-explicit user authorization, as do command adoption with `init --with-checks`
-and policy adoption. Creating or editing a candidate does not establish team
-adoption or release a change.
+Use [verification](verification.md) for automatic initialization and checks;
+use [rule management](rule-management.md) for read-only discovery and authorized
+candidate edits. Existing task authorization carries forward. Creating or editing
+a candidate does not establish team adoption or release a change.
 
 `qualitygate check` materializes a selected Git snapshot and may run configured
 project tools. Before running it, report the repository root, selector, profile,
@@ -191,36 +164,18 @@ digest alone cannot authorize evidence produced for another scope. Protected
 policy comparisons capture each policy's exclusions independently against the
 same Git revisions, and bind both input identities when their contents differ.
 
-## Result handling
-
-Keep the report, snapshot digest, policy digest, task digest, execution logs,
-and incomplete reasons together. Exit status has fixed meaning:
-
-| Status | Meaning | Agent response |
-| --- | --- | --- |
-| `0` | complete and passing | report the selected scope and retained evidence |
-| `1` | complete with a blocking violation | report the violation; do not silently weaken policy |
-| `2` | incomplete | identify missing evidence or prerequisites; do not claim pass |
-
-For code-task completion, require an unfiltered `full` report for the final
-snapshot with `scope: delivery`, `scope: repository` or `scope: task`, an empty
-`plan.pending_delivery_checks`, `gate.complete: true` and `gate.decision: pass`.
-Quick or path-scoped exit status `0` covers only its selected feedback scope.
-If checked inputs change after the full run, select the new snapshot and rerun.
-Report remaining warnings and the verification boundary alongside the pass.
-
-Use a repair loop only when the user authorizes code or policy changes. After a
-repair, rerun against a newly selected snapshot and retain both reports rather
-than treating a prior report as evidence for changed inputs.
-
 ## Runtime and selected-snapshot preflight
 
-After resolving the runtime, follow [runtime compatibility](runtime-compatibility.md):
-version/capability identity, configuration existence and compatibility, then doctor
-with the same selector/profile/task/policy and budgets before formal check.
+Follow [verification preflight](verification.md#preflight-the-intended-snapshot)
+with the intended selector, profile, task, policy and budgets.
 Use the large-repository template only when metadata or repository instructions
 justify increasing the 2 MiB default toward the 8 MiB maximum. Total and per-file
 budgets are independent. A preflight pass is not a delivery verdict.
+
+Materializing an immutable snapshot has a separate bounded writer phase; a
+filesystem timeout remains incomplete execution. On Windows, temporary storage
+must be writable and large enough for the selected snapshot; inspect `TEMP`/`TMP`
+and filesystem diagnostics instead of changing rule severity or skipping files.
 
 ## Default document and media acquisition exclusions
 

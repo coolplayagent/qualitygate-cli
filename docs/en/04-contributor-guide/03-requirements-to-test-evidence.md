@@ -36,6 +36,27 @@ They do not turn heuristic review signals into semantic proof. Stable local
 checks and nightly Miri/ASan results are recorded separately.
 
 
+## Skill guidance and design review
+
+[SKILL-GUIDANCE-01–06](../../../codespec/requirements/skill-guidance.md) separate
+instruction routing, deterministic rule evidence and contextual principle review.
+The [research record](../../../knowledge/best-practices/engineering-standards/guides/skill-contracts.md)
+maps the original gaps to four cards and their executable limits.
+
+| Requirement | Evidence and boundary |
+| --- | --- |
+| Modes and one verification owner | `tests/quality/skill_package.rs` checks real Markdown-link reachability and the canonical initialization/final-check contract rather than requiring duplicate instructions in every document. |
+| Runtime-only and explicit selection | `tests/quality/skill_startup.rs` executes packaged examples with the real CLI: no repository/configuration for runtime-only mode, separate configuration inspection, preserved explicit executable/assets, failure distinctions and platform selection. Native platform evidence remains separate. |
+| Four source-bound design cards | `tests/review_pack.rs` consumes the original public pack and design pack through exported schema/source bindings, optional unadopted defaults, fixture adoption, selected roles, stale inputs and relocation. It proves instruction handling, not semantic design quality. |
+| Init and final evidence invariants | `tests/init.rs` covers custom configuration, selected policy refs, index/commit availability and malformed inputs; `tests/feedback.rs` preserves full-report scope, snapshot/policy binding, pending acceptance and incomplete execution through repair feedback. |
+| Principle coverage and agent behavior | Independent forward testing uses requested and adjacent tasks, retaining prompt, Skill revision/runtime/model, action trace, raw artifacts and outcome. This evidence is recorded separately; package/schema success is not a behavioral result. |
+
+The four samples are optional, unadopted, instruction-only obligations. Neither
+their projection nor a review's conclusion changes the deterministic gate.
+Record forward-test and final-check results only after execution; absent traces
+remain unverified. The mapping above is an acceptance inventory, not a claim
+that all listed checks or model behaviors have already passed.
+
 ## Native syntax review rules
 
 `NATIVE-SYNTAX-01` maps to `adapters::native_syntax::tests` (syntax shapes,

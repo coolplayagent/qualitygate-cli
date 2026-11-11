@@ -1,15 +1,26 @@
 # Progressive discovery and candidate configuration
 
-Read-only commands work before `init` and do not change rule selection:
+Built-in discovery works without a repository configuration and does not change
+rule selection. Use the selected `--root` and `--config` consistently:
 
 ```bash
 qualitygate rules categories --format json
 qualitygate rules list --category test --language rust --source builtin --format json
 qualitygate rules describe test-naming --format json
-qualitygate rules context --category test --policy-ref HEAD --format json
 ```
 
-For an authorized candidate-policy change, use validated CLI mutations:
+Reading a frozen policy context also requires a Git reference containing the
+selected configuration; an absent configuration at `HEAD` is an error:
+
+```bash
+qualitygate rules context --category test --policy-ref <selected-ref> --format json
+```
+
+[Repository verification](verification.md) owns the missing-configuration and
+initialization workflow. Discovery does not bypass that prerequisite for checks.
+
+For a candidate-policy change covered by the task's existing authorization, use
+validated CLI mutations:
 
 ```bash
 qualitygate rules categories create migration --description "API migration" --format json
@@ -32,17 +43,31 @@ deleted, the rule has no category until reassigned. Rule rows expose the full
 `categories` array and a legacy first `category`.
 
 Filtered reads always retain `mandatory` rules and `mandatory_checks` separately
-from selected rows. Use `rules context --policy-ref <caller-selected Git ref>`
-to freeze the baseline; its exact `policy_digest` and trust label accompany the
-result. Omitting the ref reads the local candidate and cannot establish trusted
-policy selection. `rules categories list` is also accepted.
+from selected rows. Context uses this policy precedence:
 
-Describe exposes parameter types, descriptions, defaults and schema fragments.
+- An active signed policy selects the immutable active package, including when
+  `--policy-ref` is omitted. A supplied ref must match the active reference;
+  historical replay belongs to candidate validation.
+- Without an active policy, `--policy-ref <selected-ref>` reads the configuration
+  and rules from that commit and reports `caller_supplied_ref` trust.
+- Without either, context reads the local candidate with `local_candidate` trust.
+
+Read the returned `policy_digest` and trust label. A caller-selected ref alone
+is not independent approval. `rules categories list` is also accepted.
+
+`rules describe` exposes parameter types, descriptions, defaults and schema
+fragments; language descriptors also expose whether the effective parameter is
+required. A fixed scope requires the declared list; a subset scope accepts only
+a nonempty subset of declared languages. Omit an override to inherit its default,
+rather than using an empty list to bypass scope. Schema string-length checks do
+not replace UTF-8 byte budgets, Rust regex validation or other semantic checks.
 `--param key=JSON` requires JSON values, including quoted strings. Dotted paths
 retain sibling object values; an undotted object replaces the entire parameter.
 Repeat `--param` for one atomic edit. `configure` also accepts `--severity` and
 `--required true|false`; new configured rules start disabled. Project DSL
-assertions are managed in rule definitions, not through parameters.
+assertions are managed in rule definitions, not through parameters. Built-in
+`diagnostic` message/fix metadata belongs to the shipped rule definition and
+changes presentation only; it is not a configurable policy parameter or verdict.
 
 All mutations require an existing candidate config and support `--config`.
 They preserve unrelated settings and inherited defaults, validate before atomic
@@ -58,7 +83,7 @@ evidence. Neither a category operation nor configuration success approves a
 policy or establishes a passing gate.
 
 Discovery reads policy/rule directories without scanning repository sources.
-Once an evidence/policy archive exists, semantic commands require an explicit
+Once an evidence/policy archive exists, semantic policy edits require an explicit
 candidate ID. Use `policy candidate create` with the caller-selected parent,
 actor, reason and retained evidence, followed by `policy candidate rules`.
 After signed promotion, `rules context`, inventory and ordinary checks select
@@ -69,16 +94,9 @@ trust and approval files. External protected files and retained logs accept
 native absolute paths on Windows and POSIX; they must remain outside the
 checked repository, without traversal or symlink ancestors, within read limits.
 Repository-relative rule paths still require forward slashes.
-Snapshot materialization and input verification each use at most four I/O
-workers per executing check within their 30-second budget. A timeout or changed
-input remains incomplete; reducing the checked inventory is not a repair.
-Materialization confines names and parent directories before exclusive file
-creation in a fresh private workspace. Path aliases and file/directory
-collisions must be repaired; they cannot be treated as successful execution.
-Windows large-repository CI uses the runner-provided temporary directory via
-step-local `TEMP` and `TMP`. Storage capacity affects bounded execution;
-preserve timeout evidence and the complete input scope when choosing external
-temporary storage for an authorized rerun.
+See [operations](operations.md) for snapshot materialization, external temporary
+storage and execution budgets. Missing or changed inputs remain incomplete;
+reducing the checked inventory is not a repair.
 `policy candidate validate` compares pinned replay,
 held-out and anchor tasks with bounded parallelism. `policy candidate
 approval-subject` produces the exact signing subject, `approve` verifies the
