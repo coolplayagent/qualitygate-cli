@@ -17,9 +17,17 @@ use tree_sitter::Node;
 
 fn language(id: &str) -> Result<&'static str> {
     Ok(match id {
-        "py-none-comparison" | "py-walrus-operator" | "py-lambda-assignment" => "python",
+        "py-none-comparison"
+        | "py-walrus-operator"
+        | "py-lambda-assignment"
+        | "py-sql-string-format" => "python",
         "go-unsafe-package" | "go-os-exit" | "go-import-alias" => "go",
-        "shell-eval" | "shell-alias" | "shell-chmod-read" => "shell",
+        "shell-eval"
+        | "shell-alias"
+        | "shell-chmod-read"
+        | "shell-trap-uncapturable"
+        | "shell-assignment-spaces"
+        | "shell-comparison-spaces" => "shell",
         "ts-no-with" | "ts-no-var" | "ts-no-arguments" => "typescript",
         _ => anyhow::bail!("Unsupported language syntax rule: {id}"),
     })
@@ -68,8 +76,12 @@ pub(super) fn evaluate(
         let deadline = result
             .deadline()
             .min(Instant::now() + Duration::from_secs(2));
-        let tree = review::parse(&file.bytes, expected, path, deadline)?;
-        let view = View::new(&tree, &file.bytes, &change.added_lines, deadline)?;
+        let (tree, work) = if result.id == "shell-comparison-spaces" {
+            review::parse_shell_comparisons(&file.bytes, path, deadline)?
+        } else {
+            (review::parse(&file.bytes, expected, path, deadline)?, 0)
+        };
+        let view = View::new_with_work(&tree, &file.bytes, &change.added_lines, deadline, work)?;
         let go = matches!(result.id.as_str(), "go-os-exit" | "go-unsafe-package")
             .then(|| Go::new(&view))
             .transpose()?;
@@ -127,6 +139,7 @@ fn signal<'a>(
             found
         }
         "py-walrus-operator" => node.kind() == "named_expression",
+        "py-sql-string-format" => sql_format(node, view)?,
         "py-lambda-assignment" if node.kind() == "assignment" => {
             if let (Some(left), Some(right)) = (
                 node.child_by_field_name("left"),
@@ -168,12 +181,63 @@ fn signal<'a>(
         "ts-no-arguments" => typescript
             .context("TypeScript binding evidence is absent")?
             .implicit_arguments(node, view)?,
-        "shell-eval" | "shell-alias" | "shell-chmod-read" => {
-            language_shell::matches(id, node, view)?
-        }
+        "shell-eval"
+        | "shell-alias"
+        | "shell-chmod-read"
+        | "shell-trap-uncapturable"
+        | "shell-assignment-spaces"
+        | "shell-comparison-spaces" => language_shell::matches(id, node, view)?,
         _ => false,
     };
     Ok(found.then(|| node.byte_range()))
+}
+
+fn sql_format(node: Node<'_>, view: &View<'_>) -> Result<bool> {
+    if node.kind() != "call" {
+        return Ok(false);
+    }
+    let Some(function) = node.child_by_field_name("function") else {
+        return Ok(false);
+    };
+    let name = if function.kind() == "attribute" {
+        function.child_by_field_name("attribute")
+    } else {
+        Some(function)
+    };
+    if !name.is_some_and(|name| matches!(view.text(name), "execute" | "executemany")) {
+        return Ok(false);
+    }
+    let Some(arguments) = node.child_by_field_name("arguments") else {
+        return Ok(false);
+    };
+    let Some(argument) = view.children(arguments)?.first().copied() else {
+        return Ok(false);
+    };
+    let argument = view.unparen(argument)?;
+    Ok(match argument.kind() {
+        "binary_operator" => argument
+            .child_by_field_name("operator")
+            .is_some_and(|operator| operator.kind() == "%"),
+        "call" => argument
+            .child_by_field_name("function")
+            .is_some_and(|function| {
+                function.kind() == "attribute"
+                    && function
+                        .child_by_field_name("attribute")
+                        .is_some_and(|name| view.text(name) == "format")
+            }),
+        "string" | "concatenated_string" => {
+            let mut pending = vec![argument];
+            let mut interpolated = false;
+            while let Some(part) = pending.pop() {
+                view.charge()?;
+                interpolated |= part.kind() == "interpolation";
+                pending.extend(view.children(part)?);
+            }
+            interpolated
+        }
+        _ => false,
+    })
 }
 
 #[cfg(test)]

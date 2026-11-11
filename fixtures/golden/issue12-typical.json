@@ -232,5 +232,41 @@
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/language": "shell",
     "/diagnostics/0/evidence/node_kind": "command"
+  },
+  "issue12-assignment-empty-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-comparison-array-glob-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-action-text-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-unprefixed-signal-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-trap-platform-number-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-comparison-mixed-syntax-incomplete-typical": {
+    "/execution/status": "blocked",
+    "/verdict": null,
+    "/diagnostic_count": 0
+  },
+  "issue12-assignment-quoted-data-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
   }
 }

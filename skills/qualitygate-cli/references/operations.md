@@ -62,10 +62,13 @@ and claim a complete gate.
 qualitygate check --root "$REPOSITORY_ROOT" --staged --path src --profile quick --snapshot-jobs 4
 ```
 
-The configuration, task, and custom rules come from the selected snapshot
-unless the caller supplies `--policy-ref`. A policy reference resolves to a
-commit, but it is not proof of approval. Never guess a protected reference or
-replace a caller's selected reference with the current branch.
+An active signed policy selects its authenticated package first; conflicting
+caller refs are rejected. Without an active policy, configuration, task and custom
+rules come from the selected snapshot unless the caller supplies `--policy-ref`.
+A caller-supplied reference resolves to a commit but is not proof of approval.
+Read [verification](verification.md#initialization-prerequisite) before inferring
+that a missing local file requires initialization. Never guess a protected
+reference or replace a caller's selected reference with the current branch.
 
 ## Existing-repository trimming
 

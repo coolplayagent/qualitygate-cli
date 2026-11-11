@@ -92,10 +92,12 @@ is the candidate-edit surface. Discovery does not enable enforcement.
 
 For repository verification, follow the canonical
 [configuration prerequisite](references/verification.md#initialization-prerequisite).
-Confirmed missing configuration requires ordinary automatic `init`; malformed
-configuration requires diagnosis. Keep discovery and runtime-only tasks outside
-that prerequisite. Initialization does not authorize command adoption, rule
-enabling or policy adoption.
+Identify the selected policy authority first. A confirmed missing local candidate
+requires ordinary automatic `init` when no active policy or explicit policy ref
+is selected. Missing or invalid selected refs and signed policies require their
+own diagnosis; local initialization cannot repair them. Keep discovery and
+runtime-only tasks outside this prerequisite. Initialization does not authorize
+command adoption, rule enabling or policy adoption.
 
 ## Additional workflows
 

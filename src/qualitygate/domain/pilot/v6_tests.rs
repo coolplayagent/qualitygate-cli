@@ -164,6 +164,47 @@ fn v6_seal_binds_verified_initial_reports_and_progress_limit() {
 }
 
 #[test]
+fn v6_preserves_nondefault_sealed_controls_and_uses_the_selected_stop_limit() {
+    let (mut manifest, mut reports) = plan();
+    manifest.protocol.no_progress_limit = Some(3);
+    let selected_protocol = serde_json::to_value(&manifest.protocol).unwrap();
+    let selected_assignments = serde_json::to_value(&manifest.assignments).unwrap();
+    let mut sealed = seal(manifest, 1).unwrap();
+    assert_eq!(
+        serde_json::to_value(&sealed.protocol).unwrap(),
+        selected_protocol
+    );
+    assert_eq!(
+        serde_json::to_value(&sealed.assignments).unwrap(),
+        selected_assignments
+    );
+    observe(
+        &mut sealed,
+        &mut reports,
+        &[&["a", "b"], &["a", "b"], &[]],
+        &[1000, 1000, 1000],
+    );
+    let summary = summarize(&sealed, &reports, 604803).unwrap();
+    assert_eq!(summary["protocol"], selected_protocol);
+    assert_eq!(summary["sampling_audit"]["distinct_inputs"], 2);
+    assert_eq!(
+        summary["sampling_audit"]["declared"],
+        json!({"bug_fix": 1, "refactor": 1})
+    );
+    assert_eq!(summary["attempt_audit"]["no_progress_limit"], 3);
+    let audit = &summary["attempt_audit"]["assignments"][0];
+    assert_eq!(audit["status"], "matched");
+    assert!(audit["stop_after_attempt"].is_null());
+    assert_eq!(audit["attempts"][2]["verified_progress"], true);
+    assert_eq!(summary["attempt_audit"]["status"], "incomplete");
+    assert_eq!(summary["complete"], false);
+    assert_eq!(summary["protocol_ready"], false);
+
+    sealed.protocol.no_progress_limit = Some(2);
+    assert!(validate(&sealed).unwrap_err().to_string().contains("seal"));
+}
+
+#[test]
 fn v6_audit_stops_after_two_unverified_reductions_and_retains_later_attempts() {
     let (mut manifest, mut reports) = plan();
     observe(

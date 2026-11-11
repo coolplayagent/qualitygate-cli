@@ -4,8 +4,9 @@ Require `rules.operators.v3`, export `schema operator-rule-v3 --format json`, an
 compare parsed JSON with the complete [V3 Schema](schemas/operator-rule-v3.schema.json).
 Follow [rule authoring](rule-authoring.md#extraction-sequence) for the shared
 source-binding, validation, generation and separate adoption workflow.
-Install the matching precompiled CLI; evaluating these YAML/JSON rules needs no Rust, Node.js or
-Python installation. The embedded evaluator runs bounded declarative operations,
+Use the selected compatible runtime; evaluating these YAML/JSON rules needs no
+Rust, Node.js or Python installation. A missing capability does not authorize
+installing or replacing the runtime. The embedded evaluator runs bounded declarative operations,
 not JavaScript/Python callbacks. Custom programs remain command checks.
 V1 and V2 retain their schemas and original evaluation path; `schema operator-rule`
 still exports V2. `schema project-rule-family` includes all three versions.

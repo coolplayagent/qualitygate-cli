@@ -229,5 +229,41 @@
     "/verdict": "fail",
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-assignment-empty-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-comparison-array-glob-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-action-text-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-trap-unprefixed-signal-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "shell"
+  },
+  "issue12-trap-platform-number-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue12-comparison-mixed-syntax-incomplete-minimal": {
+    "/execution/status": "blocked",
+    "/verdict": null,
+    "/diagnostic_count": 0
+  },
+  "issue12-assignment-quoted-data-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
   }
 }

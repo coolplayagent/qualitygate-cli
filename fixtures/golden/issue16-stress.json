@@ -177,5 +177,32 @@
     "/diagnostic_count": 1,
     "/diagnostics/0/evidence/language": "python",
     "/diagnostics/0/evidence/node_kind": "assignment"
+  },
+  "issue16-sql-format-placeholder-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue16-sql-named-placeholder-pass-stress": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0
+  },
+  "issue16-sql-percent-operation-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python"
+  },
+  "issue16-sql-format-call-fail-stress": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/diagnostics/0/evidence/language": "python"
+  },
+  "issue16-sql-malformed-incomplete-stress": {
+    "/execution/status": "blocked",
+    "/verdict": null,
+    "/diagnostic_count": 0
   }
 }

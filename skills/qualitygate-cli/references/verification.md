@@ -11,15 +11,25 @@ workflow. Keep configuration prerequisites, preflight and gate results distinct.
 Establish whether the required policy exists for the repository and selected
 snapshot. Use file/Git inspection or a read-only `config --show` for this
 decision. Run this prerequisite separately; do not batch it with later checks.
-`config --show` inspects the worktree candidate; it does not prove that the
-selected index, commit, MR or trusted policy contains that configuration. Inspect
-the selected source explicitly. A nonzero exit alone does not prove absence.
+First identify the policy source rather than assuming the worktree owns it:
 
-When the required repository configuration is missing, run ordinary `init`
-automatically without asking the user. Report the repository, exact command and
-candidate configuration path, preserving any explicitly selected configuration
-path. Automatic initialization does not authorize `--with-checks`, rule enabling
-or policy adoption. Use the same root and config bindings as the inspection:
+| Selected authority | Inspection and missing-policy response |
+| --- | --- |
+| Active signed policy | `config --show` returns the authenticated active package with `review_trust: signed_active_policy` and its `source`, even if the local candidate or caller's `--config` path is absent. Authentication failures require diagnosis; local `init` cannot repair them. |
+| Explicit `--policy-ref`, without an active policy | Inspect that reference and its selected configuration, for example with `rules context --policy-ref <selected-ref>`. If missing or invalid, report the reference prerequisite; do not initialize an unrelated worktree candidate. |
+| Selected snapshot, without either authority above | Inspect the worktree candidate or selected index/commit as appropriate. `config --show` reports `review_trust: local_candidate`; it has no snapshot selector and cannot prove the candidate exists in an index, diff or MR. |
+
+Read the returned `source` and trust label. An active policy has priority over
+caller refs; a conflicting ref is an error, not permission to replace it. A
+nonzero exit alone does not prove absence. Inspect an editable candidate's bytes
+directly when an active policy makes `config --show` report a different source.
+
+When no active policy or explicit policy ref is selected and the required local
+candidate is confirmed missing, run ordinary `init` automatically without asking
+the user. Report the repository, exact command and candidate configuration path,
+preserving any explicitly selected configuration path. Automatic initialization
+does not authorize `--with-checks`, rule enabling or policy adoption. Use the same
+root and config bindings as the inspection:
 
 ```bash
 "$QUALITYGATE_BIN" --root "$REPOSITORY_ROOT" --config "$QUALITYGATE_CONFIG" init --format json
@@ -34,19 +44,23 @@ initialization before proceeding. This does not stop independently authorized
 implementation, repository tests or read-only discovery; their results cannot
 substitute for the blocked Qualitygate verification.
 
-An existing valid policy does not require another `init`. Report malformed or
-unreadable configuration as an error; do not overwrite it. For staged/diff/MR
-checks, a newly initialized worktree policy must also be present in the selected
-index/commit before checking. Do not silently stage, commit or change the
-snapshot selector to satisfy this prerequisite. Respect an explicit policy ref
-and active signed policy: a local candidate cannot repair or replace either.
+An existing valid policy does not require another `init`. Report selected
+malformed or unreadable configuration as an error; do not overwrite it. When
+policy comes from a staged/diff/MR snapshot, a newly initialized worktree policy
+must also be present in the selected index/commit before checking. If a valid
+local candidate already exists but is absent from that snapshot, report the
+missing inclusion instead of rerunning `init`. Do not silently stage, commit or
+change the snapshot selector to satisfy this prerequisite. The selected authority
+determines which configuration must exist; a local candidate cannot repair or
+replace an explicit ref or active signed policy.
 
 ## Inspect configuration
 
-These read-only examples inspect the worktree candidate after runtime startup.
-They deliberately do not initialize on failure. Use existing bindings or record
-absolute paths again for each isolated tool call. If a policy ref or signed
-active policy is selected, inspect that source as well; see
+These read-only examples inspect configuration after runtime startup: the active
+signed package when present, otherwise the local candidate. They deliberately
+do not initialize on failure. Use existing bindings or record absolute paths
+again for each isolated tool call. An explicit ref or selected index/commit still
+needs its own inspection as described above; see
 [policy context](rule-management.md) and [operations](operations.md).
 
 ### Bash

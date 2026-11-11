@@ -198,3 +198,51 @@ fn python_patterns_find_changed_lines_then_repair() {
         );
     }
 }
+
+#[test]
+fn sql_query_review_accepts_bound_parameters_and_reports_actual_formatting() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(
+        root.join("qualitygate.yaml"),
+        "schema_version: 1\nrulesets: [lang-python]\nrules: {py-sql-string-format: {}}\n",
+    )
+    .unwrap();
+    for (source, code, verdict) in [
+        (
+            r#"cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))"#,
+            0,
+            "pass",
+        ),
+        (
+            r#"cursor.executemany("SELECT * FROM users WHERE id=%(id)s", rows)"#,
+            0,
+            "pass",
+        ),
+        (
+            r#"cursor.execute("SELECT * FROM users WHERE id=%s" % (user_id,))"#,
+            1,
+            "fail",
+        ),
+        (
+            r#"cursor.execute("SELECT * FROM users WHERE id={}".format(user_id))"#,
+            1,
+            "fail",
+        ),
+        ("cursor.execute(\n f\"SELECT {user_id}\"\n)\n", 1, "fail"),
+    ] {
+        fs::write(root.join("query.py"), source).unwrap();
+        let result = check(root, code);
+        let selected = rule(&result, "py-sql-string-format");
+        assert_eq!(selected["verdict"], verdict, "{source}");
+        assert_eq!(selected["required"], true);
+        assert_eq!(selected["severity"], "error");
+        assert_eq!(selected["metadata"]["analysis"], "language-syntax");
+    }
+    fs::write(root.join("query.py"), "cursor.execute(").unwrap();
+    assert_eq!(check(root, 2)["gate"]["decision"], "incomplete");
+    fs::write(root.join("query.py"), [255]).unwrap();
+    assert_eq!(check(root, 2)["gate"]["decision"], "incomplete");
+    fs::write(root.join("qualitygate.yaml"), "schema_version: 1\nrulesets: [lang-python]\nrules: {py-sql-string-format: {parameters: {prohibited_patterns: {python: ['%']}}}}\n").unwrap();
+    report(&cli(root, &["config", "--show", "--format", "json"]), 2);
+}

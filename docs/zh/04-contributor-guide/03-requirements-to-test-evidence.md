@@ -49,6 +49,25 @@
 前向测试和最终检查执行后才能记录结果；缺少轨迹仍是未验证。本表是验收证据索引，
 不宣称列出的所有检查或模型行为已经通过。
 
+## Skill 与规则证据边界
+
+[SKILL-BOUNDARY-01–07](../../../codespec/requirements/skill-rule-boundaries.md) 对应已复现的语法误报，
+以及替换所选输入或夸大验证范围的指令。[研究记录](../../../knowledge/best-practices/engineering-standards/guides/skill-rule-boundaries.md)
+区分一手资料、本机 Bash 帮助和仓库反例。
+
+| 需求 | 可重复证据及限制 |
+| --- | --- |
+| 版本化 SQL/Shell 操作数边界 | `adapters::language_syntax::tests::{sql_formatting_distinguishes_python_operators_from_database_placeholders, shell_brackets_are_checked_only_in_test_commands, shell_assignment_review_uses_command_position_instead_of_physical_lines, shell_traps_check_signal_operands_instead_of_action_text, bounded_comparison_recovery_cannot_hide_other_syntax_errors}`；`tests/issue12_rules.rs::{shell_spacing_and_traps_respect_shell_operand_boundaries, shell_syntax_recovery_is_specific_and_invalid_evidence_stays_incomplete}`；`tests/issue16_rules.rs::sql_query_review_accepts_bound_parameters_and_reports_actual_formatting`。语法信号不证明查询安全或完整 Shell 正确性。 |
+| 冻结 version 1 兼容性 | `adapters::language_syntax::tests::frozen_v1_review_definitions_keep_their_original_source_pattern_behavior` 往返四条旧定义并保留原匹配结果。新 catalog 定义升为 version 2，不降低 severity 或 requiredness。`tests/selfcheck.rs::full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golden_agreement` 保留精确的 1118 案例清单，逐项验证新增 36 个结果及所选版本。`application::selfcheck::tests::builtin_observations_preserve_selected_definition_versions_for_every_execution_outcome` 验证通过、违规和 incomplete 结果均传播所选版本。 |
+| Active/ref/local 权威及可修复初始化 | `tests/policy_promotion.rs::only_independent_signed_exact_validation_can_activate_a_policy_and_history_is_immutable` 验证本地默认配置缺失、另选不存在的配置路径时，仍保留 signed-active source/trust，且不创建任何配置文件。`tests/init.rs::{explicit_policy_reference_never_suggests_local_initialization, snapshot_guidance_depends_on_local_policy_and_selection, unreadable_or_malformed_configuration_does_not_suggest_init}` 保留引用、快照与配置错误的区别。 |
+| 完整采集查找与交付诊断 | `tests/file_contracts.rs::cli_file_contracts_distinguish_complete_lookup_from_delivery_findings` 对比历史缺失/超长文件在 CLI full 与 core repository 范围的结果，覆盖所选删除/修改和路径反馈。全仓义务仍需额外的充分证据。 |
+| 既有规则包与运行时能力 | `tests/custom_rules.rs::{private_rule_runs_on_java_and_python_with_stable_diagnostics_and_snapshot_isolation, project_rule_directory_is_loaded_from_selected_policy_snapshot}`、`tests/quality/skill_startup.rs`、`tests/operators/v3.rs` 证明各自执行契约；保留/迁移、legacy 检查及不擅自安装的决策需单独前向轨迹。 |
+| 封存的非默认试点参数 | `domain::pilot::tests::v6::v6_preserves_nondefault_sealed_controls_and_uses_the_selected_stop_limit` 保留 1+1 mix 和阈值 3，接受第三次尝试的已验证进展，保留整体证据未完成，并拒绝封存后修改。 |
+| Feedback 与服务商执行范围 | `tests/feedback.rs::compact_feedback_retains_full_unfiltered_evidence_and_pinned_delivery_commands`；`tests/agent_host.rs::consuming_agent_receives_the_current_prompt_on_start_and_repair_before_immutable_delivery`；`tests/judgment_provider.rs::advisory_provider_retains_original_gate_and_binds_calibrated_warning_evidence`。Feedback 渲染不调用模型；host/provider 执行不替代原门禁。 |
+
+本节是验收映射，不是完整检查或前向测试通过记录。最终快照检查和独立保留的行为轨迹须执行后
+记录；未覆盖平台和未完成运行仍是明确的证据缺口。
+
 ## 原生语法审查规则
 
 `NATIVE-SYNTAX-01` 对应 `adapters::native_syntax::tests`（语法形状、注释/字面量、无关名称、数值宏、
@@ -150,7 +169,7 @@ producer 调用；live producer 不可用时不能写成集成通过。
 ## 证据解释
 
 试点 fixtures 证明计划封存、来源工件、执行顺序、停止规则、逐尝试模型/执行记录、旧 Schema 兼容和
-v10 非财务阈值的机器契约。它们不提供八个真实任务、外部 owner/reviewer 签名、观察窗口、服务商
+v10 非财务阈值的机器契约。它们不提供所声明的真实任务清单、外部 owner/reviewer 签名、观察窗口、服务商
 原始日志或人工收益测量。
 
 修改行为时，应把每项需求关联到最窄的纯/单元测试，并在适用时提供集成反例。记录不支持的平台、

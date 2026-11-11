@@ -12,6 +12,74 @@ pub(crate) const MAX_BYTES: usize = 4 * 1024 * 1024;
 pub(crate) const MAX_WORK: usize = 200_000;
 
 pub(crate) fn parse(bytes: &[u8], language: &str, path: &str, deadline: Instant) -> Result<Tree> {
+    let tree = parse_tree(bytes, language, path, deadline)?;
+    ensure!(
+        !tree.root_node().has_error(),
+        "Source syntax could not be parsed completely: {path}"
+    );
+    Ok(tree)
+}
+
+/// Only the comparison rule may recover Bash's missing `]]` node when both
+/// closing characters exist as unquoted words glued to the preceding operand.
+pub(crate) fn parse_shell_comparisons(
+    bytes: &[u8],
+    path: &str,
+    deadline: Instant,
+) -> Result<(Tree, usize)> {
+    let tree = parse_tree(bytes, "shell", path, deadline)?;
+    let mut work = 0;
+    if tree.root_node().has_error() {
+        let view = View::new(&tree, bytes, &BTreeSet::new(), deadline)?;
+        for &node in &view.nodes {
+            view.charge()?;
+            if node.is_error() || node.is_missing() {
+                ensure!(
+                    recoverable_closing_test(node, &view)?,
+                    "Source syntax could not be parsed completely: {path}"
+                );
+            }
+        }
+        work = view.work.get();
+    }
+    Ok((tree, work))
+}
+
+fn recoverable_closing_test(node: Node<'_>, view: &View<'_>) -> Result<bool> {
+    let bytes = view.bytes;
+    if !node.is_missing() || node.kind() != "]]" {
+        return Ok(false);
+    }
+    let Some(test) = node
+        .parent()
+        .filter(|parent| parent.kind() == "test_command")
+    else {
+        return Ok(false);
+    };
+    let end = node.start_byte();
+    if end < test.start_byte() + 5 || bytes.get(end - 2..end) != Some(b"]]") {
+        return Ok(false);
+    }
+    if bytes[end - 3].is_ascii_whitespace() {
+        return Ok(false);
+    }
+    // A word can contain an escaped bracket. Only an even backslash run leaves
+    // the first closing bracket unquoted; charge this scan to the same budget.
+    let mut unescaped = end - 2;
+    while unescaped > test.start_byte() && bytes[unescaped - 1] == b'\\' {
+        view.charge()?;
+        unescaped -= 1;
+    }
+    if !(end - 2 - unescaped).is_multiple_of(2) {
+        return Ok(false);
+    }
+    Ok((end - 2..end).all(|offset| {
+        test.descendant_for_byte_range(offset, offset + 1)
+            .is_some_and(|leaf| leaf.kind() == "word" && !leaf.has_error())
+    }))
+}
+
+fn parse_tree(bytes: &[u8], language: &str, path: &str, deadline: Instant) -> Result<Tree> {
     ensure!(
         bytes.len() <= MAX_BYTES,
         "Review source exceeds 4 MiB: {path}"
@@ -51,10 +119,6 @@ pub(crate) fn parse(bytes: &[u8], language: &str, path: &str, deadline: Instant)
         Instant::now() < deadline,
         "Syntax review exceeded its deadline"
     );
-    ensure!(
-        !tree.root_node().has_error(),
-        "Source syntax could not be parsed completely: {path}"
-    );
     Ok(tree)
 }
 
@@ -73,12 +137,23 @@ impl<'a> View<'a> {
         lines: &BTreeSet<usize>,
         deadline: Instant,
     ) -> Result<Self> {
+        Self::new_with_work(tree, bytes, lines, deadline, 0)
+    }
+
+    /// Recovery and matching share the same per-file traversal/work budget.
+    pub fn new_with_work(
+        tree: &'a Tree,
+        bytes: &'a [u8],
+        lines: &BTreeSet<usize>,
+        deadline: Instant,
+        work: usize,
+    ) -> Result<Self> {
         let mut view = Self {
             nodes: Vec::new(),
             bytes,
             changed: Vec::new(),
             deadline,
-            work: Cell::new(0),
+            work: Cell::new(work),
         };
         let mut cursor = tree.walk();
         loop {

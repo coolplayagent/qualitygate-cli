@@ -25,10 +25,13 @@ containing `core/`, `shared/` and language packages. An invalid explicit overrid
 is an error, not a reason to select different assets. A directory's existence
 does not prove its compatibility with the binary.
 
-The examples query `--version` and capabilities only. Compare their results
-using [runtime compatibility](runtime-compatibility.md). For an older runtime
-without capabilities, follow that reference's history/help path; do not infer
-an old version from an arbitrary command failure.
+The examples below require a runtime advertising `capabilities` in its help;
+they query `--version` and capabilities only. Compare their results using
+[runtime compatibility](runtime-compatibility.md). For an explicitly selected
+older runtime without that command, use the separate
+[legacy inspection](runtime-compatibility.md#legacy-runtime-inspection) first,
+not these scripts. A capabilities execution failure is a runtime error, not
+evidence that the binary is old or permission to install a replacement.
 
 ## Linux and WSL: Bash
 

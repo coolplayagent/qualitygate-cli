@@ -1,18 +1,20 @@
 # Pilot evidence summaries
 
-For a new pilot, start from the bundled
-[v10 manifest template](../assets/pilot/observation-v10.json), fill the complete
-protocol and assignment matrix, then run `qualitygate pilot seal --input <plan.json>
+For a new pilot, the bundled
+[v10 manifest template](../assets/pilot/observation-v10.json) provides an example.
+Complete the caller-selected protocol and assignment matrix, then run
+`qualitygate pilot seal --input <plan.json>
 --format json` before collecting outcomes. Retain that stdout as the observation
 manifest in the declared external archive. Sealing rejects existing observations,
 incomplete governance, non-real inputs, missing ground truth and unbalanced
-model/workflow cohorts.
+model/workflow cohorts. Preserve the selected inventory, task mix and retry
+limits; an already sealed protocol must retain its exact declared values.
 
-Manifest schema v3 requires a predeclared `protocol.task_mix`. For this pilot,
-use four independent `bug_fix` and four independent `refactor` inputs. The
-counts must sum to `task_count` and match distinct input IDs in the assignment
-matrix. Distinct inputs cannot reuse a task ID or task-contract digest. The
-summary's `sampling_audit` lists the declared and observed counts and one task
+Manifest schema v3 and later require a predeclared `protocol.task_mix`. The
+bundled example uses four independent `bug_fix` and four independent `refactor`
+inputs. The selected counts must sum to `task_count` and match distinct input IDs
+in the assignment matrix. Distinct inputs cannot reuse a task ID or task-contract
+digest. The summary's `sampling_audit` lists the declared and observed counts and one task
 identity per input. Review real issue/commit sources and sampling records before
 sealing; distinct strings and digests cannot prove semantic independence.
 
@@ -35,16 +37,17 @@ acceptance. Do not infer start order from completion timestamps. Compare the
 declared positions with retained external start-event logs.
 
 Manifest schema v6 additionally requires a digest-bound initial full report for
-every assignment and a sealed `protocol.no_progress_limit` (2 for this pilot).
+every assignment and a sealed `protocol.no_progress_limit` between 1 and
+`max_attempts`, inclusive. The bundled example uses 2.
 The CLI verifies each baseline report against the initial snapshot, task,
 policy, environment, tools and required checks, then rereads its archived bytes
 for seal, start subject, summary and final subject calls. Initial and attempt
 reports share a 64 MiB read budget. `attempt_audit` recomputes progress only
 when the set of error diagnostic identities and gate blockers strictly shrinks
 in a complete bound full report. Failed, timed-out or abandoned attempts with
-no report count as no verified progress. Runs past the sealed attempt/time cap
-or after two consecutive nonprogress attempts block final acceptance while
-remaining in cost and failure denominators. Review external Agent/clock logs
+no report count as no verified progress. Runs that exceed the sealed attempt/time
+cap or continue after reaching the sealed no-progress limit block final acceptance
+while remaining in cost and failure denominators. Review external Agent/clock logs
 to establish the truth of declared durations and outcomes.
 
 For older sealed v7 records, `model_evidence` belongs to each observation. Archive one JSON

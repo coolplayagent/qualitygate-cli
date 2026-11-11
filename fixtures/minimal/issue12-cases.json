@@ -460,5 +460,82 @@
         "scripts/check.sh": "#!/bin/sh\nchmod a-r secret.txt\n"
       }
     }
+  },
+  {
+    "id": "issue12-assignment-empty-pass-minimal",
+    "rule": "shell-assignment-spaces",
+    "description": "minimal semantic boundary assignment-empty-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\nIFS= read -r line\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-array-glob-pass-minimal",
+    "rule": "shell-comparison-spaces",
+    "description": "minimal semantic boundary comparison-array-glob-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\nitems=(one two)\nprintf '%s' \"${items[0]}\" [ab]*\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-action-text-pass-minimal",
+    "rule": "shell-trap-uncapturable",
+    "description": "minimal semantic boundary trap-action-text-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\ntrap 'printf 9' EXIT\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-unprefixed-signal-fail-minimal",
+    "rule": "shell-trap-uncapturable",
+    "description": "minimal semantic boundary trap-unprefixed-signal-fail",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\ntrap cleanup kill\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-trap-platform-number-pass-minimal",
+    "rule": "shell-trap-uncapturable",
+    "description": "minimal semantic boundary trap-platform-number-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\ntrap cleanup 19\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-comparison-mixed-syntax-incomplete-minimal",
+    "rule": "shell-comparison-spaces",
+    "description": "minimal semantic boundary comparison-mixed-syntax-incomplete",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/bash\n[[$a == $b]]\nif (\n"
+      }
+    }
+  },
+  {
+    "id": "issue12-assignment-quoted-data-pass-minimal",
+    "rule": "shell-assignment-spaces",
+    "description": "minimal assignment-like text is data inside multiline strings and heredocs",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "scripts/boundary.sh": "#!/bin/sh\nprintf '%s' '\nVALUE = text\n'\ncat <<'EOF'\nVALUE = text\nEOF\n"
+      }
+    }
   }
 ]

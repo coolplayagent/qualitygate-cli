@@ -350,5 +350,60 @@
         "src/main.py": "handler = lambda x: x + 1\n"
       }
     }
+  },
+  {
+    "id": "issue16-sql-format-placeholder-pass-minimal",
+    "rule": "py-sql-string-format",
+    "description": "minimal semantic boundary sql-format-placeholder-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id=%s\", (user_id,))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-named-placeholder-pass-minimal",
+    "rule": "py-sql-string-format",
+    "description": "minimal semantic boundary sql-named-placeholder-pass",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id=%(id)s\", {\"id\": user_id})\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-percent-operation-fail-minimal",
+    "rule": "py-sql-string-format",
+    "description": "minimal semantic boundary sql-percent-operation-fail",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id=%s\" % (user_id,))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-format-call-fail-minimal",
+    "rule": "py-sql-string-format",
+    "description": "minimal semantic boundary sql-format-call-fail",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\"SELECT id WHERE id={}\".format(user_id))\n"
+      }
+    }
+  },
+  {
+    "id": "issue16-sql-malformed-incomplete-minimal",
+    "rule": "py-sql-string-format",
+    "description": "minimal semantic boundary sql-malformed-incomplete",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/boundary.py": "cursor.execute(\n"
+      }
+    }
   }
 ]

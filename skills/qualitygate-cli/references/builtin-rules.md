@@ -247,7 +247,7 @@ or [GCC reference](gcc-analyzer-ratchet.yaml) for semantic analyzer evidence.
 ## Python review signals
 
 Select `rulesets: [lang-python]` and the desired rule IDs. All sixteen rules
-are opt-in and fixed to `languages: [python]`. The original thirteen inspect changed UTF-8 `.py`
+are opt-in and fixed to `languages: [python]`. Twelve inspect changed UTF-8 `.py`
 lines with bounded `source-pattern` matching. Those rules accept `paths` and
 `prohibited_patterns.python` overrides. Calls and names are review signals:
 they do not prove tainted input, credential validity, production use, safe YAML
@@ -261,7 +261,7 @@ for semantic lint results.
 | `py-insecure-randomness` | warning | common random module call |
 | `py-tls-verify-disabled` | error | literal verify=False assignment |
 | `py-yaml-unsafe-load` | error | yaml.load call for Loader review |
-| `py-sql-string-format` | error | same-line formatted execute argument |
+| `py-sql-string-format` | error | formatted first argument of an execute/executemany call |
 | `py-hardcoded-credentials` | error | credential-like name assigned a literal |
 | `py-tempfile-mktemp` | error | tempfile.mktemp call |
 | `py-bare-except` | warning | bare except clause |
@@ -275,10 +275,12 @@ for semantic lint results.
 
 ## Structured language reviews
 
-The twelve rules `py-none-comparison`, `py-walrus-operator`,
+The sixteen rules `py-none-comparison`, `py-walrus-operator`,
 `py-lambda-assignment`, `go-unsafe-package`, `go-os-exit`, `go-import-alias`,
 `ts-no-with`, `ts-no-var`, `ts-no-arguments`, `shell-eval`, `shell-alias` and
-`shell-chmod-read` use `language-syntax`. They accept `paths` and their fixed
+`shell-chmod-read`, plus `py-sql-string-format`, `shell-comparison-spaces` and
+`shell-trap-uncapturable` and `shell-assignment-spaces`, use `language-syntax`.
+They accept `paths` and their fixed
 `languages` only; regex overrides are rejected. Tree-sitter parses immutable
 selected source, including multiline syntax. Comments and literal text do not
 trigger findings, while expressions inside interpolated strings and command
@@ -296,11 +298,41 @@ wrappers. Alias queries are excluded. `chmod` examines its symbolic mode operand
 for removal of read permission from all classes, not filenames or final effective
 permissions; recursion is not required. Dynamic command names/modes, runtime
 aliases, cross-file type resolution and ambiguous Go keyed-field names are outside
-this analysis. Findings remain optional review warnings, not safety proofs.
+this analysis. Their packaged severities apply; findings do not establish safety.
+
+`py-sql-string-format` inspects the first positional argument of calls named
+`execute` or `executemany`, including attribute calls. It recognizes f-string
+interpolation, a direct `.format(...)` call, or a Python `%` operation, including
+multiline syntax. Literal DB-API placeholders such as `%s` and `%(name)s` with
+separately bound parameters do not match. It does not resolve database receiver
+types, query variables, keyword query arguments or taint; an f-string without
+interpolation does not produce a finding.
+
+`shell-comparison-spaces` checks the delimiter boundaries of Bash-parsed test
+commands. Array subscripts, glob arguments, comments and quoted examples do not
+match. Only this rule permits a specific parser recovery: a missing `]]` node
+whose two closing characters already exist as unquoted words attached to the
+preceding operand. Every other parser error or missing node, including errors
+elsewhere in the same file, remains incomplete. This recovery reports the
+missing spaces in `[[$a == $b]]` without treating arbitrary broken syntax as a
+complete analysis.
+
+`shell-trap-uncapturable` checks static signal operands after a static trap
+action. `KILL` and `STOP` are case-insensitive and permit the `SIG` prefix;
+numeric `9` is also recognized. Signal numbers such as `19` are platform-specific
+and are not assumed to mean STOP. Action text, query forms (`-p`, `-P`, `-l`) and
+reset forms do not match. Dynamic actions/signals are unresolved, and the rule
+does not resolve shell functions shadowing builtins. The same static quoted
+command names and `command`/`builtin` wrappers apply.
 
 Parsing is bounded to 4 MiB per file, 200,000 traversal/binding work steps and a
 2-second per-file deadline, within shared rule time and diagnostic budgets.
-Invalid UTF-8, malformed syntax and exhausted budgets produce incomplete execution.
+Invalid UTF-8, malformed syntax outside the specific comparison recovery, and
+exhausted budgets produce incomplete execution. Version 1 frozen definitions of
+the four migrated rules retain their original `source-pattern` implementation
+and regex parameters; version 2 definitions reject regex overrides.
+Selfcheck observations report the selected definition's version, including failed
+and incomplete evaluations.
 
 ## Rust review signals
 
@@ -321,7 +353,7 @@ same-line definitions only; comments and strings may match. Use the
 
 All twenty-one Shell rules are opt-in and use a fixed `shell` scope. Source
 patterns inspect changed lines in `.sh`, `.bash`, and extensionless scripts
-with a recognized `sh` or `bash` shebang. Each accepts `paths`; the sixteen
+with a recognized `sh` or `bash` shebang. Each accepts `paths`; the thirteen
 source-pattern rules accept `prohibited_patterns.shell` overrides. They are
 lexical review signals, not proof of an exploit or broken execution. Comments,
 strings, valid uses of `exec`, checksums, signal numbers, and continued pipelines
@@ -333,6 +365,18 @@ lines; a file with no extension or shebang cannot be identified as Shell.
 with at least one added line. Selected invalid UTF-8 and exceeded budgets
 remain incomplete.
 
+`shell-assignment-spaces` version 2 reviews actual commands whose bare identifier
+name is followed by an unquoted argument beginning with `=` or `+=`. It also
+covers inline commands and static `command`/`builtin` wrappers. Empty assignments
+and command prefixes such as `IFS= read -r line` are valid. `VALUE= command`
+cannot be proven wrong from whitespace alone and does not match. Neither do
+test operands, comments, heredoc text or quoted examples, including multiline
+text. Declaration commands such as `local VALUE = bad` remain outside this rule.
+This is an assignment-like command heuristic: commands such as `echo = bad`
+can match legitimately because runtime command intent is unresolved. Review the
+context before changing code. Frozen version 1 definitions retain their old
+line pattern.
+
 | Rule | Default | Review signal |
 | --- | --- | --- |
 | `shell-hardcoded-secret` | error | Flag quoted credential assignments |
@@ -342,11 +386,11 @@ remain incomplete.
 | `shell-password-echo` | warning | Review password reads without silent mode |
 | `shell-sql-injection` | error | Flag database client commands with interpolated variables |
 | `shell-exec-terminates` | warning | Review exec replacing the current shell |
-| `shell-assignment-spaces` | error | Flag spaces adjacent to Shell assignment operators |
+| `shell-assignment-spaces` | error | Review assignment-like command names followed by =/+= arguments |
 | `shell-comparison-spaces` | error | Flag comparison delimiters missing inner spaces |
 | `shell-line-start-operator` | warning | Review leading pipe or logical operators |
 | `shell-stream-merge-position` | warning | Review stream merges followed by conflicting redirections |
-| `shell-trap-uncapturable` | error | Flag traps for SIGKILL or SIGSTOP |
+| `shell-trap-uncapturable` | error | Flag static trap signal operands naming KILL/STOP or 9 |
 | `shell-trap-numeric-signal` | warning | Review numeric trap signal identifiers |
 | `shell-trap-double-quotes` | warning | Review double-quoted trap handlers |
 | `shell-tilde-path` | warning | Review tilde path components |

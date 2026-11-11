@@ -543,3 +543,247 @@ fn shell_wrappers_quoting_and_permission_operations_preserve_literal_command_mea
         check(id, "script.sh", source, count);
     }
 }
+
+#[test]
+fn sql_formatting_distinguishes_python_operators_from_database_placeholders() {
+    for (source, count) in [
+        (r#"cursor.execute("SELECT id WHERE id=%s", (user_id,))"#, 0),
+        (
+            r#"cursor.executemany("SELECT id WHERE id=%(id)s", rows)"#,
+            0,
+        ),
+        (r#"cursor.execute("SELECT id WHERE id=?", (user_id,))"#, 0),
+        (r#"cursor.execute("SELECT id WHERE id=%s" % user_id)"#, 1),
+        (r#"cursor.execute("SELECT id WHERE id=%s" % (user_id,))"#, 1),
+        ("execute(query % user_id)", 1),
+        (
+            r#"cursor.execute("SELECT id WHERE id={}".format(user_id))"#,
+            1,
+        ),
+        (r#"cursor.execute(f"SELECT id WHERE id={user_id}")"#, 1),
+        ("cursor.execute(\n    (query % user_id)\n)\n", 1),
+        (r#"cursor.execute("SELECT id", (value % 2,))"#, 0),
+        (r#"cursor.execute(".format(x) % value")"#, 0),
+        (r#"cursor.execute(f"SELECT id")"#, 0),
+        ("cursor.execute()", 0),
+        ("cursor.execute(query=query)", 0),
+        ("other(query % value)", 0),
+        ("# cursor.execute(query % user_id)\n", 0),
+    ] {
+        check("py-sql-string-format", "query.py", source, count);
+    }
+}
+
+#[test]
+fn shell_brackets_are_checked_only_in_test_commands() {
+    for (source, count) in [
+        (r#"["$flag" = yes ]"#, 1),
+        (r#"[ "$flag" = yes]"#, 1),
+        (r#"[ "$flag" = "$other"]"#, 1),
+        (r#"[ "$flag" = yes ]"#, 0),
+        ("[[$a == $b]]", 1),
+        ("[[ $a == $b]]", 1),
+        ("[[foo == bar ]]", 1),
+        ("if [[ $a == $b]]; then :; fi", 1),
+        (r"[[ $a == value\\]]", 1),
+        (r"[[ $a == value\\\\]]", 1),
+        (r#"[[ "$flag" = "]]" ]]"#, 0),
+        ("items=(one two)\nprintf '%s' \"${items[0]}\"\n", 0),
+        ("printf '%s' [ab]*\n", 0),
+        (r#"printf '%s' '[[$a == $b]]'"#, 0),
+        ("# [[$a == $b]]\n", 0),
+    ] {
+        check("shell-comparison-spaces", "script.sh", source, count);
+    }
+}
+
+#[test]
+fn shell_assignment_review_uses_command_position_instead_of_physical_lines() {
+    for (source, count) in [
+        ("VALUE = bad", 1),
+        ("VALUE =bad", 1),
+        ("VALUE += bad", 1),
+        ("VALUE =\"$data\"", 1),
+        ("command VALUE = bad", 1),
+        ("if ready; then VALUE = bad; fi", 1),
+        ("IFS= read -r line", 0),
+        ("VALUE= command", 0),
+        ("VALUE=", 0),
+        ("local VALUE = bad", 0),
+        ("[ value = other ]", 0),
+        ("printf '%s' \"VALUE = text\"", 0),
+        ("printf '%s' '\nVALUE = text\n'", 0),
+        ("cat <<'EOF'\nVALUE = text\nEOF\n", 0),
+        ("printf '%s' \\\n# VALUE = text\n", 0),
+        ("VALUE '=literal'", 0),
+        ("\"VALUE\" = literal", 0),
+        ("./VALUE = literal", 0),
+        // Command intent is unresolved: this shape also matches valid commands.
+        ("echo = bad", 1),
+    ] {
+        check("shell-assignment-spaces", "script.sh", source, count);
+    }
+}
+
+#[test]
+fn shell_traps_check_signal_operands_instead_of_action_text() {
+    for (source, count) in [
+        ("trap 'printf 9' EXIT", 0),
+        (r#"trap 'kill -9 "$child"' EXIT"#, 0),
+        ("trap cleanup KILL", 1),
+        ("trap cleanup STOP", 1),
+        ("trap cleanup SIGKILL", 1),
+        ("trap cleanup SIGSTOP", 1),
+        ("trap cleanup kill", 1),
+        ("trap cleanup sigstop", 1),
+        ("trap cleanup 9", 1),
+        ("trap cleanup 19", 0),
+        ("trap cleanup 17 23 24", 0),
+        ("trap '' KILL", 1),
+        ("trap -- cleanup 'KILL'", 1),
+        ("command -p -- trap cleanup SIGSTOP", 1),
+        ("builtin trap cleanup KILL", 1),
+        ("trap 'cleanup' \\\n  STOP", 1),
+        ("trap -p KILL", 0),
+        ("trap -P KILL", 0),
+        ("trap -l", 0),
+        ("trap - KILL", 0),
+        ("trap -- - KILL", 0),
+        ("trap 9", 0),
+        ("trap KILL", 0),
+        ("trap", 0),
+        ("trap --", 0),
+        ("trap -- \"$handler\" KILL", 0),
+        ("trap \"$handler\" KILL", 0),
+        ("trap cleanup \"$signal\"", 0),
+        ("trap cleanup \"$signal\" KILL", 1),
+        ("printf '%s' 'trap cleanup KILL'", 0),
+        ("# trap cleanup KILL\n", 0),
+    ] {
+        check("shell-trap-uncapturable", "script.sh", source, count);
+    }
+}
+
+#[test]
+fn bounded_comparison_recovery_cannot_hide_other_syntax_errors() {
+    for source in [
+        "[[$a == $b]]\nif (\n",
+        "[[$a == $b]]\n[ $x = $y\n",
+        "[[ $a == $b\n",
+        "[[ $a == 'quoted]]'\n",
+        "[[ $a == \"quoted]]\"\n",
+        "[[ $a == value\\]\\]\n",
+        r"[[ $a == value\]]",
+        r"[[ $a == value\\\]]",
+    ] {
+        let result = evaluate(
+            "shell-comparison-spaces",
+            &snapshot("x.sh", source.as_bytes(), &[1, 2]),
+        );
+        assert!(result.verdict.is_none(), "{source}: {:?}", result.execution);
+    }
+    for (id, path, invalid) in [
+        ("py-sql-string-format", "x.py", "cursor.execute("),
+        ("shell-trap-uncapturable", "x.sh", "trap 'unterminated"),
+        ("shell-assignment-spaces", "x.sh", "VALUE 'unterminated"),
+        ("shell-comparison-spaces", "x.sh", "if ("),
+    ] {
+        for bytes in [invalid.as_bytes(), &[255]] {
+            assert!(evaluate(id, &snapshot(path, bytes, &[1])).verdict.is_none());
+        }
+    }
+    assert!(review::parse_shell_comparisons(b"[[$a == $b]]", "x.sh", Instant::now()).is_err());
+    // The recovery is unavailable to other Shell syntax rules.
+    assert!(
+        evaluate(
+            "shell-trap-uncapturable",
+            &snapshot("x.sh", b"[[$a == $b]]", &[1])
+        )
+        .verdict
+        .is_none()
+    );
+    let repeated = "[[$a == $b]]\n".repeat(6_000);
+    assert!(
+        evaluate(
+            "shell-comparison-spaces",
+            &snapshot("x.sh", repeated.as_bytes(), &[1])
+        )
+        .verdict
+        .is_none(),
+        "Recovery and matching must share the 200000-step budget"
+    );
+}
+
+#[test]
+fn frozen_v1_review_definitions_keep_their_original_source_pattern_behavior() {
+    use crate::config::{
+        Config,
+        catalog::{Builtin, Catalog, Entry},
+    };
+    for (id, language, path, pattern, source) in [
+        (
+            "py-sql-string-format",
+            "python",
+            "x.py",
+            r"\b(?:execute|executemany)\s*\([^)]*%\s*\w+",
+            r#"cursor.execute("SELECT %s", (value,))"#,
+        ),
+        (
+            "shell-comparison-spaces",
+            "shell",
+            "x.sh",
+            r"(?:\[\[[^\s\[]|\[[^\s\[]|[^\s\]]\]\]?)",
+            "printf '%s' [ab]*",
+        ),
+        (
+            "shell-trap-uncapturable",
+            "shell",
+            "x.sh",
+            r"(?i)\btrap\b.*\b(?:SIGKILL|9|SIGSTOP|19)\b",
+            "trap 'printf 9' EXIT",
+        ),
+        (
+            "shell-assignment-spaces",
+            "shell",
+            "x.sh",
+            r"^\s*[A-Za-z_][A-Za-z0-9_]*(?:\s+\+?=|\+?=\s+)",
+            "IFS= read -r line",
+        ),
+    ] {
+        let definition: Builtin = serde_json::from_value(serde_json::json!({
+            "id":id,"version":1,"description":"Frozen definition","implementation":"source-pattern",
+            "language":[language],"requires_capabilities":["files"],"defaults":{"required":true,"severity":"error",
+            "parameters":{"languages":[language],"prohibited_patterns":{language:[pattern]}}}
+        })).unwrap();
+        let catalog = Catalog {
+            entries: [(
+                id.into(),
+                Entry {
+                    origin: "frozen".into(),
+                    package: "shared".into(),
+                    builtin: Some(definition),
+                    custom: None,
+                },
+            )]
+            .into(),
+        };
+        let original = serde_json::to_vec(&catalog).unwrap();
+        let restored: Catalog = serde_json::from_slice(&original).unwrap();
+        let config = restored
+            .resolve(&Config {
+                rules: [(id.into(), RuleSetting::default())].into(),
+                ..Config::default()
+            })
+            .unwrap();
+        let builtin = restored.entries[id].builtin.as_ref().unwrap();
+        let result = super::super::rules::evaluate_as(
+            id,
+            &builtin.implementation,
+            &config.rules[id],
+            &snapshot(path, source.as_bytes(), &[1]),
+        );
+        assert_eq!(result.verdict, Some(Verdict::Fail), "{id}");
+        assert_eq!(serde_json::to_vec(&restored).unwrap(), original);
+        assert_eq!(builtin.version, 1);
+    }
+}
