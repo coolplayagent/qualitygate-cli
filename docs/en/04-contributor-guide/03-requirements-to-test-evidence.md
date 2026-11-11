@@ -9,6 +9,16 @@ implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
 
+## Public review knowledge pack
+
+`REVIEW-PACK-01`: `tests/issue64_rules.rs` verifies opt-in warning behavior, language scope,
+file/line evidence, parameter rejection and repair; the three issue64 selfcheck suites retain
+independent pass/fail goldens. `tests/review_pack.rs` consumes the shipped cards and obligations
+through schema/source validation, independent fixture adoption, role selection and stale-input
+handling. Documentation and Skill packaging gates cover published assets. Instruction projection
+is not semantic verification; these tests do not establish concurrency or lifetime correctness.
+
+
 ## Native syntax review rules
 
 `NATIVE-SYNTAX-01` maps to `adapters::native_syntax::tests` (syntax shapes,

@@ -1,5 +1,17 @@
 schema_version: 1
 inputs:
+  - id: c-ignored-atomic-cas-review
+    status: enforced
+    rule_id: c-ignored-atomic-cas
+    lifecycle_stage: implementation
+    languages: [c, cpp]
+    concerns: [coding, reliability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [sei-cert-c, sei-cert-cpp]
+    evidence: [changed-c-family-line, regex-pattern]
+    applicability: Added C and C++ source lines explicitly casting C11 weak or strong compare-exchange results to void, when selected.
+    critical_adoption: A lexical signal is not proof of a race or lost update; verify failure handling and retry policy. Aliases, member calls, macros, and multiline expressions require separate review.
   - id: c-array-safety-review
     status: enforced
     rule_id: c-array-safety

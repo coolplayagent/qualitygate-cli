@@ -12,7 +12,7 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
     assert_eq!(result["decision"], "pass");
     assert!(result["errors"].as_array().unwrap().is_empty());
     let cases = result["fixtures"].as_array().unwrap();
-    assert_eq!(cases.len(), 1064, "Shipped fixture inventory changed");
+    assert_eq!(cases.len(), 1082, "Shipped fixture inventory changed");
     for suite in ["minimal", "typical", "stress"] {
         let case = cases
             .iter()
@@ -156,6 +156,34 @@ fn full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golde
                 .unwrap()
                 .contains("issue20-cases.json")
         );
+    }
+    for suite in ["minimal", "typical", "stress"] {
+        for rule in [
+            "cpp-disabled-test",
+            "c-ignored-atomic-cas",
+            "workaround-marker",
+        ] {
+            let review_cases: Vec<_> = cases
+                .iter()
+                .filter(|case| case["suite"] == suite && case["rule"] == rule)
+                .collect();
+            assert_eq!(review_cases.len(), 2, "{suite}/{rule} needs pass and fail");
+            for verdict in ["pass", "fail"] {
+                let case = review_cases
+                    .iter()
+                    .find(|case| case["observed"]["verdict"] == verdict)
+                    .unwrap();
+                assert!(
+                    case["input"]
+                        .as_str()
+                        .unwrap()
+                        .contains("issue64-cases.json")
+                );
+                assert_eq!(case["observed"]["required"], false);
+                assert_eq!(case["observed"]["severity"], "warning");
+                assert_eq!(case["decision"], "pass");
+            }
+        }
     }
     let evolution: Vec<_> = cases
         .iter()

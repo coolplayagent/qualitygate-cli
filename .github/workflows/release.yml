@@ -218,6 +218,8 @@ jobs:
           test -s "dist/$package/references/checkstyle-ratchet.yaml"
           test -f "dist/$package/references/rule-authoring.md"
           test -s "dist/$package/references/pilot-evidence.md"
+          test -s "dist/$package/references/review-pack.md"
+          test -s "dist/$package/references/examples/review-obligations.yaml"
           test -s "dist/$package/assets/pilot/observation-v7.json"
           test -s "dist/$package/assets/pilot/observation-v8.json"
           test -s "dist/$package/assets/pilot/observation-v9.json"
@@ -240,6 +242,9 @@ jobs:
           test -f "dist/$package/references/rules/core/line-ending.yaml"
           test -f "dist/$package/references/rules/shared/security-sensitive-api.yaml"
           test -f "dist/$package/references/rules/shared/todo-marker.yaml"
+          for rule in lang-cpp/cpp-disabled-test lang-c/c-ignored-atomic-cas shared/workaround-marker; do
+            test -s "dist/$package/references/rules/$rule.yaml"
+          done
           test -f "dist/$package/references/rules/shared/import-boundary.yaml"
           test -f "dist/$package/references/rules/lang-java/module-boundary.yaml"
           test -f "dist/$package/references/rules/lang-python/pytest-naming.yaml"
@@ -250,6 +255,9 @@ jobs:
             --root "$GITHUB_WORKSPACE" --format json rules list > "dist/rules-list.json"
           grep -F '"origin": "skill:references/rules/shared/security-sensitive-api.yaml"' "dist/rules-list.json"
           grep -F '"id": "import-boundary"' "dist/rules-list.json"
+          for rule in cpp-disabled-test c-ignored-atomic-cas workaround-marker; do
+            grep -F "\"id\": \"$rule\"" "dist/rules-list.json"
+          done
           for rule in commit-message-convention commit-message-format test-naming-strict test-annotation-dependency no-hardcoded-secrets no-printf-log no-unsafe-string no-test-sleep no-bare-except no-os-path no-print no-emoji python-test-naming shell-hardcoded-secret shell-debug-mode shell-env-dump shell-weak-crypto shell-password-echo shell-sql-injection shell-exec-terminates shell-assignment-spaces shell-comparison-spaces shell-line-start-operator shell-stream-merge-position shell-trap-uncapturable shell-trap-numeric-signal shell-trap-double-quotes shell-tilde-path shell-temp-file-hardcoded shell-missing-shebang shell-commented-dead-code rust-extern-without-abi rust-untrusted-dynamic-library-loading rust-unsafe-block-in-macro-definition ts-no-eval ts-no-debugger ts-no-alert ts-no-implied-eval ts-no-new-function ts-eqeqeq ts-no-extend-native ts-no-prototype-builtins ts-secure-randomness ts-no-unsafe-postmessage ts-no-commented-code ts-no-personal-info-in-comments go-sql-injection go-insecure-randomness go-tls-insecure-skip-verify go-hardcoded-credentials go-ssh-insecure-ignore-host-key go-file-permission-creation go-panic-in-exported-function go-cgo-cstring-without-defer-free go-relative-import-path go-dot-import go-sensitive-info-in-log go-float-loop-counter java-thread-stop java-thread-yield java-manual-gc java-finalizer java-implicit-charset java-implicit-locale java-insecure-random java-weak-crypto java-empty-catch java-finally-exit java-sql-concat java-runtime-exec; do
             grep -F "\"id\": \"$rule\"" "dist/rules-list.json"
           done
@@ -269,6 +277,8 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/checkstyle-ratchet.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rule-authoring.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/pilot-evidence.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/review-pack.md" >/dev/null
+          tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/examples/review-obligations.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v7.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v8.json" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/assets/pilot/observation-v9.json" >/dev/null
@@ -284,6 +294,9 @@ jobs:
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/runtime-compatibility.md" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/security-sensitive-api.yaml" >/dev/null
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/todo-marker.yaml" >/dev/null
+          for rule in lang-cpp/cpp-disabled-test lang-c/c-ignored-atomic-cas shared/workaround-marker; do
+            tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/$rule.yaml" >/dev/null
+          done
           tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/shared/import-boundary.yaml" >/dev/null
           for rule in core/commit-message-convention core/commit-message-format shared/test-naming-strict shared/test-annotation-dependency shared/no-hardcoded-secrets shared/no-printf-log shared/no-unsafe-string shared/no-test-sleep shared/no-bare-except shared/no-os-path shared/no-print shared/no-emoji shared/python-test-naming shared/shell-hardcoded-secret shared/shell-debug-mode shared/shell-env-dump shared/shell-weak-crypto shared/shell-password-echo shared/shell-sql-injection shared/shell-exec-terminates shared/shell-assignment-spaces shared/shell-comparison-spaces shared/shell-line-start-operator shared/shell-stream-merge-position shared/shell-trap-uncapturable shared/shell-trap-numeric-signal shared/shell-trap-double-quotes shared/shell-tilde-path shared/shell-temp-file-hardcoded shared/shell-missing-shebang shared/shell-commented-dead-code shared/rust-extern-without-abi shared/rust-untrusted-dynamic-library-loading shared/rust-unsafe-block-in-macro-definition lang-typescript/ts-no-eval lang-typescript/ts-no-debugger lang-typescript/ts-no-alert lang-typescript/ts-no-implied-eval lang-typescript/ts-no-new-function lang-typescript/ts-eqeqeq lang-typescript/ts-no-extend-native lang-typescript/ts-no-prototype-builtins lang-typescript/ts-secure-randomness lang-typescript/ts-no-unsafe-postmessage lang-typescript/ts-no-commented-code lang-typescript/ts-no-personal-info-in-comments lang-go/go-sql-injection lang-go/go-insecure-randomness lang-go/go-tls-insecure-skip-verify lang-go/go-hardcoded-credentials lang-go/go-ssh-insecure-ignore-host-key lang-go/go-file-permission-creation lang-go/go-panic-in-exported-function lang-go/go-cgo-cstring-without-defer-free lang-go/go-relative-import-path lang-go/go-dot-import lang-go/go-sensitive-info-in-log lang-go/go-float-loop-counter lang-python/py-eval-exec lang-python/py-shell-equals-true lang-python/py-insecure-randomness lang-python/py-tls-verify-disabled lang-python/py-yaml-unsafe-load lang-python/py-sql-string-format lang-python/py-hardcoded-credentials lang-python/py-tempfile-mktemp lang-python/py-bare-except lang-python/py-mutable-default-argument lang-python/py-assert-in-production lang-python/py-sensitive-info-in-log lang-python/py-pickle-load lang-c/c-array-safety lang-c/c-assertion-discipline lang-c/c-control-flow lang-c/c-expression-safety lang-c/c-file-security lang-c/c-function-safety lang-c/c-numeric-literal lang-cpp/cpp-no-realloc lang-cpp/cpp-no-alloca lang-cpp/cpp-no-unsafe-memfunc lang-cpp/cpp-throw-by-value lang-cpp/cpp-catch-by-reference lang-cpp/cpp-no-direct-mutex lang-cpp/cpp-no-std-move-local-return lang-cpp/cpp-no-unsafe-rand lang-cpp/cpp-no-throw-spec lang-cpp/cpp-no-reinterpret-cast lang-cpp/cpp-no-const-cast lang-cpp/cpp-no-delete-this lang-cpp/cpp-prefer-make-smart-pointer lang-cpp/cpp-use-nullptr lang-cpp/cpp-no-macro-constant lang-cpp/cpp-no-using-namespace-in-header lang-python/py-none-comparison lang-python/py-walrus-operator lang-python/py-lambda-assignment lang-go/go-unsafe-package lang-go/go-os-exit lang-go/go-import-alias shared/shell-eval shared/shell-alias shared/shell-chmod-read lang-typescript/ts-no-with lang-typescript/ts-no-var lang-typescript/ts-no-arguments lang-c/c-no-atoi lang-c/c-no-goto lang-c/c-no-process-launch lang-java/java-thread-stop lang-java/java-thread-yield lang-java/java-manual-gc lang-java/java-finalizer lang-java/java-implicit-charset lang-java/java-implicit-locale lang-java/java-insecure-random lang-java/java-weak-crypto lang-java/java-empty-catch lang-java/java-finally-exit lang-java/java-sql-concat lang-java/java-runtime-exec; do
             tar -tzf "dist/$package.tar.gz" | grep -Fx "$package/references/rules/$rule.yaml" >/dev/null

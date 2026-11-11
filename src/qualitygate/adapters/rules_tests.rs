@@ -59,6 +59,61 @@ fn source_patterns_only_report_added_source_lines() {
 }
 
 #[test]
+fn packaged_review_signals_retain_actionable_evidence_without_claiming_semantic_proof() {
+    let cases = [
+        (
+            include_str!(
+                "../../../skills/qualitygate-cli/references/rules/lang-cpp/cpp-disabled-test.yaml"
+            ),
+            "test.cpp",
+            "// Reason: instability; issue: TEST-42; replacement: retries.\nTEST(Cache, DISABLED_ready) {}\n",
+            2,
+            "replacement coverage",
+        ),
+        (
+            include_str!(
+                "../../../skills/qualitygate-cli/references/rules/lang-c/c-ignored-atomic-cas.yaml"
+            ),
+            "state.c",
+            "(void) atomic_compare_exchange_strong_explicit(&value, &expected, desired, success, failure);\n",
+            1,
+            "success and failure",
+        ),
+        (
+            include_str!(
+                "../../../skills/qualitygate-cli/references/rules/shared/workaround-marker.yaml"
+            ),
+            "lib.rs",
+            "// workaround: issue BUG-42; owner maintainer; remove after corrected release.\n",
+            1,
+            "removal plan",
+        ),
+    ];
+    for (yaml, path, source, line, expected_guidance) in cases {
+        let rule: crate::config::catalog::Builtin = serde_norway::from_str(yaml).unwrap();
+        let mut input = snapshot(path, "", source, &[line]);
+        let result = evaluate_as(&rule.id, &rule.implementation, &rule.defaults, &input);
+        assert_eq!(result.execution.status, ExecutionStatus::Completed);
+        assert_eq!(result.verdict, Some(Verdict::Fail));
+        assert!(!result.required);
+        assert_eq!(result.severity, Severity::Warning);
+        assert_eq!(result.diagnostics.len(), 1);
+        let diagnostic = &result.diagnostics[0];
+        assert_eq!(diagnostic.file.as_deref(), Some(path));
+        assert_eq!(diagnostic.range.as_ref().unwrap().start_line, line);
+        assert!(diagnostic.message.contains("review signal, not proof"));
+        assert!(diagnostic.fix.contains(expected_guidance));
+        assert!(diagnostic.evidence["pattern"].is_string());
+
+        // Optionality does not turn unavailable source evidence into a pass.
+        input.files.clear();
+        let unavailable = evaluate_as(&rule.id, &rule.implementation, &rule.defaults, &input);
+        assert_eq!(unavailable.execution.status, ExecutionStatus::Blocked);
+        assert_eq!(unavailable.verdict, None);
+    }
+}
+
+#[test]
 fn source_pattern_configuration_gaps_remain_incomplete() {
     let result = evaluate_as(
         "security-sensitive-api",

@@ -972,3 +972,12 @@ CI 保留独立 UT LCOV 与原有 all-target 90% 门禁，Miri/ASan 和集成门
 子进程组 SIGTERM 只造成检查未完成、CLI 退出 2，不能传播到 runner 或调用者；后续正常检查退出 0。
 通过结论同时要求完整报告和 CLI 退出 0，外层 143 必须独立调查，不能由报告覆盖。
 证据见 `adapters::reports::diagnostic_budget_tests`、`runner::tests` 和 `tests/execution.rs`。
+
+## REVIEW-PACK-01：公共评审知识包
+
+三条 opt-in、非必需 warning 规则仅报告新增源码行的禁用测试、显式丢弃 C11 CAS 返回值和临时方案信号；
+不得声称证明语义缺陷，补充说明不自动消除标记。五类审查卡及流程卡以现有 Agent 义务承载，
+来源绑定、独立采用、角色范围及失效机制必须保持，未采用或失效指令不进入 Prompt。
+六条示例默认可选且无采用记录；跨仓库复制后重新绑定来源，不新增语义门禁或自动路由。
+验收由 `tests/issue64_rules.rs`、`tests/review_pack.rs`、三套 issue64 fixture/golden、
+`tests/selfcheck.rs` 和文档/Skill 打包检查提供；双语证据索引记录边界。

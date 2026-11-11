@@ -7,6 +7,14 @@
 或真实试点已验收。
 
 
+## 公共评审知识包
+
+`REVIEW-PACK-01`：`tests/issue64_rules.rs` 验证按需启用、warning 行为、语言范围、文件/行证据、
+参数拒绝与修复；三套 issue64 selfcheck 保留独立 pass/fail golden。
+`tests/review_pack.rs` 使用真实随包卡片和义务，验证 Schema/来源、独立夹具采用、角色选择和输入失效。
+文档与 Skill 打包门禁验证发布资产。指令投影不是语义验证；这些测试不证明并发或生命周期正确性。
+
+
 ## 原生语法审查规则
 
 `NATIVE-SYNTAX-01` 对应 `adapters::native_syntax::tests`（语法形状、注释/字面量、无关名称、数值宏、

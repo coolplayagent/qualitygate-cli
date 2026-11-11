@@ -180,6 +180,7 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "selfcheck",
         "runtime-compatibility",
         "runtime-startup",
+        "review-pack",
     ] {
         let path = format!("references/{reference}.md");
         assert!(!read(&root.join("skills/qualitygate-cli"), &path).is_empty());
@@ -290,6 +291,8 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/capabilities.schema.json",
         "references/schemas/doctor.schema.json",
         "references/decision-protocol.md",
+        "references/review-pack.md",
+        "references/examples/review-obligations.yaml",
         "references/pilot-evidence.md",
         "assets/pilot/observation-v7.json",
         "assets/pilot/observation-v8.json",
@@ -314,6 +317,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
     for expected in [
         "security-sensitive-api",
         "todo-marker",
+        "cpp-disabled-test",
+        "c-ignored-atomic-cas",
+        "workaround-marker",
         "import-boundary",
         "commit-message-convention",
         "test-naming-strict",
@@ -407,6 +413,8 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         "references/schemas/feedback.schema.json",
         "decision-protocol",
         "references/pilot-evidence.md",
+        "references/review-pack.md",
+        "references/examples/review-obligations.yaml",
         "assets/pilot/observation-v7.json",
         "assets/pilot/observation-v8.json",
         "assets/pilot/observation-v9.json",
@@ -419,6 +427,9 @@ fn skill_package_contract_is_complete_and_matches_the_cli_version() {
         );
     }
     for rule in [
+        "lang-cpp/cpp-disabled-test",
+        "lang-c/c-ignored-atomic-cas",
+        "shared/workaround-marker",
         "core/commit-message-convention",
         "shared/test-naming-strict",
         "shared/test-annotation-dependency",
@@ -682,6 +693,9 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
         "core/line-ending.yaml",
         "shared/security-sensitive-api.yaml",
         "shared/todo-marker.yaml",
+        "shared/workaround-marker.yaml",
+        "lang-cpp/cpp-disabled-test.yaml",
+        "lang-c/c-ignored-atomic-cas.yaml",
         "shared/import-boundary.yaml",
         "lang-java/module-boundary.yaml",
         "lang-python/pytest-naming.yaml",

@@ -1,0 +1,16 @@
+id: cpp-disabled-test
+version: 1
+description: Review disabled test markers for a reason, tracking issue, and replacement coverage
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+defaults:
+  required: false
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp: ['\bDISABLED_[A-Za-z0-9_]*\b']
+standard_refs:
+  - {source_id: google-code-review, controls: [test-design, evidence-over-preference]}
+lifecycle_inputs: [cpp-disabled-test-review]

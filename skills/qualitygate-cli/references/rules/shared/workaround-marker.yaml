@@ -1,0 +1,15 @@
+id: workaround-marker
+version: 1
+description: Review temporary workarounds for a root-cause issue, owner or expiry condition, and removal plan
+implementation: source-pattern
+language: []
+requires_capabilities: [files]
+defaults:
+  required: false
+  severity: warning
+  parameters:
+    prohibited_patterns:
+      all: ['(?i)\bworkaround\b|\btemporary\s+fix\b|暂时规避|临时方案|临时绕过']
+standard_refs:
+  - {source_id: google-code-review, controls: [code-health, evidence-over-preference]}
+lifecycle_inputs: [workaround-marker-review]

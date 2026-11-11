@@ -207,6 +207,7 @@ Route the requested capability before editing policy:
 | Relate named fact collections with lexical lambdas, projections and set checks | [V3 operators](references/operators-v3.md); capability `rules.operators.v3`, `schema operator-rule-v3`, then standard source validation/generation |
 | Track every declared clause, its adoption, unsupported gaps and snapshot execution | [Constraint coverage](references/constraint-coverage.md); `schema constraint`, `config --show`, automatic `constraint-coverage` check |
 | Apply adopted behavior obligations to the consuming Agent | [Agent contracts](references/agent-contracts.md); `schema agent-obligation`, `agent-contract`; host enforcement needs an actual host |
+| Review concurrency, lifetime, bounds, consistency, tests or workflow evidence | [Public review pack](references/review-pack.md); select source-bound instruction obligations, review counterexamples and preserve evidence gaps |
 | Run the selected Rust Agent host with guarded delivery | [Agent host](references/agent-host.md); `agent-run`, current injection receipts, fresh full checks and immutable export |
 | Select rules, retrieve policy context, or maintain evidence-backed candidates | [Rule management](references/rule-management.md); `rules context`, candidate validation, signed adoption and history |
 | Supply bounded repair context to an external Agent | [Agent feedback](references/agent-feedback.md); `check --feedback`, complete report references and full rechecks |

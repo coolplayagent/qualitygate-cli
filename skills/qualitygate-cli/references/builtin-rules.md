@@ -394,3 +394,43 @@ mapping is a configuration error rather than an empty successful check.
    incomplete evidence separately.
 
 The optional `lang-java` package adds twelve fixed-Java source-pattern reviews for direct concurrency, resource, locale, exception and security signals. See the repository Java rule triage guide for exact scope; comments, strings, aliases and multiline forms limit lexical findings.
+
+## Historical review signals
+
+These three rules require explicit selection and default to `required: false`,
+`severity: warning`. Each inspects added lines of supported source files only.
+
+| Rule | Scope | Default signal |
+| --- | --- | --- |
+| `cpp-disabled-test` | C++ | `DISABLED_` marker; review reason, tracking issue and replacement coverage |
+| `c-ignored-atomic-cas` | C and C++ | `(void)` discard of `atomic_compare_exchange_weak/strong`, including `_explicit`; review failure handling |
+| `workaround-marker` | Supported source languages | `workaround`, `temporary fix`, `暂时规避`, `临时方案`, `临时绕过`; review root-cause issue, owner/expiry and removal plan |
+
+Matches are review signals, not proof of semantic defects or missing metadata.
+Adding a reason, issue or replacement-test reference does not suppress a marker.
+Restoring the test, handling the result or removing the temporary implementation
+can remove its signal; deleting explanatory comments alone does not prove repair.
+Comments/literals can match, multiline/indirect calls can escape detection, and
+`.h` is classified as C (outside `cpp-disabled-test`). Markdown is not scanned.
+
+Use the [review cards](review-pack.md) for contextual review. Existing parameter
+configuration can select an ecosystem-specific CAS API; this override replaces
+the default patterns, so retain standard patterns explicitly if both are needed:
+
+```yaml
+schema_version: 1
+rulesets: [lang-c]
+rules:
+  c-ignored-atomic-cas:
+    enabled: true
+    required: false
+    severity: warning
+    parameters:
+      prohibited_patterns:
+        c: ['\(\s*void\s*\)\s*ngx_atomic_cmp_set\s*\(']
+        cpp: ['\(\s*void\s*\)\s*ngx_atomic_cmp_set\s*\(']
+```
+
+This configured symbol does not imply cross-language or general CAS coverage.
+C++ gtest test-entity extraction and naming remain deferred; a name regex can
+express `_when_`, but cannot supply the missing entity producer.

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "issue64-disabled-test-pass-minimal",
+    "rule": "cpp-disabled-test",
+    "description": "minimal pass: cpp-disabled-test is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/cache.cpp": "TEST(Cache, should_reuse_when_ready) {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-disabled-test-fail-minimal",
+    "rule": "cpp-disabled-test",
+    "description": "minimal fail: cpp-disabled-test is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/cache.cpp": "TEST(Cache, DISABLED_should_reuse_when_ready) {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-ignored-atomic-cas-pass-minimal",
+    "rule": "c-ignored-atomic-cas",
+    "description": "minimal pass: c-ignored-atomic-cas is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/atomic.c": "if (!atomic_compare_exchange_weak(&state, &expected, next)) { retry(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-ignored-atomic-cas-fail-minimal",
+    "rule": "c-ignored-atomic-cas",
+    "description": "minimal fail: c-ignored-atomic-cas is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/atomic.c": "(void) atomic_compare_exchange_weak(&state, &expected, next);\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-workaround-marker-pass-minimal",
+    "rule": "workaround-marker",
+    "description": "minimal pass: workaround-marker is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/cache.rs": "// Cache invalidation follows the ownership contract.\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-workaround-marker-fail-minimal",
+    "rule": "workaround-marker",
+    "description": "minimal fail: workaround-marker is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/cache.rs": "// workaround: skip invalidation until the owner is known.\n"
+      }
+    }
+  }
+]

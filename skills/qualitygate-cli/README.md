@@ -28,6 +28,11 @@ The tracked skill directory is intentionally lightweight:
   [decision](references/schemas/decision.schema.json) and
   [feedback](references/schemas/feedback.schema.json) schemas describe
   opt-in machine envelopes and external warning assessment.
+- [public review pack](references/review-pack.md) contains five semantic review
+  cards and workflow obligations, with an unadopted
+  [Agent obligation example](references/examples/review-obligations.yaml).
+  Instructions request evidence and counterexamples; they do not prove code
+  correctness or change deterministic gates.
 - [file contracts](references/file-contracts.md) cover instruction budgets,
   unchanged file inventories, required files and evidence-driven repair.
 - [diagnostic ratchets](references/diagnostic-ratchets.md) cover comparable
@@ -63,6 +68,8 @@ qualitygate-cli-skill-<tag>/
 ├── references/selfcheck.md
 ├── references/pilot-evidence.md
 ├── references/decision-protocol.md
+├── references/review-pack.md
+├── references/examples/review-obligations.yaml
 ├── references/schemas/project-rule.schema.json
 ├── references/schemas/decision.schema.json
 ├── references/schemas/feedback.schema.json

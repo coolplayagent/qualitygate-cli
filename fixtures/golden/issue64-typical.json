@@ -1,0 +1,53 @@
+{
+  "issue64-disabled-test-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0,
+    "/required": false,
+    "/severity": "warning"
+  },
+  "issue64-disabled-test-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/required": false,
+    "/severity": "warning",
+    "/diagnostics/0/evidence/language": "cpp",
+    "/diagnostics/0/file": "tests/queue.cc",
+    "/diagnostics/0/range/start_line": 2
+  },
+  "issue64-ignored-atomic-cas-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0,
+    "/required": false,
+    "/severity": "warning"
+  },
+  "issue64-ignored-atomic-cas-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/required": false,
+    "/severity": "warning",
+    "/diagnostics/0/evidence/language": "cpp",
+    "/diagnostics/0/file": "src/queue.cpp",
+    "/diagnostics/0/range/start_line": 1
+  },
+  "issue64-workaround-marker-pass-typical": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0,
+    "/required": false,
+    "/severity": "warning"
+  },
+  "issue64-workaround-marker-fail-typical": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/required": false,
+    "/severity": "warning",
+    "/diagnostics/0/evidence/language": "python",
+    "/diagnostics/0/file": "src/cache.py",
+    "/diagnostics/0/range/start_line": 1
+  }
+}

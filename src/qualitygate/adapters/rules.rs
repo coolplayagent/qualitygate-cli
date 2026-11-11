@@ -347,6 +347,7 @@ fn source_patterns(
             }
             for (pattern, regex) in &selected {
                 if regex.is_match(line) {
+                    let (message, fix) = source_pattern_guidance(&result.id, pattern);
                     result.push(diagnostic(
                         &result.id,
                         Some(path),
@@ -354,9 +355,9 @@ fn source_patterns(
                             start_line: line_number,
                             end_line: line_number,
                         }),
-                        format!("Changed source line matches configured review pattern {pattern:?}"),
+                        message,
                         serde_json::json!({"language": language, "pattern": pattern}),
-                        "Review the changed API or marker against the repository's security and quality policy",
+                        fix,
                         &format!("{path}:{line_number}:{pattern}"),
                     ))?;
                 }
@@ -367,6 +368,30 @@ fn source_patterns(
         bail!("Source pattern analysis exceeded 30 seconds");
     }
     Ok(())
+}
+
+fn source_pattern_guidance(id: &str, pattern: &str) -> (String, &'static str) {
+    let (signal, fix) = match id {
+        "cpp-disabled-test" => (
+            "Disabled-test marker requires review; this is a review signal, not proof of missing coverage",
+            "Confirm the reason, tracking issue, and replacement coverage; restore the test when appropriate. Tracking text alone does not suppress this marker signal",
+        ),
+        "c-ignored-atomic-cas" => (
+            "Configured compare-exchange result discard requires review; this is a review signal, not proof of a data race or lost update",
+            "Verify the selected API's success and failure semantics and handle failure or document why ignoring it is valid; check retry behavior and supporting tests",
+        ),
+        "workaround-marker" => (
+            "Temporary-workaround marker requires review; this is a review signal, not proof of a defect",
+            "Confirm a root-cause issue, an owner or expiry condition, and a removal plan; remove the workaround only after fixing its cause. Tracking text alone does not suppress this marker signal",
+        ),
+        _ => {
+            return (
+                format!("Changed source line matches configured review pattern {pattern:?}"),
+                "Review the changed API or marker against the repository's security and quality policy",
+            );
+        }
+    };
+    (format!("{signal}; matched pattern {pattern:?}"), fix)
 }
 
 pub(super) fn compiled_patterns(

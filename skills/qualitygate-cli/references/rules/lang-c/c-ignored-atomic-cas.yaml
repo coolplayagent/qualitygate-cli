@@ -1,0 +1,18 @@
+id: c-ignored-atomic-cas
+version: 1
+description: Review explicitly discarded C11 compare-exchange results in C and C++ source
+implementation: source-pattern
+language: [c, cpp]
+requires_capabilities: [files]
+defaults:
+  required: false
+  severity: warning
+  parameters:
+    languages: [c, cpp]
+    prohibited_patterns:
+      c: ['\(\s*void\s*\)\s*atomic_compare_exchange_(?:weak|strong)(?:_explicit)?\s*\(']
+      cpp: ['\(\s*void\s*\)\s*atomic_compare_exchange_(?:weak|strong)(?:_explicit)?\s*\(']
+standard_refs:
+  - {source_id: sei-cert-c, controls: [function-safety]}
+  - {source_id: sei-cert-cpp, controls: [concurrency-safety]}
+lifecycle_inputs: [c-ignored-atomic-cas-review]

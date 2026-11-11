@@ -30,6 +30,7 @@ rust_library(
 rust_test(
     name = "unit_tests",
     crate = ":adapters",
+    compile_data = ["//:packaged_rules"],
     aliases = aliases(
         normal_dev = True,
         proc_macro_dev = True,

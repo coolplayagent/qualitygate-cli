@@ -116,6 +116,43 @@ for the complete Agent procedure and the
 [rule-engine architecture](../03-architecture/06-rule-engine-implementation.md)
 for runtime implementation boundaries.
 
+## Public review knowledge pack
+
+The [review cards](../../../skills/qualitygate-cli/references/review-pack.md) cover concurrency,
+lifetime, boundary safety, cross-path consistency and test quality, with a separate workflow
+card. Each specifies applicability, questions, required evidence, counterexamples and an
+insufficient-evidence outcome. They guide review; they do not establish semantic correctness.
+The [obligation example](../../../skills/qualitygate-cli/references/examples/review-obligations.yaml)
+uses the existing `agent-obligation` v1 protocol, with six optional, unadopted instruction
+obligations for implementer/reviewer roles. No additional CLI or Prompt-rule protocol is needed.
+
+To consume the pack in another repository:
+
+1. Copy only the selected card headings and their complete sections into a versioned
+   repository-relative document. Keep the installation guide in the Skill so its relative
+   links remain valid. An installed Skill path outside the repository cannot be a normative
+   snapshot source.
+2. Export `qualitygate schema agent-obligation --format json`. For each selected card, run
+   `qualitygate rules source --document <repository-path> --section <exact-heading> --format json`
+   and replace its source with the returned object. The example's digests bind the shipped
+   document at its original path; copying, editing or translating requires fresh binding.
+3. Merge only selected obligations into the existing policy's `agent_obligations`; do not
+   overwrite other configuration or copy an adoption record. Preserve the core review steps
+   in `must`: projection does not automatically expand the source document into the Prompt.
+4. Run `qualitygate config --show --format json` to obtain `agent_bindings`. An authorized
+   reviewer records actual adoption against the relevant binding, following the
+   [Agent contract workflow](../02-reference/09-agent-contracts.md).
+5. Request `qualitygate agent-contract --worktree --role reviewer --format json`, using the
+   same base, task and policy inputs as verification. Read its Prompt and gap list. Unadopted
+   optional cards are excluded even when `ready` is true; readiness never proves compliance.
+
+Selection currently uses role/task scope, not automatic diff/AST routing. Rebind and re-review
+when a source or obligation changes. Review results must retain file/symbol/call-chain evidence,
+counterevidence and explicit insufficient-evidence outcomes, without converting them to passes.
+`judgment run` can optionally triage an existing completed warning finding; it is not a general
+diff-review entry point and does not change the deterministic gate.
+
+
 ---
 
 [Previous: Rule configuration](03-rule-configuration.md) · [Contents](../README.md) · [Next: Agent repair and acceptance](04-agent-repair-and-acceptance.md)
