@@ -61,7 +61,7 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 | INIT-33 | 首次运行错误遵循 JSON/table/Markdown 格式；未初始化时给出下一步。init 提供 HEAD/工作区元数据预检，大文件、不支持条目、截断及预检失败明确可见；候选创建不代表检查通过 | `tests/init.rs`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 | INIT-35 | 缺少本地配置或所选策略快照缺少配置时，保留原有完整错误报告字段；仅在能确定安全后续操作时输出 `next_steps`，不增加重复的 `error` 对象。命令以可直接执行的参数数组输出，人类格式标注 shell；显式策略引用缺失时不建议初始化本地文件。Windows 普通扩展路径在展示时还原为常用形式，特殊路径保留原形式 | `tests/init.rs`、`paths::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 | SNAP-33 | 单文件采集容量默认 2 MiB，可显式调整至 1–8 MiB；Git/worktree 保留完整字节与摘要，总量、并发、超时和输出限制继续生效；diff/MR/path 不隐式排除历史文件；重检保留预算，策略变化与违规仍然阻塞 | `tests/large_repository.rs`、`snapshot::git::tests`、`snapshot::tests`；[快照语义](../../docs/zh/01-user-guide/02-snapshots-and-check-workflow.md) |
-| SNAP-33-REVIEW | 测试 overlay 沿用单文件预算；受保护套件的可选 `snapshot_max_file_mib` 默认 2、范围 1–8，预算变更需要匹配外部信任；人读引导转义控制字符，JSON 保留原路径 | `tests/test_effectiveness.rs`、`tests/policy_validation.rs`、`interfaces::render::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
+| SNAP-33-REVIEW | 测试 overlay 沿用单文件预算；受保护套件的可选 `snapshot_max_file_mib` 默认 2、范围 1–8，预算变更需要匹配外部信任；人读引导转义控制字符，JSON 保留原路径 | `tests/test_effectiveness.rs`、`tests/policy_validation.rs`、`report_evidence::render::tests`；[验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
 
 ### 3.1 变更规范检查（diff 级，核心）
 
@@ -108,7 +108,7 @@ YAML-EXPANSION-01：策略、任务、项目规则、验证套件、打包规则
 （包含映射键、标签名）、4 MiB UTF-8 字符串和根下 64 层。别名重复访问必须累计，保留普通
 别名、字面文本、重复键拒绝和格式错误语义；错误不得降级为通过或修改原始输入。
 项目规则既有 50,000 节点限制保留。配置/任务超限为未完成，规则静态验证保留 YAML 问题且
-不能生成或加载该规则；外部信任超限不访问或修改策略状态。证据见 `config::yaml_budget::tests`、
+不能生成或加载该规则；外部信任超限不访问或修改策略状态。证据见 `check_planning::yaml_budget::tests`、
 `tests/doctor/yaml.rs`、`tests/rule_authoring.rs::expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs`
 与 `tests/policy_promotion.rs::external_yaml_trust_expansion_is_rejected_before_policy_store_access`。
 
@@ -116,7 +116,7 @@ YAML-SCALAR-WORK-01：上述 YAML 入口在数值类型解析前额外限制展�
 包含数值写法、映射键及解析后的标签文本；重复别名按引用子树成本累计，不反复解析数值。
 预检使用有界集合栈和已完成锚点成本，不构造 Value 树；保持 UTF-8/BOM、标签、普通别名与
 锚点重绑定的既有语义，拒绝递归别名、无效编码和多文档输入。错误保留行列、原始输入及既有
-未完成/规则无效语义。证据见 `config::yaml_scalar_work::tests` 和 YAML-EXPANSION-01 的
+未完成/规则无效语义。证据见 `check_planning::yaml_scalar_work::tests` 和 YAML-EXPANSION-01 的
 配置、任务、规则生成及外部信任回归；工作量预算不等同于实际耗时保证。
 
 ### 3.2 构建 / 静态质量聚合
@@ -133,12 +133,12 @@ YAML-SCALAR-WORK-01：上述 YAML 入口在数值类型解析前额外限制展�
 
 REPORT-COUNT-01：同一检查的测试报告与覆盖率报告累计匹配计数时，溢出必须报告未完成，
 不能在 release 中回绕后通过或在 debug 中触发 panic；保留先前违规和原始报告工件，阻塞依赖检查。
-证据见 `application::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`、
+证据见 `report_evidence::report_gate::tests::matched_entity_totals_reject_overflow_across_test_and_coverage_reports`、
 `tests/execution/report_counts.rs` 及[工具报告契约](../../docs/zh/02-reference/03-projects-and-tool-reports.md)。
 
 COVERAGE-THRESHOLD-01：覆盖率阈值按配置值的规范化十进制表示与精确计数比较，不能因展示百分比
 舍入而误放行；小数阈值相等时通过，可选分支与空测量集合语义保持一致。
-证据见 `domain::coverage::tests` 与 `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages`。
+证据见 `report_evidence::coverage::tests` 与 `tests/coverage.rs::coverage_thresholds_use_exact_counts_before_rounding_percentages`。
 
 JUNIT-EVIDENCE-01：普通与配对 JUnit 共用套件计数和结果结构校验。每层可选 tests/failures/errors/
 skipped 必须与后代用例一致；结果种类冲突、重复 error/skipped、游离结果或非法父节点使验证
@@ -182,7 +182,7 @@ owner。回归覆盖精确工作预算、空作用域、兄弟元素累计、继
 
 LCOV-SUMMARY-01：LCOV 的 `LF`、`LH`、`BRF` 或 `BRH` 与明细矛盾时，诊断必须包含对应 `SF`
 源文件、声明值和观测值；仍报告未完成并保留原始产物，不能忽略计数或用阈值掩盖矛盾。
-证据见 `adapters::reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 与
+证据见 `report_evidence::tool_reports::tests::lcov_sections_merge_by_identity_and_validate_source_summaries` 与
 `tests/coverage_llvm_live.rs::rust_lcov_reports_require_measured_branches_and_consistent_source_summaries`。
 
 RATCHET-EVIDENCE-01：基线失败不能丢失当前分析已生成且可采集的原始文件与 stdout 报告。
@@ -210,16 +210,16 @@ COMMAND-SCOPE-01：命令检查可显式声明 `when_changed`，以语言与仓�
 doctor 使用相同选择，在 `not_executed` 保留原因；全部检查跳过仍不构成完整通过。
 策略无效、超时、执行失败、报告缺失和快照不匹配不能转为成功跳过。保持完整不可变命令输入、
 原始 argv 和现有输入保护，不缓存跨快照命令结果。证据见 `tests/command_applicability.rs`
-（含 `c_headers_activate_both_c_and_cpp_consumers`）、`config::change_selection::tests`
+（含 `c_headers_activate_both_c_and_cpp_consumers`）、`resource_selection::trigger_selection::tests`
 和[配置说明](../../docs/zh/01-user-guide/03-rule-configuration.md)。
 
 SYNTAX-REUSE-01：单次检查在结构规则间共享有界语法事实，缓存绑定该次不可变输入，避免重复解析
 相同文件及其基线；缓存不会放宽语法解析、时间和诊断预算，也不能将失败转成可用事实。
 跨文件移动仍在所选语言的完整变更集上匹配，不能因反馈路径过滤而误报新增实体。
 内置规则缺少显式语言过滤参数时，使用其已声明支持语言作为默认值。
-证据见 `adapters::syntax::cache::tests`、
-`adapters::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、
-`adapters::structure_rules::tests::shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`
+证据见 `source_analysis::syntax::cache::tests`、
+`rule_evaluation::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、
+`rule_evaluation::structure_rules::tests::shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`
 与既有结构规则集成回归。
 
 SHARED-EXECUTION-01：基线派生由 snapshot 层在阻塞工作线程中完成，直接选择已捕获 base 文件并
@@ -235,7 +235,7 @@ INPUT-PROTECTION-01：Windows 输入校验器在整个生命周期持有允许�
 禁止无保护回退。句柄获取与初始校验共享 30 秒预算和 100,000 文件上限，创建失败或释放校验器时关闭
 句柄，正常读取和后续清理仍可执行。实际字节、文件身份及属性校验保持有效，属性变更恢复后仍永久失效。
 预检对失效输入不启动工具探测。原生 selfcheck 对阻止或检测到的变更均给出未完成，保留底层错误。
-证据见 `snapshot::input_guard::tests`、`snapshot::tests`、`application::doctor_context::tests`、
+证据见 `snapshot::input_guard::tests`、`snapshot::tests`、`snapshot_preflight::doctor_context::tests`、
 `tests/selfcheck.rs` 与 `.github/workflows/windows-snapshot.yml`。
 
 EXECUTABLE-FILE-01：可执行身份在打开前验证路径解析到普通文件及大小预算，打开后继续复核句柄，
@@ -254,7 +254,7 @@ CONFIG-FILE-01：配置文件与发现阶段输入在打开前检查普通文件
 RULE-ASSET-01：内置规则资产跨包共享含边界值的 256 文件、1 MiB 预算；按实际读取字节累计，
 每次读入不超过剩余预算加一个探测字节，元数据低报和读取增长不能绕过预算。打开前及句柄上检查
 普通文件类型与大小，保留 Bazel 规则资产符号链接支持。超限在解析前保持未完成，修复后可重检恢复。
-证据见 `config::catalog_assets::tests` 与
+证据见 `rule_catalog::catalog_assets::tests` 与
 `tests/selfcheck.rs::underestimated_asset_lengths_are_incomplete_before_parsing_and_recover_after_repair`
 （Linux procfs 反例）；边界见[资源限制](../../docs/zh/02-reference/05-exit-codes-and-resource-limits.md)。
 
@@ -343,7 +343,7 @@ YAML 声明规则选择、参数和策略；复杂判定允许使用生态工具
 PYTHON-METADATA-01：安装元数据采集在打开前验证普通文件类型和 2 MiB 上限，并复核打开的
 句柄；保留有界读取和累计预算。已有 FIFO、socket、目录和超限元数据不能使采集无期限停在
 打开阶段或产生完整事实。错误保留命令与安装报告证据并阻断依赖检查，普通元数据修复后恢复。
-证据见 `application::python_install::tests` 和 `tests/execution/python_metadata.rs`；
+证据见 `gate_execution::python_install::tests` 和 `tests/execution/python_metadata.rs`；
 真实 pip 验收仍由 `tests/python.rs` 单独提供。
 
 ### 5.1 统一结构视图（Canonical Structure View）
@@ -745,7 +745,7 @@ Agent 负责生成规则、测试与修复提案；CLI 保持无需模型调用�
 |---|---|---|
 | EVO-01 | 按任务类型组织验收 | 提供有明确前提的任务模板；缺陷修复可验证旧代码反例，合法重构不默认要求旧版本失败 |
 | EVO-02 | 面向 Agent 的修复反馈 | 有界精简反馈保留诊断、证据、复验参数与剩余交付项，和完整报告的门禁一致 |
-| FEEDBACK-WORK-01 | 反馈构建成本 | 用借用预览计量诊断，仅为可容纳成员构建 JSON；当前检查的最小成员也无法放入时停止该清单，但保留较小后续成员、后续检查和独立执行缺口；计数、来源指针、截断及门禁结论不变。证据：`domain::feedback::tests`，尤其 `smaller_later_members_and_checks_survive_an_exhausted_inventory`；性能比较须绑定实际源码，单独记录测量范围 |
+| FEEDBACK-WORK-01 | 反馈构建成本 | 用借用预览计量诊断，仅为可容纳成员构建 JSON；当前检查的最小成员也无法放入时停止该清单，但保留较小后续成员、后续检查和独立执行缺口；计数、来源指针、截断及门禁结论不变。证据：`repair_feedback::feedback_projection::tests`，尤其 `smaller_later_members_and_checks_survive_an_exhausted_inventory`；性能比较须绑定实际源码，单独记录测量范围 |
 | EVO-03 | 跨 Agent 验收闭环 | 至少两种 Agent 使用相同 CLI 契约完成修复与复验，最终完整报告绑定实际组合后的代码快照 |
 | EVO-04 | 从失败案例演进规则 | 区分生成、人工确认与独立验证案例，复用候选验证、独立批准、推广和回退机制 |
 | EVO-05 | 真实收益与交付成本评估 | 保留既有工具基线、独立收益归因、全部尝试与人工复核，缺失数据和零分母保持未知 |
@@ -850,10 +850,10 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | 编号 | 要求 | 验收证据 |
 |---|---|---|
 | DEC-01 | 可导出版本化 decision、feedback 和 project-rule Schema；`check`、feedback、rule validation、selfcheck 及策略/试点摘要可选择带判别类型的 envelope，保留原始 payload、证据摘要、warning、gap、pending 与 omission；未完成不得表示为通过 | `tests/decision_envelope.rs`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[证据矩阵](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md) |
-| DEC-02 | 外置 provider 仅用固定命令、版本与输入摘要对 warning 做 shadow/advisory 评估；deterministic、probabilistic、abstained、execution-gap 类型闭合，非法输出或失效校准不改变原门禁并留下原始证据 | `tests/judgment_provider.rs`、`domain::judgment::tests`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
+| DEC-02 | 外置 provider 仅用固定命令、版本与输入摘要对 warning 做 shadow/advisory 评估；deterministic、probabilistic、abstained、execution-gap 类型闭合，非法输出或失效校准不改变原门禁并留下原始证据 | `tests/judgment_provider.rs`、`judgment_review::assessment_contracts::tests`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
 | DEC-03 | warning 试点隔离校准与验证时间，使用独立标签计算校准与风险指标，对高优先级建议抽样审计；缺证据保持未完成，策略变更仍走外部批准流程 | `tests/judgment_provider.rs`、[协议](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)、[策略演进](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) |
 
-| SNAP-33-DELIVERY | Selector-derived delivery-line checks without a separate CLI scope option, policy-bound pre-acquisition exclusions, preserved command failures and packaged Skill trimming/bootstrap workflows | `tests/delivery_scope.rs`, `tests/quality.rs`, `application::report_gate::tests` |
+| SNAP-33-DELIVERY | Selector-derived delivery-line checks without a separate CLI scope option, policy-bound pre-acquisition exclusions, preserved command failures and packaged Skill trimming/bootstrap workflows | `tests/delivery_scope.rs`, `tests/quality.rs`, `report_evidence::report_gate::tests` |
 | SNAP-RENAME-01 | 精确字节重命名按路径字典序一一配对，每个已删除路径最多使用一次；相同内容的多余副本仍为新增文件并参与新增行和新文件检查，未配对旧路径仍为删除；保留原文件、二进制、空文件和权限语义不变；大量重复内容不反复扫描已消耗候选，采集截止时间继续生效 | `snapshot::tests::rename_sources_are_consumed_once_in_path_order`；`tests/delivery_scope.rs::surplus_rename_copies_remain_added_and_subject_to_delivery_rules`；`tests/benchmarks.rs::duplicate_content_rename_storm_consumes_each_old_path_once` |
 
 ## 15. 能力契约与统一环境预检（issue #39）
@@ -861,13 +861,13 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
 | ENV-39-01 | capabilities 无仓库、配置或网络依赖；可执行摘要区分同版本构建；输出协议、版本化能力 ID 和限制，打包 Schema | `tests/doctor.rs::offline_capabilities_and_schemas_ignore_repository_and_invalid_policy`；`tests/quality/skill_package.rs` |
-| ENV-39-02 | YAML 结构、运行时要求、严格字段/类型分阶段验证，保留位置；旧序列化不增加空字段；不将拼写错误泛化为旧版本 | `tests/doctor.rs::explicit_requirements_precede_strict_fields_but_do_not_mask_bad_yaml`；`config::runtime::tests` |
+| ENV-39-02 | YAML 结构、运行时要求、严格字段/类型分阶段验证，保留位置；旧序列化不增加空字段；不将拼写错误泛化为旧版本 | `tests/doctor.rs::explicit_requirements_precede_strict_fields_but_do_not_mask_bad_yaml`；`check_planning::runtime_validation::tests` |
 | ENV-39-03 | doctor 与 check 对 selected profile、依赖、活动策略、任务和 policy-ref 使用相同计划；required_env 仅检查存在非空且不泄露值 | `tests/doctor.rs`；`tests/policy_promotion.rs` |
-| ENV-39-04 | 默认静态；显式工具探针只运行 tools argv，顺序共享 120 秒；失败、超时、输出超限、空版本、输入与工具替换保留未完成 | `tests/doctor/probes.rs`；`application::doctor_context::tests` |
+| ENV-39-04 | 默认静态；显式工具探针只运行 tools argv，顺序共享 120 秒；失败、超时、输出超限、空版本、输入与工具替换保留未完成 | `tests/doctor/probes.rs`；`snapshot_preflight::doctor_context::tests` |
 | ENV-39-05 | 分别检查实际 base/target/policy 元数据；工作区、index、diff 相互隔离；保护输入、总量、2/8 MiB、最大容量与明细截断明确 | `tests/doctor/budgets.rs`；`snapshot::selected_preflight::tests` |
 | ENV-39-06 | scope 固定 preflight，0 只代表请求范围通过，2 表示受阻或未完成；保留未执行项、修复 argv，不能替代正式交付门禁 | `tests/doctor.rs`；[协议说明](../../docs/en/02-reference/06-runtime-and-preflight.md) |
 | ENV-39-07 | Skill 依次解析运行时、能力/版本、配置、doctor、check；保留初始化约束，提供历史兼容表、大仓库、PowerShell/Git Bash/Linux/WSL 指引 | `tests/quality/skill_package.rs`；[Windows 验证流程](../../.github/workflows/pr-checks.yml) 的实际运行证据 |
-| DOCTOR-56 | doctor 默认人类输出/显式 JSON summary 有界；完整报告保存在独立私有临时目录并返回路径/摘要/字节数；保留 0/2 语义，写入失败明确未完成，原 JSON 协议兼容 | `tests/doctor/output.rs`；`application::doctor_output::tests`；`interfaces::doctor_summary::tests` |
+| DOCTOR-56 | doctor 默认人类输出/显式 JSON summary 有界；完整报告保存在独立私有临时目录并返回路径/摘要/字节数；保留 0/2 语义，写入失败明确未完成，原 JSON 协议兼容 | `tests/doctor/output.rs`；`snapshot_preflight::doctor_output::tests`；`snapshot_preflight::doctor_summary::tests` |
 
 本变更不安装工具、不修改项目外的 RelayAgent，也不发布新版本。Windows 原生实测、Miri、
 ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际运行。
@@ -878,14 +878,14 @@ OPERATOR-SET-01：v3 的去重与子集比较使用有界标量索引，在既�
 不同值较少的重复集合保持线性处理；少量子集查询直接扫描，避免为大右集合额外排序。
 索引按精确标量值比较，去重保留首次出现顺序及来源。
 全部操作数完整求值，空左集合不构造无用索引。索引比较、扫描、移动和缓冲区计入共享预算，
-耗尽仍为未完成。证据见 `adapters::operators_v3::tests` 及
+耗尽仍为未完成。证据见 `rule_evaluation::operators_v3::tests` 及
 `tests/operators/v3.rs::v3_file_correspondence_scales_without_relaxing_shared_budgets`。
 
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
-| CONSTRAINT-01 | 有界严格条款清单绑定规范章节、解释、例子、有效检查定义及采用记录；来源保护、策略冻结、快照范围保持一致；未采用、过期、不支持、未运行和超时保留缺口；必需条款违规阻断，可选缺口可见，不能宣称自然语言提取已穷尽或标签提供了宿主强制能力 | `tests/constraint_coverage.rs`；`domain::constraint::tests`；[条款覆盖](../../docs/zh/02-reference/07-constraint-coverage.md) |
-| OPERATOR-01 | 通过独立 v2 契约提供类型化有限算子，v1 拒绝新字段；所有声明事实完整且绑定后求值；空集合语义、错误类型、深度/节点/集合/字节/运算/时间共享预算明确；失败条件与执行缺口分开，保留已有违规和有界表达式/实体来源观察记录 | `tests/operators.rs`；`domain::operator::tests`；`adapters::operators::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
-| OPERATOR-02 | 独立 v3 契约提供命名事实来源、词法变量与外层引用、标量投影/去重/集合比较及有界字符串变换；全部来源绑定同一快照，未改动对应文件可显式参与；打包示例的文档源摘要在 Windows 风格检出后仍按精确字节校验；主集合与命名来源共享采集截止时间，复制事实前预留实体/字节额度，语法解析和匹配继承剩余时间；类型、完整性、操作/扫描/物化/时间预算失败不静默降级；v1/v2 保持兼容，无额外语言运行时 | `tests/operators/v3.rs`（通过 `tests/operators.rs`）；`domain::operator_v3::tests`；`adapters::operators_v3::tests`；`adapters::custom_rules::selection::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
+| CONSTRAINT-01 | 有界严格条款清单绑定规范章节、解释、例子、有效检查定义及采用记录；来源保护、策略冻结、快照范围保持一致；未采用、过期、不支持、未运行和超时保留缺口；必需条款违规阻断，可选缺口可见，不能宣称自然语言提取已穷尽或标签提供了宿主强制能力 | `tests/constraint_coverage.rs`；`constraint_coverage::constraint::tests`；[条款覆盖](../../docs/zh/02-reference/07-constraint-coverage.md) |
+| OPERATOR-01 | 通过独立 v2 契约提供类型化有限算子，v1 拒绝新字段；所有声明事实完整且绑定后求值；空集合语义、错误类型、深度/节点/集合/字节/运算/时间共享预算明确；失败条件与执行缺口分开，保留已有违规和有界表达式/实体来源观察记录 | `tests/operators.rs`；`rule_catalog::operator::tests`；`rule_evaluation::operators_v2::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
+| OPERATOR-02 | 独立 v3 契约提供命名事实来源、词法变量与外层引用、标量投影/去重/集合比较及有界字符串变换；全部来源绑定同一快照，未改动对应文件可显式参与；打包示例的文档源摘要在 Windows 风格检出后仍按精确字节校验；主集合与命名来源共享采集截止时间，复制事实前预留实体/字节额度，语法解析和匹配继承剩余时间；类型、完整性、操作/扫描/物化/时间预算失败不静默降级；v1/v2 保持兼容，无额外语言运行时 | `tests/operators/v3.rs`（通过 `tests/operators.rs`）；`rule_catalog::operator_v3::tests`；`rule_evaluation::operators_v3::tests`；`rule_evaluation::custom_rules::selection::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
 | OPERATOR-PORTABLE-01 | 预编译 CLI 的 v3 Lambda 校验与执行不依赖 Rust、Node.js 或 Python 运行时；同一 DSL 支持 Python/TypeScript 文件对应约定；Git 快照依赖保留，外部命令仍需其声明工具；无语言工具的 Unix 子进程中，存在未修改对应文件时通过、缺失时违规、来源摘要变化时未完成 | `tests/operators/portable.rs::python_and_typescript_lambdas_need_only_the_cli_and_git`（通过 `tests/operators.rs`，Unix）；[有界算子](../../docs/zh/02-reference/02-rules.md) |
 | AGENT-01 | Project adopted behavior obligations for the consuming agent with source/policy/task/snapshot bindings; readiness never implies compliance or host enforcement. Required gaps and conflicts remain incomplete. |
 | AGENT-HOST-01 | The Rust host injects current obligations before agent launches and guards delivery with host-owned current full evidence, fixed policy/task identity and content-addressed checked bytes. Unsupported required controls remain incomplete; resume/handoff cannot reuse completion. Canonical repository/output paths keep delivery outside checked inputs on every platform. | `tests/agent_host.rs`; `tests/delivery.rs`, including `equivalent_repository_paths_cannot_bypass_delivery_confinement`; `tests/agent_loop.rs`; pure `domain/agent_host_tests.rs` |
@@ -904,35 +904,35 @@ SARIF-EXPANSION-01：SARIF 所有 run 共享 200,000 次引用步骤和 16 MiB �
 重复逻辑名、原始/解析 URI 及 URI 基础标识在去重前累计；借用逻辑名，保留位置前计量
 紧凑 JSON，归一化结果通过有界序列化计数器维持既有 16 MiB 上限，避免先分配完整输出再拒绝。
 引用深度 32、每结果主位置 256 及报告输入限制继续有效。超限报告未完成，保留原始报告和
-策略/源输入，修复后可以恢复。证据见 `adapters::reports::json::tests`、
-`adapters::reports::json_budget::tests` 和
+策略/源输入，修复后可以恢复。证据见 `report_evidence::tool_reports::sarif::tests`、
+`report_evidence::tool_reports::json_budget::tests` 和
 `tests/sarif.rs::excessive_location_expansion_is_incomplete_preserves_inputs_and_recovers`。
 
 REPORT-EXPANSION-01：普通静态检查与 JUnit 报告在追加归一化诊断前计量紧凑 JSON，包含转义；
 同一报告所有文件共享 16 MiB 额度，避免文件级路径在大量诊断中无界复制。复用 SARIF 的有界计数器，
 不分配用于测量的 JSON 副本，不绕过生产者错误校验。超限保持未完成，保留原始报告字节/摘要与输入，
-修复后正常违规和通过均可恢复。证据见 `adapters::reports::diagnostic_budget_tests`、
-`adapters::reports::json_budget::tests::rejected_values_are_not_appended_to_retained_evidence` 和
+修复后正常违规和通过均可恢复。证据见 `report_evidence::tool_reports::diagnostic_budget_tests`、
+`report_evidence::tool_reports::json_budget::tests::rejected_values_are_not_appended_to_retained_evidence` 和
 `tests/diagnostic_expansion.rs::excessive_diagnostics_are_incomplete_preserve_raw_evidence_and_recover`。
 
 REPORT-SOURCE-01：诊断、受影响范围和覆盖率共用捕获路径解析器。完整路径优先；简写路径以目录
 边界匹配，必须唯一，保留路径限制与大小写语义。当前/基线分别按需构建借用字符串的反向字节索引，
 避免对每条诊断穷举整个快照；不复制快照内容或路径文本，基线重命名和行范围校验继续有效。
-证据见 `application::report_sources::tests`、既有 `application::report_gate::tests`，以及
+证据见 `report_evidence::report_sources::tests`、既有 `report_evidence::report_gate::tests`，以及
 `tests/report_sources.rs::diagnostics_and_coverage_share_unique_source_resolution_and_recover_from_ambiguity`。
 
 REPORT-RENAME-01：基线位置先校验原始源文件及行范围，再映射到当前重命名目标。每次报告判定按需
 建立借用路径的重命名索引；仅纳入带旧路径的 `renamed` 变更，空索引也复用，避免逐条扫描全部变更。
 重复旧路径保持快照顺序首个目标，不递归追踪重命名链；未重命名路径保持原值。
-证据见 `application::report_sources::tests::baseline_rename_*`、
-`application::report_gate::tests::baseline_line_validation_precedes_rename_mapping_to_a_longer_current_source` 和
+证据见 `report_evidence::report_sources::tests::baseline_rename_*`、
+`report_evidence::report_gate::tests::baseline_line_validation_precedes_rename_mapping_to_a_longer_current_source` 和
 `tests/report_sources.rs::renamed_baselines_validate_original_lines_preserve_evidence_and_recover`。
 
 ## 18. 规则诊断输出预算
 
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
-| RULE-OUTPUT-01 | 每项检查保留诊断最多 10,000 条及 UTF-8 紧凑 JSON 8 MiB，包含转义和复验参数；项目规则各版本的文件清单、固定断言、依赖和表达式共享预算，追加前计量；复验绑定在阻塞线程中复核；超限保留既有违规并保持未完成，不覆盖早先的执行缺口原因，不伪造省略总数；条款覆盖基于施加输出限制后的最终状态 | `adapters::diagnostic_budget::tests`；`tests/custom_rules/output_budget.rs`；[退出码与资源限制](../../docs/zh/02-reference/05-exit-codes-and-resource-limits.md) |
+| RULE-OUTPUT-01 | 每项检查保留诊断最多 10,000 条及 UTF-8 紧凑 JSON 8 MiB，包含转义和复验参数；项目规则各版本的文件清单、固定断言、依赖和表达式共享预算，追加前计量；复验绑定在阻塞线程中复核；超限保留既有违规并保持未完成，不覆盖早先的执行缺口原因，不伪造省略总数；条款覆盖基于施加输出限制后的最终状态 | `report_evidence::diagnostic_budget::tests`；`tests/custom_rules/output_budget.rs`；[退出码与资源限制](../../docs/zh/02-reference/05-exit-codes-and-resource-limits.md) |
 
 ## RELEASE-1.0：规则文档与发布一致性
 
@@ -946,12 +946,12 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
-| GRAPH-WORK-01 | 每次依赖图操作构建标识/邻接索引，迭代计算闭包和拓扑顺序；同一时刻优先策略声明中最早的就绪节点；未知、重复、禁用和有环依赖仍报错；长链不得消耗递归栈或逐节点全图重扫 | `config::dependencies::tests`；`config::change_selection::tests`；`tests/command_applicability.rs` |
+| GRAPH-WORK-01 | 每次依赖图操作构建标识/邻接索引，迭代计算闭包和拓扑顺序；同一时刻优先策略声明中最早的就绪节点；未知、重复、禁用和有环依赖仍报错；长链不得消耗递归栈或逐节点全图重扫 | `check_planning::dependencies::tests`；`resource_selection::trigger_selection::tests`；`tests/command_applicability.rs` |
 | SCOPE-INDEX-01 | 多路径操作只建立一次借用旧路径索引，当前键优先，重复旧路径保持快照顺序首项；保留交付/仓库和反馈过滤语义；公开可变快照不得缓存过期索引 | `snapshot::scope_index::tests`；既有 delivery/report/coverage 集成测试 |
-| BUILTIN-WORK-01 | 所有内置规则在保留诊断前共享 10,000 条和紧凑 JSON 8 MiB 预算，包含并行批次；共享 30 秒分析截止时间覆盖语法、标记和末次完成检查；耗尽仍未完成，保留已提交诊断和较早错误，不伪造遗漏数量 | `adapters::rules::builtin_limits_tests`；`adapters::diagnostic_budget::tests`；`adapters::markers::tests` |
-| FACT-WORK-01 | Schema 1/2/3 事实采集统一限制 50,000 实体、32 MiB 与 30 秒，包括未传入外部预算的选择器；名称/文本/路径及每个保留标记声明副本均计量；Schema 3 命名来源继续共享预算 | `adapters::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects` |
+| BUILTIN-WORK-01 | 所有内置规则在保留诊断前共享 10,000 条和紧凑 JSON 8 MiB 预算，包含并行批次；共享 30 秒分析截止时间覆盖语法、标记和末次完成检查；耗尽仍未完成，保留已提交诊断和较早错误，不伪造遗漏数量 | `rule_evaluation::builtin_rules::builtin_limits_tests`；`report_evidence::diagnostic_budget::tests`；`rule_evaluation::markers::tests` |
+| FACT-WORK-01 | Schema 1/2/3 事实采集统一限制 50,000 实体、32 MiB 与 30 秒，包括未传入外部预算的选择器；名称/文本/路径及每个保留标记声明副本均计量；Schema 3 命名来源继续共享预算 | `rule_evaluation::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects` |
 | HISTORY-WORK-01 | 交付消息一次批量获取，最多 1,000 提交及 UTF-8 消息累计 8 MiB（含保留换行）；声明历史共享 60 秒总截止时间，向 Git/树读取传入剩余时间并最终复核；64 MiB 内容/消息/trailer 计量在解码扩张前执行，禁止静默遗漏必需历史 | `snapshot::messages::tests`；`snapshot::history::tests`；`snapshot::git::tests` |
-| ASYNC-WORK-01 | CLI 调度 future 位于堆上，检查执行使用独立 poll 栈帧；有界 HTTP JSON 解码/原始字节摘要、Cargo 测试摘要、最终报告工件序列化和 CLI 渲染在阻塞 worker 运行；报告在渲染/反馈/host 紧凑投影间转移所有权，保持证据摘要、序列化和展示过滤语义；摘要解析失败仍保留原始捕获缓冲区及元数据，保存证据/输入复核/超时/捕获错误优先级不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`interfaces::render::tests`；`application::feedback::tests`；`application::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`；[有界栈调度回归](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack` |
+| ASYNC-WORK-01 | CLI 调度 future 位于堆上，检查执行使用独立 poll 栈帧；有界 HTTP JSON 解码/原始字节摘要、Cargo 测试摘要、最终报告工件序列化和 CLI 渲染在阻塞 worker 运行；报告在渲染/反馈/host 紧凑投影间转移所有权，保持证据摘要、序列化和展示过滤语义；摘要解析失败仍保留原始捕获缓冲区及元数据，保存证据/输入复核/超时/捕获错误优先级不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`report_evidence::render::tests`；`repair_feedback::feedback_rendering::tests`；`report_evidence::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`；[有界栈调度回归](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack` |
 
 进程取消边界是 Unix 进程组及 Windows Job；Unix 后代可通过新会话/进程组脱离，不承诺任意进程树沙箱。
 阻塞 worker 使用协作截止时间并保留并发许可直到退出，已进入的操作系统文件调用不保证可被强制中断。
@@ -959,7 +959,7 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 
 ## LANGUAGE-SYNTAX-01：新增语言规则的结构证据
 
-十二条 Python/Go/Shell/TypeScript 规则必须使用选定快照的有界语法树及文件内绑定证据，区分注释、文本、属性、局部遮蔽与实际表达式/命令；变更导入需复核保留调用。拒绝正则覆盖；解析错误、无效编码、超时或工作预算耗尽必须未完成。不可宣称跨文件语义或动态执行完备性。验收见 `adapters::language_syntax::tests`、`tests/internal_language_rules.rs` 及双语需求证据索引。
+十二条 Python/Go/Shell/TypeScript 规则必须使用选定快照的有界语法树及文件内绑定证据，区分注释、文本、属性、局部遮蔽与实际表达式/命令；变更导入需复核保留调用。拒绝正则覆盖；解析错误、无效编码、超时或工作预算耗尽必须未完成。不可宣称跨文件语义或动态执行完备性。验收见 `rule_evaluation::language_syntax::tests`、`tests/internal_language_rules.rs` 及双语需求证据索引。
 
 ## UT-SCENARIO-01：面向场景的独立单元覆盖率
 
@@ -973,7 +973,7 @@ CI 保留独立 UT LCOV 与原有 all-target 90% 门禁，Miri/ASan 和集成门
 测量须区分编译、并行争用与单用例执行，不得为提速删除场景或降低生产限制。
 子进程组 SIGTERM 只造成检查未完成、CLI 退出 2，不能传播到 runner 或调用者；后续正常检查退出 0。
 通过结论同时要求完整报告和 CLI 退出 0，外层 143 必须独立调查，不能由报告覆盖。
-证据见 `adapters::reports::diagnostic_budget_tests`、`runner::tests` 和 `tests/execution.rs`。
+证据见 `report_evidence::tool_reports::diagnostic_budget_tests`、`runner::tests` 和 `tests/execution.rs`。
 
 ## REVIEW-PACK-01：公共评审知识包
 

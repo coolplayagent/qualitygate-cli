@@ -59,7 +59,7 @@ pub mod compatibility_verification {
 
 #[path = "../../src/qualitygate/constraint_coverage"]
 pub mod constraint_coverage {
-    pub use qualitygate_application::constraint_coverage::constraint_coverage;
+    pub use qualitygate_application::constraint_coverage::coverage_evaluation;
     pub use qualitygate_config::constraint_coverage::constraint_inventory;
     pub use qualitygate_config::constraint_coverage::constraints;
     pub use qualitygate_domain::constraint_coverage::constraint;

@@ -27,9 +27,9 @@ v10 取消的是金额验收，不是执行资源预算。每单元最多 3 次�
 
 | 要求 | 验证 |
 |---|---|
-| O-01 | `domain::pilot::tests::v10` 的无计价封存、v9 预算回归、v10 混合字段拒绝和逐尝试模型缺证据回归；`pilot_seal::v10` CLI 集成 |
+| O-01 | `pilot_acceptance::pilot_contracts::tests::v10` 的无计价封存、v9 预算回归、v10 混合字段拒绝和逐尝试模型缺证据回归；`pilot_seal::v10` CLI 集成 |
 | O-02 | v10 汇总 `budget=null` 且无金额缺失 blocker；既有 `domain::pilot` 成本未知回归 |
-| O-03 | `domain::pilot::acceptance::tests::unpriced_pilot_requires_all_eight_nonfinancial_checks` 的八项通过、质量失败与证据未知；旧 v1/v2 检查数回归 |
+| O-03 | `pilot_acceptance::pilot_contracts::acceptance::tests::unpriced_pilot_requires_all_eight_nonfinancial_checks` 的八项通过、质量失败与证据未知；旧 v1/v2 检查数回归 |
 | O-04 | `published_skill_has_only_bundled_document_references_and_template` 的 v10 字节校验；release.yml 打包清单校验 |
 
 此阶段只变更新计划的机器契约。真实试点没有通过，也没有开始观察。
