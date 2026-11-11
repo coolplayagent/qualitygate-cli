@@ -779,8 +779,8 @@ fn executable_catalog_reads_skill_reference_rules_without_compiled_manifests() {
     assert!(catalog.entries.values().all(|entry| {
         entry.builtin.is_some() && entry.origin.starts_with("skill:references/rules/")
     }));
-    let catalog = read(root, "src/qualitygate/config/catalog.rs");
-    let environment = read(root, "src/qualitygate/env/mod.rs");
+    let catalog = read(root, "src/qualitygate/rule_catalog/catalog.rs");
+    let environment = read(root, "src/qualitygate/env.rs");
     assert!(!catalog.contains("include_str!(\"../../../qualitygate/rules/"));
     assert!(environment.contains("BUILTIN_RULES_DIR_ENV"));
 }

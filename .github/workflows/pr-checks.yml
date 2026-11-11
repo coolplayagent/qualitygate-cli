@@ -289,6 +289,51 @@ jobs:
         run: cargo test --locked --test coverage_live --test coverage_llvm_live -- --ignored --nocapture
 
   miri:
+    env:
+      PURE_DOMAIN_MODULES: |
+        agent_runtime::obligation_contracts::
+        agent_runtime::host_decisions::
+        check_planning::project::
+        check_planning::runtime_contracts::
+        constraint_coverage::constraint::
+        content_digest::
+        external_acceptance::manual_contracts::
+        external_acceptance::case_lineage::
+        external_acceptance::provenance_contracts::
+        gate_execution::check_scope::
+        gate_execution::gate::
+        judgment_review::assessment_contracts::
+        pilot_acceptance::pilot_contracts::
+        policy_lifecycle::evolution::
+        policy_lifecycle::policy_approval::
+        policy_lifecycle::effectiveness_measures::
+        policy_lifecycle::policy_evaluation::
+        policy_lifecycle::policy_input::
+        policy_lifecycle::rollback_contracts::
+        policy_lifecycle::source_review::
+        repair_feedback::delivery_contracts::
+        repair_feedback::feedback_projection::
+        report_evidence::coverage::
+        report_evidence::decision_envelope::
+        report_evidence::ratchet::
+        report_evidence::report::
+        report_evidence::verification::
+        resource_selection::selection_contracts::
+        resource_selection::resource_exclusions::
+        resource_selection::snapshot_budget::
+        rule_catalog::category::
+        rule_catalog::language::
+        rule_catalog::normative::
+        rule_catalog::operator::
+        rule_catalog::operator_v3::
+        rule_catalog::rule_guidance::
+        rule_catalog::rule_lifecycle::
+        rule_catalog::rule_parameters::
+        rule_catalog::rule_validation::
+        selfcheck::fixture_results::
+        snapshot_preflight::readiness_contracts::
+        test_effectiveness::counterexample_decisions::
+        xml_parsing::xml_budget::
     name: miri (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -306,18 +351,34 @@ jobs:
         run: |
           case "${{ matrix.shard }}" in
             evolution)
-              cargo +nightly miri test --locked --lib --all-features domain::evolution::
+              filters=(policy_lifecycle::evolution::)
               ;;
             pilot-base)
-              cargo +nightly miri test --locked --lib --all-features domain::pilot::tests:: -- --skip domain::pilot::tests::v
+              filters=(pilot_acceptance::pilot_contracts::tests:: --skip pilot_acceptance::pilot_contracts::tests::v)
               ;;
             pilot-versions)
-              cargo +nightly miri test --locked --lib --all-features domain::pilot::tests::v
+              filters=(pilot_acceptance::pilot_contracts::tests::v)
               ;;
             other-domain)
-              cargo +nightly miri test --locked --lib --all-features domain:: -- --skip domain::evolution:: --skip domain::pilot::tests::
+              mapfile -t filters < <(printf '%s' "$PURE_DOMAIN_MODULES")
+              filters+=(--skip policy_lifecycle::evolution:: --skip pilot_acceptance::pilot_contracts::tests::)
+              ;;
+            *)
+              echo "Unknown Miri shard" >&2
+              exit 1
               ;;
           esac
+          inventory="$RUNNER_TEMP/miri-tests-${{ matrix.shard }}.txt"
+          cargo +nightly miri test --locked --lib --all-features -- "${filters[@]}" --list | tee "$inventory"
+          grep -Eq ': test$' "$inventory"
+          cargo +nightly miri test --locked --lib --all-features -- "${filters[@]}"
+      - name: Upload Miri test inventory
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: miri-tests-${{ matrix.shard }}
+          path: ${{ runner.temp }}/miri-tests-${{ matrix.shard }}.txt
+          if-no-files-found: error
 
   address-sanitizer:
     runs-on: ubuntu-latest

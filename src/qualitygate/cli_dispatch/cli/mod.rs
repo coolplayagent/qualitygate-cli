@@ -1,0 +1,775 @@
+mod check;
+
+#[cfg(test)]
+mod tests;
+
+use crate::{application, config, domain::Severity};
+use anyhow::{Result, bail};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use std::{future::Future, path::PathBuf, pin::Pin};
+
+type CommandFuture = Pin<Box<dyn Future<Output = Result<(String, u8)>> + Send>>;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum)]
+pub enum Format {
+    Json,
+    #[default]
+    Table,
+    Markdown,
+}
+
+#[derive(Debug, Parser)]
+#[command(
+    name = "qualitygate",
+    version,
+    about = "Snapshot-bound repository policy and task acceptance gates"
+)]
+pub struct Cli {
+    #[arg(long, global = true, default_value = ".")]
+    root: PathBuf,
+    #[arg(long, global = true, default_value = config::CONFIG_FILE)]
+    config: String,
+    #[arg(long, global = true, value_enum, default_value = "table")]
+    format: Format,
+    /// Emit the versioned machine decision envelope for check, selfcheck, or rules validate.
+    #[arg(long, global = true)]
+    envelope: bool,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Offline runtime identity, supported protocols, capabilities and resource limits.
+    Capabilities,
+    /// Inspect snapshot and command prerequisites without running formal checks.
+    Doctor(Box<crate::interfaces::doctor::DoctorArgs>),
+    /// Run a bounded external warning assessment without changing a check gate.
+    Judgment {
+        #[command(subcommand)]
+        command: Judgment,
+    },
+    /// Export a versioned machine-output JSON Schema.
+    Schema {
+        #[command(subcommand)]
+        kind: SchemaKind,
+    },
+    /// Read-only pilot evidence and verification of externally signed start authorization.
+    Pilot {
+        #[command(subcommand)]
+        command: crate::interfaces::pilot::Pilot,
+    },
+    /// Evidence retention, candidate revisions and immutable policy history.
+    Policy {
+        #[command(subcommand)]
+        command: crate::interfaces::policy::Policy,
+    },
+    #[command(hide = true)]
+    SelfcheckProbe {
+        #[arg(value_parser = ["success", "failure", "timeout", "timeout-long", "overflow"])]
+        mode: String,
+    },
+    /// Discover the repository and create a candidate policy without overwriting.
+    Init {
+        /// Include structurally complete command suggestions in a new candidate.
+        #[arg(long)]
+        with_checks: bool,
+    },
+    /// Execute policy and acceptance checks against a selected Git snapshot.
+    Check(Box<CheckArgs>),
+    /// Project adopted behavior obligations for the consuming agent; runs no checks.
+    AgentContract(Box<crate::interfaces::agent_contract::ProjectArgs>),
+    /// Run a configured consuming agent with current Prompt injection and guarded delivery.
+    AgentRun(Box<crate::interfaces::agent_run::AgentArgs>),
+    /// Compare bundled minimal/typical/stress fixtures with independent goldens.
+    Selfcheck {
+        #[arg(long, value_parser = ["minimal", "typical", "stress"])]
+        fixture: Option<String>,
+        #[arg(long)]
+        rule: Option<String>,
+    },
+    /// Discover rules and manage validated candidate configuration.
+    Rules {
+        #[command(subcommand)]
+        command: Rules,
+    },
+    /// Display effective configuration and its source.
+    Config {
+        #[arg(long, required = true)]
+        show: bool,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum Judgment {
+    /// Compute the source digest for a versioned question YAML document.
+    QuestionDigest {
+        #[arg(long)]
+        input: PathBuf,
+    },
+    Run {
+        #[arg(long)]
+        report: PathBuf,
+        #[arg(long)]
+        policy: PathBuf,
+        #[arg(long)]
+        output_dir: PathBuf,
+        #[arg(long)]
+        fingerprint: Option<String>,
+    },
+    /// Summarize retained warning triage runs against independent review labels.
+    Pilot {
+        #[arg(long)]
+        runs: PathBuf,
+        #[arg(long)]
+        labels: PathBuf,
+        #[arg(long)]
+        audit_seed: String,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum SchemaKind {
+    AgentObligation,
+    OperatorRule,
+    OperatorRuleV3,
+    ProjectRuleFamily,
+    Constraint,
+    Capabilities,
+    Doctor,
+    DoctorSummary,
+    Decision,
+    Feedback,
+    ProjectRule,
+}
+
+#[derive(Debug, Subcommand)]
+enum Rules {
+    #[command(alias = "evidence")]
+    History {
+        rule_id: String,
+        #[arg(long, default_value_t = 0)]
+        offset: usize,
+        #[arg(long, default_value_t = 32, value_parser = clap::value_parser!(u16).range(1..=256))]
+        limit: u16,
+    },
+    /// Prepare a fresh candidate for protected revalidation; approval is still required.
+    Revalidate(crate::interfaces::rule_lifecycle::Change),
+    Demote(crate::interfaces::rule_lifecycle::Change),
+    Deprecate(crate::interfaces::rule_lifecycle::Change),
+    Retire(crate::interfaces::rule_lifecycle::Change),
+    Revoke(crate::interfaces::rule_lifecycle::Change),
+    /// Load selected categories together with all mandatory policy constraints.
+    Context {
+        #[arg(long)]
+        category: Option<String>,
+        #[arg(long)]
+        policy_ref: Option<String>,
+    },
+    /// Inventory all available rule packages, without enabling them.
+    List {
+        #[arg(long)]
+        language: Option<String>,
+        #[arg(long, default_value = "all", value_parser = ["all", "builtin", "project"])]
+        source: String,
+        #[arg(long)]
+        category: Option<String>,
+    },
+    Enable {
+        rule_id: String,
+    },
+    Disable {
+        rule_id: String,
+    },
+    Describe {
+        rule_id: String,
+    },
+    Assign {
+        rule_id: String,
+        #[arg(long)]
+        category: String,
+    },
+    Unassign {
+        rule_id: String,
+        #[arg(long)]
+        category: String,
+    },
+    Configure {
+        rule_id: String,
+        /// JSON values, for example --param 'patterns.rust="^test_"'.
+        #[arg(long = "param")]
+        parameters: Vec<String>,
+        #[arg(long, value_parser = super::value_parsers::severity())]
+        severity: Option<Severity>,
+        #[arg(long, action = clap::ArgAction::Set)]
+        required: Option<bool>,
+    },
+    Categories {
+        #[command(subcommand)]
+        command: Option<Categories>,
+    },
+    /// Export the shipped project-rule JSON Schema (always JSON).
+    Schema,
+    /// Validate YAML/JSON rules, DSL semantics and current source bindings.
+    Validate {
+        #[arg(default_value = config::catalog::PROJECT_RULES_DIR)]
+        path: String,
+    },
+    /// Compute a source binding from one exact normative ATX section.
+    Source {
+        #[arg(long)]
+        document: String,
+        #[arg(long)]
+        section: String,
+    },
+    /// Validate and publish a candidate to qualitygate/rules/<id>.yaml.
+    Generate {
+        #[arg(long)]
+        input: String,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum Categories {
+    List,
+    Create {
+        name: String,
+        #[arg(long, default_value = "")]
+        description: String,
+    },
+    Rename {
+        name: String,
+        new_name: String,
+    },
+    Delete {
+        name: String,
+        #[arg(long)]
+        force: bool,
+    },
+}
+
+#[derive(Debug, Args)]
+#[group(skip)]
+struct CheckArgs {
+    /// Emit bounded JSON feedback linked to the unfiltered persisted report.
+    #[arg(long)]
+    feedback: bool,
+    /// Export a content-addressed ZIP of passing full checked inputs outside the repository.
+    #[arg(long, conflicts_with_all = ["feedback", "envelope", "severity"])]
+    export_delivery: Option<PathBuf>,
+    /// Feedback byte limit including the trailing newline (4..=256 KiB).
+    #[arg(long, requires = "feedback", value_parser = clap::value_parser!(u32).range(4096..=262144))]
+    feedback_max_bytes: Option<u32>,
+    #[arg(long, group = "selection")]
+    diff: Option<String>,
+    #[arg(long, group = "selection")]
+    staged: bool,
+    #[arg(long, group = "selection")]
+    worktree: bool,
+    /// Restrict feedback to a file or directory within the selected snapshot.
+    #[arg(long)]
+    path: Option<String>,
+    #[arg(long, group = "selection")]
+    mr: Option<String>,
+    #[arg(long, requires = "mr")]
+    mr_api_base: Option<String>,
+    #[arg(long, conflicts_with_all = ["diff", "staged", "mr"])]
+    base: Option<String>,
+    /// Reject a replay if its captured base differs from this full commit ID.
+    #[arg(long)]
+    expect_base: Option<String>,
+    #[arg(long, default_value = "full", value_parser = ["quick", "full"])]
+    profile: String,
+    #[arg(long)]
+    task: Option<String>,
+    #[arg(long)]
+    policy_ref: Option<String>,
+    #[arg(long)]
+    output_dir: Option<PathBuf>,
+    /// Caller-controlled JSON trust store outside the repository.
+    #[arg(long, requires = "evidence_dir")]
+    trust_store: Option<PathBuf>,
+    /// Directory containing signed acceptance records, outside the repository.
+    #[arg(long, requires = "trust_store")]
+    evidence_dir: Option<PathBuf>,
+    #[arg(long, value_parser = super::value_parsers::severity())]
+    severity: Option<Severity>,
+    #[command(flatten)]
+    snapshot: crate::interfaces::doctor::SnapshotArgs,
+}
+
+impl Cli {
+    pub fn output_format(&self) -> Format {
+        if matches!(&self.command, Command::Check(args) if args.feedback) {
+            // Feedback is a JSON protocol even when no --format was supplied.
+            Format::Json
+        } else {
+            self.format
+        }
+    }
+
+    pub fn failure_context(&self) -> application::policy_guidance::Context {
+        use application::policy_guidance::{Context, SelectionKind};
+        let (selection, policy_ref) = match &self.command {
+            Command::Check(args) => {
+                let selection = if args.mr.is_some() {
+                    SelectionKind::MergeRequest
+                } else if args.diff.is_some() {
+                    SelectionKind::Diff
+                } else if args.staged {
+                    SelectionKind::Staged
+                } else if args.path.is_some() && !args.worktree {
+                    SelectionKind::Path
+                } else {
+                    SelectionKind::Worktree
+                };
+                (Some(selection), args.policy_ref.is_some())
+            }
+            _ => (None, false),
+        };
+        Context {
+            root: self.root.clone(),
+            config: self.config.clone(),
+            selection,
+            policy_ref,
+        }
+    }
+
+    /// Dispatch once into a heap-owned future so unrelated commands do not
+    /// contribute temporary slots to every poll of a nested check operation.
+    pub fn run(self) -> CommandFuture {
+        if let Command::Check(args) = self.command {
+            Box::pin(check::run(
+                self.root,
+                self.config,
+                *args,
+                self.format,
+                self.envelope,
+            ))
+        } else {
+            Box::pin(self.run_other())
+        }
+    }
+
+    async fn run_other(self) -> Result<(String, u8)> {
+        if matches!(self.command, Command::Capabilities) && self.envelope {
+            bail!("Preflight uses its own protocol and does not produce a decision envelope");
+        }
+        if let Command::Capabilities = self.command {
+            let report = application::capabilities::report().await?;
+            return Ok((
+                crate::interfaces::render::metadata(&serde_json::to_value(report)?, self.format)?,
+                0,
+            ));
+        }
+        if let Command::Doctor(args) = self.command {
+            let summary = args.summary || self.format != Format::Json;
+            let probe_tools = args.probe_tools;
+            let profile = args.profile.clone();
+            let report = if self.envelope {
+                application::doctor::invalid_request(
+                    profile,
+                    probe_tools,
+                    "doctor does not produce a delivery decision envelope",
+                )
+                .await
+            } else {
+                match args.options(self.root, self.config) {
+                    Ok(options) => application::doctor::run(options, probe_tools).await,
+                    Err(error) => {
+                        application::doctor::invalid_request(
+                            profile,
+                            probe_tools,
+                            &format!("{error:#}"),
+                        )
+                        .await
+                    }
+                }
+            };
+            if summary {
+                let (report, artifact) = application::doctor_output::persist(report).await?;
+                return Ok((
+                    crate::interfaces::doctor_summary::render(&report, artifact, self.format)?,
+                    report.exit_code(),
+                ));
+            }
+            let code = report.exit_code();
+            return Ok((
+                crate::interfaces::render::metadata(&serde_json::to_value(report)?, self.format)?,
+                code,
+            ));
+        }
+        if self.envelope && self.format != Format::Json {
+            bail!("--envelope requires --format json");
+        }
+        if let Command::SelfcheckProbe { mode } = self.command {
+            return Ok(application::selfcheck::probe(&mode).await);
+        }
+        if let Command::Selfcheck { fixture, rule } = self.command {
+            let report = application::selfcheck::run(fixture, rule).await;
+            let code = report.decision.exit_code();
+            if self.envelope {
+                let envelope =
+                    crate::domain::decision_envelope::DecisionEnvelope::from_selfcheck(&report)?;
+                return Ok((decision_json(&envelope)?, code));
+            }
+            return Ok((
+                crate::interfaces::render::selfcheck(&report, self.format)?,
+                code,
+            ));
+        }
+        if let Command::Schema { kind } = self.command {
+            let document = tokio::task::spawn_blocking(move || match kind {
+                SchemaKind::AgentObligation => config::agent_contract::schema(),
+                SchemaKind::OperatorRule => config::rule_schema::document_version(2),
+                SchemaKind::OperatorRuleV3 => config::rule_schema::document_version(3),
+                SchemaKind::ProjectRuleFamily => config::rule_schema::family_document(),
+                SchemaKind::Constraint => config::constraint_inventory::schema(),
+                SchemaKind::Decision => config::decision_schema::document(),
+                SchemaKind::Feedback => config::decision_schema::feedback_document(),
+                SchemaKind::ProjectRule => config::rule_schema::document(),
+                SchemaKind::Capabilities => config::preflight_schema::capabilities_document(),
+                SchemaKind::Doctor => config::preflight_schema::doctor_document(),
+                SchemaKind::DoctorSummary => config::preflight_schema::doctor_summary_document(),
+            })
+            .await??;
+            return Ok((serde_json::to_string_pretty(&document)?, 0));
+        }
+        if let Command::Rules {
+            command: Rules::Schema,
+        } = self.command
+        {
+            let schema = tokio::task::spawn_blocking(config::rule_schema::document).await??;
+            return Ok((serde_json::to_string_pretty(&schema)?, 0));
+        }
+        let root = application::repository_root::resolve(self.root).await?;
+        match self.command {
+            Command::Capabilities | Command::Doctor(_) => {
+                unreachable!("preflight handled before repository discovery")
+            }
+            Command::Schema { .. } => unreachable!("schema export does not require a repository"),
+            Command::SelfcheckProbe { .. } => {
+                unreachable!("fixed probe handled before repository discovery")
+            }
+            Command::Selfcheck { .. } => {
+                unreachable!("selfcheck is independent of repository inputs")
+            }
+            Command::Init { with_checks } => {
+                let path = self.config.clone();
+                let initialize_root = root.clone();
+                let initialized = tokio::task::spawn_blocking(move || {
+                    config::initialize_at(&initialize_root, path.as_ref(), with_checks)
+                })
+                .await??;
+                let snapshot_preflight = match application::initialization_preflight(
+                    &root,
+                    &initialized.config,
+                    &self.config,
+                )
+                .await
+                {
+                    Ok(preflight) => serde_json::to_value(preflight)?,
+                    Err(error) => serde_json::json!({
+                        "complete": false,
+                        "reason": format!("{error:#}"),
+                        "next_steps": ["Snapshot preflight is incomplete; candidate creation does not establish check readiness. Run check after reviewing the acquisition error."]
+                    }),
+                };
+                Ok((
+                    crate::interfaces::render::metadata(
+                        &serde_json::json!({"schema_version":1,"source":self.config,"config":initialized.config,"discovery":initialized.discovery,"snapshot_preflight":snapshot_preflight,"created":initialized.created,"with_checks_applied":initialized.with_checks_applied,"status":"candidate","message":"Review candidate checks, report requirements and capability gaps before enforcing this policy"}),
+                        self.format,
+                    )?,
+                    0,
+                ))
+            }
+            Command::AgentContract(args) => {
+                if self.envelope {
+                    bail!("Agent contract projection uses its own protocol");
+                }
+                let role = args.role.clone();
+                let projection =
+                    application::agent_contract::project(args.options(root, self.config)?, role)
+                        .await?;
+                let code = if projection.ready { 0 } else { 2 };
+                Ok((
+                    crate::interfaces::render::metadata(
+                        &serde_json::to_value(projection)?,
+                        self.format,
+                    )?,
+                    code,
+                ))
+            }
+            Command::AgentRun(args) => {
+                if self.envelope {
+                    bail!("Agent host uses its own lifecycle protocol");
+                }
+                let result = application::agent_host::run(args.options(root, self.config)).await?;
+                let code = if result["complete"] == true { 0 } else { 2 };
+                Ok((
+                    crate::interfaces::render::metadata(&result, self.format)?,
+                    code,
+                ))
+            }
+            Command::Config { .. } => {
+                let value =
+                    application::policy_active::configuration(root, self.config.clone()).await?;
+                Ok((crate::interfaces::render::metadata(&value, self.format)?, 0))
+            }
+            Command::Rules { command } => {
+                run_rules(root, self.config, command, self.format, self.envelope).await
+            }
+            Command::Judgment { command } => {
+                if self.envelope && !matches!(&command, Judgment::Pilot { .. }) {
+                    bail!("Judgment run already emits its typed assessment report");
+                }
+                let resolve = |path: PathBuf| {
+                    if path.is_absolute() {
+                        path
+                    } else {
+                        root.join(path)
+                    }
+                };
+                let (value, code) = match command {
+                    Judgment::QuestionDigest { input } => (
+                        application::judgment::question_digest(resolve(input)).await?,
+                        0,
+                    ),
+                    Judgment::Run {
+                        report,
+                        policy,
+                        output_dir,
+                        fingerprint,
+                    } => {
+                        application::judgment::run(application::judgment::Options {
+                            root: root.clone(),
+                            report: resolve(report),
+                            policy: resolve(policy),
+                            output_dir: resolve(output_dir),
+                            fingerprint,
+                        })
+                        .await?
+                    }
+                    Judgment::Pilot {
+                        runs,
+                        labels,
+                        audit_seed,
+                    } => {
+                        application::judgment::summarize(application::judgment::PilotOptions {
+                            runs: resolve(runs),
+                            labels: resolve(labels),
+                            audit_seed,
+                        })
+                        .await?
+                    }
+                };
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_metadata(
+                            crate::domain::decision_envelope::CommandKind::Pilot,
+                            value,
+                            code,
+                        )?;
+                    return Ok((decision_json(&envelope)?, code));
+                }
+                Ok((
+                    crate::interfaces::render::metadata(&value, self.format)?,
+                    code,
+                ))
+            }
+            Command::Pilot { command } => {
+                if self.envelope
+                    && !matches!(&command, crate::interfaces::pilot::Pilot::Summarize { .. })
+                {
+                    bail!("--envelope is available for pilot summarize only");
+                }
+                let resolve = |input: PathBuf| {
+                    if input.is_absolute() {
+                        input
+                    } else {
+                        root.join(input)
+                    }
+                };
+                let (value, code) = match command {
+                    crate::interfaces::pilot::Pilot::Seal { input } => {
+                        application::pilot::seal(resolve(input)).await?
+                    }
+                    crate::interfaces::pilot::Pilot::AuthorizationSubject { input } => {
+                        application::pilot::authorization_subject(resolve(input)).await?
+                    }
+                    crate::interfaces::pilot::Pilot::AcceptanceSubject {
+                        input,
+                        trust_store,
+                        authorization,
+                    } => {
+                        application::pilot::acceptance_subject(
+                            root.clone(),
+                            resolve(input),
+                            trust_store,
+                            authorization,
+                        )
+                        .await?
+                    }
+                    crate::interfaces::pilot::Pilot::Summarize {
+                        input,
+                        trust_store,
+                        authorization,
+                        acceptance,
+                    } => {
+                        application::pilot::summarize(
+                            root.clone(),
+                            resolve(input),
+                            trust_store,
+                            authorization,
+                            acceptance,
+                        )
+                        .await?
+                    }
+                };
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_metadata(
+                            crate::domain::decision_envelope::CommandKind::Pilot,
+                            value,
+                            code,
+                        )?;
+                    return Ok((decision_json(&envelope)?, code));
+                }
+                Ok((
+                    crate::interfaces::render::metadata(&value, self.format)?,
+                    code,
+                ))
+            }
+            Command::Policy { command } => {
+                if self.envelope
+                    && !matches!(
+                        &command,
+                        crate::interfaces::policy::Policy::Rollback { .. }
+                            | crate::interfaces::policy::Policy::Candidate {
+                                command: crate::interfaces::policy::Candidate::Promote { .. }
+                                    | crate::interfaces::policy::Candidate::Approve { .. }
+                                    | crate::interfaces::policy::Candidate::Validate { .. }
+                                    | crate::interfaces::policy::Candidate::Reject { .. }
+                                    | crate::interfaces::policy::Candidate::Abandon { .. }
+                                    | crate::interfaces::policy::Candidate::Create { .. }
+                                    | crate::interfaces::policy::Candidate::Rules { .. }
+                            }
+                    )
+                {
+                    bail!("--envelope is available for policy transitions only");
+                }
+                let (value, code) =
+                    crate::interfaces::policy::run(root, self.config, command).await?;
+                if self.envelope {
+                    let envelope =
+                        crate::domain::decision_envelope::DecisionEnvelope::from_metadata(
+                            crate::domain::decision_envelope::CommandKind::PolicyTransition,
+                            value,
+                            code,
+                        )?;
+                    return Ok((decision_json(&envelope)?, code));
+                }
+                Ok((
+                    crate::interfaces::render::metadata(&value, self.format)?,
+                    code,
+                ))
+            }
+            Command::Check(_) => unreachable!("check dispatched before orchestration"),
+        }
+    }
+}
+
+async fn run_rules(
+    root: PathBuf,
+    path: String,
+    command: Rules,
+    format: Format,
+    envelope: bool,
+) -> Result<(String, u8)> {
+    if envelope && !matches!(command, Rules::Validate { .. }) {
+        bail!("--envelope is available for rules validate only");
+    }
+    use crate::domain::rule_lifecycle::RuleState;
+    let lifecycle = match &command {
+        Rules::Revalidate(_) => Some(RuleState::Revalidate),
+        Rules::Demote(_) => Some(RuleState::Demoted),
+        Rules::Deprecate(_) => Some(RuleState::Deprecated),
+        Rules::Retire(_) => Some(RuleState::Retired),
+        Rules::Revoke(_) => Some(RuleState::Revoked),
+        _ => None,
+    };
+    if let Some(state) = lifecycle {
+        let (Rules::Revalidate(change)
+        | Rules::Demote(change)
+        | Rules::Deprecate(change)
+        | Rules::Retire(change)
+        | Rules::Revoke(change)) = command
+        else {
+            unreachable!("selected lifecycle operation")
+        };
+        let result = crate::interfaces::rule_lifecycle::run(root, change, state).await?;
+        return Ok((crate::interfaces::render::metadata(&result, format)?, 0));
+    }
+    if let Rules::Context {
+        category,
+        policy_ref,
+    } = command
+    {
+        let value = application::rule_context::read(root, path, category, policy_ref).await?;
+        return Ok((crate::interfaces::render::metadata(&value, format)?, 0));
+    }
+    let active = application::policy_active::load(root.clone()).await?;
+    let (mut value, code) = tokio::task::spawn_blocking(move || -> Result<(serde_json::Value, u8)> {
+        match command {
+            Rules::History { rule_id, offset, limit } => Ok((config::policy_effectiveness::rule_history(&root, &rule_id, offset, limit.into())?, 0)),
+            Rules::Revalidate(_) | Rules::Demote(_) | Rules::Deprecate(_) | Rules::Retire(_) | Rules::Revoke(_) => unreachable!("lifecycle transitions are dispatched above"),
+            Rules::Context { .. } => unreachable!("context loads its selected policy asynchronously"),
+            Rules::List { language, source, category } => Ok((config::rule_query::list_filtered(&root, &path, language.as_deref(), &source, category.as_deref())?, 0)),
+            Rules::Enable { rule_id } => {
+                let mut result = config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Enable(rule_id.clone()))?;
+                result["enabled"] = serde_json::json!(rule_id);
+                Ok((result, 0))
+            }
+            Rules::Disable { rule_id } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Disable(rule_id))?, 0)),
+            Rules::Describe { rule_id } => Ok((config::rule_query::describe(&root, &path, &rule_id)?, 0)),
+            Rules::Assign { rule_id, category } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Assign { id: rule_id, category })?, 0)),
+            Rules::Unassign { rule_id, category } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Unassign { id: rule_id, category })?, 0)),
+            Rules::Configure { rule_id, parameters, severity, required } => Ok((config::rule_management::update(&root, path.as_ref(), config::rule_management::Mutation::Configure { id: rule_id, parameters, severity, required })?, 0)),
+            Rules::Categories { command: None | Some(Categories::List) } => Ok((config::rule_query::categories(&root, &path)?, 0)),
+            Rules::Categories { command: Some(command) } => {
+                use config::rule_management::Mutation;
+                let mutation = match command {
+                    Categories::List => unreachable!("category list is read-only"),
+                    Categories::Create { name, description } => Mutation::Create { name, description },
+                    Categories::Rename { name, new_name } => Mutation::Rename { name, new_name },
+                    Categories::Delete { name, force } => Mutation::Delete { name, force },
+                };
+                Ok((config::rule_management::update(&root, path.as_ref(), mutation)?, 0))
+            }
+            Rules::Schema => unreachable!("schema export does not require a repository"),
+            Rules::Validate { path } => {
+                let report = config::rule_authoring::validate(&root, &path)?;
+                let code = report.decision.exit_code();
+                Ok((serde_json::to_value(report)?, code))
+            }
+            Rules::Source { document, section } => Ok((serde_json::json!({"schema_version":1,"source":config::rule_authoring::source(&root, &document, &section)?,"review_trust":"local_candidate"}), 0)),
+            Rules::Generate { input } => Ok((config::rule_authoring::generate(&root, &input)?, 0)),
+        }
+    }).await??;
+    if active.is_some() && value.get("review_trust").is_some() {
+        value["review_trust"] = serde_json::json!("signed_active_policy");
+    }
+    if envelope {
+        let report: crate::domain::RuleValidationReport = serde_json::from_value(value)?;
+        let decision =
+            crate::domain::decision_envelope::DecisionEnvelope::from_rule_validation(&report)?;
+        return Ok((decision_json(&decision)?, code));
+    }
+    Ok((crate::interfaces::render::metadata(&value, format)?, code))
+}
+
+fn decision_json(envelope: &crate::domain::decision_envelope::DecisionEnvelope) -> Result<String> {
+    let value = serde_json::to_value(envelope)?;
+    config::decision_schema::validate_decision(&value)?;
+    Ok(serde_json::to_string_pretty(&value)?)
+}

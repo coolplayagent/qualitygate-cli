@@ -4,7 +4,7 @@ Implement the CLI, reusable core, adapters, test harnesses and documentation che
 
 ## Ownership
 
-- `src/qualitygate/domain`: serializable contracts and pure gate decisions; no process, filesystem or network I/O.
+- `domain`: serializable contracts and pure gate decisions; no process, filesystem or network I/O.
 - `config`: strict policy and task-contract loading, validation and planning.
 - `snapshot`: Git snapshots, change mapping and immutable execution inputs.
 - `adapters`: language structures and external report normalization.
@@ -12,6 +12,15 @@ Implement the CLI, reusable core, adapters, test harnesses and documentation che
 - `application`: orchestrates the check and repair-feedback workflow.
 - `interfaces`: CLI parsing and output rendering.
 - `env`, `paths`, `net`: environment reads, confined paths, and network ownership respectively.
+
+These are capability boundaries, not directory layers. Place implementation
+modules directly in the first-level business concern under `src/qualitygate`,
+with descriptive names for each responsibility. The reviewed module-to-capability
+map lives in `tests/quality/architecture_owners.rs`. Keep the existing `domain.rs`,
+`config.rs`, `adapters.rs`, `application.rs` and `interfaces.rs` as compatibility
+exports; do not add implementation or shallow role directories beneath them.
+Keep single-module concerns in one `.rs` file. Bazel ownership entry points live
+in `bazel/owners`, independently of the business source layout.
 
 Keep dependencies acyclic. Extract shared contracts into the domain rather than making adapters depend on the CLI. Isolate blocking filesystem or parsing work from asynchronous orchestration. Bound process output, file sizes, concurrency and execution time. Do not introduce unsafe code, placeholder implementations or silent successful fallbacks.
 

@@ -1,0 +1,295 @@
+use crate::config::*;
+use anyhow::{Result, bail};
+use std::collections::BTreeSet;
+use std::path::Path;
+
+pub(crate) fn validate(config: &Config) -> Result<()> {
+    layout(config, true)
+}
+
+pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
+    crate::config::constraint_inventory::validate(config)?;
+    crate::config::agent_contract::validate(config)?;
+    crate::check_planning::runtime_validation::validate(&config.requires)?;
+    crate::config::exclusions::matcher(&config.exclude)?;
+    crate::config::exclusions::matcher(&config.unstructured_documents.retain)
+        .map_err(|error| anyhow::anyhow!("unstructured_documents.retain: {error}"))?;
+    crate::config::categories::validate(config)?;
+    if config.rule_lifecycle.len() > 512 {
+        bail!("Rule lifecycle inventory exceeds 512 records");
+    }
+    for (id, lifecycle) in &config.rule_lifecycle {
+        validate_id(id)?;
+        lifecycle.validate().map_err(anyhow::Error::msg)?;
+        if !config.rules.contains_key(id) {
+            bail!("Rule lifecycle requires an explicit rule setting: {id}");
+        }
+    }
+    if config.schema_version != 1 {
+        bail!(
+            "Unsupported configuration schema_version: {}",
+            config.schema_version
+        );
+    }
+    let mut ids: BTreeSet<&str> = config.rules.keys().map(String::as_str).collect();
+    if config.source_reviews.len() > 1024 {
+        bail!("Source review inventory exceeds 1024 records");
+    }
+    let mut review_ids = BTreeSet::new();
+    for (id, review) in &config.source_reviews {
+        validate_id(id)?;
+        review.validate().map_err(anyhow::Error::msg)?;
+        if !config.rules.contains_key(id) || !review_ids.insert(&review.id) {
+            bail!("Source reviews require configured rule keys and distinct review IDs");
+        }
+    }
+    let mut packages = BTreeSet::new();
+    for package in &config.rulesets {
+        if !RULESETS.contains(&package.as_str()) || !packages.insert(package) {
+            bail!("Unknown or duplicate ruleset: {package}");
+        }
+    }
+    for (id, rule) in &config.rules {
+        validate_id(id)?;
+        if let Some(provenance) = &rule.provenance {
+            let path = &provenance.evidence_file;
+            if path.is_empty() || crate::paths::relative(Path::new(path))? != *path {
+                bail!("Provenance evidence_file requires a normalized relative file path");
+            }
+        }
+        if let Some(source) = &rule.source {
+            constraints::source(source)?;
+        }
+    }
+    for check in &config.checks {
+        crate::config::change_selection::validate(check)?;
+        crate::check_planning::runtime_validation::validate_env(&check.required_env)?;
+        validate_id(&check.id)?;
+        crate::config::compatibility::validate(check)?;
+        crate::config::test_effectiveness::validate(check)?;
+        if !ids.insert(&check.id) {
+            bail!("Duplicate check id: {}", check.id);
+        }
+        if check.kind == CheckKind::Command
+            && (check.argv.is_empty() || check.argv[0].trim().is_empty())
+        {
+            bail!("Command {} needs nonempty argv", check.id);
+        }
+        if let Some(path) = &check.evidence_file
+            && (check.kind != CheckKind::Manual
+                || path.is_empty()
+                || crate::paths::relative(Path::new(path))? != *path)
+        {
+            bail!("evidence_file requires a manual check and a normalized relative file path");
+        }
+        if check.kind == CheckKind::Manual
+            && (!check.argv.is_empty()
+                || !check.required_env.is_empty()
+                || !check.tools.is_empty()
+                || !check.reports.is_empty()
+                || !check.projects.is_empty()
+                || !check.required_args.is_empty()
+                || !check.findings_exit_codes.is_empty()
+                || check.expected_exit_code != 0
+                || check.cwd != ".")
+        {
+            bail!("Manual checks consume signed records, not command execution fields");
+        }
+        if check.timeout_seconds == 0 || check.timeout_seconds > 86_400 {
+            bail!("Check {} timeout_seconds must be 1..86400", check.id);
+        }
+        crate::paths::relative(Path::new(&check.cwd))?;
+        let mut outputs = BTreeSet::new();
+        let mut roots = BTreeSet::new();
+        for project in &check.projects {
+            let root = crate::paths::relative(Path::new(project.root()))?;
+            if project.root().is_empty()
+                || (project.root() != "." && root != project.root())
+                || !roots.insert(root)
+            {
+                bail!("Project roots must be unique and normalized");
+            }
+            for path in project.outputs() {
+                let normalized = crate::paths::relative(Path::new(path))?;
+                if normalized.is_empty() || normalized != path || !outputs.insert(normalized) {
+                    bail!("Project output paths must be distinct normalized files");
+                }
+            }
+        }
+        if !check.projects.is_empty()
+            && (check.kind != CheckKind::Command
+                || check.expected_exit_code != 0
+                || !check.findings_exit_codes.is_empty()
+                || check
+                    .reports
+                    .iter()
+                    .any(|report| report.mode != IncrementMode::Full))
+        {
+            bail!("Project facts require successful commands and full reports");
+        }
+        crate::config::project_rules::validate_usage_command(check)?;
+        crate::check_planning::python::validate(check)?;
+        let mut tools = BTreeSet::new();
+        for tool in &check.tools {
+            validate_id(&tool.id)?;
+            if !(1..=60).contains(&tool.timeout_seconds) {
+                bail!("Tool version timeout_seconds must be 1..60: {}", tool.id);
+            }
+            if !tools.insert(&tool.id) || tool.argv.is_empty() || tool.argv[0].trim().is_empty() {
+                bail!(
+                    "Tool version probes need unique IDs and nonempty argv: {}",
+                    check.id
+                );
+            }
+            for path in &tool.inputs {
+                crate::paths::relative(Path::new(path))?;
+            }
+        }
+        let mut findings = BTreeSet::new();
+        for code in &check.findings_exit_codes {
+            if check.reports.is_empty()
+                || *code == check.expected_exit_code
+                || !findings.insert(code)
+            {
+                bail!(
+                    "findings_exit_codes needs reports and distinct non-success codes: {}",
+                    check.id
+                );
+            }
+        }
+        if check
+            .reports
+            .iter()
+            .filter(|report| report.from_stdout)
+            .count()
+            > 1
+        {
+            bail!("A command may declare only one stdout report");
+        }
+        for report in &check.reports {
+            let normalized = crate::paths::relative(Path::new(&report.path))?;
+            if !outputs.insert(normalized.clone()) {
+                bail!("Check output paths must be distinct after normalization: {normalized}");
+            }
+            if report.format == ReportFormat::CargoClippy && !report.from_stdout {
+                bail!("cargo_clippy reports require from_stdout: true");
+            }
+            if let Some(baseline) = &report.baseline {
+                crate::paths::relative(Path::new(baseline))?;
+            }
+            if report.minimum_tests == Some(0) {
+                bail!("minimum_tests must be at least one");
+            }
+            if [
+                ReportFormat::Lcov,
+                ReportFormat::Cobertura,
+                ReportFormat::CoveragePy,
+                ReportFormat::Jacoco,
+            ]
+            .contains(&report.format)
+                || report.minimum_coverage.is_some()
+                || !report.coverage_paths.is_empty()
+            {
+                if report.coverage_paths.is_empty() {
+                    bail!("Coverage requires explicit coverage_paths for its source inventory");
+                }
+                for path in &report.coverage_paths {
+                    globset::Glob::new(path)?;
+                }
+                if ![IncrementMode::Full, IncrementMode::ChangedLines].contains(&report.mode) {
+                    bail!("Coverage supports full or changed_lines mode");
+                }
+            }
+            if report
+                .minimum_coverage
+                .is_some_and(|number| !number.is_finite() || !(0.0..=100.0).contains(&number))
+            {
+                bail!("Coverage threshold must be finite and within 0..100");
+            }
+            if report.mode.needs_baseline() && report.baseline.is_none() {
+                bail!("new_diagnostics and ratchet require a baseline report");
+            }
+            if report.mode == IncrementMode::Ratchet
+                && (report.format == ReportFormat::Junit || report.minimum_tests.is_some())
+            {
+                bail!("ratchet requires diagnostic counts, not test statistics");
+            }
+        }
+        if check
+            .reports
+            .iter()
+            .any(|report| report.mode.needs_baseline())
+        {
+            // Baseline execution has its own workspace, but every file output
+            // within that execution must still have a distinct identity.
+            let mut baseline_outputs = BTreeSet::new();
+            for path in check.file_outputs(true) {
+                let normalized = crate::paths::relative(Path::new(path))?;
+                if !baseline_outputs.insert(normalized.clone()) {
+                    bail!(
+                        "Baseline output paths must be distinct after normalization: {normalized}"
+                    );
+                }
+            }
+        }
+    }
+    for (name, profile) in &config.profiles {
+        if !["quick", "full"].contains(&name.as_str()) {
+            bail!("Unknown profile: {name}");
+        }
+        let mut included = BTreeSet::new();
+        for id in &profile.include {
+            if !ids.contains(id.as_str()) || !included.insert(id) {
+                bail!("Unknown or repeated check {id} in profile {name}");
+            }
+        }
+        if name == "full" && resolved {
+            for (id, required) in config
+                .rules
+                .iter()
+                .map(|(id, rule)| (id, rule.enabled && rule.required))
+                .chain(
+                    config
+                        .checks
+                        .iter()
+                        .map(|check| (&check.id, check.required)),
+                )
+            {
+                if required && !included.contains(id) {
+                    bail!("full profile omits required check: {id}");
+                }
+            }
+        }
+    }
+    crate::check_planning::dependencies::Graph::new(
+        config
+            .rules
+            .iter()
+            .map(|(id, rule)| (id.as_str(), rule.depends_on.as_slice()))
+            .chain(
+                config
+                    .checks
+                    .iter()
+                    .map(|check| (check.id.as_str(), check.depends_on.as_slice())),
+            ),
+    )?
+    .order()?;
+    if let Some(path) = &config.custom_rules {
+        let normalized = crate::paths::relative(Path::new(path))?;
+        if normalized == "." || normalized.is_empty() || normalized != path.trim_end_matches('/') {
+            bail!("custom_rules must be a normalized repository subdirectory");
+        }
+    }
+    for path in &config.verification_assets {
+        globset::Glob::new(path)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_id(id: &str) -> Result<()> {
+    constraints::id(id)
+}
+
+#[cfg(test)]
+#[path = "validation_scenario_tests.rs"]
+mod scenario_tests;

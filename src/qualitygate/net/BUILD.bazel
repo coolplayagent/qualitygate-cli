@@ -17,8 +17,8 @@ rust_library(
     edition = crate_edition(),
     rustc_env = package_rustc_env(),
     deps = [
-        "//src/qualitygate/domain",
-        "//src/qualitygate/env",
+        "//src/qualitygate:domain",
+        "//src/qualitygate:env",
     ] + all_crate_deps(normal = True),
     proc_macro_deps = all_crate_deps(proc_macro = True),
 )

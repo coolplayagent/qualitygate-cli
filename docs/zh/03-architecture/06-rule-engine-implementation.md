@@ -7,9 +7,9 @@
 glob/正则及不安全组合。适配器创建 pending 结果、验证所需事实、分派 evaluator，再标记 complete
 或 blocked。未知实现或能力缺失绝不会变成空通过。
 
-分派实现在 [`adapters/rules.rs`](../../../src/qualitygate/adapters/rules.rs)，参数契约位于
-[`config/parameters.rs`](../../../src/qualitygate/config/parameters.rs) 和
-[`config/builtin_validation.rs`](../../../src/qualitygate/config/builtin_validation.rs)。
+分派实现在 [`rule_evaluation/builtin_rules.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules.rs)，参数契约位于
+[`rule_catalog/parameters.rs`](../../../src/qualitygate/rule_catalog/parameters.rs) 和
+[`rule_catalog/builtin_validation.rs`](../../../src/qualitygate/rule_catalog/builtin_validation.rs)。
 
 算子组合与面向使用者 Agent 的契约扩展了这一证据模型，其已实现边界和宿主职责见
 [规则能力与 Agent 行为契约](07-rule-capabilities-and-agent-contracts.md)。
@@ -258,7 +258,7 @@ Qualitygate 增加的是单个 lint 通常不负责的编排：Git 快照身份�
 
 ## 验证证据
 
-[`adapters/rules_tests.rs`](../../../src/qualitygate/adapters/rules_tests.rs) 的聚焦测试证明
+[`rule_evaluation/builtin_rules_tests.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules_tests.rs) 的聚焦测试证明
 `source-pattern` 只报告新增行并阻塞非法配置。各 Issue 集成目标覆盖路由、固定规则包 scope、修复、
 非法 UTF-8、文件缺失、预算和确定性顺序。结构、项目、自定义规则与报告测试分别覆盖移动、歧义、
 快照不匹配、事实缺失、超时和工具输出错误。

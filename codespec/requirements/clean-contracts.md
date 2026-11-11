@@ -26,3 +26,27 @@ external I/O has been detected. Context-sensitive clean-code judgements remain
 review obligations. No rule or coverage threshold may be weakened to make this
 refactor pass. Stable unit/integration checks, coverage, Bazel and a full final
 snapshot check remain required; nightly Miri and ASan have separate CI evidence.
+
+Business-module refactoring keeps the same public contracts and capability
+boundaries. Implementations live directly in explicitly named first-level
+business modules, without nested role wrappers. Single-module owners use flat
+`.rs` files. The five historical role APIs
+are flat compatibility files. Each concrete module has a reviewed capability
+owner; pure modules stay free of I/O and interface modules delegate I/O.
+Unregistered modules and cross-owner cycles remain errors. The architecture
+regression `architecture_business_modules_preserve_capability_and_dependency_boundaries`
+checks rejection behavior; the full production graph retains source digests and
+file/line evidence. Existing integration tests exercise the historical public
+paths while Bazel builds and tests the independently compiled owner crates.
+
+Adapter implementations follow the same first-level business ownership. Report
+formats, source facts, Maven/Python project analysis, rule evaluation and external
+acceptance have distinct owners. Module and file names use descriptive snake_case;
+modules with children use directory/mod.rs. Remove shallow role wrappers and
+empty migration directories; preserve public adapter contract identity through
+flat facades in Cargo and Bazel. The adapter-boundary and source-layout
+architecture tests plus `business_adapter_paths_preserve_the_public_report_contract`
+provide the corresponding rejection, layout and compatibility evidence.
+The Miri workflow inventory must equal the reviewed pure-module inventory, and
+each shard must reject an empty test selection before executing it. Renaming a
+module must not silently remove its tests from the pure-domain gate.

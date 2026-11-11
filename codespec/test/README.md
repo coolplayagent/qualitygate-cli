@@ -101,12 +101,12 @@ or process-memory bound.
 
 | Contract | Repeatable native evidence |
 | --- | --- |
-| GRAPH-WORK-01 | `config::dependencies::tests`: stable first-eligible policy order, invalid graph rejection, 10,000-node reverse-chain closure and profile/pending/disabled behavior; command applicability regressions retain prerequisite semantics. |
+| GRAPH-WORK-01 | `check_planning::dependencies::tests`: stable first-eligible policy order, invalid graph rejection, 10,000-node reverse-chain closure and profile/pending/disabled behavior; command applicability regressions retain prerequisite semantics. |
 | SCOPE-INDEX-01 | `snapshot::scope_index::tests`: indexed versus single-call answers for current/old paths, duplicate aliases, changed lines and feedback scopes; rebuilding after public mutation; 2,000 changes queried against 5,000 unchanged paths. |
-| BUILTIN-WORK-01 | `adapters::rules::builtin_limits_tests`: a small source that expands beyond 8 MiB, 10,001 structural findings, shared reservations across 32 parallel files and multiline range intersections; `adapters::diagnostic_budget::tests::builtin_workers_reject_expired_deadlines_before_retaining_findings`; marker adjacency and 2,000-entity binding tests. |
-| FACT-WORK-01 | `adapters::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes` checks all three schema versions; `selectors_without_an_external_budget_still_reject_excess_subjects` rejects excessive local collections. Existing named-source tests retain shared allowance and prior findings. |
+| BUILTIN-WORK-01 | `rule_evaluation::builtin_rules::builtin_limits_tests`: a small source that expands beyond 8 MiB, 10,001 structural findings, shared reservations across 32 parallel files and multiline range intersections; `report_evidence::diagnostic_budget::tests::builtin_workers_reject_expired_deadlines_before_retaining_findings`; marker adjacency and 2,000-entity binding tests. |
+| FACT-WORK-01 | `rule_evaluation::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes` checks all three schema versions; `selectors_without_an_external_budget_still_reject_excess_subjects` rejects excessive local collections. Existing named-source tests retain shared allowance and prior findings. |
 | HISTORY-WORK-01 | `snapshot::messages::tests`: real isolated Git commits with order, alternate encoding, newline and NUL cases; 9 MiB aggregate rejection without partial success; parser framing/count/byte boundaries. `snapshot::history::tests`: injectable short deadlines for pending work and late completion, unique-content interning and pre-expansion accounting; `snapshot::git::tests::expired_git_parsing_stops_before_returning_partial_inputs`. |
-| ASYNC-WORK-01 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`: exact 1 MiB wire identity; `interfaces::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`; `application::feedback::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`. `application::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`; [bounded dispatcher regression](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack`. |
+| ASYNC-WORK-01 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`: exact 1 MiB wire identity; `report_evidence::render::tests::report_output_preserves_evidence_and_limits_severity_filter_to_diagnostics`; `repair_feedback::feedback_rendering::tests::retaining_feedback_preserves_report_and_exact_artifact_identity`. `report_evidence::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`; [bounded dispatcher regression](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack`. |
 
 The dispatcher regression runs real generated Rust checks through failed, repaired
 and zero-test states on a 768 KiB thread in an isolated child process, with a
@@ -168,3 +168,31 @@ implementation returns blocked with no verdict, 5,839 retained records and
 two harnesses, so the old byte size is intentionally approximate. This fixture
 demonstrates failure behavior at the cap, not a finding-count compatibility
 promise once evidence is incomplete.
+
+First-level business-module ownership is verified by
+`architecture_business_modules_preserve_capability_and_dependency_boundaries`
+and `architecture_module_graph_is_acyclic_and_respects_owners` in
+`tests/quality/architecture.rs`. The first checks pure-domain I/O rejection,
+interface I/O delegation, forbidden domain-to-application dependencies and
+unregistered business modules. The second scans the actual production graph, including
+compatibility facades, and writes `target/architecture/report.json` and its DOT
+graph with source digests and file/line evidence. Existing Cargo integration
+contracts retain historical API imports; Bazel separately compiles and tests
+capability owners from the same business-owned files. Stable checks, full
+selfcheck, 90% line coverage and the full snapshot gate remain required.
+
+Adapter decomposition additionally uses
+`architecture_adapter_features_cannot_depend_on_cli_or_orchestration` to reject
+upward imports from first-level adapter features. The layout test
+`architecture_source_layout_has_consistent_names_and_no_empty_directories`
+checks snake_case names, folder-backed `mod.rs` modules, flat compatibility
+facades and removal of role-wrapper and empty source directories. Existing adapter parser, malformed/oversized report, syntax,
+project-fact and CLI integration suites retain their assertions after relocation.
+
+The Miri workflow lists all pure `feature::module::` prefixes in
+`jobs.miri.env.PURE_DOMAIN_MODULES`; `architecture_business_ownership_inventory_is_unique_and_miri_covers_pure_modules`
+compares this inventory with every module assigned to the pure owner. The evolution, pilot-base,
+pilot-versions and other-domain shards preserve the previous partition. Every
+shard records its selected tests, fails if none are selected, and executes the
+same filters. These inventories are uploaded independently from the stable
+checks and ASan evidence.

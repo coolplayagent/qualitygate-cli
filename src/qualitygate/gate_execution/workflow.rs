@@ -1,0 +1,618 @@
+//! Gate execution entry points.
+
+use crate::application::*;
+use crate::external_acceptance::provenance_preparation as provenance;
+use crate::resource_selection::snapshot_selection as change_selection;
+use crate::test_effectiveness::paired_execution as test_effectiveness;
+
+use crate::{
+    config::{self},
+    snapshot::{self, Selection},
+};
+use anyhow::{Context, Result};
+use std::path::PathBuf;
+use std::sync::Arc;
+
+#[derive(Debug, Clone)]
+pub struct CheckOptions {
+    pub root: PathBuf,
+    pub config: String,
+    pub selection: Selection,
+    pub snapshot_options: snapshot::CaptureOptions,
+    pub profile: String,
+    pub task: Option<String>,
+    pub policy_ref: Option<String>,
+    pub output_dir: Option<PathBuf>,
+    pub trust_store: Option<PathBuf>,
+    pub evidence_dir: Option<PathBuf>,
+}
+
+pub async fn check(options: CheckOptions) -> Result<Report> {
+    check_with_expected_base(options, None).await
+}
+
+/// Replays may require selectors with an implicit base to retain its identity.
+pub async fn check_with_expected_base(
+    options: CheckOptions,
+    expected_base: Option<&str>,
+) -> Result<Report> {
+    Ok(check_and_snapshot(options, expected_base).await?.0)
+}
+
+pub(crate) async fn check_and_snapshot(
+    mut options: CheckOptions,
+    expected_base: Option<&str>,
+) -> Result<(Report, Arc<snapshot::Snapshot>)> {
+    let active = policy_active::load(options.root.clone()).await?;
+    let (comparison, _) =
+        acquisition::prepare(&mut options, active.as_ref().map(|active| &active.active)).await?;
+    let snapshot = Arc::new(
+        snapshot::capture_resolved(
+            &options.root,
+            &options.selection,
+            &options.snapshot_options,
+            comparison,
+        )
+        .await?,
+    );
+    if expected_base.is_some_and(|expected| expected != snapshot.identity.base) {
+        anyhow::bail!(
+            "Snapshot base differs from the expected base; select a new comparison explicitly"
+        );
+    }
+    let mut invalid = Vec::new();
+    let (loaded, active) = if let Some(active) = active {
+        if active.active.evaluator_digest() != evaluator_digest().await? {
+            anyhow::bail!("Active policy requires revalidation with this evaluator executable");
+        }
+        let (snapshot, options) = (Arc::clone(&snapshot), options.clone());
+        let (loaded, errors, active) = tokio::task::spawn_blocking(move || {
+            let mut errors = Vec::new();
+            Ok::<_, anyhow::Error>((
+                policy_active::prepare(&active.active, &snapshot, &options, &mut errors)?,
+                errors,
+                active,
+            ))
+        })
+        .await??;
+        invalid.extend(errors);
+        (loaded, Some(active))
+    } else {
+        (policy::load(&snapshot, &options, &mut invalid).await?, None)
+    };
+    let report = check_prepared(
+        options,
+        Arc::clone(&snapshot),
+        loaded,
+        invalid,
+        true,
+        active,
+        None,
+    )
+    .await?;
+    Ok((report, snapshot))
+}
+
+pub(crate) async fn evaluator_digest() -> Result<String> {
+    static IDENTITY: tokio::sync::OnceCell<String> = tokio::sync::OnceCell::const_new();
+    Ok(IDENTITY
+        .get_or_try_init(|| async {
+            Ok::<_, anyhow::Error>(crate::runner::identity::evaluator().await?.digest)
+        })
+        .await?
+        .clone())
+}
+
+pub(crate) async fn check_prepared(
+    options: CheckOptions,
+    snapshot: Arc<snapshot::Snapshot>,
+    loaded: policy::Loaded,
+    mut invalid: Vec<String>,
+    revalidate_source: bool,
+    active: Option<policy_active::Authenticated>,
+    recheck_argv: Option<Vec<String>>,
+) -> Result<Report> {
+    let evaluator_digest = evaluator_digest().await?;
+    let environment_digest = crate::env::environment_digest()?;
+    let policy::Loaded {
+        catalog,
+        evidence: policy,
+        plan,
+        protected_paths,
+        constraint_bindings,
+        agent_bindings: _,
+    } = loaded;
+    let git_facts = git_trailers::load(&plan, &catalog, &snapshot, &options.snapshot_options).await;
+    let external = match (&options.trust_store, &options.evidence_dir) {
+        (Some(store), Some(directory)) => {
+            let (root, store, directory, requests) = (
+                options.root.clone(),
+                store.clone(),
+                directory.clone(),
+                external::requests(&plan),
+            );
+            match tokio::task::spawn_blocking(move || {
+                external::load(&root, &store, &directory, &requests)
+            })
+            .await?
+            {
+                Ok(inputs) => Some(Arc::new(inputs)),
+                Err(error) => {
+                    invalid.push(format!("External acceptance inputs are invalid: {error:#}"));
+                    None
+                }
+            }
+        }
+        (None, None) => None,
+        _ => {
+            invalid.push("External acceptance requires both trust_store and evidence_dir".into());
+            None
+        }
+    };
+    let directory = crate::paths::run_directory(options.output_dir.as_deref())?;
+    let run_id = directory
+        .file_name()
+        .context("Missing run directory name")?
+        .to_string_lossy()
+        .to_string();
+    let mut results: Vec<CheckResult> = Vec::new();
+    let mut passing = std::collections::BTreeSet::new();
+    let scope = snapshot.scope_index();
+    let mut provenance_proofs = std::collections::BTreeMap::new();
+    let command_selections =
+        change_selection::select(&plan, &snapshot, &protected_paths, !invalid.is_empty()).await?;
+    let workspace = if plan.commands.iter().any(|check| {
+        command_selections[&check.id].execute
+            && check.kind == config::CheckKind::Command
+            && check.compatibility.is_none()
+            && check.test_effectiveness.is_none()
+    }) && invalid.is_empty()
+    {
+        Some(snapshot::materialize_shared(Arc::clone(&snapshot)).await?)
+    } else {
+        None
+    };
+    let input_guard = if let Some(workspace) = &workspace {
+        Some(snapshot::InputGuard::for_snapshot(workspace.path(), Arc::clone(&snapshot)).await?)
+    } else {
+        None
+    };
+    let rule_context = rule_execution::Context::new(Arc::clone(&snapshot));
+    let commands: std::collections::BTreeMap<_, _> = plan
+        .commands
+        .iter()
+        .map(|command| (command.id.as_str(), command))
+        .collect();
+    for id in &plan.order {
+        if id == constraint::CHECK_ID {
+            // Aggregate after final external-evidence revalidation can block producers.
+            continue;
+        }
+        let rule = plan.rules.get(id);
+        let command = commands.get(id.as_str()).copied();
+        let (required, severity, dependencies) = if let Some(rule) = rule {
+            (rule.required, rule.severity, &rule.depends_on)
+        } else {
+            let command = command.expect("planned command");
+            (command.required, command.severity, &command.depends_on)
+        };
+        let dependency_failure = dependencies.iter().find(|id| !passing.contains(*id));
+        let missing_env = command
+            .map(|check| crate::env::missing_required(&check.required_env))
+            .unwrap_or_default();
+        let mut result = if let Some(selection) = command_selections.get(id)
+            && !selection.execute
+        {
+            let mut result = CheckResult::pending(id, required, severity);
+            result.skip(&selection.reason);
+            result
+        } else if !missing_env.is_empty() {
+            let mut result = CheckResult::pending(id, required, severity);
+            result.block(
+                ExecutionStatus::Blocked,
+                format!(
+                    "Required environment variables are missing or empty: {}",
+                    missing_env.join(", ")
+                ),
+            );
+            result.metadata.insert(
+                "required_env_missing".into(),
+                serde_json::json!(missing_env),
+            );
+            result
+        } else if let Some(dependency) = dependency_failure {
+            let mut result = CheckResult::pending(id, required, severity);
+            result.block(
+                ExecutionStatus::Blocked,
+                format!("Prerequisite {dependency} did not pass"),
+            );
+            result
+        } else if let Some(rule) = rule {
+            match provenance::prepare(
+                id,
+                rule,
+                &catalog.entries[id],
+                &snapshot,
+                &policy,
+                external.as_ref(),
+                &directory,
+            )
+            .await
+            {
+                Ok(proof) => {
+                    let mut result = rule_execution::execute(
+                        id,
+                        rule,
+                        &catalog.entries[id],
+                        &rule_context,
+                        &results,
+                        proof.as_ref().map(|proof| &proof.facts),
+                        git_facts.as_ref(),
+                    )
+                    .await?;
+                    if let Some(proof) = proof {
+                        result.execution.artifacts.extend(proof.artifacts);
+                        result
+                            .metadata
+                            .insert("external_provenance".into(), proof.metadata);
+                        provenance_proofs.insert(id.clone(), proof.facts);
+                    }
+                    result
+                }
+                Err(result) => *result,
+            }
+        } else if let Some(command) = command
+            && command.kind == config::CheckKind::Manual
+            && invalid.is_empty()
+        {
+            manual::execute(
+                command,
+                &plan,
+                &snapshot,
+                &policy,
+                external.as_ref(),
+                &directory,
+            )
+            .await
+        } else if let Some(command) = command
+            && command.compatibility.is_some()
+            && invalid.is_empty()
+        {
+            compatibility::execute(command, &directory, &snapshot).await
+        } else if let Some(command) = command
+            && command.test_effectiveness.is_some()
+            && invalid.is_empty()
+        {
+            test_effectiveness::execute(
+                command,
+                &directory,
+                &snapshot,
+                &protected_paths,
+                options.snapshot_options.max_bytes,
+                options.snapshot_options.max_file_bytes,
+            )
+            .await
+        } else if let (Some(command), Some(workspace), Some(inputs)) =
+            (command, &workspace, &input_guard)
+        {
+            commands::execute(command, workspace.path(), &directory, &snapshot, inputs).await
+        } else {
+            let mut result = CheckResult::pending(id, required, severity);
+            result.block(
+                ExecutionStatus::Blocked,
+                "Policy validation did not complete",
+            );
+            result
+        };
+        result
+            .metadata
+            .insert("depends_on".into(), serde_json::json!(dependencies));
+        if let Some(command) = command {
+            result.metadata.insert(
+                "change_selection".into(),
+                serde_json::to_value(&command_selections[id])?,
+            );
+            result
+                .metadata
+                .insert("command_definition".into(), serde_json::to_value(command)?);
+        }
+        if rule.is_some() {
+            if snapshot.delivery() && result.execution.status == ExecutionStatus::Completed {
+                let before = result.diagnostics.len();
+                result.diagnostics.retain(|diagnostic| {
+                    scope.selects_diagnostic(diagnostic.file.as_deref(), diagnostic.range.as_ref())
+                });
+                result.metadata.insert(
+                    "delivery_filtered".into(),
+                    (before - result.diagnostics.len()).into(),
+                );
+                if result.verdict != Some(Verdict::Skipped) {
+                    result.complete();
+                }
+            }
+            let entry = &catalog.entries[id];
+            result.rule_version = entry.version();
+            result
+                .metadata
+                .insert("rule_definition".into(), serde_json::json!(entry));
+            if let Some(review) = policy.source_reviews.get(id) {
+                result.metadata.insert("source_review".into(), serde_json::json!({"binding":review,"policy_source":policy.source,"policy_trust":policy.trust}));
+                if review.status != ReviewStatus::Bound {
+                    let earlier = result
+                        .execution
+                        .reason
+                        .as_ref()
+                        .map(|reason| format!("{reason}; "))
+                        .unwrap_or_default();
+                    result.block(ExecutionStatus::Blocked, format!("{earlier}Rule source review is missing or stale; inspect rules list and record a review in the selected policy"));
+                }
+            }
+        }
+        if result.execution.status == ExecutionStatus::Completed
+            && result.verdict == Some(Verdict::Pass)
+        {
+            passing.insert(result.id.clone());
+        }
+        results.push(result);
+    }
+    if let Some(inputs) = &input_guard
+        && let Err(error) = inputs.verify().await
+    {
+        invalid.push(format!("Execution inputs are invalid: {error:#}"));
+    }
+    if let Some(external) = external
+        && let Err(error) =
+            manual::revalidate(external.clone(), &plan, &snapshot, &policy, &mut results)
+                .await
+                .and_then(|()| provenance::revalidate(&external, &provenance_proofs, &mut results))
+    {
+        invalid.push(format!(
+            "External acceptance evidence is invalid: {error:#}"
+        ));
+        for result in &mut results {
+            if result.metadata.contains_key("manual_acceptance")
+                || result.metadata.contains_key("external_provenance")
+            {
+                result.block(ExecutionStatus::Blocked, format!("External acceptance evidence changed or could not be revalidated: {error:#}"));
+                for name in ["manual_acceptance", "external_provenance"] {
+                    if let Some(evidence) = result.metadata.get_mut(name) {
+                        evidence["valid_at_completion"] = serde_json::json!(false);
+                    }
+                }
+            }
+        }
+    }
+    if revalidate_source {
+        match snapshot::capture_with_options(
+            &options.root,
+            &options.selection,
+            &options.snapshot_options,
+        )
+        .await
+        {
+            Ok(current)
+                if current.identity.verification_digest
+                    != snapshot.identity.verification_digest
+                    || current.identity.content_digest != snapshot.identity.content_digest
+                    || current.identity.base != snapshot.identity.base
+                    || current.identity.head != snapshot.identity.head
+                    || match (
+                        &current.identity.merge_request,
+                        &snapshot.identity.merge_request,
+                    ) {
+                        (Some(current), Some(previous)) => !current.same_comparison(previous),
+                        (None, None) => false,
+                        _ => true,
+                    } =>
+            {
+                invalid
+                    .push("Source snapshot changed during checks; recheck the final state".into())
+            }
+            Ok(_) => {}
+            Err(error) => invalid.push(format!("Cannot revalidate the source snapshot: {error:#}")),
+        }
+    }
+    if crate::env::environment_digest()? != environment_digest {
+        invalid.push("Process environment changed during evaluation".into());
+    }
+    if let Some(active) = active
+        && let Err(error) = policy_active::revalidate(options.root.clone(), active).await
+    {
+        invalid.push(format!("Active policy authorization is invalid: {error:#}"));
+    }
+    let recheck = recheck_argv.unwrap_or_else(|| {
+        recheck(
+            &options,
+            &snapshot.identity.base,
+            if policy.trust == "signed_active_policy" {
+                Some(&policy.source)
+            } else {
+                policy.resolved_commit.as_deref()
+            },
+        )
+    });
+    let diagnostic_recheck = recheck.clone();
+    results = tokio::task::spawn_blocking(move || {
+        for result in &mut results {
+            crate::adapters::diagnostic_budget::attach_recheck(result, &diagnostic_recheck);
+        }
+        results
+    })
+    .await?;
+    // Clause evidence must observe any incompleteness introduced by output bounds.
+    if !plan.constraints.is_empty() {
+        let (constraints, snapshot, policy, recheck) = (
+            plan.constraints.clone(),
+            Arc::clone(&snapshot),
+            policy.clone(),
+            recheck.clone(),
+        );
+        results = tokio::task::spawn_blocking(move || {
+            let mut coverage = constraint_coverage::evaluate(
+                &constraints,
+                &constraint_bindings,
+                &snapshot,
+                &policy,
+                &results,
+            )?;
+            crate::adapters::diagnostic_budget::attach_recheck(&mut coverage, &recheck);
+            results.push(coverage);
+            Ok::<_, anyhow::Error>(results)
+        })
+        .await??;
+    }
+    let summary = Summary::from_checks(&results);
+    let gate = evaluate(&results, &plan.required, &invalid);
+    let mut delivery_options = options.clone();
+    delivery_options.snapshot_options.scope = check_scope::CheckScope::Delivery;
+    delivery_options.profile = "full".into();
+    delivery_options.snapshot_options.path_filter = None;
+    if let Selection::Path { base, .. } = &options.selection {
+        delivery_options.selection = Selection::Worktree { base: base.clone() };
+    }
+    let delivery_recheck = self::recheck(
+        &delivery_options,
+        &snapshot.identity.base,
+        if policy.trust == "signed_active_policy" {
+            Some(&policy.source)
+        } else {
+            policy.resolved_commit.as_deref()
+        },
+    );
+    let mut report = Report {
+        selection: Some(snapshot.scope_evidence.clone()),
+        context: Some(ReportContext {
+            report_path: directory.join("report.json").display().to_string(),
+            recheck: Recheck { argv: recheck },
+            delivery_recheck: Recheck {
+                argv: delivery_recheck,
+            },
+        }),
+        verification: VerificationBoundary::for_check(
+            &gate,
+            &results,
+            &options.profile,
+            snapshot.path_filter.is_some(),
+        ),
+        schema_version: 1,
+        run_id,
+        scope: if snapshot.path_filter.is_some() {
+            "path"
+        } else if plan.task_id.is_some() {
+            "task"
+        } else {
+            options.snapshot_options.scope.as_str()
+        }
+        .into(),
+        profile: options.profile,
+        evaluator_digest,
+        environment_digest,
+        snapshot: snapshot.identity.clone(),
+        policy,
+        plan: PlanSummary {
+            task_id: plan.task_id,
+            execution_order: plan.order,
+            required_checks: plan.required,
+            pending_delivery_checks: plan.pending_delivery,
+            acceptance: plan.acceptance,
+            acceptance_descriptions: plan.acceptance_descriptions,
+        },
+        gate,
+        checks: results,
+        summary,
+    };
+    if !plan.agent_obligations.is_empty() {
+        report.verification.known_limits.push("Agent obligations require a current agent-contract projection and consuming-host evidence; this code check does not establish instruction delivery or behavioral compliance.".into());
+    }
+    if snapshot.delivery() {
+        report.verification.known_limits.push("Delivery scope selects changed lines and changed-file findings; unlocated command failures and incomplete evidence remain blocking. This is not repository-wide approval.".into());
+        if snapshot.scope_evidence.empty_delivery {
+            report
+                .verification
+                .known_limits
+                .push("The selected delivery contains no unexcluded changed files.".into());
+        }
+    }
+    if !snapshot.scope_evidence.excluded_paths.is_empty() {
+        report.verification.known_limits.push(format!("Explicit and default resource exclusions removed {} paths from acquisition, execution inputs and verification; excluded resources are not verified.", snapshot.scope_evidence.excluded_paths.len()));
+    }
+    let (report, bytes) = tokio::task::spawn_blocking(move || -> Result<_> {
+        let bytes = serde_json::to_vec_pretty(&report)?;
+        Ok((report, bytes))
+    })
+    .await??;
+    tokio::fs::write(directory.join("report.json"), bytes).await?;
+    Ok(report)
+}
+
+pub(crate) fn recheck(
+    options: &CheckOptions,
+    base: &str,
+    policy_commit: Option<&str>,
+) -> Vec<String> {
+    // Repository-wide core evaluations cannot be replayed by the delivery-only CLI.
+    // Protected callers may supply their own replay command to check_prepared.
+    if options.snapshot_options.scope == check_scope::CheckScope::Repository {
+        return Vec::new();
+    }
+    let mut argv = vec![
+        "qualitygate".into(),
+        "--root".into(),
+        options.root.display().to_string(),
+        "check".into(),
+    ];
+    match &options.selection {
+        Selection::Worktree { .. } => {
+            argv.extend(["--worktree".into(), "--base".into(), base.into()])
+        }
+        Selection::Staged => argv.push("--staged".into()),
+        Selection::Diff { head, .. } => argv.extend(["--diff".into(), format!("{base}..{head}")]),
+        Selection::Path { path, .. } => {
+            argv.extend(["--path".into(), path.clone(), "--base".into(), base.into()])
+        }
+        Selection::MergeRequest { url, api_base } => {
+            argv.extend(["--mr".into(), url.clone()]);
+            if let Some(base) = api_base {
+                argv.extend(["--mr-api-base".into(), base.clone()]);
+            }
+        }
+    }
+    argv.extend([
+        "--expect-base".into(),
+        base.into(),
+        "--snapshot-max-mib".into(),
+        (options.snapshot_options.max_bytes / (1024 * 1024)).to_string(),
+        "--snapshot-max-file-mib".into(),
+        options
+            .snapshot_options
+            .max_file_bytes
+            .div_ceil(1024 * 1024)
+            .to_string(),
+        "--snapshot-jobs".into(),
+        options.snapshot_options.jobs.to_string(),
+        "--snapshot-timeout-secs".into(),
+        options.snapshot_options.timeout.as_secs().to_string(),
+        "--config".into(),
+        options.config.clone(),
+        "--profile".into(),
+        options.profile.clone(),
+        "--format".into(),
+        "json".into(),
+    ]);
+    if let Some(path) = &options.snapshot_options.path_filter {
+        argv.extend(["--path".into(), path.clone()]);
+    }
+    if let Some(task) = &options.task {
+        argv.extend(["--task".into(), task.clone()]);
+    }
+    if let Some(reference) = policy_commit.or(options.policy_ref.as_deref()) {
+        argv.extend(["--policy-ref".into(), reference.into()]);
+    }
+    if let Some(path) = &options.trust_store {
+        argv.extend(["--trust-store".into(), path.display().to_string()]);
+    }
+    if let Some(path) = &options.evidence_dir {
+        argv.extend(["--evidence-dir".into(), path.display().to_string()]);
+    }
+    argv
+}

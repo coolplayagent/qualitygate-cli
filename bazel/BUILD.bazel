@@ -1,3 +1,12 @@
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["rust_deps.bzl"])
+exports_files([
+    "rust_deps.bzl",
+    "owners/domain.rs",
+    "owners/env.rs",
+    "owners/paths.rs",
+    "owners/config.rs",
+    "owners/adapters.rs",
+    "owners/application.rs",
+    "owners/interfaces.rs",
+])

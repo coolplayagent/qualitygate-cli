@@ -11,10 +11,10 @@ dispatches the evaluator, and marks it complete or blocked. An unknown
 implementation or missing capability can never become an empty pass.
 
 The dispatch is in
-[`adapters/rules.rs`](../../../src/qualitygate/adapters/rules.rs). Parameter
+[`rule_evaluation/builtin_rules.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules.rs). Parameter
 contracts are in
-[`config/parameters.rs`](../../../src/qualitygate/config/parameters.rs) and
-[`config/builtin_validation.rs`](../../../src/qualitygate/config/builtin_validation.rs).
+[`rule_catalog/parameters.rs`](../../../src/qualitygate/rule_catalog/parameters.rs) and
+[`rule_catalog/builtin_validation.rs`](../../../src/qualitygate/rule_catalog/builtin_validation.rs).
 
 Operator composition and consuming-agent contracts extend this evidence model.
 See [rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md)
@@ -350,7 +350,7 @@ combine all three without collapsing their evidence strength.
 ## Verification evidence
 
 Focused tests in
-[`adapters/rules_tests.rs`](../../../src/qualitygate/adapters/rules_tests.rs)
+[`rule_evaluation/builtin_rules_tests.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules_tests.rs)
 prove that `source-pattern` reports added lines only and blocks invalid
 configuration. Issue integration targets cover routing, fixed package scope,
 repair, invalid UTF-8, missing files, budgets, and deterministic ordering.

@@ -1,12 +1,35 @@
 //! Repository policy contracts and reproducible quality gates.
 
 pub mod adapters;
+pub mod agent_runtime;
 pub mod application;
+pub mod check_planning;
+pub mod cli_dispatch;
+pub mod compatibility_verification;
 pub mod config;
+pub mod constraint_coverage;
+pub mod content_digest;
 pub mod domain;
 pub mod env;
+pub mod external_acceptance;
+pub mod gate_execution;
 pub mod interfaces;
+pub mod judgment_review;
+pub mod maven_analysis;
 pub mod net;
 pub mod paths;
+pub mod pilot_acceptance;
+pub mod policy_lifecycle;
+pub mod python_analysis;
+pub mod repair_feedback;
+pub mod report_evidence;
+pub mod resource_selection;
+pub mod rule_catalog;
+pub mod rule_evaluation;
 pub mod runner;
+pub mod selfcheck;
 pub mod snapshot;
+pub mod snapshot_preflight;
+pub mod source_analysis;
+pub mod test_effectiveness;
+pub mod xml_parsing;
