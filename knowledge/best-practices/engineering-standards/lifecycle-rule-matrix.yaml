@@ -758,6 +758,18 @@ inputs:
     evidence: [changed-source-lines, regex-pattern]
     applicability: Changed text source lines recognized by a supported syntax adapter.
     critical_adoption: A TODO, FIXME, or XXX may be deliberate work tracking; the warning requires an explicit disposition, not removal or an automatic quality conclusion.
+  - id: workaround-marker-review
+    status: enforced
+    rule_id: workaround-marker
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [coding, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-code-review]
+    evidence: [changed-source-line, regex-pattern]
+    applicability: Added lines in recognized source languages containing English or Chinese temporary-workaround markers when selected; arbitrary text documents are not scanned.
+    critical_adoption: Review the root-cause issue, owner or expiry condition, and removal plan. The marker is not a defect proof, and adding tracking text does not suppress it.
   - id: configured-import-boundary
     status: enforced
     rule_id: import-boundary

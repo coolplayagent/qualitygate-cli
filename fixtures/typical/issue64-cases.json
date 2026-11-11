@@ -1,0 +1,68 @@
+[
+  {
+    "id": "issue64-disabled-test-pass-typical",
+    "rule": "cpp-disabled-test",
+    "description": "typical pass: cpp-disabled-test is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/queue.cc": "// Restored test after fixing the race; boundary coverage remains.\nTEST_F(QueueTest, should_drain_when_closed) { EXPECT_TRUE(drained()); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-disabled-test-fail-typical",
+    "rule": "cpp-disabled-test",
+    "description": "typical fail: cpp-disabled-test is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/queue.cc": "// Reason: flaky timing; tracking: TEST-42; replacement: QueueBoundaryTest.\nTEST_F(QueueTest, DISABLED_should_drain_when_closed) { EXPECT_TRUE(drained()); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-ignored-atomic-cas-pass-typical",
+    "rule": "c-ignored-atomic-cas",
+    "description": "typical pass: c-ignored-atomic-cas is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/queue.cpp": "if (!atomic_compare_exchange_strong_explicit(&state, &expected, next, memory_order_acq_rel, memory_order_acquire)) { retry(); }\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-ignored-atomic-cas-fail-typical",
+    "rule": "c-ignored-atomic-cas",
+    "description": "typical fail: c-ignored-atomic-cas is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/queue.cpp": "( void ) atomic_compare_exchange_strong_explicit ( &state, &expected, next, memory_order_acq_rel, memory_order_acquire );\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-workaround-marker-pass-typical",
+    "rule": "workaround-marker",
+    "description": "typical pass: workaround-marker is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/cache.py": "# Root cause fixed; eviction now respects the owner lifetime.\nevict(key)\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-workaround-marker-fail-typical",
+    "rule": "workaround-marker",
+    "description": "typical fail: workaround-marker is a lexical review signal, not semantic proof",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/cache.py": "# 临时方案: 根因单 BUG-42；负责人 reviewer；退出条件为修复 owner lifetime；移除计划已记录。\nskip_eviction(key)\n"
+      }
+    }
+  }
+]

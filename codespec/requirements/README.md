@@ -1,5 +1,8 @@
 # Requirements
 
+The [clean contract maintenance supplement](clean-contracts.md) binds the
+Clean Architecture/DRY/SOLID audit to compatibility and executable evidence.
+
 This directory is governed by `codespec/codespec-map.yaml`. Update its map entry through `relay-knowledge map directory` and keep reviewed source material within the declared content scope.
 
 The normative product contract is [qualitygate-cli requirements](qualitygate-cli.md).

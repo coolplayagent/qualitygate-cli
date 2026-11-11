@@ -10,7 +10,6 @@ mod tests;
 use super::{CommandCheck, Config};
 use anyhow::Result;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -68,7 +67,7 @@ pub struct Suggestion {
 }
 
 pub(super) fn digest(bytes: &[u8]) -> String {
-    format!("sha256:{:x}", Sha256::digest(bytes))
+    crate::domain::digest::sha256(bytes)
 }
 
 pub fn discover(root: &Path) -> Result<Discovery> {

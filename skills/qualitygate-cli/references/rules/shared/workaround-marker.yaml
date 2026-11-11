@@ -1,0 +1,18 @@
+id: workaround-marker
+version: 1
+description: Review temporary workarounds for a root-cause issue, owner or expiry condition, and removal plan
+implementation: source-pattern
+language: []
+requires_capabilities: [files]
+diagnostic:
+  message: Temporary-workaround marker requires review; this is a review signal, not proof of a defect
+  fix: Confirm a root-cause issue, an owner or expiry condition, and a removal plan; remove the workaround only after fixing its cause. Tracking text alone does not suppress this marker signal
+defaults:
+  required: false
+  severity: warning
+  parameters:
+    prohibited_patterns:
+      all: ['(?i)\bworkaround\b|\btemporary\s+fix\b|暂时规避|临时方案|临时绕过']
+standard_refs:
+  - {source_id: google-code-review, controls: [code-health, evidence-over-preference]}
+lifecycle_inputs: [workaround-marker-review]

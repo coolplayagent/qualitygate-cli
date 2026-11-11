@@ -2,6 +2,7 @@ use super::*;
 use crate::config::attestation;
 use ed25519_dalek::{Signer, SigningKey};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 fn fixture() -> (SigningKey, TrustStore, ManualSubject, Value) {
     let key = SigningKey::from_bytes(&[7; 32]);
@@ -37,7 +38,13 @@ fn authenticated_payload_and_authorized_scope_are_both_required() {
         crate::domain::ManualDecision::Approved
     );
     assert_eq!(verified.signer_key_id, "review");
-    assert!(verified.public_key_digest.starts_with("sha256:"));
+    assert_eq!(
+        verified.public_key_digest,
+        format!(
+            "sha256:{:x}",
+            Sha256::digest(key.verifying_key().to_bytes())
+        )
+    );
     for altered in [
         json!({"repository":"elsewhere"}),
         json!({"check_id":"other"}),

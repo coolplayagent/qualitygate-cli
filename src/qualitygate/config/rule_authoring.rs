@@ -6,7 +6,6 @@ use crate::{
     paths,
 };
 use anyhow::{Context, Result, bail};
-use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeSet,
     io::{Read, Write},
@@ -89,7 +88,7 @@ fn source_bytes(bytes: &[u8], document: &str, section: &str) -> Result<Source> {
     Ok(Source {
         document: document.into(),
         section: section.into(),
-        content_hash: format!("sha256:{:x}", Sha256::digest(selected.as_bytes())),
+        content_hash: crate::domain::digest::sha256(selected.as_bytes()),
     })
 }
 

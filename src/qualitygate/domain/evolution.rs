@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 #[path = "evolution_tests.rs"]
 mod tests;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ActorKind {
     Human,
@@ -21,7 +21,7 @@ pub struct Actor {
     pub kind: ActorKind,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EvidenceKind {
     ConversationCorrection,
@@ -32,7 +32,7 @@ pub enum EvidenceKind {
     CapabilityGap,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Sensitivity {
     Public,
@@ -126,12 +126,7 @@ pub struct PolicyTransition {
 }
 
 pub fn valid_digest(value: &str) -> bool {
-    value.strip_prefix("sha256:").is_some_and(|hex| {
-        hex.len() == 64
-            && hex
-                .bytes()
-                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
-    })
+    super::digest::is_sha256(value)
 }
 
 pub fn validate_text(value: &str, max: usize) -> Result<(), String> {

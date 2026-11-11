@@ -2,7 +2,6 @@ use super::*;
 use crate::domain::evolution::{ActorKind, valid_digest, validate_text};
 use anyhow::{Result, bail};
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 fn text(value: &str) -> Result<()> {
@@ -58,10 +57,7 @@ fn plan_digest(manifest: &Manifest) -> Result<String> {
         sources: (manifest.schema_version >= 4).then_some(&manifest.sources),
         run_order: (manifest.schema_version >= 5).then_some(&manifest.run_order),
     };
-    Ok(format!(
-        "sha256:{:x}",
-        Sha256::digest(serde_json::to_vec(&plan)?)
-    ))
+    Ok(crate::domain::digest::sha256(&serde_json::to_vec(&plan)?))
 }
 
 fn planned_cohort(assignment: &Assignment) -> Result<String> {

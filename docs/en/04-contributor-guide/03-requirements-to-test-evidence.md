@@ -9,6 +9,33 @@ implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
 
+## Public review knowledge pack
+
+`REVIEW-PACK-01`: `tests/issue64_rules.rs` verifies opt-in warning behavior, language scope,
+file/line evidence, parameter rejection and repair; the three issue64 selfcheck suites retain
+independent pass/fail goldens. `tests/review_pack.rs` consumes the shipped cards and obligations
+through schema/source validation, independent fixture adoption, role selection and stale-input
+handling. Documentation and Skill packaging gates cover published assets. Instruction projection
+is not semantic verification; these tests do not establish concurrency or lifetime correctness.
+
+## Clean contract maintenance
+
+[CLEAN-01–07](../../../codespec/requirements/clean-contracts.md) map to:
+
+| Contract | Repeatable evidence |
+| --- | --- |
+| Framework independence and CLI compatibility | `interfaces::value_parsers::tests`; `architecture_rejects_cli_framework_and_path_io_in_pure_owners` and the full production-source graph. |
+| Shared language/pattern constraints and diagnostic ownership | `domain::rule_parameters::tests`, `domain::rule_guidance::tests`, config parameter/catalog tests, adapter rule tests, `tests/issue64_rules.rs` and full selfcheck. Invalid direct-adapter C/C++ import patterns remain incomplete. |
+| Exact canonical identities | `domain::digest::tests`, `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`, attestation public-key digest assertions and policy binding tests. |
+| Single package inventory and typed fixture registry | `tests/selfcheck.rs`, config selfcheck/catalog-asset tests and same-checkout corpus comparison; independent goldens are not generated from actual evaluator output. |
+| Root resolution at the blocking boundary | `application::repository_root::tests`, `paths::tests::repository_roots_keep_native_resolution_and_errors`, Unix symlink-root test and architecture regression fixtures. |
+| Portable fixture preconditions | Policy/agent-host fixtures create canonical temporary roots and preserve exact committed CRLF bytes; CLI tests inspect index bytes. Command/probe tests separately assert Unix content tampering and Windows write denial followed by attribute invalidation. `env::tests` covers 4,096/4,097 variables and 1 MiB/+1 byte using the same digest function as the live inherited-environment test. |
+
+Coverage, Bazel and the final snapshot report supplement these focused tests.
+They do not turn heuristic review signals into semantic proof. Stable local
+checks and nightly Miri/ASan results are recorded separately.
+
+
 ## Native syntax review rules
 
 `NATIVE-SYNTAX-01` maps to `adapters::native_syntax::tests` (syntax shapes,

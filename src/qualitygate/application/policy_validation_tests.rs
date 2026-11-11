@@ -6,7 +6,7 @@ pub(in crate::application) async fn fixture()
 -> (tempfile::TempDir, tempfile::TempDir, ValidateOptions) {
     let policy = "schema_version: 1\nrules: {line-ending: {enabled: false}}\n";
     let root = super::super::test_support::repository(policy).await;
-    let external = tempfile::tempdir().unwrap();
+    let external = super::super::test_support::tempdir();
     let base = String::from_utf8(
         snapshot::run_git(root.path(), &["rev-parse", "HEAD"], None)
             .await
@@ -93,6 +93,13 @@ pub(in crate::application) async fn fixture()
         )
         .await
         .unwrap();
+        assert_eq!(
+            snapshot::run_git(root.path(), &["show", &format!("HEAD:{name}.txt")], None)
+                .await
+                .unwrap(),
+            content.as_bytes(),
+            "The fixture commit must retain its declared acceptance bytes"
+        );
         let head = String::from_utf8(
             snapshot::run_git(root.path(), &["rev-parse", "HEAD"], None)
                 .await

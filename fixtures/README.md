@@ -11,7 +11,7 @@ suite. Catalog growth without those pairs makes selfcheck incomplete. The
 corpus also exercises all ten external report formats, the custom file DSL,
 strict policy loading, gate decisions, native Git snapshots and process capture.
 
-The 524-case corpus includes 85 policy-evolution fixtures. Separate issue 9
+The corpus includes policy-evolution fixtures. Separate issue 9
 case files and goldens add compliant and violating cases for four rules to
 each suite. Separate issue 10 pairs do the same for three C/C++ and test-file
 rules. Separate issue 11 pairs cover six Python and language-neutral rules.
@@ -21,6 +21,11 @@ category context, protected suite budgets, synthetic signatures, immutable
 archives, lifecycle changes, and nine real paired Git workflows. Native cases
 use disposable repositories/trust roots and fixed producers; they never sign
 or promote a policy in the caller's repository.
+
+Run the unfiltered `qualitygate selfcheck --format json` and inspect its
+`fixtures` array for the selected runtime's actual inventory. The integration
+test pins the expected inventory separately; documentation does not maintain
+another total that can drift as rule packs are added.
 
 See [selfcheck](../docs/en/04-contributor-guide/02-selfcheck-and-fixtures.md) for commands, diagnostics, budgets and
 the distinction between falsification evidence and production assumptions.

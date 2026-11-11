@@ -103,7 +103,6 @@ pub fn context_from_files<'a>(
     category: Option<&str>,
 ) -> Result<Value> {
     use anyhow::Context;
-    use sha2::{Digest, Sha256};
     let files: std::collections::BTreeMap<_, _> = files.into_iter().collect();
     let bytes = files
         .get(path)
@@ -136,7 +135,7 @@ pub fn context_from_files<'a>(
         Default::default()
     };
     let mut inventory = Inventory::from_catalogs(Some(config), builtins, projects, directory)?;
-    inventory.policy_digest = Some(format!("sha256:{:x}", Sha256::digest(bytes)));
+    inventory.policy_digest = Some(crate::domain::digest::sha256(bytes));
     context_rows(filtered(&inventory, None, "all", category)?)
 }
 
@@ -186,8 +185,8 @@ pub fn describe(root: &Path, path: &str, id: &str) -> Result<Value> {
     let builtin = &row["definition"]["builtin"];
     let custom = &row["definition"]["custom"];
     let definition = if builtin.is_null() { custom } else { builtin };
-    let parameters = if let Some(implementation) = builtin["implementation"].as_str() {
-        super::parameters::describe(implementation, &builtin["defaults"]["parameters"])?
+    let parameters = if let Some(builtin) = &entry.builtin {
+        super::parameters::describe_builtin(builtin)?
     } else {
         Vec::new()
     };
@@ -237,8 +236,7 @@ impl Inventory {
         let policy = match std::fs::metadata(policy_path) {
             Ok(_) => {
                 let bytes = super::rule_authoring::read_file(root, path)?;
-                use sha2::{Digest, Sha256};
-                policy_digest = Some(format!("sha256:{:x}", Sha256::digest(&bytes)));
+                policy_digest = Some(crate::domain::digest::sha256(&bytes));
                 let config: Config = super::parse_yaml(&bytes)?;
                 super::validation::layout(&config, false)?;
                 Some(config)

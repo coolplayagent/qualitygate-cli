@@ -38,6 +38,7 @@ mod provenance;
 mod python_install;
 mod report_gate;
 mod report_sources;
+pub mod repository_root;
 pub mod rule_context;
 mod rule_execution;
 pub mod selfcheck;

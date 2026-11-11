@@ -51,6 +51,24 @@ syntax and exhausted budgets remain incomplete. Cross-file types, runtime
 expansion and data flow remain external-analyzer or human-review concerns.
 See the [bundled rule guide](../../../skills/qualitygate-cli/references/builtin-rules.md#structured-language-reviews) for exact boundaries.
 
+## Historical review signals
+
+`cpp-disabled-test`, `c-ignored-atomic-cas` and `workaround-marker` are opt-in,
+non-required warnings. They reuse added-source-line matching: disabled-test markers,
+explicitly discarded C11 CAS results, and temporary-workaround markers respectively.
+Findings request review and do not prove races, missing coverage or missing tracking.
+Adding a rationale or tracking reference does not remove a marker finding. The C-family
+CAS rule covers C and C++; the disabled-test rule covers C++ extensions, excluding `.h`
+classified as C. Workaround scanning covers supported source languages, not Markdown.
+Comments and strings may match; multiline and indirect calls may be missed.
+See the [packaged definitions and override example](../../../skills/qualitygate-cli/references/builtin-rules.md#historical-review-signals)
+and [knowledge-pack workflow](../01-user-guide/06-schema-guided-repository-rules.md#public-review-knowledge-pack).
+
+C++ gtest naming is deferred: reliable test-entity extraction is not available here.
+A regex can express `_when_`; the missing capability is entity extraction, not regex syntax.
+`test-naming-strict` retains its existing Java scope.
+
+
 ## Project rule protocol
 
 Version 1 YAML packages declare identity, applicability, source review,

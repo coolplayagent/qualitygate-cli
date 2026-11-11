@@ -35,16 +35,7 @@ impl SourceReview {
                 return Err("Source review fields must be nonempty, bounded text without control characters".into());
             }
         }
-        if !self
-            .binding_digest
-            .strip_prefix("sha256:")
-            .is_some_and(|digest| {
-                digest.len() == 64
-                    && digest
-                        .bytes()
-                        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-            })
-        {
+        if !super::digest::is_sha256(&self.binding_digest) {
             return Err("Source review requires a lowercase sha256 binding_digest".into());
         }
         Ok(())

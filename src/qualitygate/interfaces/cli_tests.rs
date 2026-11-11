@@ -372,6 +372,13 @@ async fn check_dispatch_preserves_failed_gate_across_full_feedback_and_envelope_
     crate::snapshot::run_git(root.path(), &["init", "--quiet", "--template="], None)
         .await
         .unwrap();
+    crate::snapshot::run_git(
+        root.path(),
+        &["config", "--local", "core.autocrlf", "false"],
+        None,
+    )
+    .await
+    .unwrap();
     std::fs::write(
         root.path().join("qualitygate.yaml"),
         "schema_version: 1\nrules: {line-ending: {enabled: true}}\n",
@@ -425,6 +432,12 @@ async fn check_dispatch_preserves_failed_gate_across_full_feedback_and_envelope_
     crate::snapshot::run_git(root.path(), &["add", "source.rs"], None)
         .await
         .unwrap();
+    assert_eq!(
+        crate::snapshot::run_git(root.path(), &["show", ":source.rs"], None)
+            .await
+            .unwrap(),
+        b"fn changed() {}\r\n"
+    );
     assert_eq!(
         dispatch(
             root.path(),

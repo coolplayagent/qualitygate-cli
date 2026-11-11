@@ -1,0 +1,83 @@
+[
+  {
+    "id": "issue64-disabled-test-pass-stress",
+    "rule": "cpp-disabled-test",
+    "description": "Unchanged disabled marker and C-classified .h are outside the added C++ line scope",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/cache.hpp": "TEST(Cache, DISABLED_old_case) {}\nTEST(Cache, should_reuse_when_ready) {}\n",
+        "tests/c_header.h": "// DISABLED_header_case\n"
+      },
+      "base_files": {
+        "tests/cache.hpp": "TEST(Cache, DISABLED_old_case) {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-disabled-test-fail-stress",
+    "rule": "cpp-disabled-test",
+    "description": "New C++ comment and test markers both warn; unchanged marker is not recounted",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "tests/cache.hpp": "TEST(Cache, DISABLED_old_case) {}\n// DISABLED_example is still a lexical review signal.\nTEST(Cache, DISABLED_new_case) {}\n"
+      },
+      "base_files": {
+        "tests/cache.hpp": "TEST(Cache, DISABLED_old_case) {}\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-ignored-atomic-cas-pass-stress",
+    "rule": "c-ignored-atomic-cas",
+    "description": "Unchanged discarded CAS is not recounted; new handled CAS uses the standard API",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/atomic.c": "(void) atomic_compare_exchange_weak(&state, &expected, next);\nif (!atomic_compare_exchange_weak_explicit(&state, &expected, next, memory_order_relaxed, memory_order_relaxed)) { retry(); }\n"
+      },
+      "base_files": {
+        "src/atomic.c": "(void) atomic_compare_exchange_weak(&state, &expected, next);\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-ignored-atomic-cas-fail-stress",
+    "rule": "c-ignored-atomic-cas",
+    "description": "Weak explicit and strong CAS variants warn in C and C++ sources",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/atomic.c": "(void)atomic_compare_exchange_weak_explicit(&state, &expected, next, memory_order_relaxed, memory_order_relaxed);\n",
+        "src/atomic.cpp": "(void) atomic_compare_exchange_strong(&state, &expected, next);\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-workaround-marker-pass-stress",
+    "rule": "workaround-marker",
+    "description": "Unchanged source marker is not recounted and Markdown is outside source-pattern scope",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/cache.rs": "// workaround: historical code awaiting review.\nrepair_owner();\n",
+        "notes.md": "temporary fix 暂时规避 临时绕过\n"
+      },
+      "base_files": {
+        "src/cache.rs": "// workaround: historical code awaiting review.\n"
+      }
+    }
+  },
+  {
+    "id": "issue64-workaround-marker-fail-stress",
+    "rule": "workaround-marker",
+    "description": "English case/spacing and Chinese markers are review signals even in comments and strings",
+    "input": {
+      "kind": "rule",
+      "files": {
+        "src/cache.rs": "// Temporary   Fix: root cause tracked under BUG-42.\nlet note = \"暂时规避\";\n// 临时绕过: remove once the ownership fix is deployed.\n"
+      }
+    }
+  }
+]

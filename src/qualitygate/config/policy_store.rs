@@ -3,7 +3,6 @@
 use crate::{domain::evolution::valid_digest, paths};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     io::{Read, Write},
@@ -66,7 +65,7 @@ impl Drop for Lock {
 }
 
 pub fn digest(bytes: &[u8]) -> String {
-    format!("sha256:{:x}", Sha256::digest(bytes))
+    crate::domain::digest::sha256(bytes)
 }
 
 pub fn now() -> Result<u64> {

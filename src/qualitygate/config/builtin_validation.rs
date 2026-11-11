@@ -1,11 +1,12 @@
 use super::{Marker, RuleSetting};
+use crate::domain::rule_parameters::{self, LanguageContract, LanguageScope, PatternLanguages};
 use anyhow::{Context, Result, bail};
-use std::collections::BTreeSet;
 
-pub(super) fn validate(
+pub(super) fn validate_with_scope(
     builtin_id: &str,
     implementation: &str,
     builtin_languages: &[String],
+    language_scope: Option<LanguageScope>,
     rule: &RuleSetting,
 ) -> Result<()> {
     let id = implementation;
@@ -67,7 +68,11 @@ pub(super) fn validate(
                 }
             }
             "prohibited_patterns" | "forbidden_imports" => {
-                pattern_map(key, value, id == "source-pattern")?;
+                rule_parameters::compile_patterns(
+                    key,
+                    value,
+                    PatternLanguages::for_implementation(id),
+                )?;
             }
             "paths" | "exempt_patterns" | "languages" => {
                 for value in value
@@ -84,11 +89,7 @@ pub(super) fn validate(
                         globset::Glob::new(text)?;
                     } else if key == "exempt_patterns" {
                         regex::Regex::new(text)?;
-                    } else if !(["java", "python", "typescript", "go", "rust", "shell"]
-                        .contains(&text)
-                        || (["file-pattern", "source-pattern", "native-syntax"].contains(&id)
-                            && ["c", "cpp"].contains(&text)))
-                    {
+                    } else if !PatternLanguages::for_implementation(id).supports(text) {
                         bail!("Unsupported rule language: {text}");
                     }
                 }
@@ -132,97 +133,8 @@ pub(super) fn validate(
     if id == "source-pattern" && !rule.parameters.contains_key("prohibited_patterns") {
         bail!("source-pattern requires prohibited_patterns");
     }
-    if builtin_id == "security-sensitive-api" {
-        if rule
-            .parameters
-            .get("languages")
-            .and_then(serde_json::Value::as_array)
-            .is_some_and(|languages| {
-                languages.iter().any(|language| {
-                    language.as_str().is_none_or(|language| {
-                        !builtin_languages.iter().any(|known| known == language)
-                    })
-                })
-            })
-        {
-            bail!("security-sensitive-api requires its declared language scope");
-        }
-        if rule
-            .parameters
-            .get("prohibited_patterns")
-            .and_then(serde_json::Value::as_object)
-            .is_some_and(|patterns| {
-                patterns.keys().any(|language| {
-                    language != "all" && !builtin_languages.iter().any(|known| known == language)
-                })
-            })
-        {
-            bail!("security-sensitive-api requires patterns within its declared language scope");
-        }
-    }
-    if ["test-naming-strict", "test-annotation-dependency"].contains(&id)
-        && rule.parameters.get("languages") != Some(&serde_json::json!(["java"]))
-    {
-        bail!("{id} requires languages: [java]");
-    }
-    if builtin_id == "python-test-naming"
-        && rule.parameters.get("languages") != Some(&serde_json::json!(["python"]))
-    {
-        bail!("python-test-naming requires languages: [python]");
-    }
-    if ["file-pattern", "native-syntax", "language-syntax"].contains(&id)
-        && rule.parameters.get("languages") != Some(&serde_json::json!(builtin_languages))
-    {
-        bail!("{builtin_id} requires languages: {builtin_languages:?}");
-    }
-    if ["shell-shebang", "shell-commented-code"].contains(&id)
-        && rule.parameters.get("languages") != Some(&serde_json::json!(["shell"]))
-    {
-        bail!("{builtin_id} requires languages: [shell]");
-    }
-    let fixed_language = if builtin_id.starts_with("shell-") {
-        Some("shell")
-    } else if builtin_id.starts_with("rust-") {
-        Some("rust")
-    } else if builtin_id.starts_with("ts-") {
-        Some("typescript")
-    } else if builtin_id.starts_with("go-") {
-        Some("go")
-    } else if builtin_id.starts_with("py-") {
-        Some("python")
-    } else if builtin_id.starts_with("cpp-") {
-        Some("cpp")
-    } else if builtin_id.starts_with("java-") {
-        Some("java")
-    } else {
-        None
-    };
-    if let Some(language) = fixed_language.filter(|_| id == "source-pattern") {
-        if rule.parameters.get("languages") != Some(&serde_json::json!([language])) {
-            bail!("{builtin_id} requires languages: [{language}]");
-        }
-        let patterns = rule
-            .parameters
-            .get("prohibited_patterns")
-            .and_then(serde_json::Value::as_object);
-        if patterns.is_none_or(|patterns| patterns.len() != 1 || !patterns.contains_key(language)) {
-            bail!("{builtin_id} requires prohibited_patterns.{language} only");
-        }
-    }
-    if builtin_id.starts_with("c-") && id == "source-pattern" {
-        if rule.parameters.get("languages") != Some(&serde_json::json!(["c", "cpp"])) {
-            bail!("{builtin_id} requires languages: [c, cpp]");
-        }
-        let patterns = rule
-            .parameters
-            .get("prohibited_patterns")
-            .and_then(serde_json::Value::as_object);
-        if patterns.is_none_or(|patterns| {
-            patterns.len() != 2 || !patterns.contains_key("c") || !patterns.contains_key("cpp")
-        }) {
-            bail!("{builtin_id} requires prohibited_patterns.c and .cpp only");
-        }
-    }
+    LanguageContract::builtin(implementation, builtin_languages, language_scope)?
+        .validate(builtin_id, &rule.parameters)?;
     if builtin_id == "no-test-sleep"
         && rule
             .parameters
@@ -249,38 +161,28 @@ pub(super) fn validate(
     Ok(())
 }
 
+#[cfg(test)]
+fn validate(
+    builtin_id: &str,
+    implementation: &str,
+    builtin_languages: &[String],
+    rule: &RuleSetting,
+) -> Result<()> {
+    validate_with_scope(builtin_id, implementation, builtin_languages, None, rule)
+}
+
+#[cfg(test)]
 fn pattern_map(key: &str, value: &serde_json::Value, text_source: bool) -> Result<()> {
-    let values = value
-        .as_object()
-        .with_context(|| format!("{key} must map languages to regex arrays"))?;
-    if values.is_empty() || values.len() > 32 {
-        bail!("{key} requires 1..32 language entries");
-    }
-    for (language, entries) in values {
-        if language != "all"
-            && !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str())
-            && !(text_source && ["c", "cpp"].contains(&language.as_str()))
-        {
-            bail!("{key} has unsupported language: {language}");
-        }
-        let entries = entries
-            .as_array()
-            .with_context(|| format!("{key}.{language} must be a regex array"))?;
-        if entries.is_empty() || entries.len() > 32 {
-            bail!("{key}.{language} requires 1..32 regex patterns");
-        }
-        let mut unique = BTreeSet::new();
-        for pattern in entries {
-            let pattern = pattern
-                .as_str()
-                .with_context(|| format!("{key}.{language} values must be strings"))?;
-            if pattern.is_empty() || pattern.len() > 512 || !unique.insert(pattern) {
-                bail!("{key}.{language} requires distinct regex patterns of 1..512 bytes");
-            }
-            regex::Regex::new(pattern)?;
-        }
-    }
-    Ok(())
+    rule_parameters::compile_patterns(
+        key,
+        value,
+        if text_source {
+            PatternLanguages::Text
+        } else {
+            PatternLanguages::Syntax
+        },
+    )
+    .map(|_| ())
 }
 
 #[cfg(test)]

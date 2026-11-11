@@ -16,17 +16,7 @@ pub(super) fn id(id: &str) -> Result<()> {
 
 pub(super) fn source(source: &Source) -> Result<()> {
     crate::paths::relative(Path::new(&source.document))?;
-    if source.section.trim().is_empty()
-        || !source
-            .content_hash
-            .strip_prefix("sha256:")
-            .is_some_and(|hash| {
-                hash.len() == 64
-                    && hash
-                        .bytes()
-                        .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-            })
-    {
+    if source.section.trim().is_empty() || !crate::domain::digest::is_sha256(&source.content_hash) {
         bail!("Rule source needs a nonempty section and lowercase sha256 content_hash");
     }
     Ok(())

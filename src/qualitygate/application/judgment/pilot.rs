@@ -76,11 +76,7 @@ fn bounded(path: &Path, max: usize) -> Result<Vec<u8>> {
 }
 
 fn hex_digest(value: &str) -> bool {
-    value.len() == 71
-        && value.starts_with("sha256:")
-        && value[7..]
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    crate::domain::digest::is_sha256(value)
 }
 
 fn load(options: &Options) -> Result<(Vec<JudgmentRun>, Labels)> {

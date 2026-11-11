@@ -5,16 +5,6 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
-const PACKAGES: &[&str] = &[
-    "core",
-    "shared",
-    "lang-java",
-    "lang-python",
-    "lang-typescript",
-    "lang-go",
-    "lang-c",
-    "lang-cpp",
-];
 
 #[derive(Debug)]
 pub(super) struct PackagedRule {
@@ -58,7 +48,7 @@ fn canonical_rule_directory(path: PathBuf, source: &str) -> Result<PathBuf> {
 fn packaged_rules_from(root: &Path) -> Result<Vec<PackagedRule>> {
     let mut result = Vec::new();
     let mut total = 0;
-    for package in PACKAGES {
+    for package in super::RULESETS {
         let directory = root.join(package);
         let metadata = std::fs::symlink_metadata(&directory).with_context(|| {
             format!("Built-in skill rule package is missing: references/rules/{package}")
@@ -138,12 +128,12 @@ mod tests {
     #[test]
     fn asset_byte_and_file_limits_are_inclusive() {
         let root = tempfile::tempdir().unwrap();
-        for package in PACKAGES {
+        for package in super::super::RULESETS {
             std::fs::create_dir(root.path().join(package)).unwrap();
             std::fs::write(root.path().join(package).join("rule.yaml"), b"{}\n").unwrap();
         }
         let large = root.path().join("core/large.yaml");
-        let remaining = super::super::MAX_CONFIG_BYTES - PACKAGES.len() * 3;
+        let remaining = super::super::MAX_CONFIG_BYTES - super::super::RULESETS.len() * 3;
         std::fs::write(&large, vec![b' '; remaining]).unwrap();
         assert_eq!(
             packaged_rules_from(root.path())
@@ -161,7 +151,7 @@ mod tests {
                 .contains("1 MiB")
         );
         std::fs::remove_file(large).unwrap();
-        for index in PACKAGES.len()..256 {
+        for index in super::super::RULESETS.len()..256 {
             std::fs::write(root.path().join(format!("core/{index:03}.yaml")), b"{}\n").unwrap();
         }
         let rules = packaged_rules_from(root.path()).unwrap();
@@ -206,13 +196,13 @@ mod tests {
     #[test]
     fn actual_asset_bytes_count_toward_the_aggregate_budget() {
         let root = tempfile::tempdir().unwrap();
-        for package in PACKAGES {
+        for package in super::super::RULESETS {
             std::fs::create_dir(root.path().join(package)).unwrap();
             std::fs::write(root.path().join(package).join("rule.yaml"), b"{}\n").unwrap();
         }
         std::fs::write(
             root.path().join("core/rule.yaml"),
-            vec![b' '; super::super::MAX_CONFIG_BYTES - (PACKAGES.len() - 1) * 3],
+            vec![b' '; super::super::MAX_CONFIG_BYTES - (super::super::RULESETS.len() - 1) * 3],
         )
         .unwrap();
         let rules = packaged_rules_from(root.path()).unwrap();

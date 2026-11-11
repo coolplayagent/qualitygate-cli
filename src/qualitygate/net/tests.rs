@@ -1,4 +1,5 @@
 use super::*;
+use sha2::{Digest, Sha256};
 use test_server::{Server, json};
 
 #[test]

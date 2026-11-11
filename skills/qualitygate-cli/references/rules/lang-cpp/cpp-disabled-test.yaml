@@ -1,0 +1,19 @@
+id: cpp-disabled-test
+version: 1
+description: Review disabled test markers for a reason, tracking issue, and replacement coverage
+implementation: source-pattern
+language: [cpp]
+requires_capabilities: [files]
+diagnostic:
+  message: Disabled-test marker requires review; this is a review signal, not proof of missing coverage
+  fix: Confirm the reason, tracking issue, and replacement coverage; restore the test when appropriate. Tracking text alone does not suppress this marker signal
+defaults:
+  required: false
+  severity: warning
+  parameters:
+    languages: [cpp]
+    prohibited_patterns:
+      cpp: ['\bDISABLED_[A-Za-z0-9_]*\b']
+standard_refs:
+  - {source_id: google-code-review, controls: [test-design, evidence-over-preference]}
+lifecycle_inputs: [cpp-disabled-test-review]

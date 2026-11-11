@@ -1,0 +1,53 @@
+{
+  "issue64-disabled-test-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0,
+    "/required": false,
+    "/severity": "warning"
+  },
+  "issue64-disabled-test-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/required": false,
+    "/severity": "warning",
+    "/diagnostics/0/evidence/language": "cpp",
+    "/diagnostics/0/file": "tests/cache.cpp",
+    "/diagnostics/0/range/start_line": 1
+  },
+  "issue64-ignored-atomic-cas-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0,
+    "/required": false,
+    "/severity": "warning"
+  },
+  "issue64-ignored-atomic-cas-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/required": false,
+    "/severity": "warning",
+    "/diagnostics/0/evidence/language": "c",
+    "/diagnostics/0/file": "src/atomic.c",
+    "/diagnostics/0/range/start_line": 1
+  },
+  "issue64-workaround-marker-pass-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "pass",
+    "/diagnostic_count": 0,
+    "/required": false,
+    "/severity": "warning"
+  },
+  "issue64-workaround-marker-fail-minimal": {
+    "/execution/status": "completed",
+    "/verdict": "fail",
+    "/diagnostic_count": 1,
+    "/required": false,
+    "/severity": "warning",
+    "/diagnostics/0/evidence/language": "rust",
+    "/diagnostics/0/file": "src/cache.rs",
+    "/diagnostics/0/range/start_line": 1
+  }
+}

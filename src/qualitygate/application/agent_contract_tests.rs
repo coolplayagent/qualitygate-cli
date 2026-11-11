@@ -168,7 +168,17 @@ async fn public_projection_binds_selected_repository_and_rejects_partial_scope()
         .unwrap();
     assert!(first.ready);
     assert!(first.obligations.is_empty());
-    assert!(first.prompt.contains(root.path().to_str().unwrap()));
+    assert_eq!(
+        std::path::Path::new(&first.repository)
+            .canonicalize()
+            .unwrap(),
+        root.path().canonicalize().unwrap()
+    );
+    assert!(
+        first
+            .prompt
+            .contains(&format!("Repository: {}\n", first.repository))
+    );
     assert!(
         project(options.clone(), "invalid role!".into())
             .await

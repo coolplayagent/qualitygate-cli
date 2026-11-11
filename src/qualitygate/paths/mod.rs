@@ -8,6 +8,12 @@ pub fn display(path: &Path) -> std::path::Display<'_> {
     dunce::simplified(path).display()
 }
 
+/// Resolves a user-selected root, preserving native canonical path semantics.
+pub fn repository_root(path: &Path) -> Result<PathBuf> {
+    path.canonicalize()
+        .context("Repository root does not exist")
+}
+
 /// Converts a user path into a portable, confined repository-relative name.
 pub fn relative(path: &Path) -> Result<String> {
     if path

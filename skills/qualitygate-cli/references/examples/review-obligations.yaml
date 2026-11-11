@@ -1,0 +1,113 @@
+# Merge selected entries into an existing policy; this fragment does not enable rules.
+# Rebind each source with `rules source` after copying its card into another repository.
+# Adoption is intentionally absent. Optional unadopted entries do not enter the prompt.
+agent_obligations:
+  - schema_version: 1
+    id: review-concurrency
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/review-pack.md
+      section: Concurrency and atomicity
+      content_hash: sha256:a46a90918c8b1d4d643995bde4822dc946df60859153f39203e85df1371ac6bc
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterexamples and insufficient-evidence guidance."
+      - "Identify shared-state ownership and thread/process boundaries; trace reads, writes, locks and atomic operations across relevant error and callback paths."
+      - "For compound state changes, identify the linearization point and inspect CAS failure handling; check counterevidence such as confinement, immutability or external serialization before reporting a race."
+      - "Record the snapshot, reviewed scope, card ID/version and file/line, symbol or call-chain evidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two and any remaining gaps."
+    must_not:
+      - "Treat missing keyword matches, instruction delivery, or a text signal as proof of concurrency safety or a data race; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: review-lifetime
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/review-pack.md
+      section: Pointers and lifetime
+      content_hash: sha256:0605f76e7038191597e53d8d2740dddfc53aefb470c28165c73a68c7d601f3ec
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterexamples and insufficient-evidence guidance."
+      - "Trace nullable values and escaping pointers through allocation, ownership, copying, release and use; verify dominating null checks and the ordering of callbacks, cancellation, pool reset and configuration reload."
+      - "Check owning copies, shared ownership, non-null contracts and enforced completion ordering as counterevidence; identify missing ownership, aliasing or lifetime facts explicitly."
+      - "Record the snapshot, reviewed scope, card ID/version and file/line, symbol or call-chain evidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two and any remaining gaps."
+    must_not:
+      - "Claim a proven null dereference or use-after-free from a suspicious pointer or shallow copy alone; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: review-bounds
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/review-pack.md
+      section: Bounds and integer safety
+      content_hash: sha256:773de5303f75c8c38b324a326136ef0f56df8a23a4536ba736a09903d7025f29
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterexamples and insufficient-evidence guidance."
+      - "Trace untrusted lengths and indices with signedness, width, units and ranges; compare copy lengths with both source availability and destination capacity and inspect arithmetic before validation."
+      - "Exercise zero, minimum, maximum, one-past-limit, conversion and retry-exhaustion reasoning; check validated types, checked arithmetic and upstream contracts before declaring a defect."
+      - "Record the snapshot, reviewed scope, card ID/version and file/line, symbol or call-chain evidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two and any remaining gaps."
+    must_not:
+      - "Claim overflow or out-of-bounds access without a concrete input and arithmetic/use trace; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: review-consistency
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/review-pack.md
+      section: Cross-path consistency
+      content_hash: sha256:90aa9e6802d4fab170d7b2e73086e6bd26304fe1a1b6ed01c8bc63e24419105c
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterexamples and insufficient-evidence guidance."
+      - "List affected entrypoints, versions, peers and rollback paths; identify their shared behavior contract and documented exceptions before comparing representative inputs, defaults, normalization, switches, errors and logs."
+      - "Connect material path differences to tests or reviewed exceptions; inspect whether tests encode the intended contract, and identify missing peer behavior or version-matrix evidence."
+      - "Record the snapshot, reviewed scope, card ID/version and file/line, symbol or call-chain evidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two and any remaining gaps."
+    must_not:
+      - "Infer equivalent semantics from similar names or treat an uninspected path as consistent; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: review-test-quality
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/review-pack.md
+      section: Test quality
+      content_hash: sha256:0eadf716268390e9d179a963439dc5c0ea3fbc6d7d819ea97c7199920ae726d6
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterexamples and insufficient-evidence guidance."
+      - "Map new behavior and boundary/error cases to assertions and execution evidence; identify the incorrect implementation each assertion rejects and whether mocks describe reachable states or justified fault injection."
+      - "For disabled tests, examine the reason, tracking reference and replacement coverage; compare replacement assertions and execution scope with the lost behavior and review names against the project's actual naming contract."
+      - "Record the snapshot, reviewed scope, card ID/version and file/line, symbol or call-chain evidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two and any remaining gaps."
+    must_not:
+      - "Treat names, coverage percentages or an unexecuted replacement as proof of behavior coverage; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}
+  - schema_version: 1
+    id: review-workflow
+    version: 1
+    required: false
+    source:
+      document: skills/qualitygate-cli/references/review-pack.md
+      section: Workflow obligations
+      content_hash: sha256:e047c41403c624f9413bc82bf3b5299c67892e8f73fd458eb16e3c7b24d906b9
+    scope: {roles: [implementer, reviewer], tasks: []}
+    triggers: [start, after_change, before_delivery]
+    must:
+      - "Read this obligation's bound source card in the selected snapshot, including its applicability, counterexamples and insufficient-evidence guidance."
+      - "For disabled tests, record reason, tracking reference and replacement coverage; for temporary fixes, record root-cause tracking, accountable owner or explicit expiry condition, and a removal plan."
+      - "Ground findings and rebuttals in file/line, symbols, call chains, contracts or execution evidence; preserve uncertainty and check whether replacement coverage actually preserves the lost behavior."
+      - "Map behavior changes to affected design contracts, tests, peer semantics and log schema; update affected artifacts or explain non-applicability, and list impacted entrypoints, versions, process models, peers and rollback paths."
+      - "Record the snapshot, reviewed scope, card ID/version and file/line, symbol or call-chain evidence; choose finding, no_finding_in_reviewed_scope, not_applicable or insufficient_evidence, explaining the latter two and any remaining gaps."
+    must_not:
+      - "Manufacture approval, suppress honest temporary-fix markers to silence signals, or treat nonempty evidence fields as proof of adequacy; do not change deterministic gate results based on this review."
+    enforcement: {kind: instruction}

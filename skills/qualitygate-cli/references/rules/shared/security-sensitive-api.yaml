@@ -3,6 +3,7 @@ version: 1
 description: Review changed calls to high-risk APIs with language-specific bounded patterns
 implementation: source-pattern
 language: [java, python, rust, typescript, go]
+language_scope: subset
 requires_capabilities: [files]
 defaults:
   required: true

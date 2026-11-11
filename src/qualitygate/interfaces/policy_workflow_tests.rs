@@ -13,9 +13,17 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use ed25519_dalek::{Signer, SigningKey};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
+
+fn tempdir() -> tempfile::TempDir {
+    tempfile::tempdir_in(dunce::canonicalize(std::env::temp_dir()).unwrap()).unwrap()
+}
+
 async fn repository(policy: &str) -> tempfile::TempDir {
-    let root = tempfile::tempdir().unwrap();
+    let root = tempdir();
     crate::snapshot::run_git(root.path(), &["init", "--quiet", "--template="], None)
+        .await
+        .unwrap();
+    crate::snapshot::run_git(root.path(), &["config", "core.autocrlf", "false"], None)
         .await
         .unwrap();
     std::fs::write(root.path().join("qualitygate.yaml"), policy).unwrap();
@@ -84,7 +92,7 @@ fn trust(root: &Path, suite: String, baseline: String, evaluator: String) -> Evo
 async fn fixture() -> (tempfile::TempDir, tempfile::TempDir, ValidateOptions) {
     let policy = "schema_version: 1\nrules: {line-ending: {enabled: false}}\n";
     let root = repository(policy).await;
-    let external = tempfile::tempdir().unwrap();
+    let external = tempdir();
     let base = String::from_utf8(
         snapshot::run_git(root.path(), &["rev-parse", "HEAD"], None)
             .await
@@ -171,6 +179,13 @@ async fn fixture() -> (tempfile::TempDir, tempfile::TempDir, ValidateOptions) {
         )
         .await
         .unwrap();
+        assert_eq!(
+            snapshot::run_git(root.path(), &["show", &format!("HEAD:{name}.txt")], None)
+                .await
+                .unwrap(),
+            content.as_bytes(),
+            "The fixture commit must retain its declared acceptance bytes"
+        );
         let head = String::from_utf8(
             snapshot::run_git(root.path(), &["rev-parse", "HEAD"], None)
                 .await

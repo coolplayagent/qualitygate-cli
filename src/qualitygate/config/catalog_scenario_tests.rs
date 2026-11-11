@@ -118,3 +118,21 @@ fn bundled_standard_references_cannot_claim_unmapped_controls_or_lifecycle_input
         );
     }
 }
+
+#[test]
+fn builtin_presentation_is_validated_even_before_a_rule_is_selected() {
+    let standards =
+        standards_from(STANDARD_REGISTRY, LIFECYCLE_MATRIX, LIFECYCLE_SUPPLEMENTS).unwrap();
+    let catalog = Catalog::load(&Config::default(), []).unwrap();
+    let mut rule = catalog.entries["workaround-marker"]
+        .builtin
+        .as_ref()
+        .unwrap()
+        .clone();
+    validate_builtin_standards(&rule, &standards).unwrap();
+    rule.diagnostic.as_mut().unwrap().fix = " ".into();
+    assert!(validate_builtin_standards(&rule, &standards).is_err());
+    rule.diagnostic.as_mut().unwrap().fix = "Inspect the source".into();
+    rule.implementation = "line-ending".into();
+    assert!(validate_builtin_standards(&rule, &standards).is_err());
+}

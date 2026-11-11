@@ -110,12 +110,20 @@ glob 参数，不允许正则覆盖。
 
 ### `source-pattern`
 
+builtin 声明的语言与可选 `language_scope` 元数据共同提供发现/校验契约。固定 scope 保留语言顺序
+及精确模式 key；`security-sensitive-api` 显式使用 `subset`，合并默认值后须至少选择一个声明语言。
+空列表不能将 `all` 模式变为无限定扫描；更改 source-pattern 规则名也不会移除声明的语言约束。仅 builtin 可声明
+`diagnostic: {message, fix}` 字面文案，两字段均须非空白且不超过 4,096 UTF-8 字节；未知字段和
+用于非 source-pattern 的配置均被拒绝。策略参数不能替换该元数据，缺省使用通用文案。
+配置兼容访问器为旧冻结定义保留原有两种特殊范围及三条审查文案，不改写其序列化字节；check 和
+selfcheck 使用相同的有效元数据。文案变化不会改变诊断 fingerprint。
+
 `source-pattern` 面向成本低、可审核的信号，例如直接 API 调用、可疑选项或禁用 marker。它明确不声称
 具备 AST、类型、控制流或污点语义。
 
 1. 必须配置 `prohibited_patterns`，key 为 `all` 或支持语言。允许 1–32 个语言项，每项 1–32 个
    互不重复的正则，每个 1–512 字节，并在配置验证时编译。可选 `paths` 是仓库相对 glob，
-   `languages` 限制路由。带语言前缀的内置规则固定 scope；C-family 显式使用文本 C/C++ 路由。
+   `languages` 限制路由。内置规则的声明定义固定 scope；C-family 显式使用文本 C/C++ 路由。
 2. 运行时按顺序遍历快照 change map，应用快照与规则路径过滤，忽略删除文件；其他选中变更文件必须
    存在于捕获快照。
 3. 根据路径和支持的 shebang 识别文本源码语言。选中字节必须是 UTF-8；不支持文件被忽略，非法文本

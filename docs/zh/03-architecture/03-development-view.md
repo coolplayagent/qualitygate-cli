@@ -108,6 +108,18 @@ Bazel 将 owner 编译为独立 crate 时也使用该边界，通用 YAML 解码
 候选前限制 XML 深度、节点和属性数量，并把不支持的清单记录为发现缺口。该 profile 位于 `config` 内，
 不导入适配器，也不产生已解析的项目事实；适配器报告失败继续使用独立的执行状态语义。
 
+CLI 根路径解析委托给 `application::repository_root`，通过 `spawn_blocking` 调用 `paths`，
+保留原生 canonicalize 结果和错误上下文。Clap 类型化参数转换仅归 `interfaces` 所有；domain
+保留序列化契约。`domain::digest` 统一字节摘要和格式校验，调用方仍负责序列化及流式哈希分帧。
+`domain::rule_parameters` 为配置发现、校验和适配器模式编译提供共享纯契约；规则诊断文案由
+builtin 定义提供，执行器无需按规则 ID 分支。依据与边界见
+[Clean contract 评审](../../../knowledge/best-practices/engineering-standards/guides/clean-contracts.md)。
+
+架构门禁禁止 domain 依赖 Clap，并在 domain/interfaces 保留路径 I/O 方法名：`canonicalize`、
+`try_exists`、`exists`、`metadata`、`symlink_metadata`、`read_dir`、`read_link`、`is_file`、`is_dir`。
+普通方法调用、宏 token 和显式 `std::path::Path`/`PathBuf` 调用均在检查范围内。这是保守的语法约束，
+不进行接收者类型推断，也不证明检测了所有可能的 I/O。
+
 架构测试解析全部生产 Rust 源码，解析模块与 import 路径（含分组、别名、宏和条件引用），检查 owner
 边、禁止能力和环，并输出可审核的源码摘要/行号报告及 DOT 图。隐藏根导出、歧义模块文件、未知 owner、
 宽泛外部 glob 和纯 domain 中的 I/O 都会被拒绝。

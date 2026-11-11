@@ -122,7 +122,25 @@ async fn expired_shared_deadline_and_modified_inputs_prevent_command_start() {
     let guard = snapshot::InputGuard::for_snapshot(workspace.path(), snapshot.clone())
         .await
         .unwrap();
-    std::fs::write(workspace.path().join("source.rs"), b"changed").unwrap();
+    let path = workspace.path().join("source.rs");
+    let write = std::fs::write(&path, b"changed");
+    #[cfg(windows)]
+    {
+        assert_eq!(write.unwrap_err().raw_os_error(), Some(32));
+        assert_eq!(std::fs::read(&path).unwrap(), b"original");
+        guard.verify().await.unwrap();
+    }
+    #[cfg(not(windows))]
+    write.unwrap();
+    #[cfg(windows)]
+    let permissions = {
+        // Windows guards deny data writes but still detect input attribute changes.
+        let permissions = std::fs::metadata(&path).unwrap().permissions();
+        let mut changed = permissions.clone();
+        changed.set_readonly(true);
+        std::fs::set_permissions(&path, changed).unwrap();
+        permissions
+    };
     let result = execute(
         &check(&["git", "--version"]),
         workspace.path(),
@@ -131,9 +149,12 @@ async fn expired_shared_deadline_and_modified_inputs_prevent_command_start() {
         &guard,
     )
     .await;
+    #[cfg(windows)]
+    std::fs::set_permissions(&path, permissions).unwrap();
     assert_eq!(result.execution.status, ExecutionStatus::Blocked);
     assert_eq!(result.metadata["input_integrity"]["before"], "invalid");
     assert!(result.execution.started_at_ms.is_none());
+    assert!(guard.verify().await.is_err());
 }
 
 #[cfg(unix)]

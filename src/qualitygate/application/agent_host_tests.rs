@@ -83,7 +83,7 @@ pub(super) fn options(root: &Path, external: &Path) -> Options {
     std::fs::write(external.join("agent.json"), b"[\"git\",\"--version\"]").unwrap();
     std::fs::write(external.join("prompt.txt"), b"Repair the declared task").unwrap();
     Options {
-        root: root.into(),
+        root: root.canonicalize().unwrap(),
         config: "qualitygate.yaml".into(),
         qualitygate: std::env::current_exe().unwrap(),
         base: "HEAD".into(),
@@ -113,7 +113,7 @@ fn resume_is_context_only_and_cannot_reuse_authority_or_budget() {
             .unwrap()
             .is_none()
     );
-    let previous = json!({"kind":"external_agent_loop","root":root.path(),
+    let previous = json!({"kind":"external_agent_loop","root":options.root,
         "attempts":[{},{}],"agent_argv":["old-agent"],"termination":"界".repeat(300),
         "contract_digest":"a".repeat(200),"complete":true,"budget":{"attempts":99}});
     let path = external.path().join("previous.json");

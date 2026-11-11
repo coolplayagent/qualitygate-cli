@@ -1,6 +1,35 @@
 use super::*;
 
 #[test]
+fn repository_roots_keep_native_resolution_and_errors() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    assert_eq!(
+        repository_root(&root.join(".")).unwrap(),
+        root.canonicalize().unwrap()
+    );
+    let error = repository_root(&root.join("missing")).unwrap_err();
+    assert_eq!(error.to_string(), "Repository root does not exist");
+    assert_eq!(
+        error.downcast_ref::<std::io::Error>().unwrap().kind(),
+        std::io::ErrorKind::NotFound
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn repository_roots_resolve_symlinks_before_input_confinement() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    std::fs::create_dir(root.join("repository")).unwrap();
+    std::os::unix::fs::symlink("repository", root.join("alias")).unwrap();
+    assert_eq!(
+        repository_root(&root.join("alias")).unwrap(),
+        root.join("repository").canonicalize().unwrap()
+    );
+}
+
+#[test]
 fn paths_are_normalized_without_traversal_or_git_metadata() {
     assert_eq!(relative(Path::new("./src/lib.rs")).unwrap(), "src/lib.rs");
     for name in [

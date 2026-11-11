@@ -1,2 +1,5 @@
 # Packaged rules bind this document's source sections by exact bytes.
 /skills/qualitygate-cli/references/operators-v3.md text eol=lf
+
+# The shipped review obligation digests bind these exact source bytes.
+/skills/qualitygate-cli/references/review-pack.md text eol=lf

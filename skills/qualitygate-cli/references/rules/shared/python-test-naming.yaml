@@ -3,6 +3,7 @@ version: 1
 description: Require lower snake case for added pytest tests
 implementation: test-naming
 language: [python]
+language_scope: fixed
 requires_capabilities: [test_methods]
 defaults:
   required: true

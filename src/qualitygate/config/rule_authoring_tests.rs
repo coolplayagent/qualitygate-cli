@@ -1,5 +1,6 @@
 use super::*;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 
 fn candidate(root: &Path, id: &str) -> serde_json::Value {
     std::fs::write(

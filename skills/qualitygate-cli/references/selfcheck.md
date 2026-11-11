@@ -25,7 +25,7 @@ with bounded inputs and execution. A filter provides partial feedback only.
 The four `custom-contract-*` minimal fixtures additionally cover required text,
 nonempty test-entity matching and syntax incompleteness.
 
-The 932-case corpus includes 85 policy-evolution regressions: paired independent
+The corpus includes policy-evolution regressions: paired independent
 oracles, category context, protected suite limits, synthetic approval/rollback
 signatures, native immutable archives/lifecycle, and nine real paired Git
 workflows. This filter is a fixture group, not a selectable rule. Fixed Git
@@ -61,4 +61,8 @@ unknown frameworks and runtime configuration delivery remain outside the
 observed evidence. Ordinary repository checks still require their selected
 snapshot, policy and task; selfcheck is not a replacement for delivery checks.
 
-The Java package contributes 72 pass/fail examples across the three fixture suites. These examples exercise bounded source-pattern behavior, not semantic analyzer coverage. The total inventory is pinned by `tests/selfcheck.rs`; use the selected runtime's report for the observed count.
+The Java package contributes pass/fail examples across the three fixture suites.
+These examples exercise bounded source-pattern behavior, not semantic analyzer
+coverage. The expected inventory is pinned by the repository's integration test.
+Inspect the `fixtures` array in an unfiltered `selfcheck --format json` report
+for the selected runtime's actual inventory; a filtered report is only a subset.

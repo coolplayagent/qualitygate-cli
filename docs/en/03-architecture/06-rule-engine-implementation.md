@@ -145,6 +145,20 @@ globs are the only parameters; regex overrides are rejected.
 
 ### `source-pattern`
 
+Declared builtin languages and optional `language_scope` metadata supply the
+shared discovery/validation contract. Fixed scope preserves language ordering
+and exact pattern keys; `subset` is explicit for `security-sensitive-api`.
+Subset selection must contain at least one declared language after defaults are
+merged. An empty list cannot turn an `all` pattern into an unrestricted scan.
+Renaming a source-pattern rule no longer removes its declared language scope.
+Builtin-only `diagnostic: {message, fix}` supplies literal text, each nonblank
+and at most 4,096 UTF-8 bytes. Unknown fields and use outside source-pattern are
+rejected. Policy parameters cannot replace this metadata; missing metadata uses
+generic presentation. Configuration compatibility accessors retain the previous
+two exceptional scopes and three review messages for frozen definitions without
+rewriting their serialized bytes. Check and selfcheck consume the same effective
+metadata. Text changes do not change the finding fingerprint.
+
 `source-pattern` is for inexpensive, auditable signals such as a direct API
 call, suspicious option, or forbidden marker. It intentionally does not claim
 AST, type, control-flow, or taint semantics.
@@ -153,7 +167,7 @@ AST, type, control-flow, or taint semantics.
    language. It allows 1–32 language entries and 1–32 distinct regexes per
    entry; each regex is 1–512 bytes and is compiled during validation. Optional
    `paths` are repository-relative globs and `languages` narrows routing.
-   Language-prefixed built-ins have fixed scopes; C-family rules explicitly use
+   Builtin declared definitions determine fixed scopes; C-family rules explicitly use
    text-only C/C++ routing.
 2. Runtime walks the snapshot's ordered change map, applies snapshot and rule
    path filters, ignores deletions, and requires every other selected changed

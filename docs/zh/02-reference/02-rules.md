@@ -34,6 +34,21 @@ TypeScript 局部作用域和 Shell 命令操作数。注释与字面文本不�
 解析失败或预算耗尽报告未完成；跨文件类型、运行时展开和数据流仍需外部分析器或人工复核。
 具体边界见[内置规则指南](../../../skills/qualitygate-cli/references/builtin-rules.md#structured-language-reviews)。
 
+## 历史评审信号
+
+`cpp-disabled-test`、`c-ignored-atomic-cas` 和 `workaround-marker` 均按需启用，
+默认非必需 warning，复用新增源码行匹配，分别提示禁用测试标记、显式丢弃 C11 CAS 返回值、
+临时方案标记。命中要求复核，不证明数据竞争、缺少覆盖或跟踪记录。
+补充原因或跟踪单不会消除仍存在的标记诊断。CAS 规则覆盖 C/C++；禁用测试规则覆盖 C++ 扩展名，
+不含被分类为 C 的 `.h`。临时方案规则覆盖受支持源码语言，不扫描 Markdown。
+注释和字符串可能命中，多行或间接调用可能漏报。
+具体定义与覆盖参数见[随包规则指南](../../../skills/qualitygate-cli/references/builtin-rules.md#historical-review-signals)，
+配套使用见[知识包流程](../01-user-guide/06-schema-guided-repository-rules.md#公共审查知识包)。
+
+C++ gtest 命名本批延期：缺少可靠的测试实体提取。正则本身可以表达 `_when_`；缺口在实体提取，
+不是正则语法。`test-naming-strict` 保持现有 Java 范围。
+
+
 ## 项目规则协议
 
 版本 1 YAML 规则包声明身份、适用范围、来源审核、实体、断言、消息与资源边界。断言可要求或禁止

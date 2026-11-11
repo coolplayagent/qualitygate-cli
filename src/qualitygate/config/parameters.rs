@@ -1,5 +1,6 @@
 //! Discoverable parameter contracts shared by CLI edits and policy validation.
 
+use crate::domain::rule_parameters::{self, LanguageContract, PatternLanguages};
 use anyhow::{Result, bail};
 use serde_json::{Value, json};
 
@@ -27,18 +28,43 @@ pub(super) fn names(implementation: &str) -> Result<&'static [&'static str]> {
 }
 
 pub fn describe(implementation: &str, defaults: &Value) -> Result<Vec<Value>> {
+    let declared: Vec<String> = defaults
+        .get("languages")
+        .map(|languages| serde_json::from_value(languages.clone()))
+        .transpose()?
+        .unwrap_or_default();
+    let contract = LanguageContract::builtin(implementation, &declared, None)?;
+    describe_contract(implementation, defaults, &contract)
+}
+
+pub fn describe_builtin(builtin: &super::catalog::Builtin) -> Result<Vec<Value>> {
+    let contract = LanguageContract::builtin(
+        &builtin.implementation,
+        &builtin.language,
+        builtin.effective_language_scope(),
+    )?;
+    describe_contract(
+        &builtin.implementation,
+        &serde_json::to_value(&builtin.defaults.parameters)?,
+        &contract,
+    )
+}
+
+fn describe_contract(
+    implementation: &str,
+    defaults: &Value,
+    contract: &LanguageContract<'_>,
+) -> Result<Vec<Value>> {
     names(implementation)?.iter().map(|name| {
         let (kind, description, schema) = match *name {
             "pattern" => ("string", "Regular expression matched against the selected commit subject, test name or source line.", json!({"type":"string","minLength":1,"maxLength":512})),
             "annotation" => ("string", "Simple Java annotation name selecting test methods.", json!({"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z_$][A-Za-z0-9_$]*$"})),
             "group" | "artifact" => ("string", "Required Maven dependency coordinate component.", json!({"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_.-]+$"})),
             "patterns" => ("object", "Language names mapped to test-name regular expressions.", json!({"type":"object","additionalProperties":{"type":"string"}})),
-            "prohibited_patterns" | "forbidden_imports" => ("object", "Supported language names (or all) mapped to 1..32 distinct regular expressions, each 1..512 bytes.", json!({"type":"object","minProperties":1,"maxProperties":32,"additionalProperties":{"type":"array","minItems":1,"maxItems":32,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":512}}})),
+            "prohibited_patterns" => ("object", "Declared language scope mapped to 1..32 distinct regular expressions, each 1..512 UTF-8 bytes; semantic validation enforces the byte limit and regex syntax.", contract.pattern_schema()),
+            "forbidden_imports" => ("object", "Supported syntax languages (or all) mapped to 1..32 distinct regular expressions, each 1..512 UTF-8 bytes; semantic validation enforces the byte limit and regex syntax.", rule_parameters::pattern_schema(PatternLanguages::Syntax)),
             "paths" => ("array", "Repository-relative glob patterns selecting source files.", strings()),
-            "languages" if ["test-naming-strict", "test-annotation-dependency"].contains(&implementation) => ("array", "Fixed Java syntax scope for this built-in.", json!({"type":"array","const":["java"]})),
-            "languages" if ["file-pattern", "native-syntax", "language-syntax"].contains(&implementation) => ("array", "Fixed language scope for this built-in.", json!({"type":"array","const":defaults["languages"]})),
-            "languages" if ["shell-shebang", "shell-commented-code"].contains(&implementation) => ("array", "Fixed Shell language scope for this built-in.", json!({"type":"array","const":["shell"]})),
-            "languages" => ("array", "Source review languages: java, python, typescript, go, rust, shell; text-only C and C++ for source-pattern.", strings()),
+            "languages" => ("array", "Language scope from this built-in's definition; fixed lists and selectable subsets are expressed by the schema.", contract.language_schema()),
             "exempt_patterns" => ("array", "Regular expressions exempting matching comments.", strings()),
             "modules" => ("array", "1..256 unique normalized repository module roots.", json!({"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"type":"string"}})),
             "max_added_lines" => ("integer", "Maximum added lines in the selected diff (at least one).", json!({"type":"integer","minimum":1})),
@@ -50,7 +76,11 @@ pub fn describe(implementation: &str, defaults: &Value) -> Result<Vec<Value>> {
             "forbidden" => ("array", "1..256 forbidden Maven dependency directions; from/to are group:artifact globs, scopes are optional.", json!({"type":"array","minItems":1,"maxItems":256,"items":{"type":"object","required":["from","to"],"additionalProperties":false,"properties":{"from":{"type":"string"},"to":{"type":"string"},"scopes":strings()}}})),
             _ => unreachable!("parameter inventory is closed"),
         };
-        Ok(json!({"name":name,"type":kind,"description":description,"default":defaults[name],"has_default":defaults.get(name).is_some(),"schema":schema}))
+        let mut descriptor = json!({"name":name,"type":kind,"description":description,"default":defaults[name],"has_default":defaults.get(name).is_some(),"schema":schema});
+        if *name == "languages" {
+            descriptor["required"] = json!(contract.requires_languages());
+        }
+        Ok(descriptor)
     }).collect()
 }
 
@@ -110,6 +140,84 @@ pub(super) fn apply(parameters: &mut Value, edits: &[String], implementation: &s
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shipped_source_rule_schemas_and_validation_share_language_contracts() {
+        let config = super::super::Config {
+            rulesets: super::super::RULESETS
+                .iter()
+                .map(|name| (*name).into())
+                .collect(),
+            ..Default::default()
+        };
+        let catalog = super::super::catalog::Catalog::load(&config, []).unwrap();
+        for entry in catalog.entries.values() {
+            let builtin = entry.builtin.as_ref().unwrap();
+            if builtin.implementation != "source-pattern" && builtin.id != "python-test-naming" {
+                continue;
+            }
+            let descriptors = describe_builtin(builtin).unwrap();
+            let mut setting = builtin.defaults.clone();
+            if !builtin.language.is_empty() {
+                setting
+                    .parameters
+                    .entry("languages".into())
+                    .or_insert_with(|| json!(builtin.language));
+            }
+            for descriptor in &descriptors {
+                let name = descriptor["name"].as_str().unwrap();
+                if let Some(value) = setting.parameters.get(name) {
+                    let schema = jsonschema::draft202012::new(&descriptor["schema"]).unwrap();
+                    assert!(schema.is_valid(value), "{}.{name}: {value}", builtin.id);
+                }
+            }
+            let schema = &descriptors
+                .iter()
+                .find(|item| item["name"] == "languages")
+                .unwrap()["schema"];
+            let validator = jsonschema::draft202012::new(schema).unwrap();
+            for candidate in [
+                json!([]),
+                json!(["java"]),
+                json!(["rust"]),
+                json!(["c", "cpp"]),
+                json!(["cpp", "c"]),
+                json!(["unknown"]),
+                json!([true]),
+            ] {
+                let mut candidate_setting = setting.clone();
+                candidate_setting
+                    .parameters
+                    .insert("languages".into(), candidate.clone());
+                let accepted = super::super::builtin_validation::validate_with_scope(
+                    &builtin.id,
+                    &builtin.implementation,
+                    &builtin.language,
+                    builtin.language_scope,
+                    &candidate_setting,
+                )
+                .is_ok();
+                assert_eq!(
+                    validator.is_valid(&candidate),
+                    accepted,
+                    "{} languages {candidate}",
+                    builtin.id
+                );
+            }
+            // Identity is provenance, not an implicit source of scope semantics.
+            let mut renamed = builtin.clone();
+            renamed.id = "review-renamed".into();
+            assert_eq!(describe_builtin(&renamed).unwrap(), descriptors);
+            super::super::builtin_validation::validate_with_scope(
+                &renamed.id,
+                &renamed.implementation,
+                &renamed.language,
+                renamed.language_scope,
+                &setting,
+            )
+            .unwrap();
+        }
+    }
+
     #[test]
     fn dotted_edits_preserve_siblings_and_reject_ambiguous_or_unbounded_updates() {
         let original = json!({"patterns":{"rust":"^test_","python":"^test_"}});

@@ -75,7 +75,7 @@ pub(super) enum Policy {
 pub(super) struct Attribution {
     #[arg(long)]
     actor: String,
-    #[arg(long, value_enum, default_value = "agent")]
+    #[arg(long, value_parser = super::value_parsers::actor_kind(), default_value = "agent")]
     actor_kind: ActorKind,
 }
 impl Attribution {
@@ -194,7 +194,7 @@ pub(super) enum CandidateRules {
         rule_id: String,
         #[arg(long = "param")]
         parameters: Vec<String>,
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = super::value_parsers::severity())]
         severity: Option<Severity>,
         #[arg(long, action = clap::ArgAction::Set)]
         required: Option<bool>,

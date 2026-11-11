@@ -364,12 +364,22 @@ mod tests {
     #[test]
     fn native_protected_paths_reject_symlink_ancestors() {
         let root = tempfile::tempdir().unwrap();
-        let external = tempfile::tempdir().unwrap();
+        let external =
+            tempfile::tempdir_in(dunce::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
         let target = tempfile::tempdir().unwrap();
         std::fs::write(target.path().join("evidence.json"), b"evidence").unwrap();
         let link = external.path().join("link");
         std::os::unix::fs::symlink(target.path(), &link).unwrap();
-        assert!(super::ProtectedFile::read(root.path(), &link.join("evidence.json")).is_err());
+        let error = super::ProtectedFile::read(root.path(), &link.join("evidence.json"))
+            .err()
+            .unwrap();
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "Symlinks are not valid checked inputs: {}",
+                crate::paths::display(&link)
+            )
+        );
     }
 
     #[test]

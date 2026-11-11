@@ -54,6 +54,15 @@ impl Graph {
                 .map(|error| format!("{file}: {error}")),
         );
         let owner = location.first().map(String::as_str).unwrap_or("lib");
+        if matches!(owner, "domain" | "interfaces") {
+            for (method, line) in &references.methods {
+                if path_io_method(method) {
+                    self.errors.push(format!(
+                        "{file}:{line}: {owner} must delegate reserved path I/O method {method}"
+                    ));
+                }
+            }
+        }
         for reference in &references.paths {
             let path = &reference.path;
             if path.first().is_some_and(|part| part == "crate") && path.len() > 1 {
@@ -80,13 +89,19 @@ impl Graph {
 
     fn capability(&mut self, owner: &str, file: &str, line: usize, path: &[String]) {
         let parts: Vec<_> = path.iter().map(String::as_str).collect();
+        if owner == "domain" && parts.first() == Some(&"clap") {
+            self.errors.push(format!(
+                "{file}:{line}: domain must not depend on CLI framework {}",
+                path.join("::")
+            ));
+        }
         let external_io = matches!(
             parts.as_slice(),
             ["std" | "tokio", "fs" | "net" | "process" | "env" | "io", ..]
         ) || matches!(
             parts.first(),
             Some(&"reqwest" | &"process_wrap" | &"tempfile" | &"which" | &"file_id")
-        );
+        ) || matches!(parts.as_slice(), ["std", "path", "Path" | "PathBuf", method] if path_io_method(method));
         if owner == "domain" && external_io {
             self.errors.push(format!(
                 "{file}:{line}: domain owns external I/O via {}",
@@ -257,6 +272,66 @@ impl Graph {
             }
         }
         None
+    }
+}
+
+// Reserved in pure/CLI owners: a syntactic guard, not receiver type inference.
+fn path_io_method(method: &str) -> bool {
+    matches!(
+        method,
+        "canonicalize"
+            | "try_exists"
+            | "exists"
+            | "metadata"
+            | "symlink_metadata"
+            | "read_dir"
+            | "read_link"
+            | "is_file"
+            | "is_dir"
+    )
+}
+
+#[test]
+fn architecture_rejects_cli_framework_and_path_io_in_pure_owners() {
+    for owner in ["domain", "interfaces"] {
+        let mut graph = Graph::default();
+        graph.source(
+            "sample.rs",
+            vec![owner.into()],
+            r#"
+            use std::path::Path as P;
+            fn run(root: &P) {
+                root.canonicalize();
+                P::metadata(root);
+                assert!(root.exists());
+                root.join("pure");
+            }
+            #[cfg(test)] fn only_test(root: &P) { root.is_file(); }
+        "#,
+        );
+        let errors = graph.violations().join("\n");
+        assert!(errors.contains("sample.rs:4:"));
+        assert!(errors.contains("path I/O method canonicalize"));
+        assert!(errors.contains("external I/O via std::path::Path::metadata"));
+        assert!(errors.contains("path I/O method exists"));
+        assert!(!errors.contains("is_file"));
+        assert!(!errors.contains("join"));
+    }
+    for source in [
+        "use clap::ValueEnum as Values; #[derive(Values)] enum Choice { One }",
+        "#[derive(clap::ValueEnum)] enum Choice { One }",
+    ] {
+        let mut graph = Graph::default();
+        graph.source("model.rs", vec!["domain".into()], source);
+        assert!(
+            graph
+                .violations()
+                .join("\n")
+                .contains("domain must not depend on CLI framework")
+        );
+        let mut interface = Graph::default();
+        interface.source("cli.rs", vec!["interfaces".into()], source);
+        assert!(interface.violations().is_empty());
     }
 }
 

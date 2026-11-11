@@ -2,17 +2,13 @@ use super::*;
 use anyhow::{Result, bail};
 use serde::Serialize;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 const EVALUATOR_V1: &str = "qualitygate-pilot-thresholds-v1";
 const EVALUATOR_V2: &str = "qualitygate-pilot-thresholds-v2";
 const EVALUATOR_V3: &str = "qualitygate-pilot-thresholds-v3";
 
 fn digest(value: &impl Serialize) -> Result<String> {
-    Ok(format!(
-        "sha256:{:x}",
-        Sha256::digest(serde_json::to_vec(value)?)
-    ))
+    Ok(crate::domain::digest::sha256(&serde_json::to_vec(value)?))
 }
 
 fn number(value: &Value, field: &str) -> Result<u64> {

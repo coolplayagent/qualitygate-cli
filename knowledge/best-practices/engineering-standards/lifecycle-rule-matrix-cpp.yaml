@@ -1,5 +1,17 @@
 schema_version: 1
 inputs:
+  - id: cpp-disabled-test-review
+    status: enforced
+    rule_id: cpp-disabled-test
+    lifecycle_stage: review
+    languages: [cpp]
+    concerns: [testing, reviewability]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-code-review]
+    evidence: [changed-cpp-line, regex-pattern]
+    applicability: Added C++ source lines containing DISABLED_ markers when this optional rule is selected; .h files retain the existing C classification.
+    critical_adoption: Review the reason, tracking issue, and replacement coverage; finding a marker does not prove a test is disabled or its coverage is missing. Tracking text does not suppress the signal.
   - id: cpp-no-realloc-review
     status: enforced
     rule_id: cpp-no-realloc

@@ -5,7 +5,6 @@ use super::{
 };
 use crate::domain::SourceReviewEvidence;
 use anyhow::{Context, Result, bail};
-use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 pub fn binding(id: &str, entry: &Entry, setting: &RuleSetting) -> Result<Option<String>> {
@@ -16,7 +15,7 @@ pub fn binding(id: &str, entry: &Entry, setting: &RuleSetting) -> Result<Option<
         "binding_version":1,"engine_version":env!("CARGO_PKG_VERSION"),
         "id":id,"definition":entry,"configuration":setting,
     }))?;
-    Ok(Some(format!("sha256:{:x}", Sha256::digest(bytes))))
+    Ok(Some(crate::domain::digest::sha256(&bytes)))
 }
 
 pub fn evidence(

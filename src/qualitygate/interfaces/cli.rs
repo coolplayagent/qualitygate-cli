@@ -5,7 +5,7 @@ mod check;
 mod tests;
 
 use crate::{application, config, domain::Severity};
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::{future::Future, path::PathBuf, pin::Pin};
 
@@ -200,7 +200,7 @@ enum Rules {
         /// JSON values, for example --param 'patterns.rust="^test_"'.
         #[arg(long = "param")]
         parameters: Vec<String>,
-        #[arg(long, value_enum)]
+        #[arg(long, value_parser = super::value_parsers::severity())]
         severity: Option<Severity>,
         #[arg(long, action = clap::ArgAction::Set)]
         required: Option<bool>,
@@ -293,7 +293,7 @@ struct CheckArgs {
     /// Directory containing signed acceptance records, outside the repository.
     #[arg(long, requires = "trust_store")]
     evidence_dir: Option<PathBuf>,
-    #[arg(long, value_enum)]
+    #[arg(long, value_parser = super::value_parsers::severity())]
     severity: Option<Severity>,
     #[command(flatten)]
     snapshot: super::doctor::SnapshotArgs,
@@ -440,10 +440,7 @@ impl Cli {
             let schema = tokio::task::spawn_blocking(config::rule_schema::document).await??;
             return Ok((serde_json::to_string_pretty(&schema)?, 0));
         }
-        let root = self
-            .root
-            .canonicalize()
-            .context("Repository root does not exist")?;
+        let root = application::repository_root::resolve(self.root).await?;
         match self.command {
             Command::Capabilities | Command::Doctor(_) => {
                 unreachable!("preflight handled before repository discovery")
