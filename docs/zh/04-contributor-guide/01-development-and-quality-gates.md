@@ -79,6 +79,26 @@ Windows 拒写本身是保护证据；Unix 内容变更和 Windows 属性变更�
 owner/import 变化后运行架构测试；Skill、发布、版本或文档入口变化后运行包与站点测试。Bazel 是额外
 支持的构建面，不替代上述 Cargo 命令。
 
+## 独立工具桥接入口
+
+同一 Cargo package 声明 `qualitygate` 和 `qualitygate-tool-bridge`。
+`default-run = "qualitygate"` 保持 `cargo run -- ...` 行为；转换器使用
+`cargo run --bin qualitygate-tool-bridge -- --help`。它只归一化已采集的常规文件，
+不执行或安装上游工具；未绑定输出不能证明已在验收快照上执行分析。
+
+`cargo build --bins` 或 `bazel build //:production_binaries` 构建两个入口。
+`//:qualitygate-tool-bridge` 可单独构建桥接程序，`//:qualitygate` 保持原有语义。
+`bazel test //...` 包含桥接集成测试及现有 capability 单元测试；Cargo 的 `--bins`
+和 `--all-targets` 门禁同时覆盖两个入口。
+
+`cargo package` 包含两个 binary target；`cargo install --path . --locked --bins
+--root <isolated-directory>` 安装两者，`--bin qualitygate` 仅安装主 CLI。
+CI package 作业在临时目录内验证两个已安装入口的版本。GitHub 发布附件和 Skill 归档
+目前只包含主 CLI；桥接程序会针对发布平台构建，可使用 Cargo 从本仓库源码安装。
+上游工具仍是独立运行前提。
+
+架构门禁将 Cargo 实际生产 target 清单与评审入口逐项比对，扫描所有 binary 与 library，
+拒绝未登记入口和位于已声明生产/测试模块树之外的源码。
 
 ## 维护文档
 

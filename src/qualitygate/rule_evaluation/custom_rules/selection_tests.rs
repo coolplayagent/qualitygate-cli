@@ -79,6 +79,7 @@ fn facts() -> RuleFacts<'static> {
         provenance: None,
         git_trailers: None,
         syntax: None,
+        tool_facts: None,
     }
 }
 

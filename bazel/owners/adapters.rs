@@ -27,6 +27,7 @@ pub mod check_planning {
     pub use qualitygate_config::check_planning::project_inventory;
     pub use qualitygate_config::check_planning::python;
     pub use qualitygate_config::check_planning::runtime_validation;
+    pub use qualitygate_config::check_planning::tool_facts;
     pub use qualitygate_config::check_planning::validation;
     pub use qualitygate_config::check_planning::yaml_budget;
     pub use qualitygate_config::check_planning::yaml_scalar_work;
@@ -171,11 +172,14 @@ pub mod rule_catalog {
     pub use qualitygate_config::rule_catalog::rule_management;
     pub use qualitygate_config::rule_catalog::rule_query;
     pub use qualitygate_config::rule_catalog::rule_schema;
+    pub use qualitygate_config::rule_catalog::tool_source_validation;
     pub use qualitygate_domain::rule_catalog::category;
     pub use qualitygate_domain::rule_catalog::language;
     pub use qualitygate_domain::rule_catalog::normative;
     pub use qualitygate_domain::rule_catalog::operator;
     pub use qualitygate_domain::rule_catalog::operator_v3;
+    pub use qualitygate_domain::rule_catalog::operator_v4;
+    pub use qualitygate_domain::rule_catalog::operator_v4_types;
     pub use qualitygate_domain::rule_catalog::rule_guidance;
     pub use qualitygate_domain::rule_catalog::rule_lifecycle;
     pub use qualitygate_domain::rule_catalog::rule_parameters;
@@ -202,6 +206,10 @@ pub mod rule_evaluation {
     pub mod operators_v2;
     #[path = "operators_v3.rs"]
     pub mod operators_v3;
+    #[path = "operators_v4.rs"]
+    pub mod operators_v4;
+    #[path = "operators_v4_facts.rs"]
+    pub mod operators_v4_facts;
     #[path = "project_checks.rs"]
     pub mod project_checks;
     #[path = "shell_conventions.rs"]
@@ -248,4 +256,21 @@ pub mod xml_parsing {
     #[path = "document.rs"]
     pub mod document;
     pub use qualitygate_domain::xml_parsing::xml_budget;
+}
+
+#[path = "../../src/qualitygate/tool_evidence"]
+pub mod tool_evidence {
+    #[path = "crapper.rs"]
+    pub(crate) mod crapper;
+    #[path = "dryer.rs"]
+    pub(crate) mod dryer;
+    pub use qualitygate_domain::tool_evidence::contracts;
+    pub use qualitygate_domain::tool_evidence::decimal;
+    pub use qualitygate_domain::tool_evidence::schema;
+    #[path = "edn.rs"]
+    pub(crate) mod edn;
+    #[path = "inventory.rs"]
+    pub mod inventory;
+    #[path = "normalization.rs"]
+    pub mod normalization;
 }

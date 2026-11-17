@@ -14,6 +14,7 @@ use regex::Regex;
 use std::collections::BTreeMap;
 
 mod expression_v3;
+mod expression_v4;
 mod file_inventory;
 mod selection;
 
@@ -71,6 +72,7 @@ pub fn evaluate_with_facts(
             provenance,
             git_trailers: None,
             syntax: None,
+            tool_facts: None,
         },
     )
 }
@@ -271,7 +273,17 @@ fn run(
             ),
         )?;
     }
-    if rule.schema_version == 3 {
+    if rule.schema_version == 4 {
+        expression_v4::evaluate(
+            rule,
+            snapshot,
+            facts,
+            &subjects,
+            result,
+            &mut budget,
+            &mut output,
+        )?;
+    } else if rule.schema_version == 3 {
         expression_v3::evaluate(
             rule,
             snapshot,

@@ -41,6 +41,37 @@ pub async fn capture(
     input: Option<Vec<u8>>,
     deadline: Duration,
 ) -> Result<Output> {
+    capture_with_env(
+        argv,
+        cwd,
+        input,
+        deadline,
+        &std::collections::BTreeMap::new(),
+    )
+    .await
+}
+
+/// Supply derived, bounded environment inputs to one child without changing
+/// the agent process or any other check's environment.
+pub async fn capture_with_env(
+    argv: &[String],
+    cwd: &Path,
+    input: Option<Vec<u8>>,
+    deadline: Duration,
+    overrides: &std::collections::BTreeMap<String, String>,
+) -> Result<Output> {
+    if overrides.len() > 64
+        || overrides
+            .iter()
+            .map(|(key, value)| key.len().saturating_add(value.len()))
+            .sum::<usize>()
+            > 65_536
+        || overrides
+            .iter()
+            .any(|(key, value)| key.is_empty() || key.contains(['=', '\0']) || value.contains('\0'))
+    {
+        bail!("Process environment override exceeds its contract");
+    }
     if argv.is_empty() || argv[0].is_empty() {
         bail!("Process argv must not be empty");
     }
@@ -52,6 +83,7 @@ pub async fn capture(
     let mut command = CommandWrap::with_new(&argv[0], |command| {
         command
             .args(&argv[1..])
+            .envs(overrides)
             .current_dir(cwd)
             .stdin(if input.is_some() {
                 Stdio::piped()

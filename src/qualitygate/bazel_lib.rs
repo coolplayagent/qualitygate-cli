@@ -182,3 +182,12 @@ pub mod test_effectiveness {
 pub mod xml_parsing {
     pub use qualitygate_domain::xml_parsing::xml_budget;
 }
+
+pub mod tool_bridge {
+    pub use qualitygate_interfaces::tool_bridge::cli;
+}
+
+pub mod tool_evidence {
+    pub use qualitygate_adapters::tool_evidence::{inventory, normalization};
+    pub use qualitygate_domain::tool_evidence::{contracts, decimal, schema};
+}

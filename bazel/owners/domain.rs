@@ -120,6 +120,10 @@ pub mod rule_catalog {
     pub mod operator;
     #[path = "operator_v3.rs"]
     pub mod operator_v3;
+    #[path = "operator_v4.rs"]
+    pub mod operator_v4;
+    #[path = "operator_v4_types.rs"]
+    pub mod operator_v4_types;
     #[path = "rule_guidance.rs"]
     pub mod rule_guidance;
     #[path = "rule_lifecycle.rs"]
@@ -152,4 +156,14 @@ pub mod test_effectiveness {
 pub mod xml_parsing {
     #[path = "xml_budget.rs"]
     pub mod xml_budget;
+}
+
+#[path = "../../src/qualitygate/tool_evidence"]
+pub mod tool_evidence {
+    #[path = "contracts.rs"]
+    pub mod contracts;
+    #[path = "decimal.rs"]
+    pub mod decimal;
+    #[path = "schema.rs"]
+    pub mod schema;
 }

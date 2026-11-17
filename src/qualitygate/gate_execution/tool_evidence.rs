@@ -28,12 +28,12 @@ impl std::error::Error for ProbeError {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ToolEvidence {
-    id: String,
+    pub(crate) id: String,
     argv: Vec<String>,
     resolved_argv: Vec<String>,
     cwd: String,
     executable: Artifact,
-    version: String,
+    pub(crate) version: String,
     inputs: BTreeMap<String, String>,
     started_at_ms: u64,
     ended_at_ms: u64,
@@ -43,6 +43,12 @@ pub(crate) struct ToolEvidence {
     stdout: Artifact,
     stderr: Artifact,
     snapshot_digest: String,
+}
+
+impl ToolEvidence {
+    pub(crate) fn artifacts(&self) -> [&Artifact; 2] {
+        [&self.stdout, &self.stderr]
+    }
 }
 
 pub(crate) async fn collect(

@@ -1,0 +1,363 @@
+{
+  "$defs": {
+    "clone_pair": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "clone_pair"
+        },
+        "left": {
+          "$ref": "#/$defs/location"
+        },
+        "left_nodes": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "measurement": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "right": {
+          "$ref": "#/$defs/location"
+        },
+        "right_nodes": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "similarity": {
+          "$ref": "#/$defs/decimal"
+        },
+        "unit": {
+          "const": "ratio"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "left",
+        "right",
+        "similarity",
+        "unit",
+        "measurement",
+        "left_nodes",
+        "right_nodes"
+      ],
+      "type": "object"
+    },
+    "decimal": {
+      "additionalProperties": false,
+      "properties": {
+        "coefficient": {
+          "maxLength": 39,
+          "pattern": "^-?(0|[1-9][0-9]{0,37})$",
+          "type": "string"
+        },
+        "scale": {
+          "maximum": 18,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "coefficient",
+        "scale"
+      ],
+      "type": "object"
+    },
+    "inventory": {
+      "additionalProperties": false,
+      "properties": {
+        "entities": {
+          "items": {
+            "$ref": "#/$defs/inventory_entry"
+          },
+          "maxItems": 50000,
+          "type": "array"
+        },
+        "files": {
+          "items": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50000,
+          "type": "array"
+        }
+      },
+      "required": [
+        "files",
+        "entities"
+      ],
+      "type": "object"
+    },
+    "inventory_entry": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "name": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "namespace": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "name",
+        "location"
+      ],
+      "type": "object"
+    },
+    "location": {
+      "additionalProperties": false,
+      "properties": {
+        "end_line": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "file": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "start_line": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "symbol": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "start_line",
+        "end_line",
+        "symbol"
+      ],
+      "type": "object"
+    },
+    "metric": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "metric"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "measurement": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "metric": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "unit": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/decimal"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "location",
+        "metric",
+        "value",
+        "unit",
+        "measurement"
+      ],
+      "type": "object"
+    },
+    "metric_definition": {
+      "additionalProperties": false,
+      "properties": {
+        "measurement": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "metric": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "unit": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "metric",
+        "unit",
+        "measurement"
+      ],
+      "type": "object"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "configuration": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "target": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Structural protocol only. Exact decimals, inventory, measurement units, execution identity, scope and completeness require semantic validation; producer claims are not authentication.",
+  "properties": {
+    "artifact_digest": {
+      "maxLength": 128,
+      "type": "string"
+    },
+    "clone_measurement": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "inventory": {
+      "$ref": "#/$defs/inventory"
+    },
+    "metric_definitions": {
+      "items": {
+        "$ref": "#/$defs/metric_definition"
+      },
+      "maxItems": 64,
+      "type": "array"
+    },
+    "minimum_lines": {
+      "maximum": 4294967295,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "minimum_nodes": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "producer": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    },
+    "protocol_version": {
+      "const": 1
+    },
+    "records": {
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/metric"
+          },
+          {
+            "$ref": "#/$defs/clone_pair"
+          }
+        ]
+      },
+      "maxItems": 50000,
+      "type": "array"
+    },
+    "schema": {
+      "enum": [
+        "function_metric",
+        "clone_pair"
+      ]
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "similarity_floor": {
+      "$ref": "#/$defs/decimal"
+    },
+    "snapshot_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "tool_id": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    },
+    "tool_version": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "protocol_version",
+    "schema",
+    "schema_version",
+    "producer",
+    "snapshot_digest",
+    "tool_id",
+    "tool_version",
+    "artifact_digest",
+    "scope",
+    "inventory",
+    "complete",
+    "records"
+  ],
+  "title": "Qualitygate tool facts v1",
+  "type": "object"
+}

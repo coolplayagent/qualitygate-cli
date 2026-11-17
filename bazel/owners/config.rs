@@ -37,6 +37,8 @@ pub mod check_planning {
     pub mod python;
     #[path = "runtime_validation.rs"]
     pub mod runtime_validation;
+    #[path = "tool_facts.rs"]
+    pub mod tool_facts;
     #[path = "validation.rs"]
     pub mod validation;
     #[path = "yaml_budget.rs"]
@@ -180,11 +182,15 @@ pub mod rule_catalog {
     pub mod rule_query;
     #[path = "rule_schema.rs"]
     pub mod rule_schema;
+    #[path = "tool_source_validation.rs"]
+    pub mod tool_source_validation;
     pub use qualitygate_domain::rule_catalog::category;
     pub use qualitygate_domain::rule_catalog::language;
     pub use qualitygate_domain::rule_catalog::normative;
     pub use qualitygate_domain::rule_catalog::operator;
     pub use qualitygate_domain::rule_catalog::operator_v3;
+    pub use qualitygate_domain::rule_catalog::operator_v4;
+    pub use qualitygate_domain::rule_catalog::operator_v4_types;
     pub use qualitygate_domain::rule_catalog::rule_guidance;
     pub use qualitygate_domain::rule_catalog::rule_lifecycle;
     pub use qualitygate_domain::rule_catalog::rule_parameters;
@@ -217,4 +223,11 @@ pub mod test_effectiveness {
 #[path = "../../src/qualitygate/xml_parsing"]
 pub mod xml_parsing {
     pub use qualitygate_domain::xml_parsing::xml_budget;
+}
+
+#[path = "../../src/qualitygate/tool_evidence"]
+pub mod tool_evidence {
+    pub use qualitygate_domain::tool_evidence::contracts;
+    pub use qualitygate_domain::tool_evidence::decimal;
+    pub use qualitygate_domain::tool_evidence::schema;
 }

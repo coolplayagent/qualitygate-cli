@@ -250,3 +250,55 @@ fn business_adapter_paths_preserve_the_public_report_contract() {
     assert_eq!(report.tests.unwrap().executed, 1);
     assert!(tool_reports::parse(ReportFormat::Junit, b"<testsuite").is_err());
 }
+
+#[test]
+fn both_production_entry_points_have_explicit_build_and_install_contracts() {
+    let manifest: toml::Value = toml::from_str(CARGO_MANIFEST).unwrap();
+    assert_eq!(
+        manifest["package"]["default-run"].as_str(),
+        Some("qualitygate")
+    );
+    let bins = manifest["bin"].as_array().unwrap();
+    let names: std::collections::BTreeSet<_> = bins
+        .iter()
+        .map(|bin| bin["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        names,
+        ["qualitygate", "qualitygate-tool-bridge"]
+            .into_iter()
+            .collect()
+    );
+    for name in names {
+        let binary = target(SOURCE_ROOT_BUILD, "rust_binary", name);
+        let path = bins
+            .iter()
+            .find(|bin| bin["name"].as_str() == Some(name))
+            .unwrap()["path"]
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            format!("src/qualitygate/{}", quoted_value(binary, "crate_root")),
+            path
+        );
+        assert_eq!(
+            quoted_value(target(BUILD, "alias", name), "actual"),
+            format!("//src/qualitygate:{name}")
+        );
+        assert!(
+            target(BUILD, "filegroup", "production_binaries").contains(&format!("\":{name}\""))
+        );
+    }
+    assert!(QUALITYGATE_POLICY.contains("\"//:production_binaries\""));
+    let bridge = target(SOURCE_ROOT_BUILD, "rust_binary", "qualitygate-tool-bridge");
+    assert!(bridge.contains("deps = [\":interfaces\"]"));
+    assert!(!bridge.contains("all_crate_deps"));
+}
+#[test]
+fn tool_fact_protocol_asset_matches_the_runtime_export() {
+    let shipped: serde_json::Value = serde_json::from_str(include_str!(
+        "../skills/qualitygate-cli/references/schemas/tool-facts-v1.schema.json"
+    ))
+    .unwrap();
+    assert_eq!(shipped, qualitygate::tool_evidence::schema::document());
+}

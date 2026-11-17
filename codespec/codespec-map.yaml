@@ -1,11 +1,11 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 9
-updated_at: unix:1794923209
+map_version: 12
+updated_at: unix:1794929025
 directories:
 - directory: requirements
-  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and the draft tool-facts and assertions specification.
+  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and implemented tool-facts and assertions contracts with verification evidence.
   content_scope:
   - codespec/requirements/**
   key_files:
@@ -16,7 +16,7 @@ directories:
   relations: []
   update_rule: reviewed
 - directory: design
-  purpose: Architecture and implementation design records, including the draft typed-tool-evidence, V4 assertion and independent Bazel target design.
+  purpose: Architecture and implementation design records, including typed tool evidence, V4 assertions and independent Bazel production targets.
   content_scope:
   - codespec/design/**
   key_files:
@@ -35,11 +35,12 @@ directories:
   relations: []
   update_rule: reviewed
 - directory: test
-  purpose: Verification strategy, fixtures, and evidence, including resource, concurrency and bounded-stack regressions.
+  purpose: Verification strategy, fixtures and evidence, including bounded execution and pinned native tool-facts validation.
   content_scope:
   - codespec/test/**
   key_files:
   - codespec/test/README.md
+  - codespec/test/tool-facts-native-validation.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -92,3 +93,15 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'design'.
+  - version: 10
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.
+  - version: 11
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'design'.
+  - version: 12
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'test'.

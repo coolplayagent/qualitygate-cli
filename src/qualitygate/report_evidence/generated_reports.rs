@@ -19,7 +19,12 @@ pub(crate) fn validate_outputs(
     files: &BTreeMap<String, snapshot::File>,
     baseline: bool,
 ) -> Result<()> {
-    for name in check.file_outputs(baseline) {
+    for name in check.file_outputs(baseline).chain(
+        check
+            .tool_facts
+            .iter()
+            .filter_map(|spec| spec.context_path.as_deref()),
+    ) {
         let normalized = paths::relative(Path::new(name))?;
         if files.contains_key(&normalized) {
             bail!("Report output would overwrite a checked input: {name}");
@@ -68,6 +73,7 @@ pub(crate) async fn prepare(
     Ok(())
 }
 
+#[cfg(test)]
 pub(crate) async fn collect(
     check: &CommandCheck,
     workspace: &Path,
@@ -76,6 +82,27 @@ pub(crate) async fn collect(
     result: &mut CheckResult,
     stdout: &[u8],
 ) -> Result<bool> {
+    Ok(
+        collect_with_evidence(check, workspace, artifacts, snapshot, result, stdout)
+            .await?
+            .findings,
+    )
+}
+
+#[derive(Default)]
+pub(crate) struct CollectedReports {
+    pub findings: bool,
+    pub coverage: Option<crate::tool_evidence::contracts::CoverageEvidence>,
+}
+
+pub(crate) async fn collect_with_evidence(
+    check: &CommandCheck,
+    workspace: &Path,
+    artifacts: &Path,
+    snapshot: &Arc<Snapshot>,
+    result: &mut CheckResult,
+    stdout: &[u8],
+) -> Result<CollectedReports> {
     let mut baseline = if check
         .reports
         .iter()
@@ -112,8 +139,10 @@ async fn collect_current(
     result: &mut CheckResult,
     stdout: &[u8],
     baseline: &mut Result<BTreeMap<usize, Data>>,
-) -> Result<bool> {
-    let mut findings = false;
+) -> Result<CollectedReports> {
+    let mut collected = CollectedReports::default();
+    let mut coverage_ambiguous = false;
+    let mut coverage_bytes = 0usize;
     for (index, spec) in check.reports.iter().enumerate() {
         let bytes = if spec.from_stdout {
             bounded_stdout(stdout)?
@@ -132,7 +161,7 @@ async fn collect_current(
         let mut next = result.clone();
         let snapshot = Arc::clone(snapshot);
         let workspace = workspace.to_owned();
-        let (next, found) = tokio::task::spawn_blocking(move || {
+        let (next, found, coverage) = tokio::task::spawn_blocking(move || {
             if effectiveness {
                 let cases = reports::test_cases::parse(&bytes, &snapshot, &workspace)?;
                 let executed = cases
@@ -157,22 +186,55 @@ async fn collect_current(
                 next.matched_entities = executed;
                 next.metadata
                     .insert("test_cases".into(), serde_json::to_value(&cases)?);
-                return Ok((next, found));
+                return Ok((next, found, Ok(None)));
             }
             let data = reports::parse(spec.format, &bytes)?;
             let found = data.has_findings();
             let before = next.diagnostics.len();
+            let coverage = if coverage_ambiguous {
+                Ok(None)
+            } else {
+                crate::report_evidence::coverage_observation::collect(
+                    &data, &spec, &snapshot, &workspace, &next.id, &bytes,
+                )
+            };
             crate::report_evidence::report_gate::apply(
                 &mut next, &spec, data, previous, &snapshot, &workspace,
             )?;
             let found = found || next.diagnostics.len() > before;
-            Ok::<_, anyhow::Error>((next, found))
+            Ok::<_, anyhow::Error>((next, found, coverage))
         })
         .await??;
         *result = next;
-        findings |= found;
+        collected.findings |= found;
+        let coverage = coverage.and_then(|coverage| {
+            if let Some(coverage) = coverage {
+                coverage_bytes = coverage_bytes
+                    .checked_add(serde_json::to_vec(&coverage)?.len())
+                    .ok_or_else(|| anyhow::anyhow!("Typed coverage byte count overflow"))?;
+                if coverage_bytes > 32 * 1024 * 1024 {
+                    anyhow::bail!("Combined typed coverage exceeds 32 MiB");
+                }
+                crate::report_evidence::coverage_observation::merge(
+                    &mut collected.coverage,
+                    coverage,
+                )?;
+            }
+            Ok(())
+        });
+        if let Err(error) = coverage {
+            // Overlapping ordinary report gates retain their previous meaning.
+            // They cannot furnish a single unambiguous coverage input to a
+            // subsequent fact producer.
+            coverage_ambiguous = true;
+            collected.coverage = None;
+            result.metadata.insert(
+                "fact_coverage_unavailable".into(),
+                format!("{error:#}").into(),
+            );
+        }
     }
-    Ok(findings)
+    Ok(collected)
 }
 
 async fn baseline(

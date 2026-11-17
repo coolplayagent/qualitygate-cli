@@ -62,6 +62,8 @@ qualitygate schema capabilities --format json
 qualitygate schema doctor --format json
 qualitygate schema constraint --format json
 qualitygate schema operator-rule --format json
+qualitygate schema operator-rule-v4 --format json
+qualitygate schema tool-facts-v1 --format json
 qualitygate schema project-rule-family --format json
 qualitygate schema agent-obligation --format json
 qualitygate agent-contract --worktree --role implementer --format json

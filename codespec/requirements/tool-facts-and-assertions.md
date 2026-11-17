@@ -1,10 +1,11 @@
 # 工具事实与可组合断言规格
 
-> 文档版本：v0.1；日期：2026-11-17
+> 文档版本：v0.2；日期：2026-11-17
 > 评审基线：`900c795b893da5af472662bacef04cac82c0b270`
 
-状态：**Draft / Not implemented**。本文件描述待实现能力；不表示已发布 V4、
-已接入下列工具，或已完成任何新增验收测试。
+状态：**首期已实现**。实现包含工具事实 v1、V4 断言、Rust 函数范围内的
+crapper/dryer 适配与桥接入口。下表登记对应测试；真实工具执行与生产试点分别记录，
+开发实现不表示已发行或已采用为阻断策略。
 
 本文是 TFA-01 至 TFA-08 的唯一行为规范。对应设计见
 [工具事实与断言设计](../design/tool-facts-and-assertions.md)，
@@ -99,7 +100,7 @@
 ## TFA-04：V4 有限表达式与规则扩展
 
 1. 新能力使用独立的项目规则 schema V4 和 runtime capability
-   `rules.operators.v4`。这些名称在本 Draft 中仅为拟议接口。
+   `rules.operators.v4`；接口以发布的 Schema 与运行时能力清单为准。
    不修改已发布 V1、V2、V3 的 schema、摘要、默认值或表达式含义。
 2. V4 保留现有有限集合与词法变量模型；source 必须声明 producer check、
    事实 schema/version 和 project/target 范围。
@@ -157,6 +158,9 @@
    例如以 0.82 过滤采集时，不能证明“没有相似度至少为 0.80 的克隆”。
    `min-lines`、`min-nodes`、语言支持及排除的实体类型也必须进入采集范围声明；
    完整分析满足最小尺寸条件的函数，不能推出未采集的小函数或闭包没有重复。
+   若工具在序列化舍入之前筛选，adapter 还须证明采集范围覆盖消费阈值对应的
+   原始值区间；仅比较两个声明阈值不足以证明完整性。无法证明时拒绝该 source。
+   这项采集完整性校验不改变对已序列化数值的精确比较，也不添加比较容差。
 3. adapter 保存原始产物摘要与记录位置，既能追溯工具结果，也能显示消费规则的断言。
    本规格不宣称 Clean Code、DRY、SOLID 等设计原则已被这些工具完整证明。
 4. 首期只以建议/影子方式观察工具检出、误报、incomplete 与延迟。
@@ -174,8 +178,8 @@
    反例必须引用有摘要的产物。这是未来接纳条件，不是首期支持声明。
 3. uml-viewer 只列为后续查看候选。视图应消费已验证报告，不能改变 gate verdict，
    也不能以可视化是否生成成功替代分析与证据校验。
-4. 本次只交付 Spec 和索引，不交付 Rust 实现、运行时 schema、配置迁移或新测试。
-   下表所有场景均为 **planned**，不是已有测试或当前能力的证据。
+4. 初始 Spec 提交仅交付文档。后续获授权的首期实现须按下表记录实现和实际执行证据，
+   不把计划、测试代码存在或文档检查通过等同于新增能力验收通过。
 5. 后续实现须保留 V1–V3 正反例、报告兼容性、source digest 和既有 CLI 行为。
    V4 的 schema 导出、能力发现、语义验证、求值与文档必须同步且可核对。
 6. 验收应区分 violation、incomplete 和不支持；未知信息不得按通过计入。
@@ -189,7 +193,7 @@
 
 1. Bazel 辅助入口采用同一 Cargo package 的第二个 binary，复用既有 reusable core；
    不为此拆分新 Cargo crate 或复制 runner、snapshot、config、gate 实现。
-   拟议名称为 `qualitygate-tool-bridge`，只提供原始报告的有界归一化；
+   名称为 `qualitygate-tool-bridge`，只提供原始报告的有界归一化；
    不运行上游工具、不安装依赖。Qualitygate 可直接复用同一归一化库。
 2. 增加第二 binary 时显式设置 `default-run = "qualitygate"`，
    保持无 `--bin` 的既有开发入口行为。原 qualitygate CLI 的参数及报告协议不变。
@@ -214,37 +218,78 @@
    Miri 继续验证纯 domain，ASan 继续验证 native unit tests，保持各自独立。
    不能通过减少 required target、测试选择或覆盖率分母来通过。
 
-## 计划验收矩阵
+## 验收矩阵
 
-| 场景 ID | 条款 | 计划验收场景及结果 | 状态 |
+下表登记实现状态，自动化证据对应关系见紧随其后的测试索引。
+真实固定版本工具的输入、执行结果与局限见[原生工具验证记录](../test/tool-facts-native-validation.md)。
+完整仓库验收须同时满足 TFA-08 的全部门禁；测试代码存在不等同于本次执行通过。
+
+| 场景 ID | 条款 | 验收场景 | 实现状态 |
 | --- | --- | --- | --- |
-| TFA-A01 | TFA-01、02 | 外部工具经受限 runner 产生原始报告，Rust adapter 输出带来源身份的 typed facts；未配置工具不隐式执行。 | planned |
-| TFA-A02 | TFA-02、04 | 未知 schema/字段、重复记录、缺 required 字段及跨 source 类型错配被拒绝。 | planned |
-| TFA-A03 | TFA-02 | 整数与十进制阈值恰好相等、最小可表达差异、不同 scale 的等值数均精确比较；无 epsilon。 | planned |
-| TFA-A04 | TFA-02 | 超精度、超 scale、NaN/Infinity、溢出及单位不相容不产生 pass；上游舍入限制保留在测量定义中。 | planned |
-| TFA-A05 | TFA-04、07 | V1–V3 原 fixtures 与 schema digest 保持；旧 runtime 拒绝 V4；新 runtime 能明确发现拟议 V4 能力。 | planned |
-| TFA-A06 | TFA-03 | 完整超阈值 metric 的 producer pass、consumer fail；调整规则阈值后无需改 adapter。 | planned |
-| TFA-A07 | TFA-03、06 | 仅输出阈值筛选 findings 的工具不能满足完整 metric source；不能以空 findings 推导通过。 | planned |
-| TFA-A08 | TFA-03、05 | 未被契约接纳的非零退出、timeout、malformed/truncated/缺失报告保持 incomplete；经验证的 findings exit code 可完成采集。 | planned |
-| TFA-A09 | TFA-05 | 完整空集合遵循 all/any/count 定义；缺目标与未运行不能伪装为空集合；显式最低数量断言失败。 | planned |
-| TFA-A10 | TFA-02、05 | 未声明依赖、被跳过 producer、错 snapshot、旧产物、最终输入变更不能支持 consumer pass。 | planned |
-| TFA-A11 | TFA-05 | 多 producer/source 共同计费；记录数、字节、时间、深度和运算达到边界时行为一致，超限 incomplete。 | planned |
-| TFA-A12 | TFA-06 | crapper/dryer 已钉住版本的独立正反例验证字段、库存与位置；缺失能力明确拒绝。 | planned |
-| TFA-A13 | TFA-02、06 | clone pair 保留两端位置，项目范围筛选及 count/compare 不丢失另一端证据。 | planned |
-| TFA-A14 | TFA-07 | mutator 不能用作首期严格验收；unknown/timeout/error 不被呈现为 mutation 或 invariant 成功。 | planned |
-| TFA-A15 | TFA-05、08 | 同一文件属于不同 Bazel target/configuration 时事实身份独立；缺一个目标库存则 incomplete。 | planned |
-| TFA-A16 | TFA-08 | 同包第二 binary、default-run、Cargo/Bazel/CI/coverage/发行清单覆盖及架构 owner 合同均被检查。 | planned |
-| TFA-A17 | TFA-03、05 | 两条规则消费同一 producer/范围，工具只执行一次；规则分别裁决并独立计费；范围或 snapshot 不符不复用。 | planned |
-| TFA-A18 | TFA-03、06 | crapper 使用有效的零覆盖率报告保留 coverage=0；缺失或不完整覆盖率报告产生 incomplete，不能伪造零。 | planned |
-| TFA-A19 | TFA-03、06 | dryer 以 0.82 采集过滤而消费规则要求 0.80 时被拒绝；完整采集后 0.81 的 pair 应使该规则失败。 | planned |
-| TFA-A20 | TFA-05、06 | dryer 的最小行数、节点数和实体排除随范围保留；要求未采集的小函数或闭包时报告能力不足，不以空结果通过。 | planned |
+| TFA-A01 | TFA-01、02 | 外部工具经受限 runner 产生原始报告，Rust adapter 输出带来源身份的 typed facts；未配置工具不隐式执行。 | implemented |
+| TFA-A02 | TFA-02、04 | 未知 schema/字段、重复记录、缺 required 字段及跨 source 类型错配被拒绝。 | implemented |
+| TFA-A03 | TFA-02 | 整数与十进制阈值恰好相等、最小可表达差异、不同 scale 的等值数均精确比较；无 epsilon。 | implemented |
+| TFA-A04 | TFA-02 | 超精度、超 scale、NaN/Infinity、溢出及单位不相容不产生 pass；上游舍入限制保留在测量定义中。 | implemented |
+| TFA-A05 | TFA-04、07 | V1–V3 原 fixtures 与 schema digest 保持；旧 runtime 拒绝 V4；新 runtime 能明确发现 V4 能力。 | implemented |
+| TFA-A06 | TFA-03 | 完整超阈值 metric 的 producer pass、consumer fail；调整规则阈值后无需改 adapter。 | implemented |
+| TFA-A07 | TFA-03、06 | 仅输出阈值筛选 findings 的工具不能满足完整 metric source；不能以空 findings 推导通过。 | implemented |
+| TFA-A08 | TFA-03、05 | 未被契约接纳的非零退出、timeout、malformed/truncated/缺失报告保持 incomplete；经验证的 findings exit code 可完成采集。 | implemented |
+| TFA-A09 | TFA-05 | 完整空集合遵循 all/any/count 定义；缺目标与未运行不能伪装为空集合；显式最低数量断言失败。 | implemented |
+| TFA-A10 | TFA-02、05 | 未声明依赖、被跳过 producer、错 snapshot、旧产物、最终输入变更不能支持 consumer pass。 | implemented |
+| TFA-A11 | TFA-05 | 多 producer/source 共同计费；记录数、字节、时间、深度和运算达到边界时行为一致，超限 incomplete。 | implemented |
+| TFA-A12 | TFA-06 | crapper/dryer 已钉住版本的独立正反例验证字段、库存与位置；缺失能力明确拒绝。 | implemented |
+| TFA-A13 | TFA-02、06 | clone pair 保留两端位置，项目范围筛选及 count/compare 不丢失另一端证据。 | implemented |
+| TFA-A14 | TFA-07 | mutator 不能用作首期严格验收；unknown/timeout/error 不被呈现为 mutation 或 invariant 成功。 | implemented |
+| TFA-A15 | TFA-05、08 | 同一文件属于不同 Bazel target/configuration 时事实身份独立；缺一个目标库存则 incomplete。 | implemented |
+| TFA-A16 | TFA-08 | 同包第二 binary、default-run、Cargo/Bazel/CI/coverage/发行清单覆盖及架构 owner 合同均被检查。 | implemented |
+| TFA-A17 | TFA-03、05 | 两条规则消费同一 producer/范围，工具只执行一次；规则分别裁决并独立计费；范围或 snapshot 不符不复用。 | implemented |
+| TFA-A18 | TFA-03、06 | crapper 使用有效的零覆盖率报告保留 coverage=0；缺失或不完整覆盖率报告产生 incomplete，不能伪造零。 | implemented |
+| TFA-A19 | TFA-03、06 | dryer 以 0.82 采集过滤而消费规则要求 0.80 时被拒绝；完整采集后 0.81 的 pair 应使该规则失败。 | implemented |
+| TFA-A20 | TFA-05、06 | dryer 的最小行数、节点数和实体排除随范围保留；要求未采集的小函数或闭包时报告能力不足，不以空结果通过。 | implemented |
+
+### 实现到测试索引
+
+| 场景 | 代码证据 |
+| --- | --- |
+| A01、A06、A08、A10、A17 | [真实命令采集与最终证据失效](../../src/qualitygate/gate_execution/fact_execution_tests.rs)、[一次生产与多规则裁决](../../src/qualitygate/gate_execution/fact_workflow_tests.rs) |
+| A02、A04、A07、A12、A13、A18、A20 | [闭合协议、原生格式及独立库存](../../src/qualitygate/tool_evidence/normalization_tests.rs)、[Rust 支持形态](../../src/qualitygate/tool_evidence/inventory_tests.rs)、[EDN 拒绝场景](../../src/qualitygate/tool_evidence/edn_tests.rs) |
+| A03、A04 | [精确十进制边界](../../src/qualitygate/tool_evidence/decimal_tests.rs)、[字段和测量类型](../../src/qualitygate/rule_catalog/operator_v4_tests.rs) |
+| A05 | [规则 Schema 兼容检查](../../src/qualitygate/rule_catalog/rule_schema.rs)、[V1–V3 集成回归](../../tests/operators.rs)、[运行时能力](../../src/qualitygate/check_planning/runtime_contracts.rs) |
+| A09、A11、A19 | [V4 精确阈值、不完整与预算](../../src/qualitygate/rule_evaluation/operators_v4_tests.rs)、[集合与资源反例](../../src/qualitygate/rule_evaluation/operators_v4_regression_tests.rs) |
+| A10、A15、A19、A20 | [生产者、目标与采集范围校验](../../src/qualitygate/rule_catalog/tool_source_validation.rs)、[规则事实选择](../../src/qualitygate/rule_evaluation/custom_rules/expression_v4.rs) |
+| A14 | [只接纳两类事实 Schema 的协议](../../src/qualitygate/tool_evidence/contracts.rs)、[桥接程序拒绝 mutator](../../tests/tool_bridge.rs) |
+| A16 | [双入口构建合同](../../tests/bazel.rs)、[生产入口登记](../../tests/quality/architecture_entries.rs)、[源码可达性](../../tests/quality/architecture_sources.rs)、[桥接可执行文件](../../tests/tool_bridge.rs) |
+
+库与工作流测试使用受控独立输入；真实上游程序运行、生产误报率与收益不由这些测试推定。
+
+### V1–V4 兼容性实测
+
+2026-11-17 将工作树的 V1–V3 Schema 与初始 Spec 提交
+`be61af21b30ce71d074f3a8a3391fdee1bb129c7` 的 Git blob 逐字节比较，三者均未改变。
+
+| Schema | 保留的 SHA-256 |
+| --- | --- |
+| V1 | `1944cb3dfd9b85c3b7f7ea0fbe9ee0a2701343b59b0eeb63b7b9ff4c68ea254e` |
+| V2 | `61cce7af7fbd0fb9d153a31449f8c86e4552de3d6e16a48462e89223caf57650` |
+| V3 | `db0771b5e32a6ee7672758860af511b5de63cd90a14aa8c7f310ecf59bdcf552` |
+
+对同一个已绑定来源的 `skills/qualitygate-cli/references/examples/operators-v4.yaml`
+实际执行 `rules validate`：本次开发 binary 返回 exit 0、`complete=true`、`decision=pass`，
+识别 `urn:qualitygate:project-rule:4`；已安装旧 runtime 返回 exit 1、
+`complete=true`、`decision=fail`，拒绝不支持的版本及新增字段，未降级为可通过规则。
+这是配置验证结果，不是执行未完成的 exit 2。
+旧 runtime 的 SHA-256 为
+`c8e402349a10acf4eb0610912c921d51890e9dcbb6ecda88f161188888913da0`。
+本地原始结果保存在 `target/tool-facts-v4-validation.json`、
+`target/tool-facts-legacy-rejection.json` 与 `target/tool-facts-compatibility-evidence.json`。
 
 ## 来源与解释边界
 
 设计动机参考用户提供的《Code Quality Engineering in the Age of AI Coding》
 （2026-11，25 页）：第 16–20 页的独立工具验证与采用边界，
 第 21–23 页的工具、规则与断言证据衔接；并结合当前仓库的有限 DSL、快照证据与所有权合同。
-本轮仅完成源码与文档评审，未运行上游工具，也没有效能试点结果。
+初始评审未运行上游工具。开发验收中的真实程序试验须记录固定版本与实际运行结果；
+本规格不把这些受控输入解释为生产效能试点结果。
 以下外部来源用于确认候选工具及工程接口；它们不是本项目已通过验收的证据。
 实际 adapter 接纳时必须钉住工具版本或提交身份，不能把移动分支链接当作不变协议。
 

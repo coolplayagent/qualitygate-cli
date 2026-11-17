@@ -120,6 +120,96 @@ SARIF, Checkstyle, PMD, and SpotBugs. Their producer-specific completion markers
 file inventories, error records, path mappings, and version agreement are part
 of completeness, not optional metadata.
 
+## Typed tool observations
+
+Commands can declare one `tool_facts` output instead of diagnostic reports or
+project reports. Its closed contract specifies `adapter`, `schema`, `path`,
+`from_stdout`, `tool_id`, `tool_version`, `scope`, and the exact source `paths`.
+Tool-facts protocol v1 fixes its inventory universe to Rust `function_item`
+nodes with a body, using `crate_root` and `crate_name`. Closures, functions local
+to blocks and functions inside a module named `tests` are outside that universe.
+Ambiguous identities and unsupported generic/scoped impl self types reject the
+collection; they are not silently excluded. Non-Rust input is unsupported. Project,
+optional target and configuration identities are explicit and never inferred
+from a Bazel cache or workspace scan. This does not introduce a Cargo workspace.
+
+`adapter: tool_facts` accepts the exported `schema tool-facts-v1` JSON protocol.
+Metric outputs declare every expected metric, unit and measurement definition;
+every inventoried function must supply each metric. Clone outputs declare their
+measurement and acquisition filters. The report must reproduce the independently
+checked inventory. An optional `context_path` receives a bounded JSON input with
+`producer`, `snapshot_digest` and `spec` before execution; configure the tool's
+arguments to read that file. It cannot overwrite snapshot inputs or outputs,
+and modifying it invalidates the producer. Declared identities are checked
+against the actual command, probes and snapshot, then raw bytes are bound by
+their retained artifact digest.
+
+The native adapters accept crapper commit
+`c757ec79a6c15dc815238bbd9c2f4601eb54d3cc` and dryer commit
+`66ff6d21a42c04afcad89c78a80066176d1294b0`. Installation is an explicit caller
+step. Declare executable version probes and inputs for the upstream source,
+interpreter and dependency lock; a source commit alone does not pin Python or
+its parsing dependencies. Native commands run from the repository root with
+each declared source file as an explicit argument. Unsupported invocation flags
+are rejected before the tool runs.
+
+Native execution is currently verified for Linux x86_64 with
+`tree-sitter-language-pack` 1.25.2. Declare a `tools` probe with ID
+`tree-sitter-language-pack` using the analyzer's interpreter; its output must be
+exactly `1.25.2`. The `native_runtime` output field declares `pack_version`,
+`parser_path` in the selected snapshot, and `parser_digest`. This profile accepts
+only the official Rust parser digest
+`sha256:43b4551eedd58c54397f9571cacdefdac2ec077eaceb00a43977563c605d03f6`.
+Retain that parser as an explicit verification input. The gate copies it into a
+private cache, overrides all three package cache/library/manifest paths for the
+child process, and supplies an invalid local manifest. Missing parsers fail
+locally instead of downloading. The cache and retained evidence are rechecked;
+other native platforms are explicitly unsupported. Offline normalization and
+the bridge remain portable and do not require a native runtime profile.
+
+Crapper requires `--use-existing-coverage` and an explicit `coverage_producer`
+dependency that successfully produced validated full LCOV observations. Only
+the verified LCOV files may be discoverable under `target/coverage` and
+`coverage`; HTML reports that would override them are rejected. File hashes are
+checked before and after execution. A recorded zero remains zero; missing
+function coverage is incomplete. Coverage and CRAP retain upstream four-place
+rounding in their measurement definitions. An explicitly configured threshold
+may return the declared findings exit without failing complete fact collection.
+
+Dryer requires explicit `--threshold`, `--min-lines`, and `--min-nodes` matching
+the acquisition contract; stdout additionally needs `--edn`. Both clone endpoints
+and node counts are retained, with the upstream twelve-place score definition.
+A source requesting similarity floor 0.80 cannot consume collection at 0.82.
+Dryer filters unrounded scores before serializing twelve decimal places. For
+this pinned measurement, a consumer floor `t` requires acquisition at zero or
+at/below `ceil(t * 10^12) / 10^12 - 0.5 * 10^-12`, as well as ordinary scope
+containment. This exact rounding-preimage check prevents omitted pairs that
+round upward onto the consumer boundary; it does not change numeric comparison
+or introduce an epsilon. For a source floor of `0.82`, declare and execute
+acquisition at `0.819999999999`, or collect at zero. Acquisition at `0.82` cannot
+support that same serialized source floor. Generic envelopes claiming the same
+measurement obey the same guard. The [native validation record](../../../codespec/test/tool-facts-native-validation.md)
+includes an observed counterexample and the separate producer-only smoke run.
+Requested size restrictions must also be covered by acquisition. The supported
+entity universe excludes closures and test-module functions; these exclusions
+are not proof of absence outside that universe.
+
+Facts are published internally as typed values only after complete collection.
+High metric values do not fail the producer. V4 rules apply independent policy
+thresholds, explicitly depend on their producer, and reuse a producer once per
+run. Final input, executable or retained-artifact invalidation blocks dependent
+assertions before the gate is aggregated. Existing lint report semantics remain
+unchanged. Start native tool policies as warning/shadow candidates and use the
+existing adoption workflow before blocking delivery. Mutator strict acceptance,
+model checking and GUI integration are outside this first-stage implementation.
+
+`qualitygate-tool-bridge --format dryer --input captured.edn --context context.json`
+uses the same normalization library without running tools. Its context uses the
+`NormalizeContext` contract and its facts always have `complete: false` because
+offline conversion cannot authenticate execution. Build/install inventory and
+the explicit binary-archive exclusions are documented in
+[development and quality gates](../04-contributor-guide/01-development-and-quality-gates.md).
+
 ## Compatibility, Bazel, and incremental meaning
 
 Java compatibility checks build paired snapshots and use configured binary and

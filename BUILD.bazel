@@ -16,6 +16,14 @@ filegroup(
 )
 
 filegroup(
+    name = "tool_fact_reference_assets",
+    srcs = [
+        "skills/qualitygate-cli/references/operators-v4.md",
+        "skills/qualitygate-cli/references/examples/operators-v4.yaml",
+    ],
+)
+
+filegroup(
     name = "fixture_assets",
     srcs = glob(["fixtures/**/*.json"]),
 )
@@ -95,6 +103,7 @@ rust_test(
         "MODULE.bazel.lock",
         "qualitygate.yaml",
         "rust-toolchain.toml",
+        "skills/qualitygate-cli/references/schemas/tool-facts-v1.schema.json",
         "//bazel:BUILD.bazel",
         "//bazel:rust_deps.bzl",
         "//src/qualitygate:BUILD.bazel",
@@ -118,4 +127,26 @@ rust_test(
         proc_macro = True,
         proc_macro_dev = True,
     ),
+)
+
+alias(
+    name = "qualitygate-tool-bridge",
+    actual = "//src/qualitygate:qualitygate-tool-bridge",
+)
+
+filegroup(
+    name = "production_binaries",
+    srcs = [":qualitygate", ":qualitygate-tool-bridge"],
+)
+
+rust_test(
+    name = "tool_bridge_test",
+    crate_root = "tests/tool_bridge.rs",
+    srcs = ["tests/tool_bridge.rs"],
+    data = [":qualitygate-tool-bridge"],
+    rustc_env = {
+        "CARGO_BIN_EXE_qualitygate-tool-bridge": "$(rootpath :qualitygate-tool-bridge)",
+    },
+    edition = crate_edition(),
+    deps = ["@crates//:serde_json", "@crates//:tempfile"],
 )

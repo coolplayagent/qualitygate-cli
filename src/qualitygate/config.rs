@@ -42,7 +42,7 @@ pub use crate::snapshot_preflight::preflight_schema;
 pub use crate::test_effectiveness::execution_spec as test_effectiveness;
 pub use initialization::{Initialization, initialize_at};
 pub use model::*;
-pub use plan::{Plan, parse_task};
+pub use plan::{Plan, PlannedOperation, parse_task};
 
 pub use crate::check_planning::loading::*;
 

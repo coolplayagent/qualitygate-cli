@@ -20,7 +20,7 @@ Preserve the user's scope, selected runtime and existing authorization.
 | Verify implementation, bug fixes or refactors | [Verification](references/verification.md) | Establish the selected policy, run the final full check and retain its evidence. |
 | Inspect help, capabilities or schemas; verify the runtime | [Runtime startup](references/runtime-startup.md), [compatibility](references/runtime-compatibility.md), [selfcheck](references/selfcheck.md) | These operations need no repository policy; do not initialize one for them. |
 | Discover or configure rules | [Rule management](references/rule-management.md), [bundled rules](references/builtin-rules.md) | Read-only discovery can precede initialization; policy context requires the selected existing policy. Candidate edits need authorization within the current task. |
-| Translate explicit repository constraints into rules | [Rule authoring](references/rule-authoring.md) | Select V1/V2/V3 by supported evidence, export the matching Schema, bind sources and validate before generation. Generation is not adoption. |
+| Translate explicit repository constraints into rules | [Rule authoring](references/rule-authoring.md) | Select V1/V2/V3/V4 by supported evidence and runtime capabilities, export the matching Schema, bind sources and validate before generation. Generation is not adoption. |
 | Review responsibility, dependencies, duplicated knowledge or interface behavior | [Design review](references/design-review.md) | Apply Clean Code, Clean Architecture, DRY and SOLID to concrete contracts and counterexamples. Contextual review is not a deterministic gate. |
 | Review concurrency, lifetime, bounds, cross-path behavior or tests | [Public review pack](references/review-pack.md) | Select the relevant cards and retain evidence gaps; do not infer safety from text patterns. |
 
@@ -109,6 +109,7 @@ command adoption, rule enabling or policy adoption.
 | Prevent analyzer debt growth | [Diagnostic ratchets](references/diagnostic-ratchets.md); report `mode: ratchet` with a fresh base run |
 | Compose typed predicates and bounded counts | [V2 operators](references/operators.md); `rules.operators.v2` |
 | Relate collections with lexical lambdas and projections | [V3 operators](references/operators-v3.md); `rules.operators.v3` |
+| Assert typed external metrics and clone relations | [V4 operators](references/operators-v4.md); `rules.operators.v4`, explicit producer dependencies and complete tool-facts v1 evidence |
 | Track declared clauses, adoption, unsupported gaps and snapshot execution | [Constraint coverage](references/constraint-coverage.md); `schema constraint`, automatic `constraint-coverage` check |
 | Run the selected Rust Agent host with guarded delivery | [Agent host](references/agent-host.md); `agent-run`, injection receipts, fresh full checks and immutable export |
 | Supply bounded repair context | [Agent feedback](references/agent-feedback.md); `check --feedback` and full rechecks |

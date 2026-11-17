@@ -114,7 +114,8 @@ async fn collection_preserves_invalid_raw_bytes_and_does_not_substitute_an_empty
     )
     .await
     .unwrap();
-    assert!(!retained);
+    assert!(!retained.findings);
+    assert!(retained.coverage.is_none());
     assert!(baseline.is_err());
     assert_eq!(result.verdict, None);
     assert!(result.diagnostics.is_empty());

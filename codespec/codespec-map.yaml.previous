@@ -1,11 +1,11 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 8
-updated_at: unix:1794923209
+map_version: 11
+updated_at: unix:1794927623
 directories:
 - directory: requirements
-  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and the draft tool-facts and assertions specification.
+  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and implemented tool-facts and assertions contracts with verification evidence.
   content_scope:
   - codespec/requirements/**
   key_files:
@@ -16,11 +16,12 @@ directories:
   relations: []
   update_rule: reviewed
 - directory: design
-  purpose: Architecture and implementation design records.
+  purpose: Architecture and implementation design records, including typed tool evidence, V4 assertions and independent Bazel production targets.
   content_scope:
   - codespec/design/**
   key_files:
   - codespec/design/README.md
+  - codespec/design/tool-facts-and-assertions.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -87,3 +88,15 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'requirements'.
+  - version: 9
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'design'.
+  - version: 10
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.
+  - version: 11
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'design'.

@@ -1,0 +1,35 @@
+schema_version: 4
+id: function-complexity-limit
+version: 1
+source:
+  document: skills/qualitygate-cli/references/operators-v4.md
+  section: Tool observations
+  content_hash: sha256:43710d825881fcb96c9c55241cbb48fc3fcec656b627bbd468bd5aea4990e42a
+requires_capabilities: [files]
+when: {entity: file, change: all}
+applies_to: {paths: ['src/**/*.rs']}
+fact_sources:
+  functions:
+    producer: scan
+    schema: function_metric
+    schema_version: 1
+    project: app
+    metric: cc
+    unit: count
+    measurement: cc-v1
+assertion:
+  op: and
+  args:
+    - op: compare
+      left: {op: count, input: {op: source, name: functions}}
+      relation: ge
+      right: {op: number, value: 1}
+    - op: all
+      input: {op: source, name: functions}
+      as: function
+      predicate:
+        op: compare
+        left: {op: field, name: value, of: {op: var, name: function}}
+        relation: le
+        right: {op: number, value: 10}
+fix: Review the independently collected complexity and simplify functions exceeding the adopted limit.

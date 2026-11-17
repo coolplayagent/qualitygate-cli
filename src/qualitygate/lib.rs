@@ -32,4 +32,6 @@ pub mod snapshot;
 pub mod snapshot_preflight;
 pub mod source_analysis;
 pub mod test_effectiveness;
+pub mod tool_bridge;
+pub mod tool_evidence;
 pub mod xml_parsing;

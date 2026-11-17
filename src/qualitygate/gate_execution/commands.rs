@@ -1,3 +1,4 @@
+use super::execution_outcome::{ExecutionOutcome, ProducedEvidence};
 use crate::{
     adapters::rules::diagnostic, config::CommandCheck, domain::*, paths, runner, snapshot,
 };
@@ -25,6 +26,63 @@ pub(crate) async fn execute_until(
     inputs: &snapshot::InputGuard,
     deadline: Option<std::time::Instant>,
 ) -> CheckResult {
+    execute_outcome(
+        check, workspace, artifacts, snapshot, inputs, deadline, None,
+    )
+    .await
+    .check_result
+}
+
+pub(crate) async fn execute_outcome(
+    check: &CommandCheck,
+    workspace: &Path,
+    artifacts: &Path,
+    snapshot: &Arc<snapshot::Snapshot>,
+    inputs: &snapshot::InputGuard,
+    deadline: Option<std::time::Instant>,
+    coverage: Option<&crate::tool_evidence::contracts::CoverageEvidence>,
+) -> ExecutionOutcome {
+    let mut evidence = ProducedEvidence::default();
+    let context = ExecutionInputs {
+        check,
+        workspace,
+        artifacts,
+        snapshot,
+        inputs,
+        deadline,
+        coverage,
+    };
+    let result = execute_guarded(context, &mut evidence).await;
+    ExecutionOutcome::new(result, evidence)
+}
+
+#[derive(Clone, Copy)]
+struct ExecutionInputs<'a> {
+    check: &'a CommandCheck,
+    workspace: &'a Path,
+    artifacts: &'a Path,
+    snapshot: &'a Arc<snapshot::Snapshot>,
+    inputs: &'a snapshot::InputGuard,
+    deadline: Option<std::time::Instant>,
+    coverage: Option<&'a crate::tool_evidence::contracts::CoverageEvidence>,
+}
+
+async fn execute_guarded(
+    context: ExecutionInputs<'_>,
+    evidence: &mut ProducedEvidence,
+) -> CheckResult {
+    let ExecutionInputs { check, inputs, .. } = context;
+    if let Some(spec) = &check.tool_facts
+        && let Err(error) =
+            crate::tool_evidence::normalization::validate_invocation(spec, &check.argv)
+    {
+        let mut result = CheckResult::pending(&check.id, check.required, check.severity);
+        result.block(
+            ExecutionStatus::Blocked,
+            format!("Fact producer invocation is invalid: {error:#}"),
+        );
+        return result;
+    }
     let missing = crate::env::missing_required(&check.required_env);
     if !missing.is_empty() {
         let mut result = CheckResult::pending(&check.id, check.required, check.severity);
@@ -49,7 +107,7 @@ pub(crate) async fn execute_until(
         result.metadata.insert("input_integrity".into(), serde_json::json!({"snapshot_digest":inputs.digest,"before":"invalid","reason":format!("{error:#}")}));
         return result;
     }
-    let mut result = execute_checked(check, workspace, artifacts, snapshot, inputs, deadline).await;
+    let mut result = execute_checked(context, evidence).await;
     match inputs.verify().await {
         Ok(()) => {
             result.metadata.insert("input_integrity".into(), serde_json::json!({"snapshot_digest":inputs.digest,"before":"verified","after":"verified"}));
@@ -72,13 +130,18 @@ pub(crate) async fn execute_until(
 }
 
 async fn execute_checked(
-    check: &CommandCheck,
-    workspace: &Path,
-    artifacts: &Path,
-    snapshot: &Arc<snapshot::Snapshot>,
-    inputs: &snapshot::InputGuard,
-    deadline: Option<std::time::Instant>,
+    context: ExecutionInputs<'_>,
+    evidence: &mut ProducedEvidence,
 ) -> CheckResult {
+    let ExecutionInputs {
+        check,
+        workspace,
+        artifacts,
+        snapshot,
+        inputs,
+        deadline,
+        coverage,
+    } = context;
     let mut result = CheckResult::pending(&check.id, check.required, check.severity);
     result.applicability = Applicability::Applicable;
     result.execution.argv = check.argv.clone();
@@ -110,7 +173,9 @@ async fn execute_checked(
         );
         return result;
     }
-    if (!check.reports.is_empty() || !check.projects.is_empty()) && check.tools.is_empty() {
+    if (!check.reports.is_empty() || !check.projects.is_empty() || check.tool_facts.is_some())
+        && check.tools.is_empty()
+    {
         result.block(
             ExecutionStatus::Blocked,
             "Report-producing commands require tools with executable version probes",
@@ -183,6 +248,30 @@ async fn execute_checked(
             return result;
         }
     };
+    if let Some(spec) = &check.tool_facts
+        && !tools
+            .iter()
+            .any(|tool| tool.id == spec.tool_id && tool.version == spec.tool_version)
+    {
+        result.block(
+            ExecutionStatus::ToolError,
+            "Tool version probe does not match the pinned fact output contract",
+        );
+        return result;
+    }
+    if let Some(spec) = &check.tool_facts
+        && spec.adapter != crate::tool_evidence::contracts::ToolFormat::ToolFacts
+        && !tools.iter().any(|tool| {
+            tool.id == "tree-sitter-language-pack"
+                && tool.version == crate::tool_evidence::contracts::LANGUAGE_PACK_VERSION
+        })
+    {
+        result.block(
+            ExecutionStatus::ToolError,
+            "Native language-pack version probe does not match the audited runtime",
+        );
+        return result;
+    }
     if let Err(error) = async {
         let current = runner::identity::executable(&check.argv[0], &cwd).await?;
         if current.path != executable.path || current.digest != executable.digest {
@@ -209,6 +298,50 @@ async fn execute_checked(
         );
         return result;
     }
+    if let Err(error) = super::fact_revalidation::coverage_inputs(check, workspace, coverage).await
+    {
+        result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+        return result;
+    }
+    let fact_context = match super::fact_execution::prepare_context(
+        check,
+        workspace,
+        artifacts,
+        snapshot,
+        &mut result,
+    )
+    .await
+    {
+        Ok(context) => context,
+        Err(error) => {
+            result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+            return result;
+        }
+    };
+    let native_runtime = match async {
+        if let Some(spec) = &check.tool_facts {
+            super::native_runtime::prepare(spec, snapshot, artifacts, &check.id).await
+        } else {
+            Ok(None)
+        }
+    }
+    .await
+    {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+            return result;
+        }
+    };
+    if let Some(runtime) = &native_runtime {
+        result.execution.artifacts.extend(runtime.artifacts.clone());
+        result.metadata.insert("native_runtime".into(), serde_json::json!({
+            "profile":"linux-x86_64-rust-v1", "pack_version":crate::tool_evidence::contracts::LANGUAGE_PACK_VERSION,
+            "parser_digest":crate::tool_evidence::contracts::LINUX_RUST_PARSER_DIGEST,
+            "downloads":"disabled", "artifacts":runtime.artifacts,
+        }));
+    }
+    let no_overrides = std::collections::BTreeMap::new();
     let remaining = deadline
         .map(|end| end.saturating_duration_since(std::time::Instant::now()))
         .unwrap_or(Duration::from_secs(check.timeout_seconds));
@@ -219,11 +352,14 @@ async fn execute_checked(
         );
         return result;
     }
-    match runner::capture(
+    match runner::capture_with_env(
         &resolved_argv,
         &cwd,
         None,
         remaining.min(Duration::from_secs(check.timeout_seconds)),
+        native_runtime
+            .as_ref()
+            .map_or(&no_overrides, |runtime| &runtime.env),
     )
     .await
     {
@@ -283,6 +419,51 @@ async fn execute_checked(
                 );
                 return result;
             }
+            if check.tool_facts.is_some() {
+                if output.exit_code != Some(check.expected_exit_code)
+                    && !output
+                        .exit_code
+                        .is_some_and(|code| check.findings_exit_codes.contains(&code))
+                {
+                    result.block(
+                        ExecutionStatus::ToolError,
+                        "Fact producer returned an undeclared exit code",
+                    );
+                    return result;
+                }
+                let facts = async {
+                    super::native_runtime::verify(native_runtime.as_ref()).await?;
+                    super::fact_execution::verify_context(fact_context.as_ref()).await?;
+                    super::fact_revalidation::coverage_inputs(check, workspace, coverage).await?;
+                    super::fact_execution::collect(
+                        check,
+                        workspace,
+                        artifacts,
+                        snapshot,
+                        &mut result,
+                        super::fact_execution::Capture {
+                            stdout: &output.stdout,
+                            stderr: &output.stderr,
+                            exit_code: output.exit_code.expect("checked exit"),
+                            tools: &tools,
+                            coverage,
+                        },
+                    )
+                    .await
+                }
+                .await;
+                match facts {
+                    Ok(facts) => {
+                        evidence.tool_facts = Some(facts);
+                        result.complete();
+                        evidence.receipt = Some(super::fact_execution::Receipt::new(
+                            executable, tools, &result,
+                        ));
+                    }
+                    Err(error) => result.block(ExecutionStatus::ToolError, format!("{error:#}")),
+                }
+                return result;
+            }
             match test_counts {
                 Ok(Some(tests)) => {
                     result
@@ -324,7 +505,7 @@ async fn execute_checked(
                     "exit-code",
                 ));
             }
-            let findings = match crate::application::generated_reports::collect(
+            let reports = match crate::application::generated_reports::collect_with_evidence(
                 check,
                 workspace,
                 artifacts,
@@ -334,12 +515,14 @@ async fn execute_checked(
             )
             .await
             {
-                Ok(findings) => findings,
+                Ok(reports) => reports,
                 Err(error) => {
                     result.block(ExecutionStatus::ToolError, format!("{error:#}"));
                     return result;
                 }
             };
+            let findings = reports.findings;
+            evidence.coverage = reports.coverage;
             if output
                 .exit_code
                 .is_some_and(|code| check.findings_exit_codes.contains(&code))
@@ -368,7 +551,7 @@ async fn execute_checked(
                     );
                     return result;
                 }
-                if let Err(error) = crate::application::project_reports::collect(
+                match crate::application::project_reports::collect(
                     check,
                     workspace,
                     artifacts,
@@ -378,11 +561,19 @@ async fn execute_checked(
                 )
                 .await
                 {
-                    result.block(ExecutionStatus::ToolError, format!("{error:#}"));
-                    return result;
+                    Ok(projects) => evidence.projects = projects,
+                    Err(error) => {
+                        result.block(ExecutionStatus::ToolError, format!("{error:#}"));
+                        return result;
+                    }
                 }
             }
             result.complete();
+            if evidence.coverage.is_some() || !evidence.projects.is_empty() {
+                evidence.receipt = Some(super::fact_execution::Receipt::new(
+                    executable, tools, &result,
+                ));
+            }
         }
         Err(error) => result.block(ExecutionStatus::ToolError, format!("{error:#}")),
     }

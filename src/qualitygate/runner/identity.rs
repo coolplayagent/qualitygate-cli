@@ -30,6 +30,12 @@ pub async fn selected_evaluator(path: &Path) -> Result<Artifact> {
     tokio::task::spawn_blocking(move || identify(&path, 1024 * 1024 * 1024)).await?
 }
 
+/// Hash a retained ordinary evidence file without treating it as an executable.
+pub async fn evidence(path: &Path) -> Result<Artifact> {
+    let path = path.to_owned();
+    tokio::task::spawn_blocking(move || identify(&path, 32 * 1024 * 1024)).await?
+}
+
 fn identify(path: &Path, limit: u64) -> Result<Artifact> {
     let started = std::time::Instant::now();
     // Opening a FIFO can block before any read or elapsed-time check. Follow

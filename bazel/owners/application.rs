@@ -39,6 +39,7 @@ pub mod check_planning {
     pub use qualitygate_config::check_planning::project_inventory;
     pub use qualitygate_config::check_planning::python;
     pub use qualitygate_config::check_planning::runtime_validation;
+    pub use qualitygate_config::check_planning::tool_facts;
     pub use qualitygate_config::check_planning::validation;
     pub use qualitygate_config::check_planning::yaml_budget;
     pub use qualitygate_config::check_planning::yaml_scalar_work;
@@ -93,6 +94,14 @@ pub mod external_acceptance {
 pub mod gate_execution {
     #[path = "commands.rs"]
     pub mod commands;
+    #[path = "execution_outcome.rs"]
+    pub mod execution_outcome;
+    #[path = "fact_execution.rs"]
+    pub mod fact_execution;
+    #[path = "fact_revalidation.rs"]
+    pub mod fact_revalidation;
+    #[path = "native_runtime.rs"]
+    pub mod native_runtime;
     #[path = "python_install.rs"]
     pub mod python_install;
     #[path = "rule_execution.rs"]
@@ -184,6 +193,8 @@ pub mod repair_feedback {
 
 #[path = "../../src/qualitygate/report_evidence"]
 pub mod report_evidence {
+    #[path = "coverage_observation.rs"]
+    pub mod coverage_observation;
     pub use qualitygate_adapters::report_evidence::diagnostic_budget;
     pub use qualitygate_adapters::report_evidence::tool_reports;
     #[path = "coverage_gate.rs"]
@@ -219,6 +230,7 @@ pub mod resource_selection {
 
 #[path = "../../src/qualitygate/rule_catalog"]
 pub mod rule_catalog {
+    pub use qualitygate_config::rule_catalog::tool_source_validation;
     #[path = "rule_context.rs"]
     pub mod rule_context;
     pub use qualitygate_config::rule_catalog::builtin_compatibility;
@@ -238,6 +250,8 @@ pub mod rule_catalog {
     pub use qualitygate_domain::rule_catalog::normative;
     pub use qualitygate_domain::rule_catalog::operator;
     pub use qualitygate_domain::rule_catalog::operator_v3;
+    pub use qualitygate_domain::rule_catalog::operator_v4;
+    pub use qualitygate_domain::rule_catalog::operator_v4_types;
     pub use qualitygate_domain::rule_catalog::rule_guidance;
     pub use qualitygate_domain::rule_catalog::rule_lifecycle;
     pub use qualitygate_domain::rule_catalog::rule_parameters;
@@ -255,6 +269,8 @@ pub mod rule_evaluation {
     pub use qualitygate_adapters::rule_evaluation::native_syntax;
     pub use qualitygate_adapters::rule_evaluation::operators_v2;
     pub use qualitygate_adapters::rule_evaluation::operators_v3;
+    pub use qualitygate_adapters::rule_evaluation::operators_v4;
+    pub use qualitygate_adapters::rule_evaluation::operators_v4_facts;
     pub use qualitygate_adapters::rule_evaluation::project_checks;
     pub use qualitygate_adapters::rule_evaluation::shell_conventions;
     pub use qualitygate_adapters::rule_evaluation::structure_rules;
@@ -318,4 +334,19 @@ pub mod test_effectiveness {
 pub mod xml_parsing {
     pub use qualitygate_adapters::xml_parsing::document;
     pub use qualitygate_domain::xml_parsing::xml_budget;
+}
+
+#[path = "../../src/qualitygate/tool_bridge"]
+pub mod tool_bridge {
+    #[path = "conversion.rs"]
+    pub mod conversion;
+}
+
+#[path = "../../src/qualitygate/tool_evidence"]
+pub mod tool_evidence {
+    pub use qualitygate_adapters::tool_evidence::inventory;
+    pub use qualitygate_adapters::tool_evidence::normalization;
+    pub use qualitygate_domain::tool_evidence::contracts;
+    pub use qualitygate_domain::tool_evidence::decimal;
+    pub use qualitygate_domain::tool_evidence::schema;
 }

@@ -2,6 +2,12 @@
 
 #[derive(Default)]
 pub struct RuleFacts<'a> {
+    pub tool_facts: Option<
+        &'a std::collections::BTreeMap<
+            String,
+            std::sync::Arc<crate::tool_evidence::contracts::ToolFacts>,
+        >,
+    >,
     pub syntax: Option<&'a crate::adapters::syntax::Cache>,
     pub projects: &'a [crate::domain::ProjectFacts],
     pub provenance: Option<&'a crate::adapters::provenance::ProvenanceFacts>,

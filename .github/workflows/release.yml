@@ -123,8 +123,10 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.msvc_arch }}
-      - name: Build release binary
-        run: cargo build --release --locked --target ${{ matrix.target }} --bin qualitygate
+      - name: Build both production binaries
+        run: cargo build --release --locked --target ${{ matrix.target }} --bins
+      # GitHub and Skill archives intentionally contain the primary CLI only.
+      # The bridge is available through Cargo/source installation; both are built above.
       - name: Smoke test Linux binary
         if: runner.os == 'Linux'
         run: target/${{ matrix.target }}/release/${{ env.BIN_NAME }} --version

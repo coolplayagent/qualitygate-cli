@@ -1,5 +1,15 @@
 // Explicit capability ownership for the flat business modules.
 // A module move must preserve its original dependency and I/O boundary.
+pub(super) const PRODUCTION_ENTRIES: &[(&str, &str, &str)] = &[
+    ("qualitygate", "lib", "src/qualitygate/lib.rs"),
+    ("qualitygate", "bin", "src/qualitygate/main.rs"),
+    (
+        "qualitygate-tool-bridge",
+        "bin",
+        "src/qualitygate/tool_bridge/main.rs",
+    ),
+];
+
 pub(super) const SINGLE_MODULE_FEATURES: &[(&str, &str)] = &[("content_digest", "domain")];
 
 pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
@@ -33,6 +43,7 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("runtime_contracts", "domain"),
             ("runtime_validation", "config"),
             ("validation", "config"),
+            ("tool_facts", "config"),
             ("yaml_budget", "config"),
             ("yaml_scalar_work", "config"),
         ],
@@ -86,6 +97,10 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("python_install", "application"),
             ("rule_execution", "application"),
             ("tool_evidence", "application"),
+            ("fact_execution", "application"),
+            ("fact_revalidation", "application"),
+            ("native_runtime", "application"),
+            ("execution_outcome", "application"),
             ("workflow", "application"),
         ],
     ),
@@ -169,6 +184,7 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
         &[
             ("coverage", "domain"),
             ("coverage_gate", "application"),
+            ("coverage_observation", "application"),
             ("decision_envelope", "domain"),
             ("decision_schema", "config"),
             ("diagnostic_budget", "adapters"),
@@ -210,6 +226,8 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("normative", "domain"),
             ("operator", "domain"),
             ("operator_v3", "domain"),
+            ("operator_v4", "domain"),
+            ("operator_v4_types", "domain"),
             ("parameters", "config"),
             ("project_rules", "config"),
             ("rule_authoring", "config"),
@@ -221,6 +239,7 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("rule_query", "config"),
             ("rule_schema", "config"),
             ("rule_validation", "domain"),
+            ("tool_source_validation", "config"),
         ],
     ),
     (
@@ -235,6 +254,8 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("native_syntax", "adapters"),
             ("operators_v2", "adapters"),
             ("operators_v3", "adapters"),
+            ("operators_v4", "adapters"),
+            ("operators_v4_facts", "adapters"),
             ("project_checks", "adapters"),
             ("shell_conventions", "adapters"),
             ("structure_rules", "adapters"),
@@ -278,6 +299,23 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("language_shell", "adapters"),
             ("syntax", "adapters"),
         ],
+    ),
+    (
+        "tool_evidence",
+        &[
+            ("contracts", "domain"),
+            ("decimal", "domain"),
+            ("schema", "domain"),
+            ("crapper", "adapters"),
+            ("dryer", "adapters"),
+            ("edn", "adapters"),
+            ("inventory", "adapters"),
+            ("normalization", "adapters"),
+        ],
+    ),
+    (
+        "tool_bridge",
+        &[("cli", "interfaces"), ("conversion", "application")],
     ),
     (
         "test_effectiveness",

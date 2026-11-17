@@ -212,7 +212,7 @@ workflow. V1 rejects `expression`; generation does not enable the rule.
 
 `rules.operators.v3` adds an independent `schema_version: 3` contract, exported
 by `schema operator-rule-v3`. V1/V2 behavior and `schema operator-rule` stay
-unchanged. The family schema includes all three versions. Use the matching
+unchanged. The family schema includes the supported versions. Use the matching
 precompiled qualitygate binary; no Rust, Node.js or Python runtime is needed.
 Confirm `rules.operators.v3` in `qualitygate capabilities --format json` before
 using V3 rules; a matching version number alone does not establish support.
@@ -246,6 +246,26 @@ preserves first occurrence order and source origins. Few subset lookups scan
 directly to avoid sorting a large right operand. Both set operands are fully
 evaluated; an empty left subset needs no lookup index. Larger inputs can still
 exhaust a budget and remain incomplete.
+
+## V4: typed tool-fact assertions
+
+The development runtime advertises `rules.operators.v4` and exports
+`schema operator-rule-v4`. V4 introduces `assertion` and `fact_sources`, while
+preserving V1–V3 schema bytes and semantics. Tool sources explicitly bind a
+producer dependency, fact schema, project/target/configuration and measurement.
+Numeric and clone fields have closed types; counts and canonical bounded
+decimals compare exactly without converting strings or changing units.
+
+A producer pass establishes complete collection. A consumer rule can fail a
+threshold against that same collection, and multiple rules can reuse it during
+one run. Missing/stale evidence blocks consumers. Clone acquisition filters
+must cover the explicitly requested source universe; verified empty collections
+retain normal `all`/`any`/`count` semantics. Neither support nor complete tool
+execution establishes that every design principle is satisfied.
+
+See [the V4 reference and example](../../../skills/qualitygate-cli/references/operators-v4.md)
+for fields, exact decimals, selection bounds and resource limits. Use the
+matching runtime; this documentation does not upgrade an installed old package.
 
 ## Reports, file contracts, and triage
 

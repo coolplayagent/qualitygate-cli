@@ -1,5 +1,53 @@
 use super::*;
 
+#[cfg(unix)]
+#[tokio::test]
+async fn scoped_environment_does_not_modify_subsequent_processes_and_rejects_oversized_inputs() {
+    let directory = tempfile::tempdir().unwrap();
+    let argv = vec![
+        "sh".into(),
+        "-c".into(),
+        "printf %s \"$QUALITYGATE_RUNNER_SCOPED_EVIDENCE\"".into(),
+    ];
+    let before = capture(&argv, directory.path(), None, Duration::from_secs(2))
+        .await
+        .unwrap();
+    let overrides = std::collections::BTreeMap::from([(
+        "QUALITYGATE_RUNNER_SCOPED_EVIDENCE".into(),
+        "isolated-parser".into(),
+    )]);
+    let output = capture_with_env(
+        &argv,
+        directory.path(),
+        None,
+        Duration::from_secs(2),
+        &overrides,
+    )
+    .await
+    .unwrap();
+    assert_eq!(output.stdout, b"isolated-parser");
+    let after = capture(&argv, directory.path(), None, Duration::from_secs(2))
+        .await
+        .unwrap();
+    assert_eq!(before.stdout, after.stdout);
+    for (key, value) in [
+        ("bad=key".into(), "value".into()),
+        ("KEY".into(), "v".repeat(65_537)),
+    ] {
+        assert!(
+            capture_with_env(
+                &argv,
+                directory.path(),
+                None,
+                Duration::from_secs(2),
+                &std::collections::BTreeMap::from([(key, value)])
+            )
+            .await
+            .is_err()
+        );
+    }
+}
+
 #[tokio::test]
 async fn rejects_missing_executable_and_empty_argv() {
     let root = tempfile::tempdir().unwrap();

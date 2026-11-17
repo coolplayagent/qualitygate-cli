@@ -245,6 +245,15 @@ ownership table. Each of the four Miri shards lists its selected tests, rejects
 an empty selection, then runs the same selection; uploaded inventories make the
 executed scope reviewable. Miri and ASan remain separate from stable checks.
 
+
+The reviewed production entry inventory also includes `qualitygate-tool-bridge`.
+Its main delegates to `tool_bridge::cli` (interfaces); `tool_bridge::conversion`
+(application) owns bounded captured-file reads and calls the shared tool-evidence
+normalizer (adapters). Tool conversion never invokes a process and never upgrades
+caller-supplied provenance to trusted execution evidence. The Cargo metadata
+inventory and complete declared-module walk include both binaries; Bazel retains
+separate owner targets and a public `production_binaries` aggregate.
+
 ---
 
 [Previous: Process view](02-process-view.md) · [Contents](../README.md) · [Next: Physical view](04-physical-view.md)

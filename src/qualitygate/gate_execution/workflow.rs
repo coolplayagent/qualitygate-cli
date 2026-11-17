@@ -1,5 +1,9 @@
 //! Gate execution entry points.
 
+#[cfg(test)]
+#[path = "fact_workflow_tests.rs"]
+mod fact_workflow_tests;
+
 use crate::application::*;
 use crate::external_acceptance::provenance_preparation as provenance;
 use crate::resource_selection::snapshot_selection as change_selection;
@@ -177,13 +181,19 @@ pub(crate) async fn check_prepared(
     } else {
         None
     };
-    let rule_context = rule_execution::Context::new(Arc::clone(&snapshot));
+    let mut rule_context = rule_execution::Context::new(Arc::clone(&snapshot));
     let commands: std::collections::BTreeMap<_, _> = plan
         .commands
         .iter()
         .map(|command| (command.id.as_str(), command))
         .collect();
+    let operations: std::collections::BTreeMap<_, _> = plan
+        .order
+        .iter()
+        .filter_map(|id| plan.operation(id).map(|operation| (id, operation)))
+        .collect();
     for id in &plan.order {
+        let mut produced = super::execution_outcome::ProducedEvidence::default();
         if id == constraint::CHECK_ID {
             // Aggregate after final external-evidence revalidation can block producers.
             continue;
@@ -262,7 +272,7 @@ pub(crate) async fn check_prepared(
                 Err(result) => *result,
             }
         } else if let Some(command) = command
-            && command.kind == config::CheckKind::Manual
+            && operations[id] == config::PlannedOperation::Manual
             && invalid.is_empty()
         {
             manual::execute(
@@ -275,12 +285,12 @@ pub(crate) async fn check_prepared(
             )
             .await
         } else if let Some(command) = command
-            && command.compatibility.is_some()
+            && operations[id] == config::PlannedOperation::Compatibility
             && invalid.is_empty()
         {
             compatibility::execute(command, &directory, &snapshot).await
         } else if let Some(command) = command
-            && command.test_effectiveness.is_some()
+            && operations[id] == config::PlannedOperation::TestEffectiveness
             && invalid.is_empty()
         {
             test_effectiveness::execute(
@@ -295,7 +305,23 @@ pub(crate) async fn check_prepared(
         } else if let (Some(command), Some(workspace), Some(inputs)) =
             (command, &workspace, &input_guard)
         {
-            commands::execute(command, workspace.path(), &directory, &snapshot, inputs).await
+            let coverage = command
+                .tool_facts
+                .as_ref()
+                .and_then(|spec| spec.coverage_producer.as_ref())
+                .and_then(|id| rule_context.coverage.get(id));
+            let outcome = commands::execute_outcome(
+                command,
+                workspace.path(),
+                &directory,
+                &snapshot,
+                inputs,
+                None,
+                coverage,
+            )
+            .await;
+            produced = outcome.evidence;
+            outcome.check_result
         } else {
             let mut result = CheckResult::pending(id, required, severity);
             result.block(
@@ -352,6 +378,7 @@ pub(crate) async fn check_prepared(
             && result.verdict == Some(Verdict::Pass)
         {
             passing.insert(result.id.clone());
+            rule_context.publish(&result.id, produced);
         }
         results.push(result);
     }
@@ -420,6 +447,14 @@ pub(crate) async fn check_prepared(
     {
         invalid.push(format!("Active policy authorization is invalid: {error:#}"));
     }
+    super::fact_revalidation::finalize(
+        &plan,
+        &rule_context,
+        workspace.as_ref().map(|workspace| workspace.path()),
+        &mut results,
+        !invalid.is_empty(),
+    )
+    .await;
     let recheck = recheck_argv.unwrap_or_else(|| {
         recheck(
             &options,

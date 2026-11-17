@@ -104,6 +104,30 @@ Run the architecture test after owner or import changes. Run package and site
 tests after Skill, release, version, or documentation-entry changes. Bazel is a
 separate supported build surface; it does not replace the Cargo commands above.
 
+## Independent tool bridge
+
+The same Cargo package declares `qualitygate` and `qualitygate-tool-bridge`.
+`default-run = "qualitygate"` preserves `cargo run -- ...`; select the converter
+with `cargo run --bin qualitygate-tool-bridge -- --help`. It only normalizes
+captured regular files and never invokes or installs upstream tools. Its unbound
+output is not evidence of execution against an accepted snapshot.
+
+Build both with `cargo build --bins` or `bazel build //:production_binaries`.
+`//:qualitygate-tool-bridge` selects the bridge alone; `//:qualitygate` retains its
+existing meaning. `bazel test //...` includes the independent bridge integration
+target as well as the existing capability unit tests. Cargo's existing `--bins`
+and `--all-targets` gates cover both entry points.
+
+`cargo package` includes both declared binary targets. `cargo install --path .
+--locked --bins --root <isolated-directory>` installs both; `--bin qualitygate`
+selects only the primary CLI. The CI package job verifies both installed versions
+under temporary storage. GitHub release and Skill archives currently contain the
+primary CLI only; the bridge is built for release targets and can be installed
+from this source checkout with Cargo. Upstream tools are separate runtime prerequisites.
+
+The architecture gate compares Cargo's actual production-target inventory with
+reviewed roots, follows every binary and the library, and rejects undeclared
+entry points and source files outside declared production/test module trees.
 
 ## Maintain the documentation
 

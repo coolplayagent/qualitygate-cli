@@ -1,15 +1,21 @@
 //! Rule execution consumes facts only from explicitly declared passing producers.
 
+use super::execution_outcome::ProducedEvidence;
 use crate::{
     config::{RuleSetting, catalog::Entry},
     domain::*,
     snapshot::Snapshot,
 };
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub(crate) struct Context {
     snapshot: Arc<Snapshot>,
     syntax: Arc<crate::adapters::syntax::Cache>,
+    projects: BTreeMap<String, Vec<ProjectFacts>>,
+    pub(crate) tool_facts: BTreeMap<String, Arc<crate::tool_evidence::contracts::ToolFacts>>,
+    pub(crate) coverage: BTreeMap<String, crate::tool_evidence::contracts::CoverageEvidence>,
+    pub(crate) receipts: BTreeMap<String, super::fact_execution::Receipt>,
 }
 
 impl Context {
@@ -17,6 +23,25 @@ impl Context {
         Self {
             snapshot,
             syntax: Arc::new(crate::adapters::syntax::Cache::default()),
+            projects: BTreeMap::new(),
+            tool_facts: BTreeMap::new(),
+            coverage: BTreeMap::new(),
+            receipts: BTreeMap::new(),
+        }
+    }
+
+    pub(crate) fn publish(&mut self, id: &str, evidence: ProducedEvidence) {
+        if let Some(receipt) = evidence.receipt {
+            self.receipts.insert(id.into(), receipt);
+        }
+        if let Some(coverage) = evidence.coverage {
+            self.coverage.insert(id.into(), coverage);
+        }
+        if !evidence.projects.is_empty() {
+            self.projects.insert(id.into(), evidence.projects);
+        }
+        if let Some(facts) = evidence.tool_facts {
+            self.tool_facts.insert(id.into(), Arc::new(facts));
         }
     }
 }
@@ -42,10 +67,27 @@ pub(crate) async fn execute(
         .iter()
         .filter(|result| setting.depends_on.contains(&result.id))
     {
-        if let Some(value) = producer.metadata.get("projects") {
-            projects.extend(serde_json::from_value::<Vec<ProjectFacts>>(value.clone())?);
+        if producer.execution.status == ExecutionStatus::Completed
+            && producer.verdict == Some(Verdict::Pass)
+            && let Some(facts) = context.projects.get(&producer.id)
+        {
+            projects.extend(facts.clone());
         }
     }
+    let tool_facts: BTreeMap<_, _> = previous
+        .iter()
+        .filter(|result| {
+            setting.depends_on.contains(&result.id)
+                && result.execution.status == ExecutionStatus::Completed
+                && result.verdict == Some(Verdict::Pass)
+        })
+        .filter_map(|result| {
+            context
+                .tool_facts
+                .get(&result.id)
+                .map(|facts| (result.id.clone(), facts.clone()))
+        })
+        .collect();
     tokio::task::spawn_blocking(move || {
         let git = if crate::adapters::git_trailers::needed(&setting, &entry) {
             match &git_input {
@@ -71,6 +113,7 @@ pub(crate) async fn execute(
             projects: &projects,
             provenance: provenance.as_ref(),
             git_trailers: git,
+            tool_facts: Some(&tool_facts),
         };
         let mut result = if let Some(rule) = &entry.custom {
             crate::adapters::custom_rules::evaluate_with_context(rule, &setting, &snapshot, &facts)
@@ -123,8 +166,7 @@ mod tests {
     use serde_json::json;
 
     #[tokio::test]
-    async fn rule_evaluation_consumes_only_declared_project_producers_and_rejects_malformed_facts()
-    {
+    async fn rule_evaluation_ignores_untyped_display_metadata_even_from_declared_producers() {
         let root = tempfile::tempdir().unwrap();
         let context = Context::new(Arc::new(crate::application::test_support::snapshot(
             root.path(),
@@ -151,19 +193,18 @@ mod tests {
         .unwrap();
         assert_eq!(ignored.execution.status, ExecutionStatus::Completed);
         setting.depends_on = vec!["producer".into()];
-        assert!(
-            execute(
-                "line-ending",
-                &setting,
-                entry,
-                &context,
-                std::slice::from_ref(&producer),
-                None,
-                None
-            )
-            .await
-            .is_err()
-        );
+        let untrusted = execute(
+            "line-ending",
+            &setting,
+            entry,
+            &context,
+            std::slice::from_ref(&producer),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(untrusted.verdict, Some(Verdict::Pass));
         producer.metadata.insert("projects".into(), json!([]));
         let result = execute(
             "line-ending",

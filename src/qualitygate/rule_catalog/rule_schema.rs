@@ -18,6 +18,18 @@ const OPERATOR_SCHEMA: &str =
 const V3_SCHEMA: &str =
     include_str!("../../../skills/qualitygate-cli/references/schemas/operator-rule-v3.schema.json");
 pub const V3_SCHEMA_ID: &str = "urn:qualitygate:project-rule:3";
+const V4_SCHEMA: &str =
+    include_str!("../../../skills/qualitygate-cli/references/schemas/operator-rule-v4.schema.json");
+pub const V4_SCHEMA_ID: &str = "urn:qualitygate:project-rule:4";
+static V4_VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> = LazyLock::new(|| {
+    let schema: Value = serde_json::from_str(V4_SCHEMA).map_err(|e| e.to_string())?;
+    jsonschema::draft202012::new(&schema).map_err(|e| e.to_string())
+});
+fn v4_validator() -> Result<&'static jsonschema::Validator> {
+    V4_VALIDATOR
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("Bundled v4 schema could not be compiled: {e}"))
+}
 static V3_VALIDATOR: LazyLock<Result<jsonschema::Validator, String>> = LazyLock::new(|| {
     let schema: Value = serde_json::from_str(V3_SCHEMA).map_err(|e| e.to_string())?;
     jsonschema::draft202012::new(&schema).map_err(|e| e.to_string())
@@ -61,6 +73,10 @@ pub fn document_version(version: u32) -> Result<Value> {
             v3_validator()?;
             Ok(serde_json::from_str(V3_SCHEMA)?)
         }
+        4 => {
+            v4_validator()?;
+            Ok(serde_json::from_str(V4_SCHEMA)?)
+        }
         _ => bail!("Unsupported project-rule schema version: {version}"),
     }
 }
@@ -74,6 +90,10 @@ pub fn schema_identity(version: u32) -> Result<(&'static str, String)> {
         3 => Ok((
             V3_SCHEMA_ID,
             crate::domain::digest::sha256(V3_SCHEMA.as_bytes()),
+        )),
+        4 => Ok((
+            V4_SCHEMA_ID,
+            crate::domain::digest::sha256(V4_SCHEMA.as_bytes()),
         )),
         _ => bail!("Unsupported project-rule schema version: {version}"),
     }
@@ -107,7 +127,7 @@ pub fn family_document() -> Result<Value> {
         }
     }
     let mut definitions = serde_json::Map::new();
-    for version in [1, 2, 3] {
+    for version in [1, 2, 3, 4] {
         let name = format!("v{version}");
         let mut value = document_version(version)?;
         value
@@ -118,7 +138,7 @@ pub fn family_document() -> Result<Value> {
         definitions.insert(name, value);
     }
     let document = serde_json::json!({"$schema":"https://json-schema.org/draft/2020-12/schema","$id":FAMILY_SCHEMA_ID,
-        "$defs":definitions,"oneOf":[{"$ref":"#/$defs/v1"},{"$ref":"#/$defs/v2"},{"$ref":"#/$defs/v3"}]});
+        "$defs":definitions,"oneOf":[{"$ref":"#/$defs/v1"},{"$ref":"#/$defs/v2"},{"$ref":"#/$defs/v3"},{"$ref":"#/$defs/v4"}]});
     jsonschema::draft202012::new(&document)?;
     Ok(document)
 }
@@ -191,9 +211,11 @@ pub fn inspect_versioned(bytes: &[u8]) -> Result<(u32, Option<CustomRule>, Vec<R
     let version = match value.get("schema_version").and_then(Value::as_u64) {
         Some(2) => 2,
         Some(3) => 3,
+        Some(4) => 4,
         _ => 1,
     };
     let validator = match version {
+        4 => v4_validator()?,
         3 => v3_validator()?,
         2 => operator_validator()?,
         _ => validator()?,
@@ -254,13 +276,13 @@ mod scenario_tests {
         assert_eq!(family["$id"], FAMILY_SCHEMA_ID);
         let validator = jsonschema::draft202012::new(&family).unwrap();
         assert!(!validator.is_valid(&serde_json::json!({"schema_version":99})));
-        for version in [1, 2, 3] {
+        for version in [1, 2, 3, 4] {
             let (id, digest) = schema_identity(version).unwrap();
             assert_eq!(document_version(version).unwrap()["$id"], id);
             assert_eq!(digest.len(), 71);
         }
         assert_eq!(family_digest().unwrap(), family_digest().unwrap());
-        assert!(schema_identity(4).is_err());
+        assert!(schema_identity(5).is_err());
         assert!(document_version(0).is_err());
     }
 

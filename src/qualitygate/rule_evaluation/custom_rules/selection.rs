@@ -54,6 +54,14 @@ impl Budget {
         self.bytes = bytes;
         Ok(())
     }
+
+    pub(super) fn reserve_bytes(&mut self, retained: usize) -> Result<()> {
+        self.check()?;
+        let bytes = self.bytes.saturating_add(retained);
+        ensure!(bytes <= MAX_FACT_BYTES, "Named sources exceed 32 MiB facts");
+        self.bytes = bytes;
+        Ok(())
+    }
 }
 
 pub(super) fn collect(

@@ -9,6 +9,8 @@ pub(crate) mod markers;
 pub(crate) mod native_syntax;
 pub mod operators_v2;
 pub mod operators_v3;
+pub mod operators_v4;
+pub mod operators_v4_facts;
 pub(crate) mod project_checks;
 pub(crate) mod shell_conventions;
 pub(crate) mod structure_rules;

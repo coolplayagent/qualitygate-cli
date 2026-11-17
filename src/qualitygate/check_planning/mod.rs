@@ -13,6 +13,7 @@ pub(crate) mod project_inventory;
 pub(crate) mod python;
 pub mod runtime_contracts;
 pub mod runtime_validation;
+pub(crate) mod tool_facts;
 pub(crate) mod validation;
 pub(crate) mod yaml_budget;
 pub(crate) mod yaml_scalar_work;

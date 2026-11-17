@@ -35,6 +35,7 @@ pub mod check_planning {
     pub use qualitygate_config::check_planning::project_inventory;
     pub use qualitygate_config::check_planning::python;
     pub use qualitygate_config::check_planning::runtime_validation;
+    pub use qualitygate_config::check_planning::tool_facts;
     pub use qualitygate_config::check_planning::validation;
     pub use qualitygate_config::check_planning::yaml_budget;
     pub use qualitygate_config::check_planning::yaml_scalar_work;
@@ -84,6 +85,9 @@ pub mod external_acceptance {
 #[path = "../../src/qualitygate/gate_execution"]
 pub mod gate_execution {
     pub use qualitygate_application::gate_execution::commands;
+    pub use qualitygate_application::gate_execution::execution_outcome;
+    pub use qualitygate_application::gate_execution::fact_execution;
+    pub use qualitygate_application::gate_execution::fact_revalidation;
     pub use qualitygate_application::gate_execution::python_install;
     pub use qualitygate_application::gate_execution::rule_execution;
     pub use qualitygate_application::gate_execution::tool_evidence;
@@ -193,11 +197,14 @@ pub mod rule_catalog {
     pub use qualitygate_config::rule_catalog::rule_management;
     pub use qualitygate_config::rule_catalog::rule_query;
     pub use qualitygate_config::rule_catalog::rule_schema;
+    pub use qualitygate_config::rule_catalog::tool_source_validation;
     pub use qualitygate_domain::rule_catalog::category;
     pub use qualitygate_domain::rule_catalog::language;
     pub use qualitygate_domain::rule_catalog::normative;
     pub use qualitygate_domain::rule_catalog::operator;
     pub use qualitygate_domain::rule_catalog::operator_v3;
+    pub use qualitygate_domain::rule_catalog::operator_v4;
+    pub use qualitygate_domain::rule_catalog::operator_v4_types;
     pub use qualitygate_domain::rule_catalog::rule_guidance;
     pub use qualitygate_domain::rule_catalog::rule_lifecycle;
     pub use qualitygate_domain::rule_catalog::rule_parameters;
@@ -243,4 +250,18 @@ pub mod test_effectiveness {
 #[path = "../../src/qualitygate/xml_parsing"]
 pub mod xml_parsing {
     pub use qualitygate_domain::xml_parsing::xml_budget;
+}
+
+#[path = "../../src/qualitygate/tool_bridge"]
+pub mod tool_bridge {
+    #[path = "cli.rs"]
+    pub mod cli;
+    pub use qualitygate_application::tool_bridge::conversion;
+}
+
+#[path = "../../src/qualitygate/tool_evidence"]
+pub mod tool_evidence {
+    pub use qualitygate_domain::tool_evidence::contracts;
+    pub use qualitygate_domain::tool_evidence::decimal;
+    pub use qualitygate_domain::tool_evidence::schema;
 }

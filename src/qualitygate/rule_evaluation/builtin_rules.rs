@@ -77,6 +77,7 @@ pub fn evaluate_with_facts(
             provenance,
             git_trailers: None,
             syntax: None,
+            tool_facts: None,
         },
     )
 }

@@ -3,6 +3,7 @@
 
 pub mod coverage;
 pub(crate) mod coverage_gate;
+pub(crate) mod coverage_observation;
 pub mod decision_envelope;
 pub mod decision_schema;
 pub mod diagnostic_budget;

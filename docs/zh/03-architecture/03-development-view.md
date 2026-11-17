@@ -190,6 +190,13 @@ Miri 使用工作流中已审查的纯模块清单，架构门禁要求该清单
 完全一致。四个分片均先列出所选测试并拒绝空选择，再执行同一选择；上传的测试清单
 保留可审查的执行范围。Miri、ASan 继续与稳定工具链检查分开运行。
 
+
+生产入口评审清单同时包含 `qualitygate-tool-bridge`。其 main 委托
+`tool_bridge::cli`（interfaces），`tool_bridge::conversion`（application）
+负责有界读取已采集文件并调用共享工具事实归一化器（adapters）。格式转换不执行进程，
+也不把调用方自报来源升级为可信执行证据。Cargo metadata 清单及完整声明模块扫描覆盖
+两个 binary；Bazel 保留独立 owner target 和公开的 `production_binaries` 聚合入口。
+
 ---
 
 [上一章：进程视图](02-process-view.md) · [全书目录](../README.md) · [下一章：物理视图](04-physical-view.md)

@@ -883,6 +883,13 @@ impl Catalog {
                     "Custom rule {id} declares assertions in its definition; parameters are unsupported"
                 );
             }
+            if let Some(rule) = &entry.custom {
+                crate::rule_catalog::tool_source_validation::validate_producers(
+                    rule,
+                    setting,
+                    &effective.checks,
+                )?;
+            }
             let mut parameters = defaults.parameters;
             parameters.extend(setting.parameters.clone());
             setting.parameters = parameters;

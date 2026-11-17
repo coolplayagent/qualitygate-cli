@@ -176,7 +176,7 @@ pub(crate) fn apply(
     Ok(spec.mode)
 }
 
-fn map_source(
+pub(crate) fn map_source(
     file: &str,
     data: &Data,
     snapshot: &Snapshot,

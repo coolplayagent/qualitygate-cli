@@ -2,7 +2,7 @@
 
 use crate::{
     config::{CommandCheck, ProjectSpec},
-    domain::CheckResult,
+    domain::{CheckResult, ProjectFacts},
     snapshot::Snapshot,
 };
 use anyhow::Result;
@@ -15,7 +15,7 @@ pub(crate) async fn collect(
     snapshot: &Arc<Snapshot>,
     stdout: &[u8],
     result: &mut CheckResult,
-) -> Result<()> {
+) -> Result<Vec<ProjectFacts>> {
     let mut facts = Vec::new();
     for (index, project) in check.projects.iter().enumerate() {
         let ProjectSpec::Maven(project) = project else {
@@ -81,9 +81,9 @@ pub(crate) async fn collect(
     if !facts.is_empty() {
         result
             .metadata
-            .insert("projects".into(), serde_json::to_value(facts)?);
+            .insert("projects".into(), serde_json::to_value(&facts)?);
     }
-    Ok(())
+    Ok(facts)
 }
 
 #[cfg(test)]

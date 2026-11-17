@@ -29,7 +29,7 @@ jobs:
           cache-save: ${{ github.event_name != 'pull_request' }}
       - name: Verify locked Bazel module graph
         run: bazel mod deps --lockfile_mode=error
-      - name: Build CLI from Cargo-resolved dependencies
-        run: bazel build --lockfile_mode=error //:qualitygate
+      - name: Build production binaries from Cargo-resolved dependencies
+        run: bazel build --lockfile_mode=error //:production_binaries
       - name: Run Bazel tests
-        run: bazel test --lockfile_mode=error //:unit_tests //:bazel_contract_test //:doctor_test
+        run: bazel test --lockfile_mode=error //...

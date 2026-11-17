@@ -1,3 +1,4 @@
+use super::tool_source_validation::source_types;
 use crate::config::CustomRule;
 use crate::config::constraints;
 use anyhow::{Result, bail};
@@ -5,11 +6,24 @@ use std::collections::BTreeSet;
 
 pub(crate) fn validate(rule: &CustomRule) -> Result<()> {
     constraints::id(&rule.id)?;
-    if ![1, 2, 3].contains(&rule.schema_version) {
+    if ![1, 2, 3, 4].contains(&rule.schema_version) {
         bail!(
             "Unsupported custom rule schema_version: {}",
             rule.schema_version
         );
+    }
+    if rule.schema_version == 4 {
+        if rule.expression.is_some() {
+            bail!("Project-rule v4 uses assertion, not legacy expression");
+        }
+        let types = source_types(rule)?;
+        rule.assertion
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Project-rule v4 requires assertion"))?
+            .validate(&types)
+            .map_err(anyhow::Error::msg)?;
+    } else if rule.assertion.is_some() || !rule.fact_sources.is_empty() {
+        bail!("Typed tool facts and assertion require project-rule v4");
     }
     match (rule.schema_version, &rule.expression) {
         (1, Some(_)) => bail!("Project-rule v1 cannot contain expression"),
@@ -29,7 +43,7 @@ pub(crate) fn validate(rule: &CustomRule) -> Result<()> {
         }
         _ => {}
     }
-    if rule.schema_version != 3 && !rule.sources.is_empty() {
+    if ![3, 4].contains(&rule.schema_version) && !rule.sources.is_empty() {
         bail!("Named sources require project-rule v3");
     }
     for source in rule.sources.values() {
@@ -98,6 +112,7 @@ pub(crate) fn validate(rule: &CustomRule) -> Result<()> {
         }
     }
     if rule.expression.is_none()
+        && rule.assertion.is_none()
         && !rule.then.require_marker
         && rule.then.require_dependency.is_none()
         && rule.then.name_pattern.is_none()

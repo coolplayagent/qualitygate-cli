@@ -67,6 +67,7 @@ pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
         validate_id(&check.id)?;
         crate::config::compatibility::validate(check)?;
         crate::config::test_effectiveness::validate(check)?;
+        crate::check_planning::tool_facts::validate(check, config)?;
         if !ids.insert(&check.id) {
             bail!("Duplicate check id: {}", check.id);
         }
@@ -147,7 +148,7 @@ pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
         }
         let mut findings = BTreeSet::new();
         for code in &check.findings_exit_codes {
-            if check.reports.is_empty()
+            if (check.reports.is_empty() && check.tool_facts.is_none())
                 || *code == check.expected_exit_code
                 || !findings.insert(code)
             {

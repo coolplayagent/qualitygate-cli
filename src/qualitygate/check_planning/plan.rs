@@ -2,6 +2,16 @@ use crate::config::*;
 use anyhow::{Context, Result, bail};
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Execution mode resolved during planning; tools remain command output contracts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlannedOperation {
+    Rule,
+    Command,
+    Manual,
+    Compatibility,
+    TestEffectiveness,
+}
+
 #[derive(Debug, Clone)]
 pub struct Plan {
     pub rules: BTreeMap<String, RuleSetting>,
@@ -40,6 +50,26 @@ fn validate_task(task: &TaskContract) -> Result<()> {
 }
 
 impl Plan {
+    pub fn operation(&self, id: &str) -> Option<PlannedOperation> {
+        if self.rules.contains_key(id) {
+            return Some(PlannedOperation::Rule);
+        }
+        self.commands
+            .iter()
+            .find(|command| command.id == id)
+            .map(|command| {
+                if command.kind == CheckKind::Manual {
+                    PlannedOperation::Manual
+                } else if command.compatibility.is_some() {
+                    PlannedOperation::Compatibility
+                } else if command.test_effectiveness.is_some() {
+                    PlannedOperation::TestEffectiveness
+                } else {
+                    PlannedOperation::Command
+                }
+            })
+    }
+
     pub fn build(config: &Config, task: Option<&TaskContract>, profile: &str) -> Result<Self> {
         if !["quick", "full"].contains(&profile) {
             bail!("Unknown profile: {profile}");
@@ -64,6 +94,7 @@ impl Plan {
                     depends_on: v.depends_on.clone(),
                     reports: v.reports.clone(),
                     projects: v.projects.clone(),
+                    tool_facts: v.tool_facts.clone(),
                     expected_exit_code: v.expected_exit_code,
                     findings_exit_codes: v.findings_exit_codes.clone(),
                     tools: v.tools.clone(),

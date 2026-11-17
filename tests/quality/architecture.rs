@@ -32,6 +32,10 @@ const OWNERS: &[(&str, &[&str])] = &[
 #[path = "architecture_owners.rs"]
 mod owner_contract;
 use owner_contract::{FEATURES, SINGLE_MODULE_FEATURES};
+#[path = "architecture_entries.rs"]
+mod entries;
+#[path = "architecture_sources.rs"]
+mod source_inventory;
 
 fn owner_of(location: &[String]) -> Option<&str> {
     let first = location.first()?.as_str();
@@ -388,22 +392,26 @@ fn architecture_rejects_cli_framework_and_path_io_in_pure_owners() {
     }
 }
 
-#[test]
-fn architecture_module_graph_is_acyclic_and_respects_owners() {
+#[tokio::test]
+async fn architecture_module_graph_is_acyclic_and_respects_owners() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut graph = Graph::default();
-    graph.load(root, root.join("src/qualitygate/lib.rs"), vec![]);
-    graph.load(
-        root,
-        root.join("src/qualitygate/main.rs"),
-        vec!["main".into()],
-    );
+    let entries = entries::production_entries(root).await;
+    for (_, kind, path) in &entries {
+        let location = if kind == "lib" {
+            vec![]
+        } else {
+            vec!["main".into()]
+        };
+        graph.load(root, root.join(path), location);
+    }
+    source_inventory::assert_complete(root, &entries);
     let errors = graph.violations();
     let output = root.join("target/architecture");
     std::fs::create_dir_all(&output).unwrap();
     std::fs::write(output.join("report.json"), serde_json::to_vec_pretty(&serde_json::json!({
         "schema_version": 1, "scope": "production top-level Rust owners; all target/feature configurations",
-        "files": graph.files.len(), "sources": graph.sources, "edges": graph.edges, "violations": errors,
+        "entries": entries, "files": graph.files.len(), "sources": graph.sources, "edges": graph.edges, "violations": errors,
     })).unwrap()).unwrap();
     let edges: BTreeSet<_> = graph
         .edges

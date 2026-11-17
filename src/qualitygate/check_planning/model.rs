@@ -218,6 +218,8 @@ pub struct CommandCheck {
     pub reports: Vec<ReportSpec>,
     #[serde(default)]
     pub projects: Vec<ProjectSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_facts: Option<crate::tool_evidence::contracts::OutputSpec>,
     #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]
@@ -249,6 +251,12 @@ impl CommandCheck {
                 }
             })
             .chain(self.projects.iter().flat_map(|project| project.outputs()))
+            .chain(
+                self.tool_facts
+                    .iter()
+                    .filter(|output| !output.from_stdout)
+                    .map(|output| output.path.as_str()),
+            )
     }
 }
 
@@ -423,6 +431,8 @@ pub struct Verification {
     pub reports: Vec<ReportSpec>,
     #[serde(default)]
     pub projects: Vec<ProjectSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_facts: Option<crate::tool_evidence::contracts::OutputSpec>,
     #[serde(default)]
     pub expected_exit_code: i32,
     #[serde(default)]
@@ -462,6 +472,10 @@ pub struct CustomRule {
     pub then: Assertions,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expression: Option<crate::domain::operator_v3::Expr>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assertion: Option<crate::rule_catalog::operator_v4::Expr>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub fact_sources: BTreeMap<String, crate::rule_catalog::operator_v4::FactSource>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub sources: BTreeMap<String, RuleSource>,
     pub fix: String,
@@ -549,6 +563,8 @@ impl CustomRule {
         let mut rule = self.clone();
         rule.schema_version = 2;
         rule.sources.clear();
+        rule.fact_sources.clear();
+        rule.assertion = None;
         rule.language = source.language.clone();
         rule.when = source.when.clone();
         rule.applies_to = source.applies_to.clone();

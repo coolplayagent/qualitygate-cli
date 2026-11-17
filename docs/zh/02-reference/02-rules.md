@@ -167,7 +167,7 @@ expression:
 
 `rules.operators.v3` 提供独立的 `schema_version: 3` 契约，通过
 `schema operator-rule-v3` 导出。V1/V2 语义及 `schema operator-rule` 保持不变；
-family Schema 包含三个版本。使用匹配的预编译 qualitygate 即可，不需要安装 Rust、Node.js 或 Python。
+family Schema 包含受支持版本。使用匹配的预编译 qualitygate 即可，不需要安装 Rust、Node.js 或 Python。
 使用前通过 `qualitygate capabilities --format json` 确认包含 `rules.operators.v3`；
 版本号相同本身不能证明支持 V3。
 
@@ -190,6 +190,20 @@ V3 的 `distinct`、`subset` 使用有界标量索引减少重复的逐对比较
 `distinct` 保留首次出现顺序及原始来源。少量子集查询直接扫描，避免为大右集合额外排序。
 集合操作数仍完整求值；空左集合不构造无用索引。
 更大的输入仍可能耗尽预算，此时结果保持未完成。
+
+## V4：类型化工具事实断言
+
+开发版 runtime 提供 `rules.operators.v4` 能力及 `schema operator-rule-v4` 导出。
+V4 使用 `assertion` 和 `fact_sources`，保持 V1–V3 Schema 字节及原有语义。
+工具来源显式绑定 producer 依赖、事实 schema、project/target/configuration 和测量定义。
+字段类型封闭；整数与有界规范十进制精确比较，不将字符串转数字，不隐式换算单位。
+
+Producer pass 表示完整采集；消费规则可依据同一集合判定阈值 fail，多条规则可在一次运行内复用。
+缺失、过期和未完成事实阻断消费者。克隆采集筛选必须覆盖 source 声明的集合范围；
+完整空集合保持正常的 all/any/count 语义。工具支持与执行完成均不证明所有设计原则已满足。
+
+[V4 参考与示例](../../../skills/qualitygate-cli/references/operators-v4.md)说明字段、
+精确十进制、筛选边界和工作预算。须使用匹配的 runtime；文档不会升级已安装的旧包。
 
 ## 报告、文件契约与规则评估
 
