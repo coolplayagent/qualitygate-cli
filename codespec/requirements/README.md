@@ -14,6 +14,12 @@ This directory is governed by `codespec/codespec-map.yaml`. Update its map entry
 The normative product contract is [qualitygate-cli requirements](qualitygate-cli.md).
 Focused requirement documents refine that contract without replacing it.
 
+The [tool facts and composable assertions SPEC](tool-facts-and-assertions.md)
+defines draft TFA-01–TFA-08 contracts for external-tool facts, finite typed V4
+assertions, candidate adapters and a second Bazel entry point in the same Cargo
+package. It is **Draft / Not implemented**; all acceptance scenarios are planned,
+and existing V1–V3 behavior remains separate from these proposed capabilities.
+
 The [issue #4 requirement-to-test matrix](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md)
 tracks dynamic categories, evidence-linked candidates, protected validation,
 independent approval, versioned inheritance and longitudinal effectiveness.

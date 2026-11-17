@@ -2,6 +2,11 @@
 
 This directory is governed by `codespec/codespec-map.yaml`. Update its map entry through `relay-knowledge map directory` and keep reviewed source material within the declared content scope.
 
+The [tool facts and assertions design](tool-facts-and-assertions.md) is a draft,
+not an implemented capability. It maps the proposed typed tool evidence and V4
+assertions to existing capability owners, compatible report projections and
+independent Bazel targets, following the [requirements](../requirements/tool-facts-and-assertions.md).
+
 [Policy validation](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) specifies the immutable
 archive, protected operator inputs, shared snapshots, execution permits and
 signed promotion/rollback boundaries. The [architecture contract](../../docs/en/03-architecture/03-development-view.md)

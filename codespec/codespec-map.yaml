@@ -1,25 +1,27 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 7
-updated_at: unix:1794194814
+map_version: 9
+updated_at: unix:1794923209
 directories:
 - directory: requirements
-  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts.
+  purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and the draft tool-facts and assertions specification.
   content_scope:
   - codespec/requirements/**
   key_files:
   - codespec/requirements/README.md
   - codespec/requirements/qualitygate-cli.md
+  - codespec/requirements/tool-facts-and-assertions.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
 - directory: design
-  purpose: Architecture and implementation design records.
+  purpose: Architecture and implementation design records, including the draft typed-tool-evidence, V4 assertion and independent Bazel target design.
   content_scope:
   - codespec/design/**
   key_files:
   - codespec/design/README.md
+  - codespec/design/tool-facts-and-assertions.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -82,3 +84,11 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'test'.
+  - version: 8
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.
+  - version: 9
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'design'.
