@@ -4,6 +4,7 @@
 #[path = "fact_workflow_tests.rs"]
 mod fact_workflow_tests;
 
+use super::rule_dispatch;
 use crate::application::*;
 use crate::external_acceptance::provenance_preparation as provenance;
 use crate::resource_selection::snapshot_selection as change_selection;
@@ -181,7 +182,7 @@ pub(crate) async fn check_prepared(
     } else {
         None
     };
-    let mut rule_context = rule_execution::Context::new(Arc::clone(&snapshot));
+    let mut rule_context = rule_dispatch::Context::new(Arc::clone(&snapshot));
     let commands: std::collections::BTreeMap<_, _> = plan
         .commands
         .iter()
@@ -246,7 +247,7 @@ pub(crate) async fn check_prepared(
             .await
             {
                 Ok(proof) => {
-                    let mut result = rule_execution::execute(
+                    let mut result = rule_dispatch::execute(
                         id,
                         rule,
                         &catalog.entries[id],

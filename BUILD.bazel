@@ -47,6 +47,14 @@ alias(
     actual = "//src/qualitygate:qualitygate",
 )
 
+rust_test(
+    name = "rule_api_compatibility_test",
+    crate_root = "tests/rule_api_compatibility.rs",
+    srcs = ["tests/rule_api_compatibility.rs"],
+    edition = crate_edition(),
+    deps = [":qualitygate_lib", "@crates//:serde_json"],
+)
+
 rust_binary(
     name = "doctor_probe",
     srcs = ["tests/doctor/native_probe.rs"],

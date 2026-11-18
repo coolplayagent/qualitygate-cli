@@ -2,6 +2,7 @@
 
 use crate::{
     adapters,
+    builtin_rules::dispatch,
     config::{
         self, Config,
         catalog::Catalog,
@@ -11,6 +12,7 @@ use crate::{
         self, Decision, VerificationBoundary,
         selfcheck::{FixtureResult, SelfcheckReport, compare_golden},
     },
+    rule_engine::{custom_rules, evaluation_facts::RuleFacts},
     snapshot::{self, File, Snapshot},
 };
 use anyhow::{Context, Result, bail};
@@ -289,7 +291,7 @@ fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
                 }
             }
             let check = if let Some(custom) = custom {
-                adapters::custom_rules::evaluate_with_projects(
+                custom_rules::evaluate_with_projects(
                     custom,
                     &config::RuleSetting::default(),
                     &snapshot,
@@ -304,12 +306,12 @@ fn observe(case: &Case, catalog: &Catalog) -> Result<Value> {
                 let mut setting = builtin.defaults.clone();
                 setting.parameters.extend(parameters.clone());
                 let guidance = builtin.effective_diagnostic();
-                let mut result = adapters::rules::evaluate_with_guidance(
+                let mut result = dispatch::evaluate_with_guidance(
                     &case.fixture.rule,
                     &builtin.implementation,
                     &setting,
                     &snapshot,
-                    &adapters::facts::RuleFacts {
+                    &RuleFacts {
                         projects: &projects,
                         ..Default::default()
                     },

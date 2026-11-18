@@ -1,7 +1,6 @@
 //! Relate declarations to the last byte-changing commits of actual test entities.
 
 use crate::adapters::entity_changes;
-use crate::adapters::markers;
 use crate::adapters::syntax::Entity;
 use crate::{
     config::{Marker, RuleSetting, catalog::Entry},
@@ -115,7 +114,7 @@ impl GitFacts {
         }
         // Each contributing parent must independently satisfy the field contract.
         if declarations.iter().any(|value| {
-            let fields = markers::fields(value);
+            let fields = crate::source_analysis::declaration_fields::fields(value);
             marker.fields.iter().any(|field| {
                 fields
                     .get(field)

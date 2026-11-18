@@ -1,8 +1,8 @@
 //! Team rules over parsed entities, with baseline identity and language routing.
 
-use crate::adapters::rules::diagnostic;
 use crate::adapters::syntax::Entity;
 use crate::adapters::syntax::Structure;
+use crate::report_evidence::report::diagnostic;
 use crate::{config::RuleSetting, snapshot::Snapshot};
 use anyhow::{Context, Result, bail};
 use regex::Regex;
@@ -20,7 +20,7 @@ pub(crate) fn evaluate_with_provenance(
     result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
     let changes = collect(setting, snapshot, facts, result.deadline())?;
     match id {
@@ -36,7 +36,7 @@ pub(crate) fn evaluate_with_provenance(
 fn collect(
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
     deadline: std::time::Instant,
 ) -> Result<Vec<Change>> {
     let git = facts.git_trailers;
@@ -80,7 +80,7 @@ fn collect(
                             .context("Previous syntax is unavailable")?,
                         );
                     }
-                    let previous_declaration = crate::rule_evaluation::markers::bound_declaration(
+                    let previous_declaration = crate::rule_engine::markers::bound_declaration(
                         marker,
                         previous,
                         &previous_views[path],
@@ -91,7 +91,7 @@ fn collect(
                     if previous_declaration.is_some()
                         && (!snapshot.delivery()
                             || previous_declaration
-                                != crate::rule_evaluation::markers::bound_declaration(
+                                != crate::rule_engine::markers::bound_declaration(
                                     marker,
                                     &test.entity,
                                     &file.view,
@@ -176,7 +176,7 @@ fn imports(
     changes: &[Change],
     snapshot: &Snapshot,
 ) -> Result<()> {
-    let patterns = crate::adapters::rules::compiled_patterns(setting, "forbidden_imports")?;
+    let patterns = crate::builtin_rules::dispatch::compiled_patterns(setting, "forbidden_imports")?;
     for change in changes {
         result.check_deadline()?;
         let mut active = std::collections::BTreeSet::new();
@@ -356,7 +356,7 @@ fn markers(
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
     let provenance = facts.provenance;
     let marker = setting
@@ -385,7 +385,7 @@ fn markers(
             .chain(change.removed_declarations.iter().map(|test| (test, true)))
         {
             result.check_deadline()?;
-            let declaration = crate::rule_evaluation::markers::bound_declaration(
+            let declaration = crate::rule_engine::markers::bound_declaration(
                 &marker,
                 test,
                 &change.view,
@@ -403,7 +403,7 @@ fn markers(
             result.matched_entities += 1;
             let values = declaration
                 .as_deref()
-                .map(crate::rule_evaluation::markers::fields)
+                .map(crate::source_analysis::declaration_fields::fields)
                 .unwrap_or_default();
             let missing: Vec<_> = marker
                 .fields

@@ -1,14 +1,14 @@
 //! Acquires only declared, completed producer collections before V4 evaluation.
 use super::*;
 use crate::rule_catalog::operator_v4::{FactSchema, SourceType};
-use crate::rule_evaluation::operators_v4::{self, Collection, Record};
+use crate::rule_engine::operators_v4::{self, Collection, Record};
 use crate::tool_evidence::contracts::{FactRecord, Scope, ToolFacts};
 use anyhow::{Context, ensure};
 
 pub(super) fn evaluate(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
     primary: &[Subject],
     result: &mut CheckResult,
     budget: &mut selection::Budget,
@@ -330,7 +330,7 @@ mod tests {
             rule,
             &RuleSetting::default(),
             &snapshot(),
-            &crate::adapters::facts::RuleFacts {
+            &crate::rule_engine::evaluation_facts::RuleFacts {
                 tool_facts: inputs.as_ref(),
                 ..Default::default()
             },
@@ -537,7 +537,7 @@ mod tests {
                 &rule,
                 &RuleSetting::default(),
                 &snapshot(),
-                &crate::adapters::facts::RuleFacts {
+                &crate::rule_engine::evaluation_facts::RuleFacts {
                     tool_facts: Some(inputs),
                     ..Default::default()
                 },

@@ -1,5 +1,5 @@
 //! Complete-time evidence checks and transitive invalidation of fact consumers.
-use super::rule_execution::Context as RuleContext;
+use super::rule_dispatch::Context as RuleContext;
 use crate::{
     config::{CommandCheck, Plan},
     domain::{CheckResult, ExecutionStatus},

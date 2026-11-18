@@ -272,7 +272,7 @@ fn cases(result: &CheckResult) -> Result<Vec<TestCase>> {
 }
 
 fn violation(result: &mut CheckResult, file: Option<&str>, message: &str, kind: &str) {
-    result.diagnostics.push(crate::adapters::rules::diagnostic(
+    result.diagnostics.push(crate::report_evidence::report::diagnostic(
         &result.id, file, None, message.into(), json!({"assertion":kind}),
         "Add or repair a test that passes on the current code and asserts the changed behavior on the old code", &format!("{kind}:{}", file.unwrap_or("")),
     ));

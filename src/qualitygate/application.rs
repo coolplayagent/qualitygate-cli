@@ -10,7 +10,6 @@ pub(crate) use crate::external_acceptance::history_acquisition as git_trailers;
 pub(crate) use crate::external_acceptance::manual;
 pub(crate) use crate::gate_execution::commands;
 pub(crate) use crate::gate_execution::python_install;
-pub(crate) use crate::gate_execution::rule_execution;
 pub(crate) use crate::gate_execution::tool_evidence;
 pub use crate::judgment_review::assessment_workflow as judgment;
 pub use crate::pilot_acceptance::pilot_workflow as pilot;

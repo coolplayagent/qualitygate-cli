@@ -1,4 +1,5 @@
 use super::*;
+use crate::source_analysis::declaration_fields::fields;
 
 fn comment_marker() -> Marker {
     Marker {

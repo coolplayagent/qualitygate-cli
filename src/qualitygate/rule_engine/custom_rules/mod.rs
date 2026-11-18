@@ -1,9 +1,9 @@
 //! Versioned project rules over snapshot, Git and language facts.
 
 use crate::adapters::diagnostic_budget;
-use crate::adapters::rules::diagnostic;
 use crate::adapters::syntax;
-use crate::rule_evaluation::markers;
+use crate::report_evidence::report::diagnostic;
+use crate::rule_engine::markers;
 use crate::{
     config::{CustomRule, RuleSetting},
     domain::*,
@@ -67,7 +67,7 @@ pub fn evaluate_with_facts(
         rule,
         setting,
         snapshot,
-        &crate::adapters::facts::RuleFacts {
+        &crate::rule_engine::evaluation_facts::RuleFacts {
             projects,
             provenance,
             git_trailers: None,
@@ -81,7 +81,7 @@ pub fn evaluate_with_context(
     rule: &CustomRule,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::RuleFacts<'_>,
 ) -> CheckResult {
     facts.with_borrowed_projects(|borrowed| evaluate_borrowed(rule, setting, snapshot, borrowed))
 }
@@ -90,7 +90,7 @@ pub fn evaluate_borrowed(
     rule: &CustomRule,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
 ) -> CheckResult {
     let provenance = facts.provenance;
     let mut result = CheckResult::pending(&rule.id, setting.required, setting.severity);
@@ -120,7 +120,7 @@ pub fn evaluate_borrowed(
 fn run(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
     result: &mut CheckResult,
 ) -> Result<()> {
     let mut output = diagnostic_budget::Budget::default();
@@ -215,7 +215,7 @@ fn run(
             let values = subject
                 .declaration
                 .as_deref()
-                .map(markers::fields)
+                .map(crate::source_analysis::declaration_fields::fields)
                 .unwrap_or_default();
             let missing: Vec<_> = marker
                 .fields
@@ -306,16 +306,16 @@ fn run(
         let entities: Vec<_> = subjects
             .iter()
             .filter(|subject| subject.triggered)
-            .map(|subject| crate::adapters::operators::Entity {
+            .map(|subject| crate::rule_engine::operators_v2::Entity {
                 name: &subject.name,
                 text: &subject.text,
                 path: subject.file.as_deref(),
                 range: subject.range.as_ref(),
             })
             .collect();
-        let outcome = crate::adapters::operators::evaluate(
+        let outcome = crate::rule_engine::operators_v2::evaluate(
             &expression.legacy().map_err(anyhow::Error::msg)?,
-            crate::adapters::operators::Facts {
+            crate::rule_engine::operators_v2::Facts {
                 entities: &entities,
                 complete: true,
             },
@@ -345,7 +345,7 @@ fn run(
 fn requirements(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
     let (projects, provenance) = (facts.projects, facts.provenance);
     for language in &rule.language {

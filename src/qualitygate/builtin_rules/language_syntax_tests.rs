@@ -40,7 +40,7 @@ fn snapshot(path: &str, source: &[u8], lines: &[usize]) -> Snapshot {
     }
 }
 fn evaluate(id: &str, input: &Snapshot) -> CheckResult {
-    crate::adapters::rules::evaluate_as(
+    crate::builtin_rules::dispatch::evaluate_as(
         id,
         "language-syntax",
         &RuleSetting {
@@ -776,7 +776,7 @@ fn frozen_v1_review_definitions_keep_their_original_source_pattern_behavior() {
             })
             .unwrap();
         let builtin = restored.entries[id].builtin.as_ref().unwrap();
-        let result = crate::adapters::rules::evaluate_as(
+        let result = crate::builtin_rules::dispatch::evaluate_as(
             id,
             &builtin.implementation,
             &config.rules[id],

@@ -2,7 +2,7 @@
 
 use crate::adapters::entity_changes;
 use crate::adapters::parallel;
-use crate::adapters::rules::diagnostic;
+use crate::report_evidence::report::diagnostic;
 use crate::{
     config::RuleSetting,
     domain::{ProjectFacts, Range},

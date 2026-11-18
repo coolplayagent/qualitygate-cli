@@ -219,7 +219,7 @@ fn manifest_only_changes_recheck_retained_marked_tests_and_require_bound_python_
             rule,
             &RuleSetting::default(),
             &input,
-            &crate::adapters::facts::RuleFacts {
+            &crate::rule_engine::evaluation_facts::RuleFacts {
                 projects: std::slice::from_ref(project),
                 ..Default::default()
             },

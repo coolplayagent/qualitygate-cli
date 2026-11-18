@@ -10,11 +10,19 @@ execution. The adapter creates a pending result, validates required facts,
 dispatches the evaluator, and marks it complete or blocked. An unknown
 implementation or missing capability can never become an empty pass.
 
-The dispatch is in
-[`rule_evaluation/builtin_rules.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules.rs). Parameter
-contracts are in
-[`rule_catalog/parameters.rs`](../../../src/qualitygate/rule_catalog/parameters.rs) and
-[`rule_catalog/builtin_validation.rs`](../../../src/qualitygate/rule_catalog/builtin_validation.rs).
+The catalog validates declarations and parameters. The built-in dispatcher
+selects a concrete algorithm by implementation ID. The custom-rule engine
+evaluates selectors and versioned assertions. Application dispatch prepares the
+facts and calls either entry point. Both use the shared report constructor to
+build rule diagnostics with the existing fingerprint format.
+
+| Change | Source |
+| --- | --- |
+| Rule parameters or validation | [Parameter contracts](../../../src/qualitygate/rule_catalog/parameters.rs) · [Built-in validation](../../../src/qualitygate/rule_catalog/builtin_validation.rs) |
+| Concrete built-in implementation | [Built-in dispatcher](../../../src/qualitygate/builtin_rules/dispatch.rs) |
+| Custom selectors and assertion evaluation | [Custom-rule entry point](../../../src/qualitygate/rule_engine/custom_rules/mod.rs) |
+| Fact binding and evaluator dispatch | [Rule dispatch](../../../src/qualitygate/gate_execution/rule_dispatch.rs) |
+| Diagnostic construction | [Shared report model](../../../src/qualitygate/report_evidence/report.rs) |
 
 Operator composition and consuming-agent contracts extend this evidence model.
 See [rule capabilities and Agent behavior contracts](07-rule-capabilities-and-agent-contracts.md)
@@ -350,7 +358,7 @@ combine all three without collapsing their evidence strength.
 ## Verification evidence
 
 Focused tests in
-[`rule_evaluation/builtin_rules_tests.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules_tests.rs)
+[`builtin_rules/builtin_rules_tests.rs`](../../../src/qualitygate/builtin_rules/builtin_rules_tests.rs)
 prove that `source-pattern` reports added lines only and blocks invalid
 configuration. Issue integration targets cover routing, fixed package scope,
 repair, invalid UTF-8, missing files, budgets, and deterministic ordering.

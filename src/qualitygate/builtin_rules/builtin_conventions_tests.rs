@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    adapters::rules,
+    builtin_rules::dispatch as rules,
     domain::{DependencyFact, Verdict},
     snapshot::{Change, File, Identity},
 };

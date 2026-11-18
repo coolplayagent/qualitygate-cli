@@ -18,8 +18,8 @@ C/C++ 动态检查的项目接入实现见 [ASan 工具模板](../../templates/a
 
 | 项目需求 | 最小接入面 | 增加工具或规则时的影响 |
 | --- | --- | --- |
-| 已有内置规则能表达，只有参数或适用范围变化 | 在策略中选择已注册的实现及其参数 | 目录中的多个规则可以复用同一 Rust 实现。新增内置算法涉及参数定义、执行分派和独立夹具。[参数校验](../../src/qualitygate/rule_catalog/builtin_validation.rs) · [执行分派](../../src/qualitygate/rule_evaluation/builtin_rules.rs) |
-| 所需事实已经存在，只缺组合规则 | 在项目规则目录编写有来源绑定的版本化 YAML。V1 用已有选择与检查，V2 用有界表达式，V3 增加命名源码集合和词法变量，V4 可引用工具事实 | 改阈值、计数或同类型集合关系可复用原生产者。Schema、类型检查和求值器共同限制可用字段与算子。新增算子应同时覆盖校验、运行时、能力声明与旧版本回归。[版本化 Schema](../../src/qualitygate/rule_catalog/rule_schema.rs) · [项目规则求值](../../src/qualitygate/rule_evaluation/custom_rules/mod.rs) |
+| 已有内置规则能表达，只有参数或适用范围变化 | 在策略中选择已注册的实现及其参数 | 目录中的多个规则可以复用同一 Rust 实现。新增内置算法涉及参数定义、执行分派和独立夹具。[参数校验](../../src/qualitygate/rule_catalog/builtin_validation.rs) · [执行分派](../../src/qualitygate/builtin_rules/dispatch.rs) |
+| 所需事实已经存在，只缺组合规则 | 在项目规则目录编写有来源绑定的版本化 YAML。V1 用已有选择与检查，V2 用有界表达式，V3 增加命名源码集合和词法变量，V4 可引用工具事实 | 改阈值、计数或同类型集合关系可复用原生产者。Schema、类型检查和求值器共同限制可用字段与算子。新增算子应同时覆盖校验、运行时、能力声明与旧版本回归。[版本化 Schema](../../src/qualitygate/rule_catalog/rule_schema.rs) · [项目规则求值](../../src/qualitygate/rule_engine/custom_rules/mod.rs) |
 | 需要项目专属算法，只关心这一项检查的结果 | 用命令调用既有系统工具或项目自编程序。按用途选择 diagnostics、SARIF、JUnit、覆盖率等已有报告格式 | 项目实现检测逻辑，已有 adapter 归一化并产生该 check 的结果。直接按退出码验收也可用，但裸命令的非预期退出会产生违规诊断，无法仅凭一个非零值区分工具故障与业务违规。[报告格式](../../src/qualitygate/check_planning/model.rs) · [命令结果判定](../../src/qualitygate/gate_execution/commands.rs) |
 | 多条规则需要对相同观测值施加不同策略 | 在策略 `checks` 中声明 `tool_facts`，配置 ID 与 `tool_id` 相同的版本探针。该命令的 `reports` 和 `projects` 须为空。规则以 `depends_on` 和 `fact_sources` 引用它 | 可自编程序输出 `adapter: tool_facts` 的 JSON。规划时核对生产者、schema、project/target/configuration、单位和测量定义。执行时可用 `context_path` 取得当次身份。一次成功采集供本次运行多个消费者使用。仅在任务中声明的生产者不能满足项目规则的绑定。[生产者校验](../../src/qualitygate/check_planning/tool_facts.rs) · [绑定校验](../../src/qualitygate/rule_catalog/tool_source_validation.rs) · [V4 接口与示例](../../skills/qualitygate-cli/references/operators-v4.md) |
 | 需要新的原始格式、实体或关系供规则组合 | 原始格式能在项目工具中无损转换且满足现有库存时，可沿用协议。新实体或事实形状需要版本化的 Rust 契约、独立库存核验、适配器、字段投影及对应测试 | 当前事实 schema 只有 `function_metric`、`clone_pair`。通用 JSON 路径也按显式 Rust 源文件独立枚举有函数体的函数项，排除闭包、直接声明在块内的函数和内联 `mod tests { … }` 中的函数。外置 `src/tests.rs` 的文件名本身不触发该排除。遇到不支持的 impl 形态报不完整。其他语言仍可走普通报告。[事实契约](../../src/qualitygate/tool_evidence/contracts.rs) · [库存实现](../../src/qualitygate/tool_evidence/inventory.rs) · [V4 字段类型](../../src/qualitygate/rule_catalog/operator_v4_types.rs) |
@@ -37,14 +37,14 @@ C/C++ 动态检查的项目接入实现见 [ASan 工具模板](../../templates/a
 | 传递与复核 | 只有完成且通过的前置节点可供依赖继续。事实通过类型化运行结果传递，完成时复核快照、相关工具身份和保留产物，沿显式依赖传播失效并清除 verdict | 同一次运行中共用的生产者只执行一次。普通命令按计划串行，共享工作区，每个命令还有输入复核开销。工具越多，执行与读取成本会累加。下一次运行会重新采集。[工作流](../../src/qualitygate/gate_execution/workflow.rs) · [最终失效传播](../../src/qualitygate/gate_execution/fact_revalidation.rs) · [产物变更回归](../../src/qualitygate/gate_execution/fact_execution_tests.rs) |
 | 裁决 | 对照独立 required 清单。有理由且状态一致的不适用项可跳过。缺必需结果、状态矛盾或全部跳过时 Gate 为 incomplete（2），同时保留已知违规。证据完整时，error 级违规为 fail（1），warning 可随 pass（0）保留 | 消费报告时同时读取 `complete`、`decision`、check 的 execution/verdict 及范围。对 delivery，full 表示选定的完整计划，定位型诊断仍受交付变更范围限制。[Gate 判定与回归](../../src/qualitygate/gate_execution/gate_tests.rs) · [范围反例](../requirements/skill-rule-boundaries.md) |
 
-在一条 V4 规则内，各来源共用记录、字节及运算预算。不同消费者分别计费。上限包括 16 个命名源、50,000 条输入/中间记录和 100,000 步。事实生产者自身也有 50,000 条记录上限。例如完整枚举所有符合长度条件的函数对时，316 个函数产生 49,770 对，317 个产生 50,086 对，单个生产者已经无法完整提交后一库存。字节或时间预算还可能先耗尽。缩小采集范围会改变结论覆盖的范围。这些可计算的边界有助于选工具，端到端延迟仍需按实际项目测量。[记录与完整性校验](../../src/qualitygate/tool_evidence/normalization.rs) · [表达式预算回归](../../src/qualitygate/rule_evaluation/operators_v4_regression_tests.rs)
+在一条 V4 规则内，各来源共用记录、字节及运算预算。不同消费者分别计费。上限包括 16 个命名源、50,000 条输入/中间记录和 100,000 步。事实生产者自身也有 50,000 条记录上限。例如完整枚举所有符合长度条件的函数对时，316 个函数产生 49,770 对，317 个产生 50,086 对，单个生产者已经无法完整提交后一库存。字节或时间预算还可能先耗尽。缩小采集范围会改变结论覆盖的范围。这些可计算的边界有助于选工具，端到端延迟仍需按实际项目测量。[记录与完整性校验](../../src/qualitygate/tool_evidence/normalization.rs) · [表达式预算回归](../../src/qualitygate/rule_engine/operators_v4_regression_tests.rs)
 
 ## 准确性取决于识别范围和测量定义
 
 | 要判断的问题 | 实现或反例 | 结论的适用范围 |
 | --- | --- | --- |
 | 是否选中了符合业务含义的实体 | 隔离 Java 仓库只启用 `junit-naming`，方法名同为 `wrong`。直接 JUnit `@Test` 命中 1 个实体，Gate 退出 1。改为由 `@Test` 修饰的组合注解 `@FastCase` 命中 0 个，Gate 退出 0。无关的本地同名 `@Test` 命中 1 个，Gate 退出 1。三次均 complete | 语法提取使用已知注解名，可能漏选框架组合注解或误选同名注解。三例检验提取器的边界。没有执行 JUnit，也没有测量生产误报率。[测试实体提取](../../src/qualitygate/source_analysis/syntax/tests_in_source.rs) |
-| 空集、多算或少算如何影响判断 | `all([])` 为真，`any([])` 为假，缺生产者或错快照则中止。对于指标，逐一核对函数位置 × 已声明指标并拒绝重复。对于 clone pair，在节点下限和相似度下限均为零时，可按长度入选的 n 个函数核对 n(n−1)/2 对 | 要求至少一个实体时显式断言 `count >= 1`。启用采集过滤后，位置合法与记录唯一无法独立揭示漏报的合格 pair。通用生产者算出的指标数值同样需要独立预期核对。[记录校验](../../src/qualitygate/tool_evidence/normalization.rs) · [空集与缺失反例](../../src/qualitygate/rule_evaluation/operators_v4_regression_tests.rs) |
+| 空集、多算或少算如何影响判断 | `all([])` 为真，`any([])` 为假，缺生产者或错快照则中止。对于指标，逐一核对函数位置 × 已声明指标并拒绝重复。对于 clone pair，在节点下限和相似度下限均为零时，可按长度入选的 n 个函数核对 n(n−1)/2 对 | 要求至少一个实体时显式断言 `count >= 1`。启用采集过滤后，位置合法与记录唯一无法独立揭示漏报的合格 pair。通用生产者算出的指标数值同样需要独立预期核对。[记录校验](../../src/qualitygate/tool_evidence/normalization.rs) · [空集与缺失反例](../../src/qualitygate/rule_engine/operators_v4_regression_tests.rs) |
 | 阈值边界能否重算 | 数值按单位和测量定义比较，使用有界精确十进制。固定版本 dryer 先筛原始相似度再舍入，小夹具的原值 0.5263157894736842 被输出为 0.526315789474，若按后一个数采集就会漏掉该对 | 比较的精度限于已序列化观测。规划和消费均核对采集窗口能覆盖舍入边界。相同展示阈值不一定允许复用同一份采集结果。[原生反例与原始摘要](../test/tool-facts-native-validation.md#rounded-acquisition-boundary-counterexample) · [范围比较](../../src/qualitygate/tool_evidence/contracts.rs) |
 | 增量通过能说明多少 | `ratchet` 重跑基线和当前分析器，诊断按工具与规则分组计数。同一组旧问题消失、新位置出现，总数可持平。跨规则的增减分别判断 | 计数未增长只能支持该分组的计数结论。若业务关心新增的具体位置或记录，应核对相应身份与差异模式。已列条款的 constraint coverage 同样只覆盖已绑定的义务。[比较逻辑](../../src/qualitygate/report_evidence/report_gate.rs) · [基线回归](../../tests/ratchet.rs) · [约束覆盖](../../src/qualitygate/constraint_coverage/coverage_evaluation.rs) |
 
@@ -59,7 +59,7 @@ C/C++ 动态检查的项目接入实现见 [ASan 工具模板](../../templates/a
 | 1 | 0 | completed/pass，`complete: true` | 通过 | pass，退出 0 |
 | 0 | 0 | completed/pass，`complete: true` | `$.minimum_lines` 低于 1 | blocked，无 verdict，`Invalid acquired clone universe`，退出 2 |
 
-第三组只保留同一零值生产者，去掉消费规则。此时 Gate 完整通过并退出 0，保留的信封仍含 `complete: true` 和 `minimum_lines: 0`。生产者配置的正数检查目前仅用于原生 dryer，通用 JSON 导入核对声明和信封是否一致，消费者则对所有 clone 集合要求正数。因此只看 producer pass 的调用方可能拿到违反公开协议的产物。**优先修正点**是把公开的下限提前落实到通用生产者。回归验收应覆盖 0 在发布事实前被拒、1 的对照链路通过，并对实际保留的信封运行导出的 Schema 校验。[输出声明](../../src/qualitygate/tool_evidence/contracts.rs) · [协议 Schema](../../src/qualitygate/tool_evidence/schema.rs) · [导入](../../src/qualitygate/tool_evidence/normalization.rs) · [消费](../../src/qualitygate/rule_evaluation/custom_rules/expression_v4.rs)
+第三组只保留同一零值生产者，去掉消费规则。此时 Gate 完整通过并退出 0，保留的信封仍含 `complete: true` 和 `minimum_lines: 0`。生产者配置的正数检查目前仅用于原生 dryer，通用 JSON 导入核对声明和信封是否一致，消费者则对所有 clone 集合要求正数。因此只看 producer pass 的调用方可能拿到违反公开协议的产物。**优先修正点**是把公开的下限提前落实到通用生产者。回归验收应覆盖 0 在发布事实前被拒、1 的对照链路通过，并对实际保留的信封运行导出的 Schema 校验。[输出声明](../../src/qualitygate/tool_evidence/contracts.rs) · [协议 Schema](../../src/qualitygate/tool_evidence/schema.rs) · [导入](../../src/qualitygate/tool_evidence/normalization.rs) · [消费](../../src/qualitygate/rule_engine/custom_rules/expression_v4.rs)
 
 ## Agent 自建工具的两条实测路径
 

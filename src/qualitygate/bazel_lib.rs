@@ -147,11 +147,10 @@ pub mod rule_catalog {
 }
 
 pub mod rule_evaluation {
-    pub use qualitygate_adapters::rule_evaluation::builtin_rules;
-    pub use qualitygate_adapters::rule_evaluation::custom_rules;
-    pub use qualitygate_adapters::rule_evaluation::evaluation_facts;
-    pub use qualitygate_adapters::rule_evaluation::operators_v2;
-    pub use qualitygate_adapters::rule_evaluation::operators_v3;
+    pub use qualitygate_adapters::builtin_rules::dispatch as builtin_rules;
+    pub use qualitygate_adapters::rule_engine::{
+        custom_rules, evaluation_facts, operators_v2, operators_v3,
+    };
 }
 
 pub mod selfcheck {

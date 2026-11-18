@@ -1,6 +1,6 @@
 //! Dependency directions from ecosystem facts, with explicit complete module inventory.
 
-use crate::adapters::rules::diagnostic;
+use crate::report_evidence::report::diagnostic;
 use crate::{
     config::{
         RuleSetting,

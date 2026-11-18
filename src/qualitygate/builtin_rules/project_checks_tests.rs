@@ -68,7 +68,7 @@ fn run(snapshot: &Snapshot, facts: &[ProjectFacts], policy: Value) -> CheckResul
         parameters: serde_json::from_value(policy).unwrap(),
         ..RuleSetting::default()
     };
-    crate::adapters::rules::evaluate_with_projects(
+    crate::builtin_rules::dispatch::evaluate_with_projects(
         "module-boundary",
         "module-boundary",
         &setting,

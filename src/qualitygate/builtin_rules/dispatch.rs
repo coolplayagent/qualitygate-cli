@@ -4,37 +4,13 @@
 #[path = "builtin_limits_tests.rs"]
 mod builtin_limits_tests;
 
-use crate::{
-    config::RuleSetting,
-    domain::*,
-    snapshot::{Snapshot, digest},
-};
+use crate::{config::RuleSetting, domain::*, snapshot::Snapshot};
 use anyhow::{Context, Result, bail};
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use regex::Regex;
 use std::collections::BTreeSet;
 
-pub fn diagnostic(
-    rule: &str,
-    file: Option<&str>,
-    range: Option<Range>,
-    message: String,
-    evidence: serde_json::Value,
-    fix: &str,
-    identity: &str,
-) -> Diagnostic {
-    let fingerprint = digest(format!("{rule}\0{}\0{identity}", file.unwrap_or("")).as_bytes());
-    Diagnostic {
-        id: format!("{rule}:{}", &fingerprint[7..23]),
-        fingerprint,
-        file: file.map(Into::into),
-        range,
-        message,
-        evidence,
-        fix: fix.into(),
-        recheck: Recheck::default(),
-    }
-}
+pub use crate::report_evidence::report::diagnostic;
 
 pub fn evaluate(id: &str, setting: &RuleSetting, snapshot: &Snapshot) -> CheckResult {
     evaluate_as(id, id, setting, snapshot)
@@ -72,7 +48,7 @@ pub fn evaluate_with_facts(
         implementation,
         setting,
         snapshot,
-        &crate::adapters::facts::RuleFacts {
+        &crate::rule_engine::evaluation_facts::RuleFacts {
             projects,
             provenance,
             git_trailers: None,
@@ -87,7 +63,7 @@ pub fn evaluate_with_context(
     implementation: &str,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::RuleFacts<'_>,
 ) -> CheckResult {
     evaluate_with_guidance(id, implementation, setting, snapshot, facts, None)
 }
@@ -98,7 +74,7 @@ pub fn evaluate_with_guidance(
     implementation: &str,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::RuleFacts<'_>,
     guidance: Option<&crate::domain::rule_guidance::Diagnostic>,
 ) -> CheckResult {
     facts.with_borrowed_projects(|borrowed| {
@@ -111,7 +87,7 @@ pub fn evaluate_borrowed(
     implementation: &str,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
     guidance: Option<&crate::domain::rule_guidance::Diagnostic>,
 ) -> CheckResult {
     let (projects, provenance) = (facts.projects, facts.provenance);
@@ -144,7 +120,7 @@ pub fn evaluate_borrowed(
             "line-ending" => line_endings(&mut result, snapshot),
             "commit-message" => commits(&mut result, setting, snapshot),
             "test-annotation-dependency" => {
-                crate::rule_evaluation::builtin_conventions::annotation_dependency(
+                crate::builtin_rules::builtin_conventions::annotation_dependency(
                     &mut result,
                     setting,
                     snapshot,
@@ -152,13 +128,13 @@ pub fn evaluate_borrowed(
                     facts.syntax,
                 )
             }
-            "file-pattern" => crate::rule_evaluation::builtin_conventions::file_pattern(
+            "file-pattern" => crate::builtin_rules::builtin_conventions::file_pattern(
                 &mut result,
                 setting,
                 snapshot,
             ),
             "shell-shebang" | "shell-commented-code" => {
-                crate::rule_evaluation::shell_conventions::evaluate(
+                crate::builtin_rules::shell_conventions::evaluate(
                     implementation,
                     &mut result,
                     setting,
@@ -166,23 +142,23 @@ pub fn evaluate_borrowed(
                 )
             }
             "diff-size" => diff_size(&mut result, setting, snapshot),
-            "module-boundary" => crate::adapters::project_rules::module_boundary(
+            "module-boundary" => crate::builtin_rules::project_checks::module_boundary(
                 &mut result,
                 setting,
                 snapshot,
                 projects,
             ),
-            "used-undeclared" => crate::adapters::project_rules::used_undeclared(
+            "used-undeclared" => crate::builtin_rules::project_checks::used_undeclared(
                 &mut result,
                 setting,
                 snapshot,
                 projects,
             ),
             "language-syntax" => {
-                crate::rule_evaluation::language_syntax::evaluate(&mut result, setting, snapshot)
+                crate::builtin_rules::language_syntax::evaluate(&mut result, setting, snapshot)
             }
             "native-syntax" => {
-                crate::rule_evaluation::native_syntax::evaluate(&mut result, setting, snapshot)
+                crate::builtin_rules::native_syntax::evaluate(&mut result, setting, snapshot)
             }
             "source-pattern" => source_patterns(&mut result, setting, snapshot, guidance),
             "test-naming"
@@ -190,15 +166,13 @@ pub fn evaluate_borrowed(
             | "parameterized-tests"
             | "comment-language"
             | "ai-code-traceability"
-            | "import-boundary" => {
-                crate::rule_evaluation::structure_rules::evaluate_with_provenance(
-                    implementation,
-                    &mut result,
-                    setting,
-                    snapshot,
-                    facts,
-                )
-            }
+            | "import-boundary" => crate::builtin_rules::structure_rules::evaluate_with_provenance(
+                implementation,
+                &mut result,
+                setting,
+                snapshot,
+                facts,
+            ),
             _ => Err(anyhow::anyhow!("Unknown or unavailable rule: {id}")),
         }
     })()
