@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 13
-updated_at: unix:1794964548
+map_version: 16
+updated_at: unix:1794978329
 directories:
 - directory: requirements
   purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and implemented tool-facts and assertions contracts with verification evidence.
@@ -12,17 +12,19 @@ directories:
   - codespec/requirements/README.md
   - codespec/requirements/qualitygate-cli.md
   - codespec/requirements/tool-facts-and-assertions.md
+  - codespec/requirements/production-incident-guards.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
 - directory: design
-  purpose: Architecture and implementation design records, including rule engine and project tool extension boundaries, typed evidence, V4 assertions and independent Bazel production targets.
+  purpose: Architecture and implementation design records for rule engine and project tool extension boundaries, typed evidence and V4 assertions, independent Bazel targets, and the consolidated pilot protocol and closeout criteria.
   content_scope:
   - codespec/design/**
   key_files:
   - codespec/design/README.md
   - codespec/design/tool-facts-and-assertions.md
   - codespec/design/rule-engine-and-tool-builders.md
+  - codespec/design/pilot.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -42,6 +44,9 @@ directories:
   key_files:
   - codespec/test/README.md
   - codespec/test/tool-facts-native-validation.md
+  - codespec/test/production-incident-models.md
+  - codespec/test/production-incident-native.md
+  - codespec/test/production-incident-regressions.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -110,3 +115,15 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'design'.
+  - version: 14
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'design'.
+  - version: 15
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.
+  - version: 16
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'test'.

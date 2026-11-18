@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: knowledge
-map_version: 15
-updated_at: unix:1789803039
+map_version: 16
+updated_at: unix:1790656020
 directories:
 - directory: best-practices
   purpose: Reviewed engineering and knowledge-management practices.
@@ -91,6 +91,13 @@ topics:
   - rule-file-contracts
   ref: topics/topic-8bbe422fe82bd42b-6ba57172cf39626157f6b97438def164b5346d58f3f4900f14b54fd765bdd0c4.yaml
   digest: 6ba57172cf39626157f6b97438def164b5346d58f3f4900f14b54fd765bdd0c4
+- id: runtime-preflight
+  title: runtime-preflight
+  description: Added by CLI source registration.
+  source_ids:
+  - runtime-preflight
+  ref: topics/topic-911a24dcb3bde44d-5ab54c4eafa72ba60f2d340c2bc919ea9646ffce93792bda0b58a33330c6c3eb.yaml
+  digest: 5ab54c4eafa72ba60f2d340c2bc919ea9646ffce93792bda0b58a33330c6c3eb
 - id: software-model
   title: Whole-software model
   description: Code-map-backed architecture, build, deployment, dependency, configuration, and design knowledge.
@@ -161,3 +168,7 @@ history:
     action: source.update
     actor: cli
     summary: Updated source 'policy-evolution-contract'.
+  - version: 16
+    action: source.add
+    actor: cli
+    summary: Added source 'runtime-preflight' to topic 'runtime-preflight'.

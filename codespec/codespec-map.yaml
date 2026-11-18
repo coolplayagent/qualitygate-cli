@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 14
-updated_at: unix:1794967632
+map_version: 17
+updated_at: unix:1794983284
 directories:
 - directory: requirements
   purpose: Product requirements and acceptance criteria, including bounded resource, concurrency and dispatcher-stack contracts, and implemented tool-facts and assertions contracts with verification evidence.
@@ -12,6 +12,7 @@ directories:
   - codespec/requirements/README.md
   - codespec/requirements/qualitygate-cli.md
   - codespec/requirements/tool-facts-and-assertions.md
+  - codespec/requirements/production-incident-guards.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -43,6 +44,11 @@ directories:
   key_files:
   - codespec/test/README.md
   - codespec/test/tool-facts-native-validation.md
+  - codespec/test/production-incident-models.md
+  - codespec/test/production-incident-native.md
+  - codespec/test/production-incident-regressions.md
+  - codespec/test/production-incident-capacity.md
+  - codespec/test/production-incident-retention-and-retry.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -57,12 +63,8 @@ directories:
   update_rule: reviewed
 topics: []
 history:
-  omitted_through: 0
+  omitted_through: 1
   recent:
-  - version: 1
-    action: init
-    actor: cli
-    summary: Created CodeSpec repository map contract.
   - version: 2
     action: directory.update
     actor: cli
@@ -115,3 +117,15 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'design'.
+  - version: 15
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'requirements'.
+  - version: 16
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'test'.
+  - version: 17
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'test'.

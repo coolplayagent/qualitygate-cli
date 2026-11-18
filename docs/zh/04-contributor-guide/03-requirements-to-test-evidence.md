@@ -7,6 +7,10 @@
 或真实试点已验收。
 
 
+## 现网事故防护
+
+[IG-01 至 IG-20](../../../codespec/requirements/production-incident-guards.md) 逐项记录防护条件和观测范围。可独立复查[崩溃、堆内存、句柄与边界](../../../codespec/test/production-incident-native.md)、[发布交错与配置模型](../../../codespec/test/production-incident-models.md)以及[语法规则、仓库回归与 owner 循环依赖](../../../codespec/test/production-incident-regressions.md)。新增实验覆盖[可达对象滞留与重试放大](../../../codespec/test/production-incident-retention-and-retry.md)以及[配置更新时的资源上限](../../../codespec/test/production-incident-capacity.md)。
+
 ## 公共评审知识包
 
 `REVIEW-PACK-01`：`tests/issue64_rules.rs` 验证按需启用、warning 行为、语言范围、文件/行证据、

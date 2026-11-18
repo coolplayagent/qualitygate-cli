@@ -42,6 +42,8 @@ company's complete internal standard on another repository. A rule must state
 its applicability, evidence source, severity, and whether a result is a
 violation or incomplete evidence.
 
+The [production incident studies](guides/production-incident-patterns.md) trace operator reports and historical defects to scoped acceptance criteria.
+
 Source notes:
 
 - [Alibaba](sources/alibaba.md)
