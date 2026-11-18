@@ -493,6 +493,46 @@ fn architecture_rejects_forbidden_dependencies_in_each_supported_reference_form(
 }
 
 #[test]
+fn architecture_distinguishes_owner_cycles_from_shared_and_same_owner_dependencies() {
+    let mut graph = Graph::default();
+    for (owner, source) in [
+        ("interfaces", "use crate::{application, config};"),
+        ("application", "use crate::config;"),
+        ("config", "use crate::domain;"),
+    ] {
+        graph.source(&format!("{owner}.rs"), vec![owner.into()], source);
+    }
+    assert_eq!(graph.edges.len(), 4);
+    assert!(graph.violations().is_empty());
+
+    graph.source(
+        "domain.rs",
+        vec!["domain".into()],
+        "use crate::application;",
+    );
+    let violations = graph.violations();
+    assert!(violations.contains(&"domain.rs:1: forbidden dependency domain -> application".into()));
+    assert!(violations.contains(
+        &"module dependency cycle: application -> config -> domain -> application".into()
+    ));
+
+    let mut same_owner = Graph::default();
+    for (module, dependency) in [
+        ("package_metadata", "project_model"),
+        ("project_model", "package_metadata"),
+    ] {
+        let references = same_owner.source(
+            &format!("python_analysis/{module}.rs"),
+            vec!["python_analysis".into(), module.into()],
+            &format!("use crate::python_analysis::{dependency};"),
+        );
+        assert!(!references.paths.is_empty());
+    }
+    assert!(same_owner.edges.is_empty());
+    assert!(same_owner.violations().is_empty());
+}
+
+#[test]
 fn architecture_rejects_cycles_and_capability_alias_bypasses() {
     let mut graph = Graph::default();
     graph.source(

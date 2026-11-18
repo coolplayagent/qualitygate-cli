@@ -1,0 +1,22 @@
+schema_version: 1
+rulesets: []
+checks:
+  - id: compile-model
+    argv: [rustc, --edition=2024, model_check.rs, -o, model-check]
+    tools:
+      - {id: rustc, argv: [rustc, --version], inputs: [model_check.rs, subject.rs]}
+    timeout_seconds: 30
+  - id: configuration
+    argv: [./model-check, configuration]
+    tools:
+      - {id: incident-model, argv: [./model-check, --version], inputs: [model_check.rs, subject.rs]}
+    depends_on: [compile-model]
+    timeout_seconds: 5
+    reports: [{path: target/configuration.xml, format: junit, mode: full, minimum_tests: 4}]
+  - id: schedules
+    argv: [./model-check, schedules]
+    tools:
+      - {id: incident-model, argv: [./model-check, --version], inputs: [model_check.rs, subject.rs]}
+    depends_on: [compile-model]
+    timeout_seconds: 5
+    reports: [{path: target/schedules.xml, format: junit, mode: full, minimum_tests: 30}]

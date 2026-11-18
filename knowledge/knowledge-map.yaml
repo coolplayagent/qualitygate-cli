@@ -1,8 +1,8 @@
 schema_version: 4
 artifact_kind: map
 map_type: knowledge
-map_version: 16
-updated_at: unix:1790656020
+map_version: 17
+updated_at: unix:1794978329
 directories:
 - directory: best-practices
   purpose: Reviewed engineering and knowledge-management practices.
@@ -27,6 +27,7 @@ directories:
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-java.yaml
   - knowledge/best-practices/engineering-standards/guides/lifecycle-rulebook.md
   - knowledge/best-practices/engineering-standards/guides/critical-adoption.md
+  - knowledge/best-practices/engineering-standards/guides/production-incident-patterns.md
   load_hint: task_match
   relations:
   - kind: implements
@@ -106,12 +107,8 @@ topics:
   ref: topics/topic-247e2a0d6f43d185-fc2d5534a38a5ddc28536afa855ff77db8e2941ccaccbfa79f948ddcfaec2f7d.yaml
   digest: fc2d5534a38a5ddc28536afa855ff77db8e2941ccaccbfa79f948ddcfaec2f7d
 history:
-  omitted_through: 0
+  omitted_through: 1
   recent:
-  - version: 1
-    action: init
-    actor: cli
-    summary: Created knowledge map with repository software-model route.
   - version: 2
     action: directory.add
     actor: cli
@@ -172,3 +169,7 @@ history:
     action: source.add
     actor: cli
     summary: Added source 'runtime-preflight' to topic 'runtime-preflight'.
+  - version: 17
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'best-practices/engineering-standards'.

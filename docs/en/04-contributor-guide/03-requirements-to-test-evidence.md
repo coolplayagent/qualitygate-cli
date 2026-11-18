@@ -9,6 +9,10 @@ implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
 
+## Production incident guards
+
+The [IG-01–17 matrix](../../../codespec/requirements/production-incident-guards.md) links each control to its observation boundary. Reproduce [crash, heap, descriptor and boundary cases](../../../codespec/test/production-incident-native.md), [publication and configuration models](../../../codespec/test/production-incident-models.md), and [syntax, historical regressions and owner dependency cycles](../../../codespec/test/production-incident-regressions.md).
+
 ## Public review knowledge pack
 
 `REVIEW-PACK-01`: `tests/issue64_rules.rs` verifies opt-in warning behavior, language scope,

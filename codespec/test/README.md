@@ -7,6 +7,8 @@ unit, integration, architecture, documentation, coverage, Miri and ASan gates.
 The [native tool-facts validation](tool-facts-native-validation.md) records pinned
 crapper/dryer acquisition, dependency and parser failures, and offline conversion
 on an isolated Rust fixture. It does not claim production detection effectiveness.
+The production incident experiments cover [process crashes and resource lifetimes](production-incident-native.md), [configuration and interleaved publication](production-incident-models.md), and [rule signals, historical defects and dependency cycles](production-incident-regressions.md).
+
 The [evolution matrix](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) maps policy behavior to
 tests; [performance fixtures](../../docs/en/01-user-guide/02-snapshots-and-check-workflow.md) establish
 serial/parallel agreement and report observed costs under explicit budgets.

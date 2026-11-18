@@ -11,6 +11,8 @@ and caller-selected pilot controls to their actual evidence limits.
 
 This directory is governed by `codespec/codespec-map.yaml`. Update its map entry through `relay-knowledge map directory` and keep reviewed source material within the declared content scope.
 
+The [production incident guard specification](production-incident-guards.md) maps incident causes to executable checks, reproducible counterexamples and production evidence.
+
 The normative product contract is [qualitygate-cli requirements](qualitygate-cli.md).
 Focused requirement documents refine that contract without replacing it.
 
