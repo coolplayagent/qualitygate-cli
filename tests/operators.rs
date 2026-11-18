@@ -6,6 +6,28 @@ use serde_json::{Value, json};
 use std::path::Path;
 
 const SOURCE: &str = "# Tests\nAdd at least one named test for the changed behavior.\n";
+
+#[test]
+fn historical_cargo_v4_paths_share_the_evaluator_collection_type() {
+    use qualitygate::{
+        rule_catalog::{operator_v4::Expr, operator_v4_types::SourceType},
+        rule_evaluation::{operators_v4, operators_v4_facts},
+    };
+    use std::collections::BTreeMap;
+
+    let collection = operators_v4_facts::Collection {
+        records: Vec::new(),
+        complete: true,
+        source_type: SourceType::Syntax,
+    };
+    let inputs = BTreeMap::from([("entities".to_owned(), collection)]);
+    assert!(
+        operators_v4::evaluate(&Expr::Bool { value: true }, &inputs)
+            .unwrap()
+            .passed
+    );
+}
+
 fn candidate(expression: Value) -> Value {
     json!({"schema_version":2,"id":"test-contract","version":1,
         "source":{"document":"AGENTS.md","section":"Tests","content_hash":qualitygate::snapshot::digest(SOURCE.as_bytes())},

@@ -8,7 +8,7 @@ use crate::adapters::{
 pub(super) fn evaluate(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
     primary: &[Subject],
     result: &mut CheckResult,
     budget: &mut selection::Budget,

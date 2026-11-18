@@ -200,7 +200,7 @@ fn evaluate(
     snapshot: &Snapshot,
     parameters: serde_json::Value,
 ) -> crate::domain::CheckResult {
-    crate::adapters::rules::evaluate_as(
+    crate::builtin_rules::dispatch::evaluate_as(
         id,
         "native-syntax",
         &RuleSetting {

@@ -28,6 +28,18 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
     (
+        "builtin_rules",
+        &[
+            ("builtin_conventions", "adapters"),
+            ("dispatch", "adapters"),
+            ("language_syntax", "adapters"),
+            ("native_syntax", "adapters"),
+            ("project_checks", "adapters"),
+            ("shell_conventions", "adapters"),
+            ("structure_rules", "adapters"),
+        ],
+    ),
+    (
         "check_planning",
         &[
             ("dependencies", "config"),
@@ -95,7 +107,7 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("commands", "application"),
             ("gate", "domain"),
             ("python_install", "application"),
-            ("rule_execution", "application"),
+            ("rule_dispatch", "application"),
             ("tool_evidence", "application"),
             ("fact_execution", "application"),
             ("fact_revalidation", "application"),
@@ -243,23 +255,16 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
     (
-        "rule_evaluation",
+        "rule_engine",
         &[
-            ("builtin_conventions", "adapters"),
-            ("builtin_rules", "adapters"),
+            ("assertion_v4", "domain"),
             ("custom_rules", "adapters"),
             ("evaluation_facts", "adapters"),
-            ("language_syntax", "adapters"),
             ("markers", "adapters"),
-            ("native_syntax", "adapters"),
             ("operators_v2", "adapters"),
             ("operators_v3", "adapters"),
-            ("assertion_v4", "domain"),
             ("operators_v4", "adapters"),
             ("operators_v4_facts", "domain"),
-            ("project_checks", "adapters"),
-            ("shell_conventions", "adapters"),
-            ("structure_rules", "adapters"),
         ],
     ),
     (
@@ -295,6 +300,7 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
         "source_analysis",
         &[
             ("analysis_workers", "adapters"),
+            ("declaration_fields", "adapters"),
             ("entity_changes", "adapters"),
             ("language_bindings", "adapters"),
             ("language_shell", "adapters"),

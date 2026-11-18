@@ -164,6 +164,30 @@ pub struct Diagnostic {
     pub recheck: Recheck,
 }
 
+pub fn diagnostic(
+    rule: &str,
+    file: Option<&str>,
+    range: Option<Range>,
+    message: String,
+    evidence: serde_json::Value,
+    fix: &str,
+    identity: &str,
+) -> Diagnostic {
+    let fingerprint = crate::content_digest::sha256(
+        format!("{rule}\0{}\0{identity}", file.unwrap_or("")).as_bytes(),
+    );
+    Diagnostic {
+        id: format!("{rule}:{}", &fingerprint[7..23]),
+        fingerprint,
+        file: file.map(Into::into),
+        range,
+        message,
+        evidence,
+        fix: fix.into(),
+        recheck: Recheck::default(),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Execution {
     pub status: ExecutionStatus,

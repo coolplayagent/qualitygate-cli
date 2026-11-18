@@ -97,7 +97,7 @@ fn packaged_review_signals_retain_actionable_evidence_without_claiming_semantic_
             &rule.implementation,
             &rule.defaults,
             &input,
-            &crate::adapters::facts::RuleFacts::default(),
+            &crate::rule_engine::evaluation_facts::RuleFacts::default(),
             rule.diagnostic.as_ref(),
         );
         assert_eq!(result.execution.status, ExecutionStatus::Completed);
@@ -119,7 +119,7 @@ fn packaged_review_signals_retain_actionable_evidence_without_claiming_semantic_
             &rule.implementation,
             &rule.defaults,
             &input,
-            &crate::adapters::facts::RuleFacts::default(),
+            &crate::rule_engine::evaluation_facts::RuleFacts::default(),
             rule.diagnostic.as_ref(),
         );
         assert_eq!(unavailable.execution.status, ExecutionStatus::Blocked);
@@ -135,7 +135,7 @@ fn presentation_comes_from_the_definition_and_cannot_mask_execution_gaps() {
         message: "Review the selected API".into(),
         fix: "Check the failure path".into(),
     };
-    let facts = crate::adapters::facts::RuleFacts::default();
+    let facts = crate::rule_engine::evaluation_facts::RuleFacts::default();
     let result = evaluate_with_guidance(
         "any-reviewed-id",
         "source-pattern",

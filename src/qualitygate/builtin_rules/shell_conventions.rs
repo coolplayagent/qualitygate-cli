@@ -1,7 +1,7 @@
 //! Bounded checks for Shell properties that a single-line regex cannot express.
 
 use crate::adapters::parallel;
-use crate::adapters::rules::diagnostic;
+use crate::report_evidence::report::diagnostic;
 use crate::{config::RuleSetting, domain::Range, snapshot::Snapshot};
 use anyhow::{Context, Result};
 use globset::{Glob, GlobSetBuilder};

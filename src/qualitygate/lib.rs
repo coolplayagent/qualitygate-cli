@@ -3,6 +3,7 @@
 pub mod adapters;
 pub mod agent_runtime;
 pub mod application;
+pub(crate) mod builtin_rules;
 pub mod check_planning;
 pub mod cli_dispatch;
 pub mod compatibility_verification;
@@ -25,6 +26,7 @@ pub mod repair_feedback;
 pub mod report_evidence;
 pub mod resource_selection;
 pub mod rule_catalog;
+pub(crate) mod rule_engine;
 pub mod rule_evaluation;
 pub mod runner;
 pub mod selfcheck;

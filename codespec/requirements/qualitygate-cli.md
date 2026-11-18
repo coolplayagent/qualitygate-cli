@@ -218,8 +218,8 @@ SYNTAX-REUSE-01：单次检查在结构规则间共享有界语法事实，缓�
 跨文件移动仍在所选语言的完整变更集上匹配，不能因反馈路径过滤而误报新增实体。
 内置规则缺少显式语言过滤参数时，使用其已声明支持语言作为默认值。
 证据见 `source_analysis::syntax::cache::tests`、
-`rule_evaluation::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、
-`rule_evaluation::structure_rules::tests::shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`
+`builtin_rules::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、
+`builtin_rules::structure_rules::tests::shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`
 与既有结构规则集成回归。
 
 SHARED-EXECUTION-01：基线派生由 snapshot 层在阻塞工作线程中完成，直接选择已捕获 base 文件并
@@ -878,14 +878,14 @@ OPERATOR-SET-01：v3 的去重与子集比较使用有界标量索引，在既�
 不同值较少的重复集合保持线性处理；少量子集查询直接扫描，避免为大右集合额外排序。
 索引按精确标量值比较，去重保留首次出现顺序及来源。
 全部操作数完整求值，空左集合不构造无用索引。索引比较、扫描、移动和缓冲区计入共享预算，
-耗尽仍为未完成。证据见 `rule_evaluation::operators_v3::tests` 及
+耗尽仍为未完成。证据见 `rule_engine::operators_v3::tests` 及
 `tests/operators/v3.rs::v3_file_correspondence_scales_without_relaxing_shared_budgets`。
 
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
 | CONSTRAINT-01 | 有界严格条款清单绑定规范章节、解释、例子、有效检查定义及采用记录；来源保护、策略冻结、快照范围保持一致；未采用、过期、不支持、未运行和超时保留缺口；必需条款违规阻断，可选缺口可见，不能宣称自然语言提取已穷尽或标签提供了宿主强制能力 | `tests/constraint_coverage.rs`；`constraint_coverage::constraint::tests`；[条款覆盖](../../docs/zh/02-reference/07-constraint-coverage.md) |
-| OPERATOR-01 | 通过独立 v2 契约提供类型化有限算子，v1 拒绝新字段；所有声明事实完整且绑定后求值；空集合语义、错误类型、深度/节点/集合/字节/运算/时间共享预算明确；失败条件与执行缺口分开，保留已有违规和有界表达式/实体来源观察记录 | `tests/operators.rs`；`rule_catalog::operator::tests`；`rule_evaluation::operators_v2::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
-| OPERATOR-02 | 独立 v3 契约提供命名事实来源、词法变量与外层引用、标量投影/去重/集合比较及有界字符串变换；全部来源绑定同一快照，未改动对应文件可显式参与；打包示例的文档源摘要在 Windows 风格检出后仍按精确字节校验；主集合与命名来源共享采集截止时间，复制事实前预留实体/字节额度，语法解析和匹配继承剩余时间；类型、完整性、操作/扫描/物化/时间预算失败不静默降级；v1/v2 保持兼容，无额外语言运行时 | `tests/operators/v3.rs`（通过 `tests/operators.rs`）；`rule_catalog::operator_v3::tests`；`rule_evaluation::operators_v3::tests`；`rule_evaluation::custom_rules::selection::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
+| OPERATOR-01 | 通过独立 v2 契约提供类型化有限算子，v1 拒绝新字段；所有声明事实完整且绑定后求值；空集合语义、错误类型、深度/节点/集合/字节/运算/时间共享预算明确；失败条件与执行缺口分开，保留已有违规和有界表达式/实体来源观察记录 | `tests/operators.rs`；`rule_catalog::operator::tests`；`rule_engine::operators_v2::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
+| OPERATOR-02 | 独立 v3 契约提供命名事实来源、词法变量与外层引用、标量投影/去重/集合比较及有界字符串变换；全部来源绑定同一快照，未改动对应文件可显式参与；打包示例的文档源摘要在 Windows 风格检出后仍按精确字节校验；主集合与命名来源共享采集截止时间，复制事实前预留实体/字节额度，语法解析和匹配继承剩余时间；类型、完整性、操作/扫描/物化/时间预算失败不静默降级；v1/v2 保持兼容，无额外语言运行时 | `tests/operators/v3.rs`（通过 `tests/operators.rs`）；`rule_catalog::operator_v3::tests`；`rule_engine::operators_v3::tests`；`rule_engine::custom_rules::selection::tests`；[有界算子](../../docs/zh/02-reference/02-rules.md) |
 | OPERATOR-PORTABLE-01 | 预编译 CLI 的 v3 Lambda 校验与执行不依赖 Rust、Node.js 或 Python 运行时；同一 DSL 支持 Python/TypeScript 文件对应约定；Git 快照依赖保留，外部命令仍需其声明工具；无语言工具的 Unix 子进程中，存在未修改对应文件时通过、缺失时违规、来源摘要变化时未完成 | `tests/operators/portable.rs::python_and_typescript_lambdas_need_only_the_cli_and_git`（通过 `tests/operators.rs`，Unix）；[有界算子](../../docs/zh/02-reference/02-rules.md) |
 | AGENT-01 | Project adopted behavior obligations for the consuming agent with source/policy/task/snapshot bindings; readiness never implies compliance or host enforcement. Required gaps and conflicts remain incomplete. |
 | AGENT-HOST-01 | The Rust host injects current obligations before agent launches and guards delivery with host-owned current full evidence, fixed policy/task identity and content-addressed checked bytes. Unsupported required controls remain incomplete; resume/handoff cannot reuse completion. Canonical repository/output paths keep delivery outside checked inputs on every platform. | `tests/agent_host.rs`; `tests/delivery.rs`, including `equivalent_repository_paths_cannot_bypass_delivery_confinement`; `tests/agent_loop.rs`; pure `domain/agent_host_tests.rs` |
@@ -948,8 +948,8 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 | --- | --- | --- |
 | GRAPH-WORK-01 | 每次依赖图操作构建标识/邻接索引，迭代计算闭包和拓扑顺序；同一时刻优先策略声明中最早的就绪节点；未知、重复、禁用和有环依赖仍报错；长链不得消耗递归栈或逐节点全图重扫 | `check_planning::dependencies::tests`；`resource_selection::trigger_selection::tests`；`tests/command_applicability.rs` |
 | SCOPE-INDEX-01 | 多路径操作只建立一次借用旧路径索引，当前键优先，重复旧路径保持快照顺序首项；保留交付/仓库和反馈过滤语义；公开可变快照不得缓存过期索引 | `snapshot::scope_index::tests`；既有 delivery/report/coverage 集成测试 |
-| BUILTIN-WORK-01 | 所有内置规则在保留诊断前共享 10,000 条和紧凑 JSON 8 MiB 预算，包含并行批次；共享 30 秒分析截止时间覆盖语法、标记和末次完成检查；耗尽仍未完成，保留已提交诊断和较早错误，不伪造遗漏数量 | `rule_evaluation::builtin_rules::builtin_limits_tests`；`report_evidence::diagnostic_budget::tests`；`rule_evaluation::markers::tests` |
-| FACT-WORK-01 | Schema 1/2/3 事实采集统一限制 50,000 实体、32 MiB 与 30 秒，包括未传入外部预算的选择器；名称/文本/路径及每个保留标记声明副本均计量；Schema 3 命名来源继续共享预算 | `rule_evaluation::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects` |
+| BUILTIN-WORK-01 | 所有内置规则在保留诊断前共享 10,000 条和紧凑 JSON 8 MiB 预算，包含并行批次；共享 30 秒分析截止时间覆盖语法、标记和末次完成检查；耗尽仍未完成，保留已提交诊断和较早错误，不伪造遗漏数量 | `builtin_rules::dispatch::builtin_limits_tests`；`report_evidence::diagnostic_budget::tests`；`rule_engine::markers::tests` |
+| FACT-WORK-01 | Schema 1/2/3 事实采集统一限制 50,000 实体、32 MiB 与 30 秒，包括未传入外部预算的选择器；名称/文本/路径及每个保留标记声明副本均计量；Schema 3 命名来源继续共享预算 | `rule_engine::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects` |
 | HISTORY-WORK-01 | 交付消息一次批量获取，最多 1,000 提交及 UTF-8 消息累计 8 MiB（含保留换行）；声明历史共享 60 秒总截止时间，向 Git/树读取传入剩余时间并最终复核；64 MiB 内容/消息/trailer 计量在解码扩张前执行，禁止静默遗漏必需历史 | `snapshot::messages::tests`；`snapshot::history::tests`；`snapshot::git::tests` |
 | ASYNC-WORK-01 | CLI 调度 future 位于堆上，检查执行使用独立 poll 栈帧；有界 HTTP JSON 解码/原始字节摘要、Cargo 测试摘要、最终报告工件序列化和 CLI 渲染在阻塞 worker 运行；报告在渲染/反馈/host 紧凑投影间转移所有权，保持证据摘要、序列化和展示过滤语义；摘要解析失败仍保留原始捕获缓冲区及元数据，保存证据/输入复核/超时/捕获错误优先级不变 | `net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`；`report_evidence::render::tests`；`repair_feedback::feedback_rendering::tests`；`report_evidence::test_counts::tests::counting_keeps_captured_buffers_and_metadata_when_parsing_fails`；[有界栈调度回归](../../tests/init/stack.rs) `rust_check_dispatch_preserves_outcomes_on_a_bounded_stack` |
 
@@ -959,7 +959,7 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 
 ## LANGUAGE-SYNTAX-01：新增语言规则的结构证据
 
-十二条 Python/Go/Shell/TypeScript 规则必须使用选定快照的有界语法树及文件内绑定证据，区分注释、文本、属性、局部遮蔽与实际表达式/命令；变更导入需复核保留调用。拒绝正则覆盖；解析错误、无效编码、超时或工作预算耗尽必须未完成。不可宣称跨文件语义或动态执行完备性。验收见 `rule_evaluation::language_syntax::tests`、`tests/internal_language_rules.rs` 及双语需求证据索引。
+十二条 Python/Go/Shell/TypeScript 规则必须使用选定快照的有界语法树及文件内绑定证据，区分注释、文本、属性、局部遮蔽与实际表达式/命令；变更导入需复核保留调用。拒绝正则覆盖；解析错误、无效编码、超时或工作预算耗尽必须未完成。不可宣称跨文件语义或动态执行完备性。验收见 `builtin_rules::language_syntax::tests`、`tests/internal_language_rules.rs` 及双语需求证据索引。
 
 ## UT-SCENARIO-01：面向场景的独立单元覆盖率
 

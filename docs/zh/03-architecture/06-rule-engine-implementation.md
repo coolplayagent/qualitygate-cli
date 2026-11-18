@@ -7,9 +7,17 @@
 glob/正则及不安全组合。适配器创建 pending 结果、验证所需事实、分派 evaluator，再标记 complete
 或 blocked。未知实现或能力缺失绝不会变成空通过。
 
-分派实现在 [`rule_evaluation/builtin_rules.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules.rs)，参数契约位于
-[`rule_catalog/parameters.rs`](../../../src/qualitygate/rule_catalog/parameters.rs) 和
-[`rule_catalog/builtin_validation.rs`](../../../src/qualitygate/rule_catalog/builtin_validation.rs)。
+规则目录校验声明与参数。内置规则根据 implementation ID 分派到具体算法。
+自定义规则引擎执行选择器和版本化断言。应用层准备事实后调用相应入口。
+两个入口共用报告构造函数，沿用既有诊断指纹格式。
+
+| 修改内容 | 源码位置 |
+| --- | --- |
+| 规则参数或校验 | [参数契约](../../../src/qualitygate/rule_catalog/parameters.rs) · [内置规则校验](../../../src/qualitygate/rule_catalog/builtin_validation.rs) |
+| 具体内置实现 | [内置规则分派](../../../src/qualitygate/builtin_rules/dispatch.rs) |
+| 自定义选择器和断言求值 | [自定义规则入口](../../../src/qualitygate/rule_engine/custom_rules/mod.rs) |
+| 事实绑定与求值分派 | [应用层规则分派](../../../src/qualitygate/gate_execution/rule_dispatch.rs) |
+| 诊断构造 | [共享报告模型](../../../src/qualitygate/report_evidence/report.rs) |
 
 算子组合与面向使用者 Agent 的契约扩展了这一证据模型，其已实现边界和宿主职责见
 [规则能力与 Agent 行为契约](07-rule-capabilities-and-agent-contracts.md)。
@@ -258,7 +266,7 @@ Qualitygate 增加的是单个 lint 通常不负责的编排：Git 快照身份�
 
 ## 验证证据
 
-[`rule_evaluation/builtin_rules_tests.rs`](../../../src/qualitygate/rule_evaluation/builtin_rules_tests.rs) 的聚焦测试证明
+[`builtin_rules/builtin_rules_tests.rs`](../../../src/qualitygate/builtin_rules/builtin_rules_tests.rs) 的聚焦测试证明
 `source-pattern` 只报告新增行并阻塞非法配置。各 Issue 集成目标覆盖路由、固定规则包 scope、修复、
 非法 UTF-8、文件缺失、预算和确定性顺序。结构、项目、自定义规则与报告测试分别覆盖移动、歧义、
 快照不匹配、事实缺失、超时和工具输出错误。

@@ -104,7 +104,7 @@ pub(crate) async fn execute(
         } else {
             None
         };
-        let facts = crate::adapters::facts::RuleFacts {
+        let facts = crate::rule_engine::evaluation_facts::RuleFacts {
             syntax: Some(&syntax),
             projects: &projects,
             provenance: provenance.as_ref(),
@@ -112,11 +112,11 @@ pub(crate) async fn execute(
             tool_facts: Some(&tool_facts),
         };
         let mut result = if let Some(rule) = &entry.custom {
-            crate::adapters::custom_rules::evaluate_borrowed(rule, &setting, &snapshot, &facts)
+            crate::rule_engine::custom_rules::evaluate_borrowed(rule, &setting, &snapshot, &facts)
         } else {
             let builtin = entry.builtin.as_ref().expect("resolved builtin");
             let guidance = builtin.effective_diagnostic();
-            crate::adapters::rules::evaluate_borrowed(
+            crate::builtin_rules::dispatch::evaluate_borrowed(
                 &id,
                 &builtin.implementation,
                 &setting,

@@ -95,7 +95,11 @@ fn attributes(item: &Item) -> &[Attribute] {
     }
 }
 
-fn imports(tree: &UseTree, prefix: Vec<String>, output: &mut Vec<(Vec<String>, String, Span)>) {
+pub(super) fn imports(
+    tree: &UseTree,
+    prefix: Vec<String>,
+    output: &mut Vec<(Vec<String>, String, Span)>,
+) {
     match tree {
         UseTree::Path(value) => {
             let mut prefix = prefix;

@@ -1,6 +1,6 @@
 //! Bounded C/C++ syntax review. No name resolution or preprocessing is implied.
 use crate::adapters::diagnostic_budget::BuiltinResult;
-use crate::adapters::rules::diagnostic;
+use crate::report_evidence::report::diagnostic;
 use crate::{config::RuleSetting, domain::Range, snapshot::Snapshot};
 use anyhow::{Context, Result, ensure};
 use globset::{Glob, GlobSetBuilder};

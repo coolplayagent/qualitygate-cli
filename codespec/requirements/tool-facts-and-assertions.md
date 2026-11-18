@@ -261,8 +261,8 @@ TFA-02 要求生产者在发布前拒绝 `minimum_lines: 0`，即使未选择消
 | A02、A04、A07、A12、A13、A18、A20 | [闭合协议、原生格式及独立库存](../../src/qualitygate/tool_evidence/normalization_tests.rs)、[Rust 支持形态](../../src/qualitygate/tool_evidence/inventory_tests.rs)、[EDN 拒绝场景](../../src/qualitygate/tool_evidence/edn_tests.rs) |
 | A03、A04 | [精确十进制边界](../../src/qualitygate/tool_evidence/decimal_tests.rs)、[字段和测量类型](../../src/qualitygate/rule_catalog/operator_v4_tests.rs) |
 | A05 | [规则 Schema 兼容检查](../../src/qualitygate/rule_catalog/rule_schema.rs)、[V1–V3 集成回归](../../tests/operators.rs)、[运行时能力](../../src/qualitygate/check_planning/runtime_contracts.rs) |
-| A09、A11、A19 | [V4 精确阈值、不完整与预算](../../src/qualitygate/rule_evaluation/operators_v4_tests.rs)、[集合与资源反例](../../src/qualitygate/rule_evaluation/operators_v4_regression_tests.rs) |
-| A10、A15、A19、A20 | [生产者、目标与采集范围校验](../../src/qualitygate/rule_catalog/tool_source_validation.rs)、[规则事实选择](../../src/qualitygate/rule_evaluation/custom_rules/expression_v4.rs) |
+| A09、A11、A19 | [V4 精确阈值、不完整与预算](../../src/qualitygate/rule_engine/operators_v4_tests.rs)、[集合与资源反例](../../src/qualitygate/rule_engine/operators_v4_regression_tests.rs) |
+| A10、A15、A19、A20 | [生产者、目标与采集范围校验](../../src/qualitygate/rule_catalog/tool_source_validation.rs)、[规则事实选择](../../src/qualitygate/rule_engine/custom_rules/expression_v4.rs) |
 | A14 | [只接纳两类事实 Schema 的协议](../../src/qualitygate/tool_evidence/contracts.rs)、[桥接程序拒绝 mutator](../../tests/tool_bridge.rs) |
 | A16 | [双入口构建合同](../../tests/bazel.rs)、[生产入口登记](../../tests/quality/architecture_entries.rs)、[源码可达性](../../tests/quality/architecture_sources.rs)、[桥接可执行文件](../../tests/tool_bridge.rs) |
 

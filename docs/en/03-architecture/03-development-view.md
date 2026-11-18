@@ -20,31 +20,34 @@ The historical APIs remain in the flat compatibility files `application.rs`,
 module has an explicit capability owner; a facade re-export does not grant a
 different role access to I/O.
 
-| Business module | Owned responsibility |
-| --- | --- |
-| `agent_runtime` | Projects agent obligations and runs the bounded agent host. |
-| `policy_lifecycle` | Authenticates, activates, promotes, validates and rolls back policy versions. |
-| `rule_catalog` | Discovers, authors, parameterizes and queries rule definitions and operators. |
-| `constraint_coverage` | Binds declared constraint clauses to execution evidence and computes coverage. |
-| `gate_execution` | Schedules planned checks and computes the final gate report. |
-| `compatibility_verification` | Prepares compatibility inputs and evaluates producer/consumer compatibility. |
-| `test_effectiveness` | Checks counterexample evidence by executing tests against current and prior code. |
-| `snapshot_preflight` | Diagnoses snapshot acquisition, tool prerequisites and execution readiness. |
-| `selfcheck` | Runs the bundled evaluator corpus and reports verified shapes and gaps. |
-| `pilot_acceptance` | Validates pilot inventories, schedules, budgets and acceptance records. |
-| `judgment_review` | Requests and validates external advisory judgments without granting acceptance. |
-| `report_evidence` | Resolves captured report sources, normalizes gate evidence and renders reports. |
-| `external_acceptance` | Authenticates external attestations, manual acceptance and provenance evidence. |
-| `check_planning` | Loads bounded configuration and builds validated dependency-ordered check plans. |
-| `resource_selection` | Selects changed resources and enforces exclusion and snapshot acquisition budgets. |
-| `repair_feedback` | Builds actionable repair feedback and verifies replayed delivery identity. |
-| `content_digest` | Provides pure canonical byte hashing and digest validation. |
-| `xml_parsing` | Parses bounded XML documents and accounts for namespace work. |
-| `cli_dispatch` | Parses root CLI commands and dispatches to domain-specific interfaces. |
-| `rule_evaluation` | Evaluates builtin rules and versioned custom operators over captured facts. |
-| `source_analysis` | Extracts syntax, language bindings and changed entities with bounded workers. |
-| `maven_analysis` | Resolves Maven project models, dependency declarations and usage. |
-| `python_analysis` | Resolves Python projects, dependency markers and package metadata. |
+## Source map by workflow
+
+| Workflow | Source | Responsibility |
+| --- | --- | --- |
+| Declare rules | `rule_catalog` | Discovers rule definitions, describes parameters and schemas, and validates versioned expressions. `check_planning::model` holds the `CustomRule` and `RuleSetting` configuration contracts. |
+| Plan a check | `check_planning` | Loads the effective policy and task, applies profile and applicability constraints, and produces a dependency-ordered plan. |
+| Dispatch a rule | `gate_execution` | `workflow.rs` schedules planned checks. `rule_dispatch.rs` prepares rule facts and calls the evaluator. `gate.rs` makes the final gate decision. |
+| Evaluate a custom rule | `rule_engine` | Applies selectors and declarations, evaluates versioned operators and assertions, and owns the shared inputs for evaluation. |
+| Evaluate a built-in rule | `builtin_rules` | `dispatch.rs` selects an algorithm by implementation ID. The implementation modules inspect text, language syntax, or project facts. |
+| Select inputs | `snapshot`, `resource_selection`, `snapshot_preflight` | Capture and materialize Git snapshots, enforce exclusions and budgets, and diagnose readiness. |
+| Derive facts | `source_analysis`, `maven_analysis`, `python_analysis` | Extract syntax, language bindings, changed entities, and ecosystem facts. |
+| Collect and present evidence | `tool_evidence`, `tool_bridge`, `report_evidence`, `repair_feedback` | Normalize tool facts, bridge external tools, construct diagnostics and verification reports, and replay repair feedback. |
+| Govern policy and constraints | `policy_lifecycle`, `constraint_coverage` | Validate, activate, promote, and roll back policy versions. Bind constraint clauses to execution evidence. |
+| Review and accept | `external_acceptance`, `pilot_acceptance`, `judgment_review` | Authenticate attestations and manual evidence, validate pilot records, and obtain advisory judgments. |
+| Verify behavior | `compatibility_verification`, `test_effectiveness`, `selfcheck` | Run producer–consumer comparisons, test counterexamples against current and prior code, and check the bundled evaluator corpus. |
+| Operate the CLI and Agent | `cli_dispatch`, `agent_runtime` | Parse and dispatch CLI commands. Project Agent obligations and run the bounded host. |
+| Supply bounded capabilities | `runner`, `env`, `paths`, `net`, `content_digest`, `xml_parsing` | Own process execution, environment reads, path confinement, network access, hashing, and XML work budgets. |
+
+The root-level `rule_evaluation.rs` re-exports the historical rule API. The
+existing capability facades and Bazel entry points also preserve their
+respective public contracts. `contract_tests` is attached to the corresponding
+entry points through test modules.
+
+Built-in checks can call the shared fact and declaration helpers in the rule
+engine. The architecture gate checks this dependency direction separately
+from the owner graph, including references through the legacy rule exports.
+`source_analysis::declaration_fields` parses fields for both rule declarations
+and Git trailers.
 
 V4 expression types, typed records and assertion evaluation belong to the domain. The adapter selects records from evidence and supplies the deadline to the evaluator. Application dispatch uses the declared producer IDs to share immutable collections with each rule. Project inventories retain publication order. Operation, scan and materialization budgets apply independently to each consumer.
 
@@ -57,7 +60,7 @@ re-exports. For example, `agent_runtime::host_decisions` is pure, while
 `agent_runtime::host_controller` orchestrates execution. Bazel compiles these
 owners separately through `bazel/owners/*.rs` and the `//src/qualitygate:<owner>`
 targets, so pure contracts cannot gain orchestration dependencies accidentally.
-Cargo and Bazel expose both the business paths and compatible historical APIs.
+Cargo and Bazel retain their respective historical public APIs.
 Architecture reports retain source digests and file/line evidence.
 
 ```mermaid

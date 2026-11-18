@@ -1,6 +1,6 @@
 use super::execution_outcome::{ExecutionOutcome, ProducedEvidence};
 use crate::{
-    adapters::rules::diagnostic, config::CommandCheck, domain::*, paths, runner, snapshot,
+    config::CommandCheck, domain::*, paths, report_evidence::report::diagnostic, runner, snapshot,
 };
 use std::{path::Path, sync::Arc, time::Duration};
 

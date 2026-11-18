@@ -43,7 +43,11 @@ pub use gate::{Decision, Gate, evaluate};
 pub use policy_input::{NextStep, PolicyInputError};
 pub use project::*;
 pub use provenance::*;
-pub use report::*;
+pub use report::{
+    Applicability, Artifact, CheckResult, Diagnostic, Execution, ExecutionStatus,
+    MAX_DIAGNOSTIC_BYTES, MAX_DIAGNOSTICS, MergeRequest, PlanSummary, PolicyEvidence, Range,
+    Recheck, Report, ReportContext, Severity, SnapshotIdentity, Summary, Verdict,
+};
 pub use rule_validation::*;
 pub use source_review::*;
 pub use verification::*;

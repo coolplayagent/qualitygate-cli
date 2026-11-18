@@ -3,8 +3,9 @@ use super::{
     CustomRule, Range, Result, Snapshot, Subject, file_inventory, require_syntax_capabilities,
 };
 use crate::{
-    adapters::{entity_changes, facts::BorrowedRuleFacts, markers, syntax},
+    adapters::{entity_changes, syntax},
     domain::operator::{MAX_ENTITIES, MAX_FACT_BYTES},
+    rule_engine::{evaluation_facts::BorrowedRuleFacts, markers},
 };
 use anyhow::{bail, ensure};
 use std::{collections::BTreeMap, time::Instant};

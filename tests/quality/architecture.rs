@@ -34,11 +34,16 @@ mod owner_contract;
 use owner_contract::{FEATURES, SINGLE_MODULE_FEATURES};
 #[path = "architecture_entries.rs"]
 mod entries;
+#[path = "architecture_rule_boundaries.rs"]
+mod rule_boundaries;
 #[path = "architecture_sources.rs"]
 mod source_inventory;
 
 fn owner_of(location: &[String]) -> Option<&str> {
-    let first = location.first()?.as_str();
+    let (first, module) = rule_boundaries::target(
+        location.first()?.as_str(),
+        location.get(1).map(String::as_str),
+    );
     if OWNERS.iter().any(|(owner, _)| *owner == first) {
         return Some(first);
     }
@@ -49,7 +54,7 @@ fn owner_of(location: &[String]) -> Option<&str> {
         return Some(*owner);
     }
     let (_, modules) = FEATURES.iter().find(|(feature, _)| *feature == first)?;
-    let module = location.get(1)?.as_str();
+    let module = module?;
     modules
         .iter()
         .find(|(name, _)| *name == module)
@@ -95,6 +100,14 @@ impl Graph {
         for reference in &references.paths {
             let path = &reference.path;
             if path.first().is_some_and(|part| part == "crate") && path.len() > 1 {
+                if rule_boundaries::forbidden_dependency(&location, &path[1..]) {
+                    self.errors.push(format!(
+                        "{file}:{}: forbidden rule dependency {} -> {}",
+                        reference.line,
+                        location.join("::"),
+                        path.join("::"),
+                    ));
+                }
                 if let Some(target) = owner_of(&path[1..]) {
                     if owner != target {
                         self.edges.insert(Edge {
@@ -212,6 +225,7 @@ impl Graph {
                         .iter()
                         .map(|(name, _)| name.to_string()),
                 )
+                .chain(std::iter::once(rule_boundaries::LEGACY_ROOT.to_owned()))
                 .collect();
             assert_eq!(
                 declared, expected,
@@ -245,6 +259,19 @@ impl Graph {
                     .collect(),
                 "business root must declare every reviewed module: {name}"
             );
+        }
+        if let [module] = location.as_slice()
+            && matches!(module.as_str(), "adapters" | rule_boundaries::LEGACY_ROOT)
+        {
+            let parsed = syn::parse_file(&text).unwrap();
+            if let Err(error) = rule_boundaries::validate_exports(module, &parsed.items) {
+                self.errors.push(format!("{name}: {error}"));
+            }
+            if module == rule_boundaries::LEGACY_ROOT {
+                // A facade has no implementation or capability owner. Its
+                // importers are checked against each concrete export target.
+                return;
+            }
         }
         let references = self.source(&name, location.clone(), &text);
         let directory = if matches!(
@@ -619,7 +646,7 @@ fn architecture_business_modules_preserve_capability_and_dependency_boundaries()
         ("agent_runtime", "obligation_contracts"),
         ("policy_lifecycle", "rollback_contracts"),
         ("report_evidence", "report"),
-        ("rule_evaluation", "assertion_v4"),
+        ("rule_engine", "assertion_v4"),
     ] {
         let mut graph = Graph::default();
         graph.source(
@@ -667,7 +694,7 @@ fn architecture_business_modules_preserve_capability_and_dependency_boundaries()
 #[test]
 fn architecture_adapter_features_cannot_depend_on_cli_or_orchestration() {
     for (feature, module) in [
-        ("rule_evaluation", "builtin_rules"),
+        ("builtin_rules", "dispatch"),
         ("source_analysis", "syntax"),
         ("report_evidence", "tool_reports"),
         ("xml_parsing", "document"),
@@ -689,6 +716,78 @@ fn architecture_adapter_features_cannot_depend_on_cli_or_orchestration() {
                 .iter()
                 .any(|error| error.contains("adapters -> application"))
         );
+    }
+}
+
+#[test]
+fn architecture_rejects_rule_engine_dependencies_on_builtin_implementations() {
+    for source in [
+        "use crate::builtin_rules::dispatch;",
+        "use crate::adapters::rules;",
+        "use crate::rule_evaluation::builtin_rules;",
+        "use crate::adapters as old; fn f() { old::rules::evaluate(); }",
+        "use crate::adapters::*; fn f() { rules::evaluate(); }",
+    ] {
+        let mut graph = Graph::default();
+        graph.source(
+            "rule_engine.rs",
+            vec!["rule_engine".into(), "custom_rules".into()],
+            source,
+        );
+        assert!(
+            graph.violations().iter().any(|error| error.starts_with(
+                "rule_engine.rs:1: forbidden rule dependency rule_engine::custom_rules"
+            )),
+            "{source}",
+        );
+    }
+    for (source, forbidden) in [
+        (
+            "use crate::rule_engine::{evaluation_facts, markers};",
+            false,
+        ),
+        ("use crate::rule_engine::custom_rules;", true),
+    ] {
+        let mut graph = Graph::default();
+        graph.source(
+            "builtin_rules.rs",
+            vec!["builtin_rules".into(), "dispatch".into()],
+            source,
+        );
+        assert_eq!(!graph.violations().is_empty(), forbidden, "{source}");
+    }
+    assert_eq!(
+        owner_of(&["rule_evaluation".into(), "operators_v4_facts".into()]),
+        Some("domain"),
+    );
+}
+
+#[test]
+fn architecture_keeps_trailer_analysis_independent_of_rule_evaluation() {
+    for (source, forbidden) in [
+        ("use crate::source_analysis::declaration_fields;", false),
+        ("use crate::rule_engine::markers;", true),
+        ("use crate::adapters::facts;", true),
+        ("use crate::adapters::*;", true),
+    ] {
+        let mut graph = Graph::default();
+        graph.source(
+            "trailer_analysis.rs",
+            vec!["external_acceptance".into(), "trailer_analysis".into()],
+            source,
+        );
+        let violations = graph.violations();
+        if forbidden {
+            assert!(
+                violations
+                    .iter()
+                    .any(|error| error
+                        .starts_with("trailer_analysis.rs:1: forbidden rule dependency")),
+                "{source}"
+            );
+        } else {
+            assert!(violations.is_empty(), "{source}: {violations:?}");
+        }
     }
 }
 

@@ -186,35 +186,50 @@ pub mod rule_catalog {
     pub use qualitygate_domain::rule_catalog::rule_validation;
 }
 
-#[path = "../../src/qualitygate/rule_evaluation"]
-pub mod rule_evaluation {
+#[path = "../../src/qualitygate/builtin_rules"]
+pub mod builtin_rules {
     #[path = "builtin_conventions.rs"]
     pub mod builtin_conventions;
-    #[path = "builtin_rules.rs"]
-    pub mod builtin_rules;
-    #[path = "custom_rules/mod.rs"]
-    pub mod custom_rules;
-    #[path = "evaluation_facts.rs"]
-    pub mod evaluation_facts;
+    #[path = "dispatch.rs"]
+    pub mod dispatch;
     #[path = "language_syntax.rs"]
     pub mod language_syntax;
-    #[path = "markers.rs"]
-    pub mod markers;
     #[path = "native_syntax.rs"]
     pub mod native_syntax;
-    #[path = "operators_v2.rs"]
-    pub mod operators_v2;
-    #[path = "operators_v3.rs"]
-    pub mod operators_v3;
-    pub use qualitygate_domain::rule_evaluation::{assertion_v4, operators_v4_facts};
-    #[path = "operators_v4.rs"]
-    pub mod operators_v4;
     #[path = "project_checks.rs"]
     pub mod project_checks;
     #[path = "shell_conventions.rs"]
     pub mod shell_conventions;
     #[path = "structure_rules.rs"]
     pub mod structure_rules;
+}
+
+#[path = "../../src/qualitygate/rule_engine"]
+pub mod rule_engine {
+    #[path = "custom_rules/mod.rs"]
+    pub mod custom_rules;
+    #[path = "evaluation_facts.rs"]
+    pub mod evaluation_facts;
+    #[path = "markers.rs"]
+    pub mod markers;
+    #[path = "operators_v2.rs"]
+    pub mod operators_v2;
+    #[path = "operators_v3.rs"]
+    pub mod operators_v3;
+    #[path = "operators_v4.rs"]
+    pub mod operators_v4;
+    pub use qualitygate_domain::rule_engine::{assertion_v4, operators_v4_facts};
+}
+
+pub mod rule_evaluation {
+    pub use crate::builtin_rules::{
+        builtin_conventions, dispatch as builtin_rules, language_syntax, native_syntax,
+        project_checks, shell_conventions, structure_rules,
+    };
+    pub use crate::rule_engine::{
+        assertion_v4, custom_rules, evaluation_facts, markers, operators_v2, operators_v3,
+        operators_v4, operators_v4_facts,
+    };
 }
 
 #[path = "../../src/qualitygate/selfcheck"]
@@ -234,6 +249,8 @@ pub mod snapshot_preflight {
 pub mod source_analysis {
     #[path = "analysis_workers.rs"]
     pub mod analysis_workers;
+    #[path = "declaration_fields.rs"]
+    pub(crate) mod declaration_fields;
     #[path = "entity_changes.rs"]
     pub mod entity_changes;
     #[path = "language_bindings.rs"]

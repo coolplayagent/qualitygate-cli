@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-    adapters::rules::diagnostic,
     domain::{Severity, Verdict},
+    report_evidence::report::diagnostic,
 };
 
 fn finding(fix: &str) -> Diagnostic {
@@ -190,8 +190,8 @@ fn truncation_cannot_turn_an_invalid_skip_into_usable_evidence() {
 #[test]
 fn every_project_rule_version_bounds_its_actual_emitted_record_count() {
     use crate::{
-        adapters::custom_rules,
         config::{CustomRule, RuleSetting},
+        rule_engine::custom_rules,
         snapshot::{File, Identity, Snapshot},
     };
     let snapshot = Snapshot {

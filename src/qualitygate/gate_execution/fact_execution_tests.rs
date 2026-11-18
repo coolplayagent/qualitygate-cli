@@ -89,7 +89,7 @@ async fn actual_capture_publishes_complete_typed_metrics_without_failing_on_high
         let mut consumer = CheckResult::pending("consumer", true, Severity::Error);
         consumer.complete();
         let mut results = vec![outcome.check_result.clone(), consumer];
-        let mut context = super::super::rule_execution::Context::new(snapshot.clone());
+        let mut context = super::super::rule_dispatch::Context::new(snapshot.clone());
         context.publish("metrics", outcome.evidence);
         super::super::fact_revalidation::finalize(
             &plan,

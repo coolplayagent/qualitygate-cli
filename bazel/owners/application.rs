@@ -1,6 +1,8 @@
 //! Bazel-only entry point for the application capability boundary.
 
 pub use qualitygate_adapters::adapters;
+pub use qualitygate_adapters::builtin_rules;
+pub use qualitygate_adapters::rule_engine;
 pub use qualitygate_config::config;
 pub use qualitygate_domain::domain;
 pub use qualitygate_env::env;
@@ -104,8 +106,9 @@ pub mod gate_execution {
     pub mod native_runtime;
     #[path = "python_install.rs"]
     pub mod python_install;
-    #[path = "rule_execution.rs"]
-    pub mod rule_execution;
+    #[path = "rule_dispatch.rs"]
+    pub mod rule_dispatch;
+    pub use rule_dispatch as rule_execution;
     #[path = "tool_evidence.rs"]
     pub mod tool_evidence;
     #[path = "workflow.rs"]
@@ -258,22 +261,15 @@ pub mod rule_catalog {
     pub use qualitygate_domain::rule_catalog::rule_validation;
 }
 
-#[path = "../../src/qualitygate/rule_evaluation"]
 pub mod rule_evaluation {
-    pub use qualitygate_adapters::rule_evaluation::builtin_conventions;
-    pub use qualitygate_adapters::rule_evaluation::builtin_rules;
-    pub use qualitygate_adapters::rule_evaluation::custom_rules;
-    pub use qualitygate_adapters::rule_evaluation::evaluation_facts;
-    pub use qualitygate_adapters::rule_evaluation::language_syntax;
-    pub use qualitygate_adapters::rule_evaluation::markers;
-    pub use qualitygate_adapters::rule_evaluation::native_syntax;
-    pub use qualitygate_adapters::rule_evaluation::operators_v2;
-    pub use qualitygate_adapters::rule_evaluation::operators_v3;
-    pub use qualitygate_adapters::rule_evaluation::operators_v4;
-    pub use qualitygate_domain::rule_evaluation::operators_v4_facts;
-    pub use qualitygate_adapters::rule_evaluation::project_checks;
-    pub use qualitygate_adapters::rule_evaluation::shell_conventions;
-    pub use qualitygate_adapters::rule_evaluation::structure_rules;
+    pub use crate::builtin_rules::{
+        builtin_conventions, dispatch as builtin_rules, language_syntax, native_syntax,
+        project_checks, shell_conventions, structure_rules,
+    };
+    pub use crate::rule_engine::{
+        custom_rules, evaluation_facts, markers, operators_v2, operators_v3, operators_v4,
+        operators_v4_facts,
+    };
 }
 
 #[path = "../../src/qualitygate/selfcheck"]

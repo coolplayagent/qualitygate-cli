@@ -1,10 +1,10 @@
 //! Bounded lexical evaluation over complete, snapshot-owned named collections.
-use crate::adapters::operators::Entity;
 use crate::domain::{
     Range,
     operator::*,
     operator_v3::{Expr, Validated},
 };
+use crate::rule_engine::operators_v2::Entity;
 use anyhow::{Result, bail, ensure};
 use serde::Serialize;
 use std::{

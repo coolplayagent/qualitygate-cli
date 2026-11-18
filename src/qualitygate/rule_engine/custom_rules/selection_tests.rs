@@ -210,7 +210,7 @@ fn every_rule_version_bounds_repeated_marker_declaration_bytes() {
     rule.then.require_marker = true;
     for version in [1, 2, 3] {
         rule.schema_version = version;
-        let result = crate::adapters::custom_rules::evaluate(
+        let result = crate::rule_engine::custom_rules::evaluate(
             &rule,
             &crate::config::RuleSetting::default(),
             &snapshot,
