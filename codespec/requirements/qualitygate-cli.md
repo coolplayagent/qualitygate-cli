@@ -990,5 +990,5 @@ CI 保留独立 UT LCOV 与原有 all-target 90% 门禁，Miri/ASan 和集成门
 `JAVA-DEPRECATION-01` 要求从所选编译的 javac 诊断识别 deprecation 和 removal，并能在仅依赖变更时
 报告未改动的使用位置。诊断必须与快照来源相符，编译失败或不完整报告须返回未完成。
 `JAVA-DEPRECATION-02` 要求依据项目配置的全限定类型检查实际注解应用，放行同短名的其他符号。
-两项检查独立配置与裁决，验证范围由实际编译输入及分析器的符号解析能力决定。
+PMD 抑制记录在严格注解策略下仍属违规。两项检查独立配置与裁决，验证范围由实际编译输入及符号解析能力决定。
 见[需求到测试证据](../../docs/zh/04-contributor-guide/03-requirements-to-test-evidence.md#java-废弃用法与禁用注解)。

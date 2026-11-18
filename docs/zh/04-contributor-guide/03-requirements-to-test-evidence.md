@@ -12,7 +12,7 @@
 `JAVA-DEPRECATION-01` 由 `tests/java_deprecation.rs` 更换依赖 JAR 验证。
 未修改代码中的废弃类、接口、注解和成员引用应阻断交付，编译失败应使门禁未完成。
 `JAVA-DEPRECATION-02` 由 `tests/java_forbidden_annotation.rs` 验证 PMD
-能按全限定名识别禁用注解，并放行短名相同的其他类型。CI 的
+能按全限定名识别禁用注解，放行短名相同的其他类型，并保留被 PMD 抑制的违规。CI 的
 `java-deprecation` 作业使用真实工具运行两组测试。
 
 ## 现网事故防护

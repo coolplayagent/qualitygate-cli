@@ -365,6 +365,7 @@ pub enum ReportFormat {
     Checkstyle,
     Spotbugs,
     Pmd,
+    PmdWithSuppressed,
     Sarif,
     Lcov,
     Cobertura,

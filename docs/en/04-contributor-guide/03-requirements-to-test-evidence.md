@@ -16,7 +16,8 @@ against a replacement JAR. Unchanged source uses of deprecated classes,
 interfaces, annotations and members block delivery, and compilation failure
 leaves the gate incomplete. `JAVA-DEPRECATION-02` uses
 `tests/java_forbidden_annotation.rs` to verify that PMD resolves a configured
-annotation type and allows a different type with the same short name.
+annotation type, allows a different type with the same short name, and still
+blocks findings reported by PMD as suppressed.
 The `java-deprecation` CI job runs both with real tools.
 
 ## Production incident guards

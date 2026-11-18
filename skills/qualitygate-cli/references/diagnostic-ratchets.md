@@ -136,7 +136,10 @@ Use the [javac policy](java-deprecation.yaml) to block deprecation and removal
 warnings emitted by the selected Java compilation. List the project's source
 files and compilation inputs in the supplied argument file. Include the same
 classpath, release, and generated-source configuration as the build you intend
-to enforce. Pass source paths relative to the configured command directory.
+to enforce. Pass source paths beneath the configured command directory
+without parent segments. Use the repository root for sibling sources. For
+builds with annotation processors, configure processing explicitly as in
+the project build.
 Use the example's `-Xstdout` diagnostic file and leave warnings enabled at
 warning level. Qualitygate applies the blocking severity after a successful
 compilation. A clean JDK 21 run creates a fresh empty file.
@@ -145,8 +148,14 @@ For project-specific annotation bans, copy the [PMD ruleset](java-forbidden-anno
 to the project and replace the sample names with the forbidden fully qualified
 annotation types. The [PMD policy](java-forbidden-annotations.yaml) shows how to
 run the check after compilation with the resulting classes and dependencies
-on PMD's auxiliary classpath. The XPath rule matches resolved annotation
-applications, including source-retention annotations.
+on PMD's auxiliary classpath. The sample binds both tools to one argument
+file containing only source paths. Put compiler options in the command
+instead to preserve the shared inventory. The XPath rule matches resolved annotation
+applications, including source-retention annotations. Keep
+`--show-suppressed` with the `pmd_with_suppressed` report format
+(`reports.pmd-suppressed.v1`). Suppressed findings can still block and are
+reported at file scope because PMD omits their original rule ID and line.
+The report covers the configured source inventory and classpath.
 
 The javac adapter advertises `reports.javac.v1`. Both checks use
 `reports[].mode: project` (`reports.project-diagnostics.v1`) to

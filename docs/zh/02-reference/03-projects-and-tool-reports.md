@@ -86,13 +86,15 @@ SpotBugs。各 producer 的完成标志、文件清单、错误记录、路径�
 [javac 示例](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
 阻断所选编译范围内的普通废弃和待移除用法。用 JDK 21 和 `-Xstdout` 每次生成新的 UTF-8
 英文详细诊断文件，启用两类 lint 并提高警告上限。编译成功后由 Qualitygate 判定阻断级别。
-使用相对于命令工作目录的源码路径，以及项目实际的 classpath、module path 和目标 Java 版本。
+源码路径须在命令工作目录下且无父目录段，使用项目实际的 classpath、module path、显式注解
+处理器配置和目标 Java 版本。
 Java 规范允许的警告豁免和实际编译输入决定覆盖范围。
 
 [PMD 示例](../../../skills/qualitygate-cli/references/java-forbidden-annotations.yaml)
 独立检查注解使用。复制[规则集](../../../skills/qualitygate-cli/references/java-forbidden-annotations.xml)，
-写入要禁用的注解全限定名，并在编译成功后运行。PMD 的辅助 classpath 须包含解析所需的
-类型。两份示例均使用 project 报告模式，未变更的用法位置也可阻断交付。
+写入要禁用的注解全限定名，并在编译成功后对同一源码清单运行。PMD 的辅助 classpath 须包含解析所需的
+类型。`pmd_with_suppressed` 格式将 `--show-suppressed` 输出的抑制记录保留为文件级违规。
+两份示例均使用 project 报告模式，未变更的用法位置也可阻断交付。
 
 ## 类型化工具观测
 

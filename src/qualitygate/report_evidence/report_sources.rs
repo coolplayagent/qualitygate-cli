@@ -29,7 +29,7 @@ impl<'a> Sources<'a> {
         }
     }
 
-    pub(super) fn with_exact_cwd(mut self, cwd: &str) -> Self {
+    pub(crate) fn with_exact_cwd(mut self, cwd: &str) -> Self {
         self.exact_cwd = Some(PathBuf::from(cwd));
         self
     }

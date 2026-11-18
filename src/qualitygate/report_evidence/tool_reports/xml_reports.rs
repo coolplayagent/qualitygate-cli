@@ -20,7 +20,7 @@ pub(super) fn parse_with_budget(
         ReportFormat::Junit => ["testsuite", "testsuites"].contains(&root.tag_name().name()),
         ReportFormat::Checkstyle => root.has_tag_name("checkstyle"),
         ReportFormat::Spotbugs => root.has_tag_name("BugCollection"),
-        ReportFormat::Pmd => root.has_tag_name("pmd"),
+        ReportFormat::Pmd | ReportFormat::PmdWithSuppressed => root.has_tag_name("pmd"),
         ReportFormat::Cobertura => root.has_tag_name("coverage"),
         ReportFormat::Jacoco => root.has_tag_name("report"),
         _ => false,
@@ -30,7 +30,7 @@ pub(super) fn parse_with_budget(
     }
     match format {
         ReportFormat::Junit => junit(root, &mut data, &mut budget)?,
-        ReportFormat::Checkstyle | ReportFormat::Pmd => {
+        ReportFormat::Checkstyle | ReportFormat::Pmd | ReportFormat::PmdWithSuppressed => {
             file_diagnostics(format, root, &mut data, &mut budget)?
         }
         ReportFormat::Spotbugs => spotbugs(root, &mut data, &mut budget)?,
@@ -140,12 +140,46 @@ fn file_diagnostics(
         )?;
     }
     if root.descendants().any(|node| {
-        node.has_tag_name("error") && format == ReportFormat::Pmd
+        node.has_tag_name("error") && format != ReportFormat::Checkstyle
             || node.has_tag_name("configerror")
     }) {
         bail!("Static analyzer reported an execution/configuration error");
     }
+    if format == ReportFormat::PmdWithSuppressed {
+        pmd_suppressions(root, data, budget)?;
+    }
     Ok(())
+}
+
+fn pmd_suppressions(root: Node<'_, '_>, data: &mut Data, budget: &mut Budget) -> Result<()> {
+    for node in root
+        .children()
+        .filter(|node| node.has_tag_name("suppressedviolation"))
+    {
+        let file = pmd_suppression_attribute(node, "filename")?;
+        let kind = pmd_suppression_attribute(node, "suppressiontype")?;
+        let message = pmd_suppression_attribute(node, "msg")?;
+        // The PMD XML renderer omits the original rule and source line.
+        budget.push(
+            &mut data.issues,
+            Issue {
+                tool: Some("pmd".into()),
+                locations: vec![],
+                rule: "pmd-suppressed".into(),
+                file: Some(file.into()),
+                line: None,
+                message: format!("PMD suppressed finding ({kind}): {message}"),
+                symbol: None,
+            },
+        )?;
+    }
+    Ok(())
+}
+
+fn pmd_suppression_attribute<'a>(node: Node<'a, '_>, name: &str) -> Result<&'a str> {
+    node.attribute(name)
+        .filter(|value| !value.trim().is_empty())
+        .with_context(|| format!("PMD suppressed violation lacks {name}"))
 }
 
 fn spotbugs(root: Node<'_, '_>, data: &mut Data, budget: &mut Budget) -> Result<()> {

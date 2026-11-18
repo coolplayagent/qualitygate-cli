@@ -131,15 +131,19 @@ blocks ordinary deprecation and removal warnings for the selected compilation.
 Collect detailed English JDK 21 output in a fresh UTF-8 file with `-Xstdout`.
 Enable both lint categories, set the warning cap high, and let Qualitygate
 apply blocking severity after compilation. Use the project's actual source
-list with paths relative to the command directory, classpath, module path and
-release. Java's warning exemptions and the selected inputs set coverage.
+list, classpath, module path, processor configuration and release. Source
+paths must stay beneath the command directory without parent segments.
+Java's warning exemptions and the selected inputs set coverage.
 
 The [PMD example](../../../skills/qualitygate-cli/references/java-forbidden-annotations.yaml)
 checks annotation applications independently. Copy the
 [ruleset](../../../skills/qualitygate-cli/references/java-forbidden-annotations.xml)
 and configure forbidden annotation types by fully qualified name. Run it after
-a successful build with all needed types on its auxiliary classpath. Both
-examples use project report mode so an unchanged use site can block delivery.
+a successful build against the same source list with all needed types on
+its auxiliary classpath. The
+`pmd_with_suppressed` format includes records emitted by `--show-suppressed`
+as file-level findings. Both examples use project report mode so an unchanged
+use site can block delivery.
 
 ## Typed tool observations
 
