@@ -9,6 +9,7 @@ checks:
       - javac
       - -J-Duser.language=en
       - -J-Duser.country=US
+      - -J-Dfile.encoding=UTF-8
       - -encoding
       - UTF-8
       - -Xlint:deprecation,removal

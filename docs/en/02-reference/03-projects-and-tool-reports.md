@@ -124,12 +124,22 @@ SARIF, Checkstyle, PMD, and SpotBugs. Their producer-specific completion markers
 file inventories, error records, path mappings, and version agreement are part
 of completeness, not optional metadata.
 
-## Java deprecation and forbidden annotations
+## Project deprecation checks
 
-The [javac example](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
-blocks ordinary deprecation and removal warnings for the selected compilation.
-Collect detailed English JDK 21 output in a fresh UTF-8 file with `-Xstdout`.
-Enable both lint categories, set the warning cap high, and let Qualitygate
+The [language policies](../../../skills/qualitygate-cli/references/deprecation-policies.md)
+cover Java, Rust, C, C++, Go, TypeScript, JavaScript, Python and selected Bash
+syntax. Each example runs the language's analyzer on project-selected inputs
+and applies project diagnostic mode. Analyzer coverage depends on its symbol
+resolution and the selected tool, targets and dependency inventory.
+
+### Java deprecation and forbidden annotations
+
+The [JDK 17 and 21 example](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
+blocks ordinary deprecation and removal warnings. The
+[JDK 8 example](../../../skills/qualitygate-cli/references/java-deprecation-jdk8.yaml)
+checks ordinary deprecation, the category available in that compiler.
+Collect detailed English javac output in a fresh UTF-8 file with `-Xstdout`.
+Enable the example's lint categories, set the warning cap high, and let Qualitygate
 apply blocking severity after compilation. Use the project's actual source
 list, classpath, module path, processor configuration and release. Source
 paths must stay beneath the command directory without parent segments.

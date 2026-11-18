@@ -81,11 +81,18 @@ SARIF 保留 run、工具版本、规则、result kind、消息、位置与 part
 参考棘轮覆盖 Clippy、ESLint、golangci-lint、Ruff、GCC/Clang analyzer SARIF、Checkstyle、PMD 与
 SpotBugs。各 producer 的完成标志、文件清单、错误记录、路径映射和版本一致性属于完整性契约。
 
-## Java 废弃用法与禁用注解
+## 项目废弃检查
 
-[javac 示例](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
-阻断所选编译范围内的普通废弃和待移除用法。用 JDK 21 和 `-Xstdout` 每次生成新的 UTF-8
-英文详细诊断文件，启用两类 lint 并提高警告上限。编译成功后由 Qualitygate 判定阻断级别。
+[随包语言策略](../../../skills/qualitygate-cli/references/deprecation-policies.md)覆盖 Java、
+Rust、C、C++、Go、TypeScript、JavaScript、Python 和指定的 Bash 旧语法。策略使用对应工具
+和项目选定的输入，以 project 模式保留诊断。实际覆盖取决于工具的符号解析、目标与依赖清单。
+
+### Java 废弃用法与禁用注解
+
+[JDK 17 和 21 示例](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
+阻断所选编译范围内的普通废弃和待移除用法。[JDK 8 示例](../../../skills/qualitygate-cli/references/java-deprecation-jdk8.yaml)
+检查该版本支持的普通废弃。用 `-Xstdout` 每次生成新的 UTF-8 英文详细诊断文件，启用对应
+lint 并提高警告上限。编译成功后由 Qualitygate 判定阻断级别。
 源码路径须在命令工作目录下且无父目录段，使用项目实际的 classpath、module path、显式注解
 处理器配置和目标 Java 版本。
 Java 规范允许的警告豁免和实际编译输入决定覆盖范围。

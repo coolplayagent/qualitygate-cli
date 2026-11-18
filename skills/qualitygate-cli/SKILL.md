@@ -107,6 +107,7 @@ command adoption, rule enabling or policy adoption.
 | Bound instruction size or retain required paths | [File contracts](references/file-contracts.md); `file` with `change: all` |
 | Require assertion counterexamples against old code | [Test effectiveness](references/test-effectiveness.md); explicit command/task `test_effectiveness` |
 | Prevent analyzer debt growth | [Diagnostic ratchets](references/diagnostic-ratchets.md); report `mode: ratchet` with a fresh base run |
+| Block project deprecation findings | [Language policies](references/deprecation-policies.md) with project diagnostic scope |
 | Compose typed predicates and bounded counts | [V2 operators](references/operators.md); `rules.operators.v2` |
 | Relate collections with lexical lambdas and projections | [V3 operators](references/operators-v3.md); `rules.operators.v3` |
 | Assert typed external metrics and clone relations | [V4 operators](references/operators-v4.md); `rules.operators.v4`, explicit producer dependencies and complete tool-facts v1 evidence |

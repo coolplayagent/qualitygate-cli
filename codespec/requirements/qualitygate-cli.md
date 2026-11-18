@@ -992,3 +992,7 @@ CI 保留独立 UT LCOV 与原有 all-target 90% 门禁，Miri/ASan 和集成门
 `JAVA-DEPRECATION-02` 要求依据项目配置的全限定类型检查实际注解应用，放行同短名的其他符号。
 PMD 抑制记录在严格注解策略下仍属违规。两项检查独立配置与裁决，验证范围由实际编译输入及符号解析能力决定。
 见[需求到测试证据](../../docs/zh/04-contributor-guide/03-requirements-to-test-evidence.md#java-废弃用法与禁用注解)。
+
+`PROJECT-DEPRECATION-01` 要求可运行的语言策略保留所选工具的范围和完整性证据。
+Rust、C/C++、Go、TypeScript/JavaScript、Python 和 Bash 必须有真实工具验收。
+Java 验收覆盖 JDK 8、17 和 21，并保留 JDK 8 的普通废弃与新版本 removal 的区别。

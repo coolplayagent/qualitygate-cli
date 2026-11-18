@@ -13,7 +13,12 @@
 未修改代码中的废弃类、接口、注解和成员引用应阻断交付，编译失败应使门禁未完成。
 `JAVA-DEPRECATION-02` 由 `tests/java_forbidden_annotation.rs` 验证 PMD
 能按全限定名识别禁用注解，放行短名相同的其他类型，并保留被 PMD 抑制的违规。CI 的
-`java-deprecation` 作业使用真实工具运行两组测试。
+`java-deprecation` 矩阵在 JDK 8、17 和 21 上使用真实工具运行两组测试。
+
+`tests/clippy_ratchet.rs`、`tests/c_family_ratchet.rs` 和 `tests/golangci_ratchet.rs`
+验证 Rust、C/C++、Go 的声明变更可阻断未修改的用法。`tests/language_deprecation.rs`
+验证类型感知 ESLint 的 TypeScript 和 JavaScript 检查及 ShellCheck 的 Bash 旧语法检查。
+`tests/python_deprecation.rs` 以 Pyright 验证 Python PEP 702 用法。
 
 ## 现网事故防护
 

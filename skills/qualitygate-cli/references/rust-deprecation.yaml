@@ -1,0 +1,20 @@
+# Run from the project root with the Rust toolchain pinned.
+# Adjust Cargo targets and features to match the project build.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: rust-deprecation
+    argv: [cargo, clippy, --locked, --all-targets, --all-features, --message-format=json, --, -A, warnings, --force-warn, deprecated]
+    timeout_seconds: 300
+    required: true
+    severity: error
+    tools:
+      - id: clippy
+        argv: [cargo, clippy, --version]
+    reports:
+      - path: target/rust-deprecation.jsonl
+        from_stdout: true
+        format: cargo_clippy
+        mode: project

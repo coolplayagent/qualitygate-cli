@@ -1,0 +1,21 @@
+# Provision a compatible ESLint and a tracked type-aware eslint.config.mjs.
+# See deprecation-policies.md for the flat config and external dependency setup.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: typescript-deprecation
+    argv: [eslint, --format=json, --exit-on-fatal-error, src]
+    required_env: [QUALITYGATE_ESLINT_MODULE_ROOT]
+    timeout_seconds: 300
+    findings_exit_codes: [1]
+    tools:
+      - id: eslint
+        argv: [eslint, --version]
+        inputs: [eslint.config.mjs, tsconfig.json]
+    reports:
+      - path: target/typescript-deprecation.json
+        from_stdout: true
+        format: eslint_json
+        mode: project

@@ -1,0 +1,36 @@
+# Copy the companion golangci configuration into config/ and provision Go and golangci-lint v2.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: go-deprecation
+    argv:
+      - golangci-lint
+      - run
+      - --config=config/golangci-deprecation.yaml
+      - --output.json.path=stdout
+      - --output.text.path=stderr
+      - --show-stats=false
+      - --max-issues-per-linter=0
+      - --max-same-issues=0
+      - --uniq-by-line=false
+      - --modules-download-mode=readonly
+      - --timeout=240s
+      - ./...
+    timeout_seconds: 300
+    required: true
+    severity: error
+    findings_exit_codes: [1]
+    tools:
+      - id: go
+        argv: [go, version]
+        inputs: [go.mod]
+      - id: golangci-lint
+        argv: [golangci-lint, version]
+        inputs: [config/golangci-deprecation.yaml]
+    reports:
+      - path: target/go-deprecation.json
+        from_stdout: true
+        format: golangci_json
+        mode: project

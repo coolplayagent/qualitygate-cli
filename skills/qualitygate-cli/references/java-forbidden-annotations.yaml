@@ -1,6 +1,8 @@
 # Put one Java source path per line in config/java-annotation-sources.args. Quote spaces.
 # Copy the paired XML to config/java-forbidden-annotations.xml and set forbiddenAnnotations.
 # Set compiler flags on argv. Add the same dependency JARs to PMD's --aux-classpath.
+# Set --use-version to the Java source level. The example writes classes into config
+# in the disposable snapshot because javac 8 requires an existing output directory.
 schema_version: 1
 requires:
   min_cli_version: "1.4.0"
@@ -9,7 +11,7 @@ checks:
   - id: java-compile
     required: true
     severity: error
-    argv: [javac, -encoding, UTF-8, -d, target/classes, '@config/java-annotation-sources.args']
+    argv: [javac, -encoding, UTF-8, -d, config, '@config/java-annotation-sources.args']
     timeout_seconds: 120
     tools:
       - {id: javac, argv: [javac, -version], inputs: [config/java-annotation-sources.args]}
@@ -25,18 +27,20 @@ checks:
       - --rulesets
       - config/java-forbidden-annotations.xml
       - --aux-classpath
-      - target/classes
+      - config
+      - --use-version
+      - java-8
       - --no-cache
+      - --no-progress
       - --no-fail-on-violation
       - --show-suppressed
       - --format
       - xml
-      - --report-file
-      - target/java-forbidden-annotations.xml
     timeout_seconds: 120
     tools:
       - {id: pmd, argv: [pmd, --version], inputs: [config/java-annotation-sources.args, config/java-forbidden-annotations.xml]}
     reports:
       - path: target/java-forbidden-annotations.xml
+        from_stdout: true
         format: pmd_with_suppressed
         mode: project

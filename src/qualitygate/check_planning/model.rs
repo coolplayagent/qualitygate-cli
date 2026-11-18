@@ -361,6 +361,7 @@ pub enum ReportFormat {
     EslintJson,
     GolangciJson,
     RuffJson,
+    PyrightJson,
     Junit,
     Checkstyle,
     Spotbugs,

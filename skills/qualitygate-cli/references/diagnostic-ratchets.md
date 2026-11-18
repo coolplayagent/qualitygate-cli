@@ -132,8 +132,10 @@ that the complete historical analyzer inventory is clean.
 
 ## Java deprecation and forbidden annotations
 
-Use the [javac policy](java-deprecation.yaml) to block deprecation and removal
-warnings emitted by the selected Java compilation. List the project's source
+Use the [javac policy](java-deprecation.yaml) with JDK 17 or 21 to block
+deprecation and removal warnings. Use the [JDK 8 policy](java-deprecation-jdk8.yaml)
+for ordinary deprecation warnings. JDK 8 predates the separate removal
+diagnostic. List the project's source
 files and compilation inputs in the supplied argument file. Include the same
 classpath, release, and generated-source configuration as the build you intend
 to enforce. Pass source paths beneath the configured command directory
@@ -142,7 +144,7 @@ builds with annotation processors, configure processing explicitly as in
 the project build.
 Use the example's `-Xstdout` diagnostic file and leave warnings enabled at
 warning level. Qualitygate applies the blocking severity after a successful
-compilation. A clean JDK 21 run creates a fresh empty file.
+compilation. A clean compilation creates a fresh empty file.
 
 For project-specific annotation bans, copy the [PMD ruleset](java-forbidden-annotations.xml)
 to the project and replace the sample names with the forbidden fully qualified

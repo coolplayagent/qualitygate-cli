@@ -18,7 +18,13 @@ leaves the gate incomplete. `JAVA-DEPRECATION-02` uses
 `tests/java_forbidden_annotation.rs` to verify that PMD resolves a configured
 annotation type, allows a different type with the same short name, and still
 blocks findings reported by PMD as suppressed.
-The `java-deprecation` CI job runs both with real tools.
+The `java-deprecation` CI matrix runs both on JDK 8, 17 and 21.
+
+The Rust, C/C++, and Go analyzer tests in `tests/clippy_ratchet.rs`,
+`tests/c_family_ratchet.rs`, and `tests/golangci_ratchet.rs` cover unchanged
+consumers after provider changes. `tests/language_deprecation.rs` exercises
+typed ESLint on JavaScript and TypeScript and ShellCheck on legacy Bash
+syntax. `tests/python_deprecation.rs` runs PEP 702 cases with Pyright.
 
 ## Production incident guards
 

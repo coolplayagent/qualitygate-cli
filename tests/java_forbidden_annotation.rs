@@ -3,7 +3,12 @@ mod common;
 
 use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
-use std::{fs, path::Path, process::Command};
+use std::{
+    env::join_paths,
+    fs,
+    path::Path,
+    process::{Command, Output},
+};
 
 const POLICY: &str =
     include_str!("../skills/qualitygate-cli/references/java-forbidden-annotations.yaml");
@@ -38,7 +43,7 @@ fn forbidden_annotations_reference_policy_is_valid() {
     );
 }
 
-fn tool(directory: &Path, program: &str, args: &[&str]) {
+fn tool(directory: &Path, program: &str, args: &[&str]) -> Output {
     let output = Command::new(program)
         .args(args)
         .current_dir(directory)
@@ -50,6 +55,27 @@ fn tool(directory: &Path, program: &str, args: &[&str]) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    output
+}
+
+fn pmd_java_version(root: &Path) -> String {
+    let version = tool(root, "javac", &["-version"]);
+    let stdout = String::from_utf8(version.stdout).unwrap();
+    let stderr = String::from_utf8(version.stderr).unwrap();
+    let version = stdout
+        .lines()
+        .chain(stderr.lines())
+        .find_map(|line| line.strip_prefix("javac "))
+        .expect("javac version");
+    let major = version
+        .strip_prefix("1.")
+        .unwrap_or(version)
+        .split(['.', '-', '+', '_'])
+        .next()
+        .unwrap()
+        .parse::<u16>()
+        .unwrap();
+    format!("java-{major}")
 }
 
 fn dependency_jar(root: &Path) {
@@ -74,20 +100,14 @@ fn dependency_jar(root: &Path) {
             file
         })
         .collect();
+    fs::create_dir(sources.join("classes")).unwrap();
     let mut args = vec!["-d", "classes"];
     args.extend(files.iter().map(String::as_str));
     tool(sources, "javac", &args);
     tool(
         sources,
         "jar",
-        &[
-            "--create",
-            "--file",
-            "annotations.jar",
-            "-C",
-            "classes",
-            ".",
-        ],
+        &["cf", "annotations.jar", "-C", "classes", "."],
     );
     fs::create_dir_all(root.join("deps")).unwrap();
     fs::copy(sources.join("annotations.jar"), root.join(JAR)).unwrap();
@@ -152,7 +172,7 @@ fn locations(result: &Value) -> Vec<(&str, Option<u64>)> {
 }
 
 #[test]
-#[ignore = "requires JDK 21 and PMD 7; mandatory live Java diagnostics CI job"]
+#[ignore = "requires a JDK and PMD 7.29; mandatory live Java diagnostics CI job"]
 fn real_pmd_resolves_source_retention_annotations_and_independent_tool_failure() {
     let repository = fixture();
     let root = repository.path();
@@ -194,12 +214,14 @@ fn real_pmd_resolves_source_retention_annotations_and_independent_tool_failure()
     let compile = policy["checks"][0]["argv"].as_array_mut().unwrap();
     compile.splice(1..1, [json!("-classpath"), json!(JAR)]);
     let command = policy["checks"][1]["argv"].as_array_mut().unwrap();
-    let classpath_index = command
-        .iter()
-        .position(|arg| arg == "--aux-classpath")
-        .unwrap()
-        + 1;
-    command[classpath_index] = json!(JAR);
+    let classpath = join_paths(["config", JAR]).unwrap();
+    for (option, value) in [
+        ("--aux-classpath", json!(classpath.to_str().unwrap())),
+        ("--use-version", json!(pmd_java_version(root))),
+    ] {
+        let index = command.iter().position(|arg| arg == option).unwrap() + 1;
+        command[index] = value;
+    }
     write(
         root,
         "qualitygate.yaml",

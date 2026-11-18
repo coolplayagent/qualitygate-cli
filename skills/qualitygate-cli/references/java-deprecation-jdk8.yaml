@@ -1,0 +1,34 @@
+# Java 8 has one deprecation category. Use the project's source list and classpath.
+# javac 8 needs an existing -d directory. Use the disposable snapshot root.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1, reports.javac.v1]
+checks:
+  - id: java-deprecation
+    argv:
+      - javac
+      - -J-Duser.language=en
+      - -J-Duser.country=US
+      - -J-Dfile.encoding=UTF-8
+      - -encoding
+      - UTF-8
+      - -Xlint:deprecation
+      - -Xmaxwarns
+      - '2147483647'
+      - -Xstdout
+      - qualitygate-javac.log
+      - -d
+      - .
+      - '@config/java-sources.args'
+    timeout_seconds: 120
+    required: true
+    severity: error
+    tools:
+      - id: javac
+        argv: [javac, -version]
+        inputs: [config/java-sources.args]
+    reports:
+      - path: qualitygate-javac.log
+        format: javac
+        mode: project

@@ -197,14 +197,19 @@ jobs:
         run: cargo test --locked --test compatibility_live -- --ignored --nocapture
 
   java-deprecation:
+    name: java-deprecation (JDK ${{ matrix.jdk }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        jdk: ['8', '17', '21']
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ matrix.jdk }}
       - run: rustup show
       - name: Install pinned PMD
         run: |
@@ -253,6 +258,49 @@ jobs:
       - run: rustup show
       - name: Live ESLint JSON ratchet and repair acceptance
         run: cargo test --locked --test eslint_ratchet -- --ignored --nocapture
+      - name: Provision typed ESLint
+        run: |
+          npm install --prefix "$RUNNER_TEMP/typed-eslint" --no-audit --no-fund --ignore-scripts eslint@10.10.0 typescript-eslint@8.73.0 typescript@6.0.3
+          echo "$RUNNER_TEMP/typed-eslint/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "QUALITYGATE_ESLINT_MODULE_ROOT=$RUNNER_TEMP/typed-eslint" >> "$GITHUB_ENV"
+      - name: Live TypeScript and JavaScript deprecation acceptance
+        run: cargo test --locked --test language_deprecation real_typed_eslint -- --ignored --nocapture
+
+  shell-deprecation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - run: rustup show
+      - name: Install pinned ShellCheck
+        run: |
+          cd "$RUNNER_TEMP"
+          curl --fail --location --retry 3 --output shellcheck.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  shellcheck.tar.xz" | sha256sum -c
+          tar -xf shellcheck.tar.xz
+          echo "$RUNNER_TEMP/shellcheck-v0.11.0" >> "$GITHUB_PATH"
+      - name: Live Bash legacy syntax acceptance
+        run: cargo test --locked --test language_deprecation real_shellcheck -- --ignored --nocapture
+
+  python-deprecation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: rustup show
+      - name: Install pinned Pyright
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pyright" --no-audit --no-fund --ignore-scripts pyright@1.1.414
+          echo "$RUNNER_TEMP/pyright/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Live Python PEP 702 deprecation acceptance
+        run: cargo test --locked --test python_deprecation -- --ignored --nocapture
 
   golangci-project:
     runs-on: ubuntu-latest

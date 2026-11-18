@@ -7,6 +7,11 @@ use common::{cli, fixture, git, report};
 use serde_json::{Value, json};
 use std::{fs, path::Path, process::Command};
 
+const DEPRECATION_POLICY: &str =
+    include_str!("../skills/qualitygate-cli/references/go-deprecation.yaml");
+const DEPRECATION_LINTER: &str =
+    include_str!("../skills/qualitygate-cli/references/golangci-deprecation.yaml");
+
 // These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
     let output = repository::check(root, &[]);
@@ -42,14 +47,19 @@ fn golangci_reference_policy_is_valid_and_unknown_format_fails() {
     );
 }
 
-#[test]
-#[ignore = "requires pinned Go and golangci-lint v2; mandatory live Go CI job"]
-fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
+fn pinned_golangci_binary() -> String {
     let binary =
         std::env::var("GOLANGCI_LINT_BIN").expect("Set GOLANGCI_LINT_BIN to pinned v2 binary");
     let version = Command::new(&binary).arg("version").output().unwrap();
     assert!(version.status.success());
     assert!(String::from_utf8_lossy(&version.stdout).contains("version 2.13.2"));
+    binary
+}
+
+#[test]
+#[ignore = "requires pinned Go and golangci-lint v2; mandatory live Go CI job"]
+fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
+    let binary = pinned_golangci_binary();
 
     let repository = fixture();
     let root = repository.path();
@@ -116,4 +126,141 @@ fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
     let incomplete = run(root, 2);
     assert_eq!(incomplete["gate"]["decision"], "incomplete");
     assert_eq!(incomplete["checks"][0]["verdict"], Value::Null);
+}
+
+#[test]
+fn packaged_go_deprecation_policy_is_valid() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(root.join("qualitygate.yaml"), DEPRECATION_POLICY).unwrap();
+    report(&cli(root, &["config", "--show", "--format", "json"]), 0);
+}
+
+#[test]
+#[ignore = "requires pinned Go and golangci-lint v2; mandatory live Go CI job"]
+fn real_golangci_deprecation_blocks_unchanged_cross_package_callers() {
+    let binary = pinned_golangci_binary();
+    let repository = fixture();
+    let root = repository.path();
+    let cache = tempfile::tempdir().unwrap();
+    fs::create_dir(root.join("config")).unwrap();
+    fs::create_dir(root.join("api")).unwrap();
+    fs::write(
+        root.join("config/golangci-deprecation.yaml"),
+        DEPRECATION_LINTER,
+    )
+    .unwrap();
+    fs::write(
+        root.join("go.mod"),
+        "module example.com/qualitygate\n\ngo 1.26\n",
+    )
+    .unwrap();
+    let api = root.join("api/legacy.go");
+    let use_site = root.join("main.go");
+    let source = r#"package main
+
+import (
+    "fmt"
+
+    "example.com/qualitygate/api"
+)
+
+func main() {
+    api.Legacy()
+    fmt.Printf("%d", "unrelated")
+}
+"#;
+    fs::write(&use_site, source).unwrap();
+    fs::write(
+        &api,
+        "package api\n\n// Legacy is the original API.\nfunc Legacy() {}\n\nfunc Current() {}\n",
+    )
+    .unwrap();
+    let mut policy: Value = serde_norway::from_str(DEPRECATION_POLICY).unwrap();
+    let check = &mut policy["checks"][0];
+    let argv = check["argv"].as_array_mut().unwrap();
+    argv[0] = json!(binary);
+    argv.splice(
+        0..0,
+        [
+            json!("env"),
+            json!(format!(
+                "GOLANGCI_LINT_CACHE={}",
+                cache.path().join("lint").display()
+            )),
+            json!(format!(
+                "GOCACHE={}",
+                cache.path().join("go-build").display()
+            )),
+            json!(format!("GOPATH={}", cache.path().join("go-path").display())),
+            json!("GOTELEMETRY=off"),
+            json!("GOTOOLCHAIN=local"),
+        ],
+    );
+    check["tools"][1]["argv"][0] = json!(binary);
+    fs::write(
+        root.join("qualitygate.yaml"),
+        serde_norway::to_string(&policy).unwrap(),
+    )
+    .unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "non-deprecated Go API"]);
+
+    let check = |status| {
+        report(
+            &cli(
+                root,
+                &[
+                    "check",
+                    "--worktree",
+                    "--profile",
+                    "full",
+                    "--format",
+                    "json",
+                ],
+            ),
+            status,
+        )
+    };
+    assert_eq!(check(0)["gate"]["decision"], "pass");
+
+    fs::write(
+        &api,
+        "package api\n\n// Legacy is the original API.\n//\n// Deprecated: Use Current instead.\nfunc Legacy() {}\n\nfunc Current() {}\n",
+    )
+    .unwrap();
+    let blocked = check(1);
+    assert_eq!(
+        blocked["selection"]["changed_files"],
+        json!(["api/legacy.go"])
+    );
+    assert_eq!(blocked["gate"]["complete"], true);
+    let result = &blocked["checks"][0];
+    assert_eq!(result["execution"]["exit_code"], 1);
+    let tools = result["metadata"]["tools"].as_array().unwrap();
+    for (id, input) in [
+        ("go", "go.mod"),
+        ("golangci-lint", "config/golangci-deprecation.yaml"),
+    ] {
+        let evidence = tools.iter().find(|tool| tool["id"] == id).unwrap();
+        assert!(evidence["inputs"][input].is_string());
+        assert_eq!(
+            evidence["snapshot_digest"],
+            blocked["snapshot"]["content_digest"]
+        );
+    }
+    let diagnostics = result["diagnostics"].as_array().unwrap();
+    assert_eq!(diagnostics.len(), 1);
+    let finding = &diagnostics[0];
+    assert_eq!(finding["file"], "main.go");
+    assert_eq!(finding["range"]["start_line"], 10);
+    assert_eq!(finding["evidence"]["rule"], "SA1019");
+    assert_eq!(finding["evidence"]["tool"], "staticcheck");
+
+    fs::write(&use_site, source.replace("api.Legacy()", "api.Current()")).unwrap();
+    assert_eq!(check(0)["gate"]["decision"], "pass");
+    fs::write(&use_site, source.replace("api.Legacy()", "api.Missing()")).unwrap();
+    let incomplete = check(2);
+    assert_eq!(incomplete["gate"]["decision"], "incomplete");
+    assert!(incomplete["checks"][0]["verdict"].is_null());
 }
