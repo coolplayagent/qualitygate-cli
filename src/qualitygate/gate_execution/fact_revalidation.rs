@@ -164,6 +164,137 @@ fn propagate(plan: &Plan, results: &mut [CheckResult], invalid: &mut BTreeMap<St
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn crapper_check() -> CommandCheck {
+        serde_json::from_value(serde_json::json!({
+            "id": "crapper",
+            "argv": ["crapper", "--use-existing-coverage", "src/lib.rs"],
+            "depends_on": ["coverage"],
+            "tool_facts": {
+                "adapter": "crapper",
+                "schema": "function_metric",
+                "path": "facts.edn",
+                "tool_id": "crapper",
+                "tool_version": crate::tool_evidence::contracts::CRAPPER_VERSION,
+                "scope": {"project": "sample"},
+                "paths": ["src/lib.rs"],
+                "coverage_producer": "coverage"
+            }
+        }))
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn crapper_checks_discovered_coverage_inventory_and_contents() {
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path();
+        let check = crapper_check();
+        let paths = ["target/coverage/rust/lcov.info", "coverage/lcov.info"];
+        let contents = b"SF:src/lib.rs\nDA:1,1\nend_of_record\n";
+        let mut inputs = BTreeMap::new();
+        for path in paths {
+            let file = root.join(path);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, contents).unwrap();
+            inputs.insert(path.into(), crate::snapshot::digest(contents));
+        }
+        let coverage = CoverageEvidence {
+            producer: "coverage".into(),
+            snapshot_digest: crate::snapshot::digest(b"sample snapshot"),
+            artifact_digests: vec![crate::snapshot::digest(contents)],
+            lines: BTreeMap::new(),
+            inputs,
+        };
+
+        coverage_inputs(&check, root, Some(&coverage))
+            .await
+            .unwrap();
+
+        let changed = root.join(paths[1]);
+        std::fs::write(&changed, b"SF:src/lib.rs\nDA:1,0\nend_of_record\n").unwrap();
+        let error = coverage_inputs(&check, root, Some(&coverage))
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("coverage input changed"));
+        std::fs::write(changed, contents).unwrap();
+
+        let additional = root.join("coverage/unverified");
+        std::fs::create_dir(&additional).unwrap();
+        let extra_lcov = additional.join("lcov.info");
+        std::fs::write(&extra_lcov, contents).unwrap();
+        let error = coverage_inputs(&check, root, Some(&coverage))
+            .await
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("differ from the independently verified inventory")
+        );
+        std::fs::remove_file(extra_lcov).unwrap();
+
+        let html = additional.join("report.html");
+        std::fs::write(&html, "<html></html>").unwrap();
+        let error = coverage_inputs(&check, root, Some(&coverage))
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("Unverified HTML coverage"));
+        std::fs::remove_file(html).unwrap();
+
+        coverage_inputs(&check, root, Some(&coverage))
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn crapper_requires_file_evidence_from_its_declared_coverage_producer() {
+        let root = tempfile::tempdir().unwrap();
+        let check = crapper_check();
+        let mut coverage = CoverageEvidence {
+            producer: "other".into(),
+            snapshot_digest: crate::snapshot::digest(b"sample snapshot"),
+            artifact_digests: vec![crate::snapshot::digest(b"stdout coverage report")],
+            lines: BTreeMap::new(),
+            inputs: BTreeMap::new(),
+        };
+        let error = coverage_inputs(&check, root.path(), None)
+            .await
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("no independently validated coverage")
+        );
+
+        let error = coverage_inputs(&check, root.path(), Some(&coverage))
+            .await
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Coverage producer identity differs")
+        );
+
+        coverage.producer = "coverage".into();
+        let error = coverage_inputs(&check, root.path(), Some(&coverage))
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("not stdout alone"));
+
+        std::fs::write(root.path().join("coverage"), "not a directory").unwrap();
+        coverage.inputs.insert(
+            "coverage/lcov.info".into(),
+            crate::snapshot::digest(b"coverage report"),
+        );
+        let error = coverage_inputs(&check, root.path(), Some(&coverage))
+            .await
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Coverage scan root must be an ordinary directory")
+        );
+    }
+
     #[test]
     fn final_invalidation_reaches_transitive_consumers_without_turning_failures_into_violations() {
         let config = crate::config::parse(b"schema_version: 1\nchecks:\n - {id: producer, argv: [tool]}\n - {id: consumer, argv: [tool], depends_on: [producer]}\n - {id: dependent, argv: [tool], depends_on: [consumer]}\n").unwrap();

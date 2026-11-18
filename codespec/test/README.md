@@ -9,6 +9,8 @@ crapper/dryer acquisition, dependency and parser failures, and offline conversio
 on an isolated Rust fixture. It does not claim production detection effectiveness.
 The production incident experiments cover [process crashes and resource lifetimes](production-incident-native.md), [configuration and interleaved publication](production-incident-models.md), and [rule signals, historical defects and dependency cycles](production-incident-regressions.md).
 
+Additional incident evidence covers [reachable retention and retry amplification](production-incident-retention-and-retry.md) and [capacity limits during configuration updates](production-incident-capacity.md).
+
 The [evolution matrix](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) maps policy behavior to
 tests; [performance fixtures](../../docs/en/01-user-guide/02-snapshots-and-check-workflow.md) establish
 serial/parallel agreement and report observed costs under explicit budgets.

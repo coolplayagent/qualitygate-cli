@@ -90,3 +90,75 @@ cargo test --all-features --test quality architecture
 ```
 
 本轮该过滤条件执行 15 项，全部通过，含现有直接环反例及新增的间接环、共享依赖、同 owner 反例。生产入口检查生成的 `target/architecture/report.json` 记录 297 个源码文件、2,464 条带文件与行号的跨 owner 边记录、0 项违规，SHA-256 为 `0adc77787487026ee604cacdb40cfb6dee56d506af5b009d999a24938c89612e`。重复引用位置可以属于同一对 owner。报告保留逐文件源码摘要。上述结论限于仓库文档列出的 Rust 源码形式和所有权粒度；接入其他项目需声明各自的入口、依赖解析方式和检查粒度。[架构契约](../../docs/zh/03-architecture/03-development-view.md)
+
+### 在 Rust 模块间阻断已知反向导入
+
+对同属 `layers` 的三个模块，在临时策略中仅检查 `beta.rs` 的变更导入，禁止其通过示例中的 `use` 形式依赖 `alpha`。基线已有 `alpha → beta`，每次仅改动 `beta.rs`。先用 Rust 1.97.1 编译三种输入，三种均编译成功。随后用内建 `import-boundary` 执行完整交付检查。[规则声明](../../skills/qualitygate-cli/references/rules/shared/import-boundary.yaml)
+
+| 变更 | 模块关系 | 门禁实测 |
+| --- | --- | --- |
+| `use crate::layers::gamma::Gamma` | `alpha → beta → gamma` | 完整 pass，退出 0，检查了一个变更导入。 |
+| `use crate::layers::alpha::Alpha` | `alpha → beta → alpha` | 完整 fail，退出 1，诊断位于 `src/layers/beta.rs:1`，保留语言、命中模式和复查命令。 |
+| 类型别名直接写 `crate::layers::alpha::Alpha` | 同一个 `alpha → beta → alpha` 闭环 | 完整 pass，退出 0，变更中没有 `use`，检查了零个导入。 |
+
+先声明禁止的边，规则就能在新导入形成闭环前阻断该形态。第三组反例明确了检查范围。任意模块环需要覆盖声明、限定引用和经解析的依赖路径的模块图。生产代码中已有同属 `adapters` 的双向引用，例如 `normalization` 调用 `crapper::parse`，`crapper` 使用 `normalization` 的上下文和计数预算。启用更细粒度的全仓约束前需先审查现存依赖方向。[分派代码](../../src/qualitygate/tool_evidence/normalization.rs) · [解析代码](../../src/qualitygate/tool_evidence/crapper.rs)
+
+CLI 与本页 IG-08 的开发二进制相同。实验 Git 基线为 `ba66bd46dd7856863888854f2726da436c3e4896`，规则资产 SHA-256 为 `e3e567d36bad95ab5649d28b463cc528f41722387b50f0db490786a0db3e1bc0`，策略的 `config_digest` 为 `sha256:bd1d629d658473109e6b2c281043acb2addcad1b52306779fbec076ee3661243`。失败用例诊断指纹为 `sha256:dd50ad96a07bf51825d626dce478df32c69808bac6be2405a365b2f898c5a91d`。
+
+从本仓根目录运行，Git、Rust 1.97.1、jq 和已经构建的开发 CLI 须可用。
+
+```bash
+set -eu
+qg="$PWD/target/debug/qualitygate"
+export QUALITYGATE_BUILTIN_RULES_DIR="$PWD/skills/qualitygate-cli/references/rules"
+experiment=$(mktemp -d)
+repo="$experiment/repo"
+git init -q "$repo"
+mkdir -p "$repo/src/layers"
+cat >"$repo/qualitygate.yaml" <<'YAML'
+schema_version: 1
+rulesets: [shared]
+rules:
+  import-boundary:
+    enabled: true
+    required: true
+    severity: error
+    parameters:
+      languages: [rust]
+      paths: [src/layers/beta.rs]
+      forbidden_imports:
+        rust: ['crate::layers::alpha(::|;)']
+YAML
+printf 'pub mod layers;\n' >"$repo/src/lib.rs"
+printf 'pub mod alpha;\npub mod beta;\npub mod gamma;\n' >"$repo/src/layers/mod.rs"
+printf 'use crate::layers::beta::Beta;\npub struct Alpha(pub Beta);\n' >"$repo/src/layers/alpha.rs"
+printf 'pub struct Beta;\n' >"$repo/src/layers/beta.rs"
+printf 'pub struct Gamma;\n' >"$repo/src/layers/gamma.rs"
+git -C "$repo" add qualitygate.yaml src
+GIT_AUTHOR_DATE=2026-01-01T00:00:00Z GIT_COMMITTER_DATE=2026-01-01T00:00:00Z \
+  git -C "$repo" -c user.name=Fixture -c user.email=fixture@example.invalid \
+  -c commit.gpgSign=false commit -qm 'reviewed import direction'
+"$qg" --root "$repo" rules describe import-boundary --format json >"$experiment/rule.json"
+
+run_direction() {
+  rustc --edition=2024 --crate-type lib "$repo/src/lib.rs" -o "$experiment/libfixture.rlib"
+  code=0
+  "$qg" --root "$repo" check --worktree --profile full --format json \
+    >"$experiment/$1.json" || code=$?
+  jq '{profile, scope, gate, checks: [.checks[] | {id, verdict, diagnostics, matched_entities}]}' \
+    "$experiment/$1.json"
+  test "$code" -eq "$2"
+}
+printf 'use crate::layers::gamma::Gamma;\npub struct Beta(pub Gamma);\n' >"$repo/src/layers/beta.rs"
+run_direction allowed 0
+printf 'use crate::layers::alpha::Alpha;\npub struct Beta;\npub type Upstream = Alpha;\n' \
+  >"$repo/src/layers/beta.rs"
+run_direction import-cycle 1
+printf 'pub struct Beta;\npub type Upstream = crate::layers::alpha::Alpha;\n' \
+  >"$repo/src/layers/beta.rs"
+run_direction qualified-cycle 0
+```
+
+## 工具证据的独立性与有效期
+
+对基于覆盖率计算的 Rust 函数指标，采集前须核对覆盖率生产者、文件清单和内容摘要。两个单元测试验证了正常的嵌套 LCOV 清单，以及同尺寸改写、额外 LCOV、优先级更高的 HTML、缺失或错误来源、只有标准输出和扫描根为普通文件时的拒绝行为。还原同一份清单后再次通过。测试覆盖采集前的输入复核，与集成测试的门禁裁决形成互补。[输入复核单元测试](../../src/qualitygate/gate_execution/fact_revalidation.rs)

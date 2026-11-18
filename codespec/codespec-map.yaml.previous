@@ -1,7 +1,7 @@
 schema_version: 4
 artifact_kind: map
 map_type: codespec
-map_version: 15
+map_version: 16
 updated_at: unix:1794978329
 directories:
 - directory: requirements
@@ -44,6 +44,9 @@ directories:
   key_files:
   - codespec/test/README.md
   - codespec/test/tool-facts-native-validation.md
+  - codespec/test/production-incident-models.md
+  - codespec/test/production-incident-native.md
+  - codespec/test/production-incident-regressions.md
   load_hint: on_demand
   relations: []
   update_rule: reviewed
@@ -120,3 +123,7 @@ history:
     action: directory.update
     actor: cli
     summary: Updated governed directory 'requirements'.
+  - version: 16
+    action: directory.update
+    actor: cli
+    summary: Updated governed directory 'test'.
