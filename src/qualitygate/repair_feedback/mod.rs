@@ -1,7 +1,6 @@
-//! Builds actionable repair feedback and verifies replayed delivery identity.
-//!
+//! Builds actionable repair feedback from check reports.
 
-pub mod delivery_contracts;
 pub mod feedback_projection;
 pub mod feedback_rendering;
-pub mod verified_delivery;
+
+pub use crate::delivery_export::{delivery_contracts, verified_delivery};

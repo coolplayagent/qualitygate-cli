@@ -1,9 +1,9 @@
 //! Resolve the same policy/catalog/task plan as check before reading project content.
 
-use crate::application::CheckOptions;
 use crate::application::policy;
 use crate::application::policy_active;
-use crate::snapshot_preflight::acquisition;
+use crate::check_inputs;
+use crate::check_planning::check_request::CheckOptions;
 use crate::{config, snapshot};
 use anyhow::{Result, ensure};
 use std::sync::Arc;
@@ -13,7 +13,7 @@ pub(crate) async fn bootstrap(
 ) -> Result<(policy::Loaded, Option<policy_active::Authenticated>)> {
     let active = policy_active::load(options.root.clone()).await?;
     let (_, configuration) =
-        acquisition::prepare(options, active.as_ref().map(|active| &active.active)).await?;
+        check_inputs::prepare(options, active.as_ref().map(|active| &active.active)).await?;
     let mut bootstrap = options.clone();
     let mut include = vec![globset::escape(&options.config)];
     include.extend(options.task.as_deref().map(globset::escape));

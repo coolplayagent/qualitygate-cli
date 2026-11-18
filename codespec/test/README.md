@@ -144,6 +144,15 @@ contracts retain historical API imports; Bazel separately compiles and tests
 capability owners from the same business-owned files. Stable checks, full
 selfcheck, 90% line coverage and the full snapshot gate remain required.
 
+`architecture_keeps_snapshot_scope_and_input_boundaries_acyclic` tests allowed
+and forbidden dependencies for snapshot scope, planning, check input preparation,
+and policy validation. The production graph check applies the same dependency
+rules. `check_workflow_paths_preserve_public_module_identity` checks historical
+imports in Cargo and Bazel `//:check_workflow_compatibility_test`.
+[Verified export tests](../../tests/delivery.rs) bind archive contents to the
+passing check and require failed, incomplete, quick, and filtered checks to leave
+the destination without a delivery artifact.
+
 Adapter decomposition additionally uses
 `architecture_adapter_features_cannot_depend_on_cli_or_orchestration` to reject
 upward imports from first-level adapter features. The layout test

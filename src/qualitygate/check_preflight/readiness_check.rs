@@ -1,10 +1,8 @@
 //! Snapshot-bound readiness, without delivery verdicts or reusable gate credentials.
 
-use crate::application::CheckOptions;
+use super::{capabilities, doctor_context, doctor_plan};
 use crate::application::policy_active;
-use crate::snapshot_preflight::capabilities;
-use crate::snapshot_preflight::doctor_context;
-use crate::snapshot_preflight::doctor_plan;
+use crate::check_planning::{check_request::CheckOptions, command_applicability};
 use crate::{
     domain::{NextStep, PolicyInputError, doctor::*, runtime::ConfigurationError},
     snapshot,
@@ -216,13 +214,9 @@ async fn run_inner(options: &mut CheckOptions, report: &mut Report) -> Result<()
         ));
     }
     if report.diagnostics.is_empty() {
-        let selections = crate::application::change_selection::select(
-            &loaded.plan,
-            &snapshot,
-            &loaded.protected_paths,
-            false,
-        )
-        .await?;
+        let selections =
+            command_applicability::select(&loaded.plan, &snapshot, &loaded.protected_paths, false)
+                .await?;
         let mut applicable_plan = loaded.plan.clone();
         applicable_plan
             .commands

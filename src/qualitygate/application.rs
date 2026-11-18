@@ -2,8 +2,15 @@
 
 pub use crate::agent_runtime::host_controller as agent_host;
 pub use crate::agent_runtime::obligation_projection as agent_contract;
+pub use crate::check_inputs::initialization_preflight;
+pub use crate::check_planning::check_request::CheckOptions;
+pub use crate::check_preflight::capabilities;
+pub use crate::check_preflight::doctor_output;
+pub use crate::check_preflight::readiness_check as doctor;
+pub use crate::check_preflight::repository_root;
 pub(crate) use crate::compatibility_verification::paired_builds as compatibility;
 pub(crate) use crate::constraint_coverage::coverage_evaluation as constraint_coverage;
+pub use crate::delivery_export::verified_delivery as delivery;
 pub(crate) use crate::external_acceptance::evidence;
 pub(crate) use crate::external_acceptance::external;
 pub(crate) use crate::external_acceptance::history_acquisition as git_trailers;
@@ -21,19 +28,11 @@ pub use crate::policy_lifecycle::promotion_workflow as policy_promotion;
 pub use crate::policy_lifecycle::rollback_workflow as policy_rollback;
 pub use crate::policy_lifecycle::validation_workflow as policy_validation;
 pub use crate::repair_feedback::feedback_rendering as feedback;
-pub use crate::repair_feedback::verified_delivery as delivery;
 pub(crate) use crate::report_evidence::generated_reports;
 pub(crate) use crate::report_evidence::project_reports;
 pub(crate) use crate::report_evidence::test_counts;
-pub(crate) use crate::resource_selection::snapshot_selection as change_selection;
 pub use crate::rule_catalog::rule_context;
 pub use crate::selfcheck::fixture_execution as selfcheck;
-pub(crate) use crate::snapshot_preflight::acquisition;
-pub use crate::snapshot_preflight::capabilities;
-pub use crate::snapshot_preflight::doctor_output;
-pub use crate::snapshot_preflight::readiness_check as doctor;
-pub use crate::snapshot_preflight::repository_root;
-pub use acquisition::initialization_preflight;
 
 #[cfg(test)]
 #[path = "contract_tests/application_support.rs"]
@@ -49,10 +48,8 @@ pub use crate::gate_execution::workflow::*;
 #[path = "contract_tests/application_policy.rs"]
 mod project_policy_tests;
 
-pub(crate) use crate::{
-    config::{self, Plan},
-    domain::*,
-    snapshot::{self},
-};
-pub(crate) use anyhow::{Context, Result};
+pub(crate) use crate::domain::*;
+#[cfg(test)]
+pub(crate) use crate::{config, snapshot};
+#[cfg(test)]
 pub(crate) use std::sync::Arc;

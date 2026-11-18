@@ -7,30 +7,18 @@ mod fact_workflow_tests;
 use super::rule_dispatch;
 use crate::application::*;
 use crate::external_acceptance::provenance_preparation as provenance;
-use crate::resource_selection::snapshot_selection as change_selection;
 use crate::test_effectiveness::paired_execution as test_effectiveness;
+use crate::{
+    check_inputs,
+    check_planning::{check_request::CheckOptions, command_applicability},
+};
 
 use crate::{
     config::{self},
     snapshot::{self, Selection},
 };
 use anyhow::{Context, Result};
-use std::path::PathBuf;
 use std::sync::Arc;
-
-#[derive(Debug, Clone)]
-pub struct CheckOptions {
-    pub root: PathBuf,
-    pub config: String,
-    pub selection: Selection,
-    pub snapshot_options: snapshot::CaptureOptions,
-    pub profile: String,
-    pub task: Option<String>,
-    pub policy_ref: Option<String>,
-    pub output_dir: Option<PathBuf>,
-    pub trust_store: Option<PathBuf>,
-    pub evidence_dir: Option<PathBuf>,
-}
 
 pub async fn check(options: CheckOptions) -> Result<Report> {
     check_with_expected_base(options, None).await
@@ -50,7 +38,7 @@ pub(crate) async fn check_and_snapshot(
 ) -> Result<(Report, Arc<snapshot::Snapshot>)> {
     let active = policy_active::load(options.root.clone()).await?;
     let (comparison, _) =
-        acquisition::prepare(&mut options, active.as_ref().map(|active| &active.active)).await?;
+        check_inputs::prepare(&mut options, active.as_ref().map(|active| &active.active)).await?;
     let snapshot = Arc::new(
         snapshot::capture_resolved(
             &options.root,
@@ -165,7 +153,8 @@ pub(crate) async fn check_prepared(
     let scope = snapshot.scope_index();
     let mut provenance_proofs = std::collections::BTreeMap::new();
     let command_selections =
-        change_selection::select(&plan, &snapshot, &protected_paths, !invalid.is_empty()).await?;
+        command_applicability::select(&plan, &snapshot, &protected_paths, !invalid.is_empty())
+            .await?;
     let workspace = if plan.commands.iter().any(|check| {
         command_selections[&check.id].execute
             && check.kind == config::CheckKind::Command

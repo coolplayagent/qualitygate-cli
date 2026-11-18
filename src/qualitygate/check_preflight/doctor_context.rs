@@ -1,7 +1,7 @@
 //! Static command readiness and optional version probes over private checked bytes.
 
+use super::readiness_check::diagnostic;
 use crate::application::tool_evidence;
-use crate::snapshot_preflight::readiness_check::diagnostic;
 use crate::{
     config::{CheckKind, CommandCheck, Plan},
     domain::{CheckResult, doctor::*},

@@ -131,7 +131,6 @@ pub mod python_analysis {
 
 #[path = "../../src/qualitygate/repair_feedback"]
 pub mod repair_feedback {
-    pub use qualitygate_domain::repair_feedback::delivery_contracts;
     pub use qualitygate_domain::repair_feedback::feedback_projection;
 }
 
@@ -147,15 +146,6 @@ pub mod report_evidence {
     pub use qualitygate_domain::report_evidence::ratchet;
     pub use qualitygate_domain::report_evidence::report;
     pub use qualitygate_domain::report_evidence::verification;
-}
-
-#[path = "../../src/qualitygate/resource_selection"]
-pub mod resource_selection {
-    pub use qualitygate_config::resource_selection::exclusions;
-    pub use qualitygate_config::resource_selection::trigger_selection;
-    pub use qualitygate_domain::resource_selection::resource_exclusions;
-    pub use qualitygate_domain::resource_selection::selection_contracts;
-    pub use qualitygate_domain::resource_selection::snapshot_budget;
 }
 
 #[path = "../../src/qualitygate/rule_catalog"]
@@ -239,10 +229,10 @@ pub mod selfcheck {
     pub use qualitygate_domain::selfcheck::fixture_results;
 }
 
-#[path = "../../src/qualitygate/snapshot_preflight"]
-pub mod snapshot_preflight {
-    pub use qualitygate_config::snapshot_preflight::preflight_schema;
-    pub use qualitygate_domain::snapshot_preflight::readiness_contracts;
+#[path = "../../src/qualitygate/check_preflight"]
+pub mod check_preflight {
+    pub use qualitygate_config::check_preflight::preflight_schema;
+    pub use qualitygate_domain::check_preflight::readiness_contracts;
 }
 
 #[path = "../../src/qualitygate/source_analysis"]

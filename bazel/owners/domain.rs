@@ -13,6 +13,8 @@ pub mod agent_runtime {
 
 #[path = "../../src/qualitygate/check_planning"]
 pub mod check_planning {
+    #[path = "selection_contracts.rs"]
+    pub mod selection_contracts;
     #[path = "project.rs"]
     pub mod project;
     #[path = "runtime_contracts.rs"]
@@ -76,10 +78,14 @@ pub mod policy_lifecycle {
     pub mod source_review;
 }
 
-#[path = "../../src/qualitygate/repair_feedback"]
-pub mod repair_feedback {
+#[path = "../../src/qualitygate/delivery_export"]
+pub mod delivery_export {
     #[path = "delivery_contracts.rs"]
     pub mod delivery_contracts;
+}
+
+#[path = "../../src/qualitygate/repair_feedback"]
+pub mod repair_feedback {
     #[path = "feedback_projection.rs"]
     pub mod feedback_projection;
 }
@@ -98,12 +104,10 @@ pub mod report_evidence {
     pub mod verification;
 }
 
-#[path = "../../src/qualitygate/resource_selection"]
-pub mod resource_selection {
+#[path = "../../src/qualitygate/snapshot_scope"]
+pub mod snapshot_scope {
     #[path = "resource_exclusions.rs"]
     pub mod resource_exclusions;
-    #[path = "selection_contracts.rs"]
-    pub mod selection_contracts;
     #[path = "snapshot_budget.rs"]
     pub mod snapshot_budget;
 }
@@ -150,8 +154,8 @@ pub mod selfcheck {
     pub mod fixture_results;
 }
 
-#[path = "../../src/qualitygate/snapshot_preflight"]
-pub mod snapshot_preflight {
+#[path = "../../src/qualitygate/check_preflight"]
+pub mod check_preflight {
     #[path = "readiness_contracts.rs"]
     pub mod readiness_contracts;
 }

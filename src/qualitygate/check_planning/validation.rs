@@ -1,4 +1,5 @@
 use crate::config::*;
+use crate::snapshot_scope::exclusions;
 use anyhow::{Result, bail};
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -11,8 +12,8 @@ pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
     crate::config::constraint_inventory::validate(config)?;
     crate::config::agent_contract::validate(config)?;
     crate::check_planning::runtime_validation::validate(&config.requires)?;
-    crate::config::exclusions::matcher(&config.exclude)?;
-    crate::config::exclusions::matcher(&config.unstructured_documents.retain)
+    exclusions::matcher(&config.exclude)?;
+    exclusions::matcher(&config.unstructured_documents.retain)
         .map_err(|error| anyhow::anyhow!("unstructured_documents.retain: {error}"))?;
     crate::config::categories::validate(config)?;
     if config.rule_lifecycle.len() > 512 {
@@ -62,7 +63,7 @@ pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
         }
     }
     for check in &config.checks {
-        crate::config::change_selection::validate(check)?;
+        super::trigger_selection::validate(check)?;
         crate::check_planning::runtime_validation::validate_env(&check.required_env)?;
         validate_id(&check.id)?;
         crate::config::compatibility::validate(check)?;

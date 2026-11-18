@@ -147,8 +147,6 @@ pub mod policy_lifecycle {
 #[path = "../../src/qualitygate/repair_feedback"]
 pub mod repair_feedback {
     pub use qualitygate_application::repair_feedback::feedback_rendering;
-    pub use qualitygate_application::repair_feedback::verified_delivery;
-    pub use qualitygate_domain::repair_feedback::delivery_contracts;
     pub use qualitygate_domain::repair_feedback::feedback_projection;
 }
 
@@ -170,16 +168,6 @@ pub mod report_evidence {
     pub mod failure;
     #[path = "render.rs"]
     pub mod render;
-}
-
-#[path = "../../src/qualitygate/resource_selection"]
-pub mod resource_selection {
-    pub use qualitygate_application::resource_selection::snapshot_selection;
-    pub use qualitygate_config::resource_selection::exclusions;
-    pub use qualitygate_config::resource_selection::trigger_selection;
-    pub use qualitygate_domain::resource_selection::resource_exclusions;
-    pub use qualitygate_domain::resource_selection::selection_contracts;
-    pub use qualitygate_domain::resource_selection::snapshot_budget;
 }
 
 #[path = "../../src/qualitygate/rule_catalog"]
@@ -223,17 +211,16 @@ pub mod selfcheck {
     pub use qualitygate_domain::selfcheck::fixture_results;
 }
 
-#[path = "../../src/qualitygate/snapshot_preflight"]
-pub mod snapshot_preflight {
-    pub use qualitygate_application::snapshot_preflight::acquisition;
-    pub use qualitygate_application::snapshot_preflight::capabilities;
-    pub use qualitygate_application::snapshot_preflight::doctor_context;
-    pub use qualitygate_application::snapshot_preflight::doctor_output;
-    pub use qualitygate_application::snapshot_preflight::doctor_plan;
-    pub use qualitygate_application::snapshot_preflight::readiness_check;
-    pub use qualitygate_application::snapshot_preflight::repository_root;
-    pub use qualitygate_config::snapshot_preflight::preflight_schema;
-    pub use qualitygate_domain::snapshot_preflight::readiness_contracts;
+#[path = "../../src/qualitygate/check_preflight"]
+pub mod check_preflight {
+    pub use qualitygate_application::check_preflight::capabilities;
+    pub use qualitygate_application::check_preflight::doctor_context;
+    pub use qualitygate_application::check_preflight::doctor_output;
+    pub use qualitygate_application::check_preflight::doctor_plan;
+    pub use qualitygate_application::check_preflight::readiness_check;
+    pub use qualitygate_application::check_preflight::repository_root;
+    pub use qualitygate_config::check_preflight::preflight_schema;
+    pub use qualitygate_domain::check_preflight::readiness_contracts;
     #[path = "doctor_summary.rs"]
     pub mod doctor_summary;
     #[path = "readiness_args.rs"]

@@ -1,6 +1,6 @@
 //! Load bounded policy inputs before acquiring repository content.
-use crate::application::CheckOptions;
-use crate::application::policy;
+use crate::check_planning::{check_request::CheckOptions, snapshot_inputs};
+use crate::snapshot_scope::exclusions;
 use crate::{config, domain::PolicyInputError, snapshot};
 use anyhow::{Result, ensure};
 
@@ -36,7 +36,7 @@ pub async fn initialization_preflight(
         )?;
         let config = catalog.resolve(&config)?;
         Ok(snapshot::CaptureOptions {
-            protected_paths: policy::protected_paths(&config, &catalog, &configuration, None),
+            protected_paths: snapshot_inputs::resolved(&config, &catalog, &configuration, None),
             exclude: config.exclude,
             unstructured_documents: config.unstructured_documents,
             ..Default::default()
@@ -75,7 +75,7 @@ pub(crate) async fn prepare(
             .clone();
         tokio::task::spawn_blocking(move || config::parse(&bytes)).await??
     };
-    let matcher = config::exclusions::matcher(&config.exclude)?;
+    let matcher = exclusions::matcher(&config.exclude)?;
     ensure!(
         !matcher.is_match(&options.config),
         "exclude matches the selected configuration"
@@ -128,43 +128,9 @@ pub(crate) async fn prepare(
     })
     .await??;
     options.snapshot_options.protected_paths =
-        policy::protected_paths(&config, &catalog, &options.config, options.task.as_deref());
+        snapshot_inputs::resolved(&config, &catalog, &options.config, options.task.as_deref());
     options.snapshot_options.unstructured_documents = config.unstructured_documents.clone();
     options.snapshot_options.exclude = config.exclude.clone();
     options.snapshot_options.include = None;
     Ok((comparison, config))
-}
-
-pub(crate) fn validate_excluded(snapshot: &snapshot::Snapshot, protected: &[String]) -> Result<()> {
-    let mut builder = globset::GlobSetBuilder::new();
-    for pattern in protected {
-        builder.add(globset::Glob::new(pattern)?);
-    }
-    let matcher = builder.build()?;
-    for path in &snapshot.scope_evidence.excluded_paths {
-        ensure!(
-            !matcher.is_match(path),
-            "exclude matches a protected verification input: {path}"
-        );
-    }
-    Ok(())
-}
-
-pub(crate) fn validate_config(
-    config: &config::Config,
-    catalog: &config::catalog::Catalog,
-    options: &CheckOptions,
-    snapshot: &snapshot::Snapshot,
-) -> Result<()> {
-    ensure!(
-        config.exclude == snapshot.scope_evidence.exclude
-            && config.unstructured_documents == snapshot.scope_evidence.resource_exclusions.policy
-            && policy::protected_paths(config, catalog, &options.config, options.task.as_deref())
-                == snapshot.scope_evidence.resource_exclusions.protected_paths,
-        "Exclusion policy changed during acquisition"
-    );
-    validate_excluded(
-        snapshot,
-        &policy::protected_paths(config, catalog, &options.config, options.task.as_deref()),
-    )
 }

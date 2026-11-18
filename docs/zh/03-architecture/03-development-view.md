@@ -20,25 +20,34 @@ Rust crate 使用显式顶层 owner 和无环依赖图。crate root 只声明 ow
 | 工作流 | 源码位置 | 职责 |
 | --- | --- | --- |
 | 声明规则 | `rule_catalog` | 发现规则定义、描述参数与 Schema、校验版本化表达式。`check_planning::model` 定义 `CustomRule` 和 `RuleSetting` 配置契约。 |
-| 规划检查 | `check_planning` | 加载有效策略与任务，应用 profile 和适用条件，生成按依赖排序的计划。 |
+| 准备检查输入 | `check_inputs.rs` | 为 `check` 和 `doctor` 准备配置、规则来源与快照选项。 |
+| 诊断检查就绪状态 | `check_preflight` | `doctor` 检查所选策略、计划、工作区、采集预算及可选工具探针。 |
+| 确定快照范围 | `snapshot_scope` | 定义文件排除、采集预算和受保护输入。 |
+| 捕获快照 | `snapshot` | 检查 Git 元数据，捕获并物化不可变输入。 |
+| 规划检查 | `check_planning` | 根据有效策略、任务和 profile 生成按依赖排序的计划，再按快照变更、`when_changed` 和命令依赖确定适用的检查。 |
 | 分派规则 | `gate_execution` | `workflow.rs` 调度检查，`rule_dispatch.rs` 准备规则事实并调用求值入口，`gate.rs` 作出最终门禁裁决。 |
 | 求值自定义规则 | `rule_engine` | 应用选择器和声明，求值版本化算子及断言，维护两类规则共用的求值输入。 |
 | 执行内置规则 | `builtin_rules` | `dispatch.rs` 根据 implementation ID 选择算法，各实现模块检查文本、语言语法或项目事实。 |
-| 选取输入 | `snapshot`、`resource_selection`、`snapshot_preflight` | 捕获和物化 Git 快照，落实排除与预算，诊断执行准备情况。 |
 | 提取事实 | `source_analysis`、`maven_analysis`、`python_analysis` | 提取语法、语言绑定、变更实体与生态事实。 |
-| 收集与呈现证据 | `tool_evidence`、`tool_bridge`、`report_evidence`、`repair_feedback` | 归一化工具事实、桥接外部工具、构造诊断和验证报告、重放修复反馈。 |
+| 收集与呈现证据 | `tool_evidence`、`tool_bridge`、`report_evidence` | 归一化工具事实、桥接外部工具，构造诊断和验证报告。 |
+| 生成修复反馈 | `repair_feedback` | 从验证报告提取可执行的修复反馈。 |
+| 导出已验证的交付物 | `delivery_export`、`snapshot::delivery` | 运行完整且无路径过滤的检查，门禁通过且证据完整时归档同一快照。`snapshot::delivery` 负责写入归档。 |
 | 治理策略与约束 | `policy_lifecycle`、`constraint_coverage` | 验证、激活、提升和回滚策略版本，将约束条款绑定到执行证据。 |
 | 审查与验收 | `external_acceptance`、`pilot_acceptance`、`judgment_review` | 认证证明和人工证据，验证试点记录，获取咨询判断。 |
 | 验证行为 | `compatibility_verification`、`test_effectiveness`、`selfcheck` | 对照生产者与消费者，验证当前及先前代码上的测试反例，检查内置评估器语料。 |
 | 运行 CLI 与 Agent | `cli_dispatch`、`agent_runtime` | 解析和分派 CLI 命令，投影 Agent 义务并运行有界宿主。 |
 | 提供有界能力 | `runner`、`env`、`paths`、`net`、`content_digest`、`xml_parsing` | 负责进程执行、环境读取、路径限制、网络访问、摘要计算与 XML 工作预算。 |
 
-顶层 `rule_evaluation.rs` 重导出既有规则 API。能力兼容文件和 Bazel 入口也保留各自已公开的契约。
+顶层 `rule_evaluation.rs` 重导出既有规则 API。兼容导出还保留旧的 `snapshot_preflight`、
+`resource_selection` 及 `repair_feedback` 下的交付路径。能力兼容文件和 Bazel 入口保留各自已公开的契约。
 `contract_tests` 通过测试模块挂在对应入口下。
 
 内置规则可调用规则引擎中的事实与声明辅助模块。架构门禁在能力归属图之外检查这个依赖方向，
 并覆盖经由旧规则导出的引用。
 `source_analysis::declaration_fields` 负责解析规则声明和 Git trailer 共用的字段。
+
+`check_planning::snapshot_inputs` 从配置和规则定义解析必需路径。检查输入准备和策略验证共同调用
+`snapshot_scope`，保护这些路径免受排除规则影响。架构门禁同时检查这些模块的依赖方向及能力归属图。
 
 V4 表达式类型、类型化记录与断言求值归 domain。适配器从执行证据中选择记录，并向求值器提供截止时间检查。应用按规则声明的生产者 ID 查找并共享不可变集合，项目清单保持发布顺序。每个消费者独立计算运算、扫描及物化预算。
 
@@ -152,7 +161,7 @@ Bazel 将 owner 编译为独立 crate 时也使用该边界，通用 YAML 解码
 候选前限制 XML 深度、节点和属性数量，并把不支持的清单记录为发现缺口。该 profile 位于 `config` 内，
 不导入适配器，也不产生已解析的项目事实；适配器报告失败继续使用独立的执行状态语义。
 
-CLI 根路径解析委托给 `snapshot_preflight::repository_root`，通过 `spawn_blocking` 调用 `paths`，
+CLI 根路径解析委托给 `check_preflight::repository_root`，通过 `spawn_blocking` 调用 `paths`，
 保留原生 canonicalize 结果和错误上下文。Clap 类型化参数转换仅归 `interfaces` 所有；domain
 保留序列化契约。`content_digest` 统一字节摘要和格式校验，调用方仍负责序列化及流式哈希分帧。
 `rule_catalog::rule_parameters` 为配置发现、校验和适配器模式编译提供共享纯契约；规则诊断文案由

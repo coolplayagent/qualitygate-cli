@@ -167,13 +167,32 @@ async fn active_policy_requires_live_trust_and_rollback_authorizes_exact_current
     input.scope_evidence.exclude = resolved.exclude.clone();
     input.scope_evidence.resource_exclusions.policy = resolved.unstructured_documents.clone();
     input.scope_evidence.resource_exclusions.protected_paths =
-        crate::policy_lifecycle::policy_loading::protected_paths(
+        crate::check_planning::snapshot_inputs::resolved(
             &resolved,
             &catalog,
             &task_options.config,
             task_options.task.as_deref(),
         );
     let mut invalid = vec![];
+    let mut mismatched = input.clone();
+    mismatched
+        .scope_evidence
+        .resource_exclusions
+        .protected_paths
+        .clear();
+    let Err(error) = crate::policy_lifecycle::active_authentication::prepare(
+        &scoped,
+        &mismatched,
+        &task_options,
+        &mut invalid,
+    ) else {
+        panic!("active policy accepted a different captured protection set");
+    };
+    assert_eq!(
+        error.to_string(),
+        "Exclusion policy changed during acquisition"
+    );
+
     let plan = crate::policy_lifecycle::active_authentication::prepare(
         &scoped,
         &input,

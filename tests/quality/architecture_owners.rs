@@ -10,7 +10,10 @@ pub(super) const PRODUCTION_ENTRIES: &[(&str, &str, &str)] = &[
     ),
 ];
 
-pub(super) const SINGLE_MODULE_FEATURES: &[(&str, &str)] = &[("content_digest", "domain")];
+pub(super) const SINGLE_MODULE_FEATURES: &[(&str, &str)] = &[
+    ("check_inputs", "application"),
+    ("content_digest", "domain"),
+];
 
 pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
     (
@@ -42,6 +45,8 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
     (
         "check_planning",
         &[
+            ("check_request", "application"),
+            ("command_applicability", "application"),
             ("dependencies", "config"),
             ("discovery", "config"),
             ("initialization", "config"),
@@ -54,10 +59,28 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("python", "config"),
             ("runtime_contracts", "domain"),
             ("runtime_validation", "config"),
+            ("selection_contracts", "domain"),
+            ("snapshot_inputs", "config"),
+            ("trigger_selection", "config"),
             ("validation", "config"),
             ("tool_facts", "config"),
             ("yaml_budget", "config"),
             ("yaml_scalar_work", "config"),
+        ],
+    ),
+    (
+        "check_preflight",
+        &[
+            ("capabilities", "application"),
+            ("doctor_context", "application"),
+            ("doctor_output", "application"),
+            ("doctor_plan", "application"),
+            ("doctor_summary", "interfaces"),
+            ("preflight_schema", "config"),
+            ("readiness_args", "interfaces"),
+            ("readiness_check", "application"),
+            ("readiness_contracts", "domain"),
+            ("repository_root", "application"),
         ],
     ),
     (
@@ -80,6 +103,13 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("coverage_evaluation", "application"),
             ("constraint_inventory", "config"),
             ("constraints", "config"),
+        ],
+    ),
+    (
+        "delivery_export",
+        &[
+            ("delivery_contracts", "domain"),
+            ("verified_delivery", "application"),
         ],
     ),
     (
@@ -185,10 +215,8 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
     (
         "repair_feedback",
         &[
-            ("delivery_contracts", "domain"),
             ("feedback_projection", "domain"),
             ("feedback_rendering", "application"),
-            ("verified_delivery", "application"),
         ],
     ),
     (
@@ -211,17 +239,6 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
             ("test_counts", "application"),
             ("tool_reports", "adapters"),
             ("verification", "domain"),
-        ],
-    ),
-    (
-        "resource_selection",
-        &[
-            ("exclusions", "config"),
-            ("resource_exclusions", "domain"),
-            ("selection_contracts", "domain"),
-            ("snapshot_budget", "domain"),
-            ("snapshot_selection", "application"),
-            ("trigger_selection", "config"),
         ],
     ),
     (
@@ -281,19 +298,11 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
     (
-        "snapshot_preflight",
+        "snapshot_scope",
         &[
-            ("acquisition", "application"),
-            ("capabilities", "application"),
-            ("doctor_context", "application"),
-            ("doctor_output", "application"),
-            ("doctor_plan", "application"),
-            ("doctor_summary", "interfaces"),
-            ("preflight_schema", "config"),
-            ("readiness_args", "interfaces"),
-            ("readiness_check", "application"),
-            ("readiness_contracts", "domain"),
-            ("repository_root", "application"),
+            ("exclusions", "config"),
+            ("resource_exclusions", "domain"),
+            ("snapshot_budget", "domain"),
         ],
     ),
     (
