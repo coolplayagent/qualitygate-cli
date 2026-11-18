@@ -73,8 +73,8 @@ fn retained_marker_subjects_still_consume_acquisition_capacity() {
     assert!(collect(&rule, &snapshot, &facts(), false, Some(&mut budget)).is_err());
 }
 
-fn facts() -> RuleFacts<'static> {
-    RuleFacts {
+fn facts() -> BorrowedRuleFacts<'static> {
+    BorrowedRuleFacts {
         projects: &[],
         provenance: None,
         git_trailers: None,

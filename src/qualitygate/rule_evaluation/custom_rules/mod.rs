@@ -83,6 +83,15 @@ pub fn evaluate_with_context(
     snapshot: &Snapshot,
     facts: &crate::adapters::facts::RuleFacts<'_>,
 ) -> CheckResult {
+    facts.with_borrowed_projects(|borrowed| evaluate_borrowed(rule, setting, snapshot, borrowed))
+}
+
+pub fn evaluate_borrowed(
+    rule: &CustomRule,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+) -> CheckResult {
     let provenance = facts.provenance;
     let mut result = CheckResult::pending(&rule.id, setting.required, setting.severity);
     result.rule_version = rule.version;
@@ -111,7 +120,7 @@ pub fn evaluate_with_context(
 fn run(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
     result: &mut CheckResult,
 ) -> Result<()> {
     let mut output = diagnostic_budget::Budget::default();
@@ -336,7 +345,7 @@ fn run(
 fn requirements(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
     let (projects, provenance) = (facts.projects, facts.provenance);
     for language in &rule.language {
@@ -390,7 +399,7 @@ fn requirements(
 fn dependencies(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    projects: &[ProjectFacts],
+    projects: &[&ProjectFacts],
     subjects: &[Subject],
     result: &mut CheckResult,
     git: Option<&crate::adapters::git_trailers::GitFacts>,

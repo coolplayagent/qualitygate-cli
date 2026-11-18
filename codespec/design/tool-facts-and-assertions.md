@@ -56,7 +56,7 @@ flowchart LR
 
 ### 3.1 计划与执行结果
 
-`Plan` 保存规则设置、命令配置、执行顺序与必需检查清单。分派前通过 `Plan::operation` 取出 `PlannedOperation`，区分规则、命令、手工验收、兼容验证和成对测试。事实采集沿用普通命令的执行路径、依赖和超时。[执行计划](../../src/qualitygate/check_planning/plan.rs)
+`Plan` 保存规则设置、命令配置、执行顺序与必需检查清单。调度器按 ID 查找命令并从命令声明取得 `PlannedOperation`，与 `Plan::operation` 共享分类逻辑，区分规则、命令、手工验收、兼容验证和成对测试。事实采集沿用普通命令的执行路径、依赖和超时。[执行计划](../../src/qualitygate/check_planning/plan.rs)
 
 内部结果为 `ExecutionOutcome { check_result, evidence }`，类型化 `evidence` 分别持有项目事实、
 工具事实、已验证覆盖率及真实执行凭据。
@@ -65,6 +65,7 @@ flowchart LR
 普通 lint command 继续按现有诊断与退出码规则裁决；事实生产者必须显式声明自己的输出契约。
 
 应用层按生产者节点保存结果，只将已声明依赖且满足采集契约的集合提供给消费者。
+规则按显式依赖 ID 查表，借用项目记录并共享工具集合；多生产者的诊断保持执行顺序。V4 适配器负责选取记录和 30 秒截止时间，domain 拥有断言语义与计数预算。
 同一运行内，一个生产者的相同范围输出可以被多个 source 引用；不因规则数增加而重复执行工具。
 首期不引入跨运行事实缓存，也不因本次拆分增加共享 workspace 上的并发命令。
 

@@ -469,6 +469,30 @@ fn architecture_detects_grouped_alias_relative_macro_and_conditional_edges() {
 }
 
 #[test]
+fn architecture_rejects_forbidden_dependencies_in_each_supported_reference_form() {
+    for source in [
+        "use crate::application::work; fn call() { work(); }",
+        "use crate::application as app; fn call() { app::work(); }",
+        "pub use crate::application::work;",
+        "fn call() { crate::application::work(); }",
+    ] {
+        let mut graph = Graph::default();
+        graph.source(
+            "domain/model.rs",
+            vec!["domain".into(), "model".into()],
+            source,
+        );
+        assert!(
+            graph
+                .violations()
+                .iter()
+                .any(|message| message.contains("forbidden dependency domain -> application")),
+            "{source}"
+        );
+    }
+}
+
+#[test]
 fn architecture_rejects_cycles_and_capability_alias_bypasses() {
     let mut graph = Graph::default();
     graph.source(
@@ -555,6 +579,7 @@ fn architecture_business_modules_preserve_capability_and_dependency_boundaries()
         ("agent_runtime", "obligation_contracts"),
         ("policy_lifecycle", "rollback_contracts"),
         ("report_evidence", "report"),
+        ("rule_evaluation", "assertion_v4"),
     ] {
         let mut graph = Graph::default();
         graph.source(

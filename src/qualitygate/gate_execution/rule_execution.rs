@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub(crate) struct Context {
     snapshot: Arc<Snapshot>,
     syntax: Arc<crate::adapters::syntax::Cache>,
-    projects: BTreeMap<String, Vec<ProjectFacts>>,
+    projects: BTreeMap<String, (usize, Arc<[ProjectFacts]>)>,
     pub(crate) tool_facts: BTreeMap<String, Arc<crate::tool_evidence::contracts::ToolFacts>>,
     pub(crate) coverage: BTreeMap<String, crate::tool_evidence::contracts::CoverageEvidence>,
     pub(crate) receipts: BTreeMap<String, super::fact_execution::Receipt>,
@@ -30,6 +30,16 @@ impl Context {
         }
     }
 
+    fn project_groups(&self, dependencies: &[String]) -> Vec<(usize, Arc<[ProjectFacts]>)> {
+        let mut groups: Vec<_> = dependencies
+            .iter()
+            .filter_map(|id| self.projects.get(id).cloned())
+            .collect();
+        // Preserve producer execution order for diagnostics and inventories.
+        groups.sort_unstable_by_key(|(order, _)| *order);
+        groups
+    }
+
     pub(crate) fn publish(&mut self, id: &str, evidence: ProducedEvidence) {
         if let Some(receipt) = evidence.receipt {
             self.receipts.insert(id.into(), receipt);
@@ -38,7 +48,8 @@ impl Context {
             self.coverage.insert(id.into(), coverage);
         }
         if !evidence.projects.is_empty() {
-            self.projects.insert(id.into(), evidence.projects);
+            self.projects
+                .insert(id.into(), (self.projects.len(), evidence.projects.into()));
         }
         if let Some(facts) = evidence.tool_facts {
             self.tool_facts.insert(id.into(), Arc::new(facts));
@@ -51,7 +62,6 @@ pub(crate) async fn execute(
     setting: &RuleSetting,
     entry: &Entry,
     context: &Context,
-    previous: &[CheckResult],
     provenance: Option<&crate::adapters::provenance::ProvenanceFacts>,
     git_input: Option<&crate::application::git_trailers::Input>,
 ) -> anyhow::Result<CheckResult> {
@@ -62,33 +72,19 @@ pub(crate) async fn execute(
     let syntax = Arc::clone(&context.syntax);
     let provenance = provenance.cloned();
     let git_input = git_input.cloned();
-    let mut projects = Vec::new();
-    for producer in previous
+    let groups = context.project_groups(&setting.depends_on);
+    let tool_facts = setting
+        .depends_on
         .iter()
-        .filter(|result| setting.depends_on.contains(&result.id))
-    {
-        if producer.execution.status == ExecutionStatus::Completed
-            && producer.verdict == Some(Verdict::Pass)
-            && let Some(facts) = context.projects.get(&producer.id)
-        {
-            projects.extend(facts.clone());
-        }
-    }
-    let tool_facts: BTreeMap<_, _> = previous
-        .iter()
-        .filter(|result| {
-            setting.depends_on.contains(&result.id)
-                && result.execution.status == ExecutionStatus::Completed
-                && result.verdict == Some(Verdict::Pass)
-        })
-        .filter_map(|result| {
+        .filter_map(|id| {
             context
                 .tool_facts
-                .get(&result.id)
-                .map(|facts| (result.id.clone(), facts.clone()))
+                .get(id)
+                .map(|facts| (id.clone(), Arc::clone(facts)))
         })
         .collect();
     tokio::task::spawn_blocking(move || {
+        let projects: Vec<_> = groups.iter().flat_map(|(_, group)| group.iter()).collect();
         let git = if crate::adapters::git_trailers::needed(&setting, &entry) {
             match &git_input {
                 Some(Ok(facts)) => Some(facts.as_ref()),
@@ -116,11 +112,11 @@ pub(crate) async fn execute(
             tool_facts: Some(&tool_facts),
         };
         let mut result = if let Some(rule) = &entry.custom {
-            crate::adapters::custom_rules::evaluate_with_context(rule, &setting, &snapshot, &facts)
+            crate::adapters::custom_rules::evaluate_borrowed(rule, &setting, &snapshot, &facts)
         } else {
             let builtin = entry.builtin.as_ref().expect("resolved builtin");
             let guidance = builtin.effective_diagnostic();
-            crate::adapters::rules::evaluate_with_guidance(
+            crate::adapters::rules::evaluate_borrowed(
                 &id,
                 &builtin.implementation,
                 &setting,
@@ -165,58 +161,54 @@ mod tests {
     use crate::config;
     use serde_json::json;
 
+    #[test]
+    fn project_dependencies_share_only_declared_groups_in_publication_order() {
+        let root = tempfile::tempdir().unwrap();
+        let mut ctx = Context::new(Arc::new(crate::application::test_support::snapshot(
+            root.path(),
+        )));
+        for id in ["z", "unrelated", "a"] {
+            let fact = serde_json::from_value(json!({"schema_version":1,"ecosystem":"maven","root":id,"manifest":"pom.xml","coordinate":id,"source_root":"src","test_source_root":"tests","declared":[],"resolved":[],"producer_check":id,"snapshot_digest":"fixture"})).unwrap();
+            ctx.publish(
+                id,
+                ProducedEvidence {
+                    projects: vec![fact],
+                    ..Default::default()
+                },
+            );
+        }
+        let selected = ctx.project_groups(&["a".into(), "absent".into(), "z".into()]);
+        assert_eq!(selected.len(), 2);
+        assert!(Arc::ptr_eq(&selected[0].1, &ctx.projects["z"].1));
+        assert!(Arc::ptr_eq(&selected[1].1, &ctx.projects["a"].1));
+        assert!(ctx.project_groups(&[]).is_empty());
+    }
+
     #[tokio::test]
     async fn rule_evaluation_ignores_untyped_display_metadata_even_from_declared_producers() {
         let root = tempfile::tempdir().unwrap();
-        let context = Context::new(Arc::new(crate::application::test_support::snapshot(
+        let mut context = Context::new(Arc::new(crate::application::test_support::snapshot(
             root.path(),
         )));
-        let config = config::parse(b"schema_version: 1\nrules: {line-ending: {}}\n").unwrap();
-        let catalog = config::catalog::Catalog::load(&config, []).unwrap();
-        let entry = &catalog.entries["line-ending"];
-        let mut setting = entry.defaults();
         let mut producer = CheckResult::pending("producer", true, Severity::Error);
         producer.complete();
         producer
             .metadata
             .insert("projects".into(), json!({"not":"project facts"}));
-        let ignored = execute(
-            "line-ending",
-            &setting,
-            entry,
-            &context,
-            std::slice::from_ref(&producer),
-            None,
-            None,
-        )
-        .await
-        .unwrap();
-        assert_eq!(ignored.execution.status, ExecutionStatus::Completed);
+        let outcome = super::super::execution_outcome::ExecutionOutcome::new(
+            producer,
+            ProducedEvidence::default(),
+        );
+        context.publish(&outcome.check_result.id, outcome.evidence);
+        assert!(context.project_groups(&["producer".into()]).is_empty());
+        let config = config::parse(b"schema_version: 1\nrules: {line-ending: {}}\n").unwrap();
+        let catalog = config::catalog::Catalog::load(&config, []).unwrap();
+        let entry = &catalog.entries["line-ending"];
+        let mut setting = entry.defaults();
         setting.depends_on = vec!["producer".into()];
-        let untrusted = execute(
-            "line-ending",
-            &setting,
-            entry,
-            &context,
-            std::slice::from_ref(&producer),
-            None,
-            None,
-        )
-        .await
-        .unwrap();
-        assert_eq!(untrusted.verdict, Some(Verdict::Pass));
-        producer.metadata.insert("projects".into(), json!([]));
-        let result = execute(
-            "line-ending",
-            &setting,
-            entry,
-            &context,
-            &[producer],
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let result = execute("line-ending", &setting, entry, &context, None, None)
+            .await
+            .unwrap();
         assert_eq!(result.metadata["depends_on"], json!(["producer"]));
         assert_eq!(result.verdict, Some(Verdict::Pass));
     }
@@ -241,7 +233,6 @@ mod tests {
                 &setting,
                 entry,
                 &context,
-                &[],
                 None,
                 unavailable.as_ref(),
             )
@@ -263,7 +254,7 @@ mod tests {
         }
         setting.parameters.clear();
         setting.source = Some(source);
-        let result = execute("line-ending", &setting, entry, &context, &[], None, None)
+        let result = execute("line-ending", &setting, entry, &context, None, None)
             .await
             .unwrap();
         assert_eq!(result.execution.status, ExecutionStatus::Blocked);

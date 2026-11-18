@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain::operator::{MAX_ENTITIES, MAX_FACT_BYTES};
 use serde_json::{Value as Json, json};
 fn facts(source: &[&str], tests: &[&str]) -> BTreeMap<String, Collection> {
     [("entities", source), ("tests", tests)]

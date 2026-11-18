@@ -3,7 +3,7 @@ use super::{
     CustomRule, Range, Result, Snapshot, Subject, file_inventory, require_syntax_capabilities,
 };
 use crate::{
-    adapters::{entity_changes, facts::RuleFacts, markers, syntax},
+    adapters::{entity_changes, facts::BorrowedRuleFacts, markers, syntax},
     domain::operator::{MAX_ENTITIES, MAX_FACT_BYTES},
 };
 use anyhow::{bail, ensure};
@@ -67,7 +67,7 @@ impl Budget {
 pub(super) fn collect(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &RuleFacts<'_>,
+    facts: &BorrowedRuleFacts<'_>,
     independent: bool,
     budget: Option<&mut Budget>,
 ) -> Result<Vec<Subject>> {

@@ -111,7 +111,7 @@ pub(crate) fn annotation_dependency(
     result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    projects: &[ProjectFacts],
+    projects: &[&ProjectFacts],
     syntax: Option<&crate::adapters::syntax::Cache>,
 ) -> Result<()> {
     let annotation = parameter(setting, "annotation")?;

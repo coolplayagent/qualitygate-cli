@@ -46,6 +46,8 @@ different role access to I/O.
 | `maven_analysis` | Resolves Maven project models, dependency declarations and usage. |
 | `python_analysis` | Resolves Python projects, dependency markers and package metadata. |
 
+V4 expression types, typed records and assertion evaluation belong to the domain. The adapter selects records from evidence and supplies the deadline to the evaluator. Application dispatch uses the declared producer IDs to share immutable collections with each rule. Project inventories retain publication order. Operation, scan and materialization budgets apply independently to each consumer.
+
 The dependency graph below describes capability owners, independently of the
 physical directory. The architecture gate maps each `feature::module` to its
 reviewed owner, resolves legacy facade paths to the same owner and rejects

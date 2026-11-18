@@ -22,7 +22,7 @@ pub(crate) fn used_undeclared(
     result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &[ProjectFacts],
+    facts: &[&ProjectFacts],
 ) -> Result<()> {
     let policy = project_rules::used_undeclared(setting)?;
     result
@@ -77,7 +77,7 @@ pub(crate) fn module_boundary(
     result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &[ProjectFacts],
+    facts: &[&ProjectFacts],
 ) -> Result<()> {
     let policy = project_rules::module_boundary(setting)?;
     let directions = policy

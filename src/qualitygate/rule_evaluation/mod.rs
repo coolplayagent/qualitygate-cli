@@ -1,5 +1,6 @@
 //! Evaluates builtin and custom rules over captured facts.
 
+pub(crate) mod assertion_v4;
 pub(crate) mod builtin_conventions;
 pub mod builtin_rules;
 pub mod custom_rules;

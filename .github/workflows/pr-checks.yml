@@ -328,6 +328,8 @@ jobs:
         rule_catalog::operator_v3::
         rule_catalog::operator_v4::
         rule_catalog::operator_v4_types::
+        rule_evaluation::assertion_v4::
+        rule_evaluation::operators_v4_facts::
         rule_catalog::rule_guidance::
         rule_catalog::rule_lifecycle::
         rule_catalog::rule_parameters::

@@ -101,6 +101,19 @@ pub fn evaluate_with_guidance(
     facts: &crate::adapters::facts::RuleFacts<'_>,
     guidance: Option<&crate::domain::rule_guidance::Diagnostic>,
 ) -> CheckResult {
+    facts.with_borrowed_projects(|borrowed| {
+        evaluate_borrowed(id, implementation, setting, snapshot, borrowed, guidance)
+    })
+}
+
+pub fn evaluate_borrowed(
+    id: &str,
+    implementation: &str,
+    setting: &RuleSetting,
+    snapshot: &Snapshot,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
+    guidance: Option<&crate::domain::rule_guidance::Diagnostic>,
+) -> CheckResult {
     let (projects, provenance) = (facts.projects, facts.provenance);
     let mut result = crate::adapters::diagnostic_budget::BuiltinResult::new(CheckResult::pending(
         id,

@@ -1,5 +1,9 @@
 use super::*;
 use crate::rule_catalog::operator_v4::{Dimension, Field, SourceType};
+use crate::{
+    domain::operator::MAX_FACT_BYTES, rule_catalog::operator_v4::Scalar,
+    tool_evidence::decimal::Decimal as ExactDecimal,
+};
 use serde_json::{Value, json};
 
 fn expression(value: Value) -> Expr {

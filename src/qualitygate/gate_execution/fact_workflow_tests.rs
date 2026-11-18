@@ -5,13 +5,30 @@ use serde_json::json;
 use std::sync::Arc;
 
 async fn run(stale: bool, missing_dependency: bool) -> anyhow::Result<Report> {
+    run_rules(
+        stale,
+        missing_dependency,
+        &[("strict".into(), 10), ("relaxed".into(), 20)],
+        1,
+    )
+    .await
+}
+
+async fn run_rules(
+    stale: bool,
+    missing_dependency: bool,
+    rules: &[(String, u32)],
+    entities: usize,
+) -> anyhow::Result<Report> {
     let root = tempfile::tempdir()?;
     let output = tempfile::tempdir()?;
     let mut snapshot = application::test_support::snapshot(root.path());
     snapshot.scope_evidence.mode = check_scope::CheckScope::Delivery;
     let source = application::test_support::source(&mut snapshot);
     let mut files = std::collections::BTreeMap::new();
-    for (id, limit) in [("strict", 10), ("relaxed", 20)] {
+    let mut settings = std::collections::BTreeMap::new();
+    for (id, limit) in rules {
+        settings.insert(id, json!({"depends_on": if id == "strict" && missing_dependency {vec![]} else {vec!["scan"]}}));
         let rule = json!({"schema_version":4,"id":id,"version":1,"source":source,
             "requires_capabilities":["files"],"when":{"entity":"file","change":"all"},"fix":"Reduce complexity",
             "fact_sources":{"metrics":{"producer":"scan","schema":"function_metric","schema_version":1,"project":"app","metric":"cc","unit":"count","measurement":"cc-v1"}},
@@ -24,10 +41,20 @@ async fn run(stale: bool, missing_dependency: bool) -> anyhow::Result<Report> {
             },
         );
     }
+    let mut source_text = String::new();
+    let mut inventory = Vec::new();
+    let mut records = Vec::new();
+    for index in 1..=entities {
+        let name = format!("sample_{index}");
+        source_text.push_str(&format!("fn {name}() {{}}\n"));
+        let location = json!({"file":"src/lib.rs", "start_line":index, "end_line":index, "symbol":format!("app::{name}")});
+        inventory.push(json!({"namespace":"app","name":name,"location":location}));
+        records.push(json!({"kind":"metric","id":format!("{name}-cc"),"location":location,"metric":"cc","value":{"coefficient":"15","scale":0},"unit":"count","measurement":"cc-v1"}));
+    }
     let raw = json!({"protocol_version":1,"schema":"function_metric","schema_version":1,"producer":"scan","snapshot_digest":if stale {"sha256:0000000000000000000000000000000000000000000000000000000000000000"}else{"SNAPSHOT"},
-        "tool_id":"analyzer","tool_version":"generic-v1","artifact_digest":"untrusted-replaced-by-application","scope":{"project":"app"},"complete":true,"inventory":{"files":["src/lib.rs"],"entities":[{"namespace":"app","name":"sample","location":{"file":"src/lib.rs","start_line":1,"end_line":1,"symbol":"app::sample"}}]},
+        "tool_id":"analyzer","tool_version":"generic-v1","artifact_digest":"untrusted-replaced-by-application","scope":{"project":"app"},"complete":true,"inventory":{"files":["src/lib.rs"],"entities":inventory},
         "metric_definitions":[{"metric":"cc","unit":"count","measurement":"cc-v1"}],
-        "records":[{"kind":"metric","id":"sample-cc","location":{"file":"src/lib.rs","start_line":1,"end_line":1,"symbol":"app::sample"},"metric":"cc","value":{"coefficient":"15","scale":0},"unit":"count","measurement":"cc-v1"}]});
+        "records":records});
     files.insert(
         "facts-template.json".into(),
         snapshot::File {
@@ -38,7 +65,7 @@ async fn run(stale: bool, missing_dependency: bool) -> anyhow::Result<Report> {
     files.insert(
         "src/lib.rs".into(),
         snapshot::File {
-            bytes: b"fn sample() {}\n".to_vec(),
+            bytes: source_text.into_bytes(),
             executable: false,
         },
     );
@@ -49,7 +76,7 @@ test -n "$digest" || exit 8
 sed "s/SNAPSHOT/$digest/" facts-template.json > facts.json
 "#;
     let value = json!({"schema_version":1,"custom_rules":"qualitygate/rules",
-        "rules":{"strict":{"depends_on":if missing_dependency{vec![]}else{vec!["scan"]}},"relaxed":{"depends_on":["scan"]}},
+        "rules":settings,
         "checks":[{"id":"scan","argv":["sh","-c",script],"when_changed":{"paths":["never/**"]},
             "tools":[{"id":"analyzer","argv":["sh","-c","printf generic-v1"]}],
             "tool_facts":{"adapter":"tool_facts","schema":"function_metric","path":"facts.json","context_path":"fact-context.json","tool_id":"analyzer","tool_version":"generic-v1","scope":{"project":"app"},"paths":["src/lib.rs"],"crate_name":"app",
@@ -180,4 +207,52 @@ async fn undeclared_dependency_and_stale_producer_cannot_support_assertions() {
             }
         );
     }
+}
+
+async fn verify_fanout(count: usize) {
+    let rules: Vec<_> = (0..count)
+        .map(|i| (format!("consumer-{i}"), if i % 2 == 0 { 10 } else { 20 }))
+        .collect();
+    let started = std::time::Instant::now();
+    let report = run_rules(false, false, &rules, 128).await.unwrap();
+    assert_eq!(report.gate.decision, Decision::Fail);
+    assert_eq!(
+        report
+            .checks
+            .iter()
+            .filter(|check| check.id == "scan")
+            .count(),
+        1
+    );
+    for (id, limit) in rules {
+        let check = report.checks.iter().find(|check| check.id == id).unwrap();
+        assert_eq!(
+            check.verdict,
+            Some(if limit < 15 {
+                Verdict::Fail
+            } else {
+                Verdict::Pass
+            })
+        );
+        assert_eq!(check.metadata["assertion"]["sources"]["metrics"], 128);
+    }
+    println!(
+        "128 metric records, {count} V4 consumers, one producer: {:?}",
+        started.elapsed()
+    );
+}
+
+#[tokio::test]
+async fn fanout_1_consumer() {
+    verify_fanout(1).await;
+}
+
+#[tokio::test]
+async fn fanout_10_consumers() {
+    verify_fanout(10).await;
+}
+
+#[tokio::test]
+async fn fanout_100_consumers() {
+    verify_fanout(100).await;
 }

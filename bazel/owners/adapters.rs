@@ -206,10 +206,9 @@ pub mod rule_evaluation {
     pub mod operators_v2;
     #[path = "operators_v3.rs"]
     pub mod operators_v3;
+    pub use qualitygate_domain::rule_evaluation::{assertion_v4, operators_v4_facts};
     #[path = "operators_v4.rs"]
     pub mod operators_v4;
-    #[path = "operators_v4_facts.rs"]
-    pub mod operators_v4_facts;
     #[path = "project_checks.rs"]
     pub mod project_checks;
     #[path = "shell_conventions.rs"]

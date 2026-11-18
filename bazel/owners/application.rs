@@ -270,7 +270,7 @@ pub mod rule_evaluation {
     pub use qualitygate_adapters::rule_evaluation::operators_v2;
     pub use qualitygate_adapters::rule_evaluation::operators_v3;
     pub use qualitygate_adapters::rule_evaluation::operators_v4;
-    pub use qualitygate_adapters::rule_evaluation::operators_v4_facts;
+    pub use qualitygate_domain::rule_evaluation::operators_v4_facts;
     pub use qualitygate_adapters::rule_evaluation::project_checks;
     pub use qualitygate_adapters::rule_evaluation::shell_conventions;
     pub use qualitygate_adapters::rule_evaluation::structure_rules;

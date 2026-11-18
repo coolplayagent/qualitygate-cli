@@ -121,6 +121,18 @@ fn configured_import_boundaries_only_match_added_syntax_imports() {
     assert_eq!(result.matched_entities, 1);
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(result.diagnostics[0].range.as_ref().unwrap().start_line, 1);
+    let qualified = run_as(
+        "import-boundary",
+        "import-boundary",
+        &snapshot(
+            "src/lib.rs",
+            None,
+            "pub fn api() { crate::application::internal(); }",
+        ),
+        serde_json::json!({"forbidden_imports":{"rust":["crate::application"]}}),
+    );
+    assert_eq!(qualified.verdict, Some(Verdict::Pass));
+    assert_eq!(qualified.matched_entities, 0);
     let incomplete = run_as(
         "import-boundary",
         "import-boundary",

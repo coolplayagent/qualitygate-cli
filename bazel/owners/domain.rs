@@ -134,6 +134,14 @@ pub mod rule_catalog {
     pub mod rule_validation;
 }
 
+#[path = "../../src/qualitygate/rule_evaluation"]
+pub mod rule_evaluation {
+    #[path = "assertion_v4.rs"]
+    pub mod assertion_v4;
+    #[path = "operators_v4_facts.rs"]
+    pub mod operators_v4_facts;
+}
+
 #[path = "../../src/qualitygate/selfcheck"]
 pub mod selfcheck {
     #[path = "fixture_results.rs"]

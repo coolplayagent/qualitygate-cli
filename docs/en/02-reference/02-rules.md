@@ -22,6 +22,8 @@ runtime behavior, or standards conformance.
 default. Language-specific rules should be enabled only after reading their
 exact definition and capability limits.
 
+The import rule inspects syntax imports intersecting added lines. A fully qualified call such as `crate::application::work()` introduces a dependency without adding an import. For a clause that forbids the dependency itself, register a project architecture checker that resolves the supported reference forms. This repository tests imports, aliases, re-exports and direct calls against the same forbidden owner edge.
+
 Internal C and C++ rules cite the C V5.3 (DKBA 12271-2023.12) and C++ V5.1
 (DKBA 12977-2022.12) language specifications. The older C&C++ secure coding
 V3.0 document is superseded by those language specifications and is not the

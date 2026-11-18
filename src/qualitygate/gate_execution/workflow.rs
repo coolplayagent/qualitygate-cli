@@ -187,11 +187,6 @@ pub(crate) async fn check_prepared(
         .iter()
         .map(|command| (command.id.as_str(), command))
         .collect();
-    let operations: std::collections::BTreeMap<_, _> = plan
-        .order
-        .iter()
-        .filter_map(|id| plan.operation(id).map(|operation| (id, operation)))
-        .collect();
     for id in &plan.order {
         let mut produced = super::execution_outcome::ProducedEvidence::default();
         if id == constraint::CHECK_ID {
@@ -200,6 +195,7 @@ pub(crate) async fn check_prepared(
         }
         let rule = plan.rules.get(id);
         let command = commands.get(id.as_str()).copied();
+        let operation = command.map(|command| command.operation());
         let (required, severity, dependencies) = if let Some(rule) = rule {
             (rule.required, rule.severity, &rule.depends_on)
         } else {
@@ -255,7 +251,6 @@ pub(crate) async fn check_prepared(
                         rule,
                         &catalog.entries[id],
                         &rule_context,
-                        &results,
                         proof.as_ref().map(|proof| &proof.facts),
                         git_facts.as_ref(),
                     )
@@ -272,7 +267,7 @@ pub(crate) async fn check_prepared(
                 Err(result) => *result,
             }
         } else if let Some(command) = command
-            && operations[id] == config::PlannedOperation::Manual
+            && operation == Some(config::PlannedOperation::Manual)
             && invalid.is_empty()
         {
             manual::execute(
@@ -285,12 +280,12 @@ pub(crate) async fn check_prepared(
             )
             .await
         } else if let Some(command) = command
-            && operations[id] == config::PlannedOperation::Compatibility
+            && operation == Some(config::PlannedOperation::Compatibility)
             && invalid.is_empty()
         {
             compatibility::execute(command, &directory, &snapshot).await
         } else if let Some(command) = command
-            && operations[id] == config::PlannedOperation::TestEffectiveness
+            && operation == Some(config::PlannedOperation::TestEffectiveness)
             && invalid.is_empty()
         {
             test_effectiveness::execute(

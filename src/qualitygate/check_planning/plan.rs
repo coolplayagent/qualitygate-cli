@@ -49,6 +49,20 @@ fn validate_task(task: &TaskContract) -> Result<()> {
     Ok(())
 }
 
+impl CommandCheck {
+    pub fn operation(&self) -> PlannedOperation {
+        if self.kind == CheckKind::Manual {
+            PlannedOperation::Manual
+        } else if self.compatibility.is_some() {
+            PlannedOperation::Compatibility
+        } else if self.test_effectiveness.is_some() {
+            PlannedOperation::TestEffectiveness
+        } else {
+            PlannedOperation::Command
+        }
+    }
+}
+
 impl Plan {
     pub fn operation(&self, id: &str) -> Option<PlannedOperation> {
         if self.rules.contains_key(id) {
@@ -57,17 +71,7 @@ impl Plan {
         self.commands
             .iter()
             .find(|command| command.id == id)
-            .map(|command| {
-                if command.kind == CheckKind::Manual {
-                    PlannedOperation::Manual
-                } else if command.compatibility.is_some() {
-                    PlannedOperation::Compatibility
-                } else if command.test_effectiveness.is_some() {
-                    PlannedOperation::TestEffectiveness
-                } else {
-                    PlannedOperation::Command
-                }
-            })
+            .map(CommandCheck::operation)
     }
 
     pub fn build(config: &Config, task: Option<&TaskContract>, profile: &str) -> Result<Self> {

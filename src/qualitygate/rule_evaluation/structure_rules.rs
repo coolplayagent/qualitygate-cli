@@ -20,7 +20,7 @@ pub(crate) fn evaluate_with_provenance(
     result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
     let changes = collect(setting, snapshot, facts, result.deadline())?;
     match id {
@@ -36,7 +36,7 @@ pub(crate) fn evaluate_with_provenance(
 fn collect(
     setting: &RuleSetting,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
     deadline: std::time::Instant,
 ) -> Result<Vec<Change>> {
     let git = facts.git_trailers;
@@ -356,7 +356,7 @@ fn markers(
     setting: &RuleSetting,
     changes: &[Change],
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
     let provenance = facts.provenance;
     let marker = setting

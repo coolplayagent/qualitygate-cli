@@ -8,7 +8,7 @@ use anyhow::{Context, ensure};
 pub(super) fn evaluate(
     rule: &CustomRule,
     snapshot: &Snapshot,
-    facts: &crate::adapters::facts::RuleFacts<'_>,
+    facts: &crate::adapters::facts::BorrowedRuleFacts<'_>,
     primary: &[Subject],
     result: &mut CheckResult,
     budget: &mut selection::Budget,
