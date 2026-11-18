@@ -1,8 +1,8 @@
 //! Project adopted policy obligations for a selected agent; never infer compliance.
 use crate::application::CheckOptions;
-use crate::application::acquisition;
 use crate::application::policy;
 use crate::application::policy_active;
+use crate::check_inputs;
 use crate::{config, domain::agent_contract::*, snapshot};
 use anyhow::{Result, ensure};
 use std::sync::Arc;
@@ -21,7 +21,7 @@ pub async fn project(mut options: CheckOptions, role: String) -> Result<Projecti
     );
     let mut active = policy_active::load(options.root.clone()).await?;
     let (comparison, _) =
-        acquisition::prepare(&mut options, active.as_ref().map(|a| &a.active)).await?;
+        check_inputs::prepare(&mut options, active.as_ref().map(|a| &a.active)).await?;
     let snapshot = Arc::new(
         snapshot::capture_resolved(
             &options.root,

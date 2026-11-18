@@ -2,6 +2,7 @@
 
 use crate::{
     adapters::policy_approval,
+    check_planning::snapshot_inputs,
     config::{
         self,
         policy_acceptance::{EvolutionTrust, ProtectedFile},
@@ -126,7 +127,9 @@ fn prepare_inner(
 ) -> Result<crate::policy_lifecycle::policy_loading::Loaded> {
     let (config, catalog) = active.frozen.resolve(&active.config)?;
     if validate_inputs {
-        crate::application::acquisition::validate_config(&config, &catalog, options, snapshot)?;
+        let protected =
+            snapshot_inputs::resolved(&config, &catalog, &options.config, options.task.as_deref());
+        super::policy_loading::validate_capture(&config, snapshot, &protected)?;
     }
     if options
         .policy_ref
@@ -182,7 +185,7 @@ fn prepare_inner(
     Ok(crate::policy_lifecycle::policy_loading::Loaded {
         constraint_bindings: config::constraint_inventory::bindings(&config, &catalog)?,
         agent_bindings: config::agent_contract::bindings(&config, &catalog)?,
-        protected_paths: crate::policy_lifecycle::policy_loading::protected_paths(
+        protected_paths: snapshot_inputs::resolved(
             &config,
             &catalog,
             &active.version.config_path,

@@ -197,7 +197,7 @@ pub struct Profile {
 pub struct CommandCheck {
     pub id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub when_changed: Option<crate::domain::change_selection::WhenChanged>,
+    pub when_changed: Option<super::selection_contracts::WhenChanged>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub required_env: Vec<String>,
     #[serde(default)]

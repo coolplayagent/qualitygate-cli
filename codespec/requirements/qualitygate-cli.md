@@ -210,7 +210,7 @@ COMMAND-SCOPE-01：命令检查可显式声明 `when_changed`，以语言与仓�
 doctor 使用相同选择，在 `not_executed` 保留原因；全部检查跳过仍不构成完整通过。
 策略无效、超时、执行失败、报告缺失和快照不匹配不能转为成功跳过。保持完整不可变命令输入、
 原始 argv 和现有输入保护，不缓存跨快照命令结果。证据见 `tests/command_applicability.rs`
-（含 `c_headers_activate_both_c_and_cpp_consumers`）、`resource_selection::trigger_selection::tests`
+（含 `c_headers_activate_both_c_and_cpp_consumers`）、`check_planning::trigger_selection::tests`
 和[配置说明](../../docs/zh/01-user-guide/03-rule-configuration.md)。
 
 SYNTAX-REUSE-01：单次检查在结构规则间共享有界语法事实，缓存绑定该次不可变输入，避免重复解析
@@ -235,7 +235,7 @@ INPUT-PROTECTION-01：Windows 输入校验器在整个生命周期持有允许�
 禁止无保护回退。句柄获取与初始校验共享 30 秒预算和 100,000 文件上限，创建失败或释放校验器时关闭
 句柄，正常读取和后续清理仍可执行。实际字节、文件身份及属性校验保持有效，属性变更恢复后仍永久失效。
 预检对失效输入不启动工具探测。原生 selfcheck 对阻止或检测到的变更均给出未完成，保留底层错误。
-证据见 `snapshot::input_guard::tests`、`snapshot::tests`、`snapshot_preflight::doctor_context::tests`、
+证据见 `snapshot::input_guard::tests`、`snapshot::tests`、`check_preflight::doctor_context::tests`、
 `tests/selfcheck.rs` 与 `.github/workflows/windows-snapshot.yml`。
 
 EXECUTABLE-FILE-01：可执行身份在打开前验证路径解析到普通文件及大小预算，打开后继续复核句柄，
@@ -863,11 +863,11 @@ fixture、同一 Codex 的两模型或摘要复查替代。
 | ENV-39-01 | capabilities 无仓库、配置或网络依赖；可执行摘要区分同版本构建；输出协议、版本化能力 ID 和限制，打包 Schema | `tests/doctor.rs::offline_capabilities_and_schemas_ignore_repository_and_invalid_policy`；`tests/quality/skill_package.rs` |
 | ENV-39-02 | YAML 结构、运行时要求、严格字段/类型分阶段验证，保留位置；旧序列化不增加空字段；不将拼写错误泛化为旧版本 | `tests/doctor.rs::explicit_requirements_precede_strict_fields_but_do_not_mask_bad_yaml`；`check_planning::runtime_validation::tests` |
 | ENV-39-03 | doctor 与 check 对 selected profile、依赖、活动策略、任务和 policy-ref 使用相同计划；required_env 仅检查存在非空且不泄露值 | `tests/doctor.rs`；`tests/policy_promotion.rs` |
-| ENV-39-04 | 默认静态；显式工具探针只运行 tools argv，顺序共享 120 秒；失败、超时、输出超限、空版本、输入与工具替换保留未完成 | `tests/doctor/probes.rs`；`snapshot_preflight::doctor_context::tests` |
+| ENV-39-04 | 默认静态；显式工具探针只运行 tools argv，顺序共享 120 秒；失败、超时、输出超限、空版本、输入与工具替换保留未完成 | `tests/doctor/probes.rs`；`check_preflight::doctor_context::tests` |
 | ENV-39-05 | 分别检查实际 base/target/policy 元数据；工作区、index、diff 相互隔离；保护输入、总量、2/8 MiB、最大容量与明细截断明确 | `tests/doctor/budgets.rs`；`snapshot::selected_preflight::tests` |
 | ENV-39-06 | scope 固定 preflight，0 只代表请求范围通过，2 表示受阻或未完成；保留未执行项、修复 argv，不能替代正式交付门禁 | `tests/doctor.rs`；[协议说明](../../docs/en/02-reference/06-runtime-and-preflight.md) |
 | ENV-39-07 | Skill 依次解析运行时、能力/版本、配置、doctor、check；保留初始化约束，提供历史兼容表、大仓库、PowerShell/Git Bash/Linux/WSL 指引 | `tests/quality/skill_package.rs`；[Windows 验证流程](../../.github/workflows/pr-checks.yml) 的实际运行证据 |
-| DOCTOR-56 | doctor 默认人类输出/显式 JSON summary 有界；完整报告保存在独立私有临时目录并返回路径/摘要/字节数；保留 0/2 语义，写入失败明确未完成，原 JSON 协议兼容 | `tests/doctor/output.rs`；`snapshot_preflight::doctor_output::tests`；`snapshot_preflight::doctor_summary::tests` |
+| DOCTOR-56 | doctor 默认人类输出/显式 JSON summary 有界；完整报告保存在独立私有临时目录并返回路径/摘要/字节数；保留 0/2 语义，写入失败明确未完成，原 JSON 协议兼容 | `tests/doctor/output.rs`；`check_preflight::doctor_output::tests`；`check_preflight::doctor_summary::tests` |
 
 本变更不安装工具、不修改项目外的 RelayAgent，也不发布新版本。Windows 原生实测、Miri、
 ASan 与稳定本地验证分开记录；Linux 测试不能替代 Windows 实际运行。
@@ -946,7 +946,7 @@ Cargo、Bazel 模块、Skill 元数据和 Pages 下载入口必须采用同一�
 
 | 编号 | 要求 | 验收证据 |
 | --- | --- | --- |
-| GRAPH-WORK-01 | 每次依赖图操作构建标识/邻接索引，迭代计算闭包和拓扑顺序；同一时刻优先策略声明中最早的就绪节点；未知、重复、禁用和有环依赖仍报错；长链不得消耗递归栈或逐节点全图重扫 | `check_planning::dependencies::tests`；`resource_selection::trigger_selection::tests`；`tests/command_applicability.rs` |
+| GRAPH-WORK-01 | 每次依赖图操作构建标识/邻接索引，迭代计算闭包和拓扑顺序；同一时刻优先策略声明中最早的就绪节点；未知、重复、禁用和有环依赖仍报错；长链不得消耗递归栈或逐节点全图重扫 | `check_planning::dependencies::tests`；`check_planning::trigger_selection::tests`；`tests/command_applicability.rs` |
 | SCOPE-INDEX-01 | 多路径操作只建立一次借用旧路径索引，当前键优先，重复旧路径保持快照顺序首项；保留交付/仓库和反馈过滤语义；公开可变快照不得缓存过期索引 | `snapshot::scope_index::tests`；既有 delivery/report/coverage 集成测试 |
 | BUILTIN-WORK-01 | 所有内置规则在保留诊断前共享 10,000 条和紧凑 JSON 8 MiB 预算，包含并行批次；共享 30 秒分析截止时间覆盖语法、标记和末次完成检查；耗尽仍未完成，保留已提交诊断和较早错误，不伪造遗漏数量 | `builtin_rules::dispatch::builtin_limits_tests`；`report_evidence::diagnostic_budget::tests`；`rule_engine::markers::tests` |
 | FACT-WORK-01 | Schema 1/2/3 事实采集统一限制 50,000 实体、32 MiB 与 30 秒，包括未传入外部预算的选择器；名称/文本/路径及每个保留标记声明副本均计量；Schema 3 命名来源继续共享预算 | `rule_engine::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects` |

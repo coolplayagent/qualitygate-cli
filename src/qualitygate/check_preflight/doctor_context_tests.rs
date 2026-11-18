@@ -2,7 +2,7 @@ use super::*;
 use serde_json::json;
 
 async fn report() -> Report {
-    let mut report = crate::snapshot_preflight::readiness_check::invalid_request(
+    let mut report = crate::check_preflight::readiness_check::invalid_request(
         "full".into(),
         true,
         "unit fixture",

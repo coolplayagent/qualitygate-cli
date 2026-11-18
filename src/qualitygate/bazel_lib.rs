@@ -21,6 +21,8 @@ pub mod agent_runtime {
 }
 
 pub mod check_planning {
+    pub use qualitygate_config::check_planning::{snapshot_inputs, trigger_selection};
+    pub use qualitygate_domain::check_planning::selection_contracts;
     pub use qualitygate_config::check_planning::discovery;
     pub use qualitygate_config::check_planning::runtime_validation;
     pub use qualitygate_domain::check_planning::runtime_contracts;
@@ -29,6 +31,16 @@ pub mod check_planning {
 pub mod cli_dispatch {
     pub use qualitygate_interfaces::cli_dispatch::cli;
 }
+
+pub mod check_preflight {
+    pub use qualitygate_application::check_preflight::{
+        capabilities, doctor_output, readiness_check, repository_root,
+    };
+    pub use qualitygate_config::check_preflight::preflight_schema;
+    pub use qualitygate_domain::check_preflight::readiness_contracts;
+}
+
+pub use check_preflight as snapshot_preflight;
 
 pub mod compatibility_verification {
     pub use qualitygate_adapters::compatibility_verification::verifier;
@@ -41,6 +53,11 @@ pub mod constraint_coverage {
 }
 
 pub use qualitygate_domain::content_digest;
+
+pub mod delivery_export {
+    pub use qualitygate_application::delivery_export::verified_delivery;
+    pub use qualitygate_domain::delivery_export::delivery_contracts;
+}
 
 pub mod external_acceptance {
     pub use qualitygate_adapters::external_acceptance::provenance_verification;
@@ -105,8 +122,7 @@ pub mod python_analysis {
 
 pub mod repair_feedback {
     pub use qualitygate_application::repair_feedback::feedback_rendering;
-    pub use qualitygate_application::repair_feedback::verified_delivery;
-    pub use qualitygate_domain::repair_feedback::delivery_contracts;
+    pub use crate::delivery_export::{delivery_contracts, verified_delivery};
     pub use qualitygate_domain::repair_feedback::feedback_projection;
 }
 
@@ -120,11 +136,8 @@ pub mod report_evidence {
 }
 
 pub mod resource_selection {
-    pub use qualitygate_config::resource_selection::exclusions;
-    pub use qualitygate_config::resource_selection::trigger_selection;
-    pub use qualitygate_domain::resource_selection::resource_exclusions;
-    pub use qualitygate_domain::resource_selection::selection_contracts;
-    pub use qualitygate_domain::resource_selection::snapshot_budget;
+    pub use crate::check_planning::{selection_contracts, snapshot_inputs as exclusions, trigger_selection};
+    pub use crate::snapshot_scope::{resource_exclusions, snapshot_budget};
 }
 
 pub mod rule_catalog {
@@ -160,13 +173,9 @@ pub mod selfcheck {
     pub use qualitygate_domain::selfcheck::fixture_results;
 }
 
-pub mod snapshot_preflight {
-    pub use qualitygate_application::snapshot_preflight::capabilities;
-    pub use qualitygate_application::snapshot_preflight::doctor_output;
-    pub use qualitygate_application::snapshot_preflight::readiness_check;
-    pub use qualitygate_application::snapshot_preflight::repository_root;
-    pub use qualitygate_config::snapshot_preflight::preflight_schema;
-    pub use qualitygate_domain::snapshot_preflight::readiness_contracts;
+pub mod snapshot_scope {
+    pub use qualitygate_config::snapshot_scope::exclusions;
+    pub use qualitygate_domain::snapshot_scope::{resource_exclusions, snapshot_budget};
 }
 
 pub mod source_analysis {

@@ -2,9 +2,11 @@
 use crate::config::CheckKind;
 use crate::config::CommandCheck;
 use crate::config::Plan;
-use crate::domain::change_selection::{ChangedInput, Selection};
+use crate::snapshot_scope::exclusions;
 use anyhow::{Result, bail};
 use std::collections::{BTreeMap, BTreeSet};
+
+use super::selection_contracts::{ChangedInput, Selection};
 
 pub(crate) fn validate(check: &CommandCheck) -> Result<()> {
     let Some(when) = &check.when_changed else {
@@ -28,8 +30,8 @@ pub(crate) fn validate(check: &CommandCheck) -> Result<()> {
             bail!("Unknown or duplicate when_changed language: {language}");
         }
     }
-    crate::resource_selection::exclusions::matcher(&when.paths)?;
-    crate::resource_selection::exclusions::matcher(&when.inputs)?;
+    exclusions::matcher(&when.paths)?;
+    exclusions::matcher(&when.inputs)?;
     Ok(())
 }
 
@@ -129,8 +131,8 @@ pub fn select(
         let selection = if let Some(reason) = force_reason {
             Selection::new(true, reason)
         } else if let Some(when) = &command.when_changed {
-            let paths = crate::resource_selection::exclusions::matcher(&when.paths)?;
-            let inputs = crate::resource_selection::exclusions::matcher(&when.inputs)?;
+            let paths = exclusions::matcher(&when.paths)?;
+            let inputs = exclusions::matcher(&when.inputs)?;
             let matched = changes.iter().find(|change| {
                 inputs.is_match(&change.path)
                     || ((!when.languages.is_empty() || !when.paths.is_empty())

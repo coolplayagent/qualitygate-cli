@@ -1,7 +1,6 @@
-//! Diagnoses snapshot acquisition, tool prerequisites and execution readiness.
+//! Diagnoses check readiness across policy, planned checks, snapshots and tools.
 //!
 
-pub(crate) mod acquisition;
 pub mod capabilities;
 pub(crate) mod doctor_context;
 pub mod doctor_output;

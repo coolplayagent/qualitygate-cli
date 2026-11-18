@@ -17,6 +17,11 @@ pub mod agent_runtime {
 
 #[path = "../../src/qualitygate/check_planning"]
 pub mod check_planning {
+    #[path = "snapshot_inputs.rs"]
+    pub mod snapshot_inputs;
+    #[path = "trigger_selection.rs"]
+    pub mod trigger_selection;
+    pub use qualitygate_domain::check_planning::selection_contracts;
     #[path = "dependencies.rs"]
     pub mod dependencies;
     #[path = "discovery/mod.rs"]
@@ -130,7 +135,6 @@ pub mod policy_lifecycle {
 
 #[path = "../../src/qualitygate/repair_feedback"]
 pub mod repair_feedback {
-    pub use qualitygate_domain::repair_feedback::delivery_contracts;
     pub use qualitygate_domain::repair_feedback::feedback_projection;
 }
 
@@ -145,15 +149,12 @@ pub mod report_evidence {
     pub use qualitygate_domain::report_evidence::verification;
 }
 
-#[path = "../../src/qualitygate/resource_selection"]
-pub mod resource_selection {
+#[path = "../../src/qualitygate/snapshot_scope"]
+pub mod snapshot_scope {
     #[path = "exclusions.rs"]
     pub mod exclusions;
-    #[path = "trigger_selection.rs"]
-    pub mod trigger_selection;
-    pub use qualitygate_domain::resource_selection::resource_exclusions;
-    pub use qualitygate_domain::resource_selection::selection_contracts;
-    pub use qualitygate_domain::resource_selection::snapshot_budget;
+    pub use qualitygate_domain::snapshot_scope::resource_exclusions;
+    pub use qualitygate_domain::snapshot_scope::snapshot_budget;
 }
 
 #[path = "../../src/qualitygate/rule_catalog"]
@@ -206,11 +207,11 @@ pub mod selfcheck {
     pub use qualitygate_domain::selfcheck::fixture_results;
 }
 
-#[path = "../../src/qualitygate/snapshot_preflight"]
-pub mod snapshot_preflight {
+#[path = "../../src/qualitygate/check_preflight"]
+pub mod check_preflight {
     #[path = "preflight_schema.rs"]
     pub mod preflight_schema;
-    pub use qualitygate_domain::snapshot_preflight::readiness_contracts;
+    pub use qualitygate_domain::check_preflight::readiness_contracts;
 }
 
 #[path = "../../src/qualitygate/test_effectiveness"]

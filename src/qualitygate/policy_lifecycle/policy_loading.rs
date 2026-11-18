@@ -1,10 +1,13 @@
-use crate::application::*;
 use crate::{
-    config::{Source, catalog::Catalog},
-    snapshot::{File, Snapshot},
+    check_planning::{check_request::CheckOptions, snapshot_inputs},
+    config::{self, Plan, Source, catalog::Catalog},
+    domain::{PolicyEvidence, PolicyInputError},
+    snapshot::{self, File, Snapshot},
+    snapshot_scope::exclusions,
 };
-use anyhow::bail;
+use anyhow::{Context, Result, bail};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 pub(crate) struct Loaded {
     pub catalog: Catalog,
@@ -65,10 +68,10 @@ async fn load_inner(
                 .map(|(path, file)| (path.as_str(), file.bytes.as_slice())),
         )?;
         let config = catalog.resolve(&config)?;
+        let protected_paths =
+            snapshot_inputs::resolved(&config, &catalog, &options.config, options.task.as_deref());
         if validate_inputs {
-            crate::application::acquisition::validate_config(
-                &config, &catalog, &options, &candidate,
-            )?;
+            validate_capture(&config, &candidate, &protected_paths)?;
         }
         let task_file = options
             .task
@@ -151,12 +154,7 @@ async fn load_inner(
             Loaded {
                 constraint_bindings: config::constraint_inventory::bindings(&config, &catalog)?,
                 agent_bindings: config::agent_contract::bindings(&config, &catalog)?,
-                protected_paths: protected_paths(
-                    &config,
-                    &catalog,
-                    &options.config,
-                    options.task.as_deref(),
-                ),
+                protected_paths,
                 catalog,
                 evidence: policy,
                 plan,
@@ -186,27 +184,18 @@ pub(crate) fn validate_source(source: &Source, files: &BTreeMap<String, File>) -
 #[path = "policy_loading_tests.rs"]
 mod tests;
 
-pub(crate) fn protected_paths(
+pub(crate) fn validate_capture(
     config: &config::Config,
-    catalog: &Catalog,
-    configuration: &str,
-    task: Option<&str>,
-) -> Vec<String> {
-    let mut paths = config::exclusions::protected_paths(config, configuration, task);
-    for source in config
-        .rules
-        .values()
-        .filter_map(|rule| rule.source.as_ref())
-        .chain(
-            catalog
-                .entries
-                .values()
-                .filter_map(|entry| entry.custom.as_ref().map(|rule| &rule.source)),
-        )
-    {
-        paths.push(globset::escape(&source.document));
-    }
-    paths.sort();
-    paths.dedup();
-    paths
+    snapshot: &Snapshot,
+    protected_paths: &[String],
+) -> Result<()> {
+    let captured = &snapshot.scope_evidence;
+    exclusions::validate_capture(
+        &config.exclude,
+        &config.unstructured_documents,
+        protected_paths,
+        &captured.exclude,
+        &captured.excluded_paths,
+        &captured.resource_exclusions,
+    )
 }

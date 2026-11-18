@@ -32,6 +32,8 @@ const OWNERS: &[(&str, &[&str])] = &[
 #[path = "architecture_owners.rs"]
 mod owner_contract;
 use owner_contract::{FEATURES, SINGLE_MODULE_FEATURES};
+#[path = "architecture_check_boundaries.rs"]
+mod check_boundaries;
 #[path = "architecture_entries.rs"]
 mod entries;
 #[path = "architecture_rule_boundaries.rs"]
@@ -44,6 +46,7 @@ fn owner_of(location: &[String]) -> Option<&str> {
         location.first()?.as_str(),
         location.get(1).map(String::as_str),
     );
+    let (first, module) = check_boundaries::target(first, module);
     if OWNERS.iter().any(|(owner, _)| *owner == first) {
         return Some(first);
     }
@@ -79,7 +82,14 @@ struct Graph {
 
 impl Graph {
     fn source(&mut self, file: &str, location: Vec<String>, text: &str) -> References {
-        let parsed = syn::parse_file(text).unwrap_or_else(|error| panic!("{file}: {error}"));
+        let mut parsed = syn::parse_file(text).unwrap_or_else(|error| panic!("{file}: {error}"));
+        if let [root] = location.as_slice()
+            && !check_boundaries::exports(root).is_empty()
+        {
+            parsed
+                .items
+                .retain(|item| !matches!(item, syn::Item::Use(_)));
+        }
         let references = References::analyze(&parsed.items, location.clone());
         self.errors.extend(
             references
@@ -103,6 +113,14 @@ impl Graph {
                 if rule_boundaries::forbidden_dependency(&location, &path[1..]) {
                     self.errors.push(format!(
                         "{file}:{}: forbidden rule dependency {} -> {}",
+                        reference.line,
+                        location.join("::"),
+                        path.join("::"),
+                    ));
+                }
+                if check_boundaries::forbidden_dependency(&location, &path[1..]) {
+                    self.errors.push(format!(
+                        "{file}:{}: forbidden check workflow dependency {} -> {}",
                         reference.line,
                         location.join("::"),
                         path.join("::"),
@@ -226,6 +244,11 @@ impl Graph {
                         .map(|(name, _)| name.to_string()),
                 )
                 .chain(std::iter::once(rule_boundaries::LEGACY_ROOT.to_owned()))
+                .chain(
+                    check_boundaries::LEGACY_ROOTS
+                        .iter()
+                        .map(|name| name.to_string()),
+                )
                 .collect();
             assert_eq!(
                 declared, expected,
@@ -245,6 +268,11 @@ impl Graph {
             let parsed = syn::parse_file(&text).unwrap();
             let mut declared = BTreeSet::new();
             for item in parsed.items {
+                if matches!(item, syn::Item::Use(_))
+                    && !check_boundaries::exports(&location[0]).is_empty()
+                {
+                    continue;
+                }
                 let syn::Item::Mod(module) = item else {
                     panic!("business roots must only declare concrete modules: {name}");
                 };
@@ -259,6 +287,17 @@ impl Graph {
                     .collect(),
                 "business root must declare every reviewed module: {name}"
             );
+        }
+        if let [module] = location.as_slice()
+            && !check_boundaries::exports(module).is_empty()
+        {
+            let parsed = syn::parse_file(&text).unwrap();
+            if let Err(error) = check_boundaries::validate_exports(module, &parsed.items) {
+                self.errors.push(format!("{name}: {error}"));
+            }
+            if check_boundaries::LEGACY_ROOTS.contains(&module.as_str()) {
+                return;
+            }
         }
         if let [module] = location.as_slice()
             && matches!(module.as_str(), "adapters" | rule_boundaries::LEGACY_ROOT)
@@ -669,8 +708,8 @@ fn architecture_business_modules_preserve_capability_and_dependency_boundaries()
     let mut graph = Graph::default();
     graph.source(
         "sample.rs",
-        vec!["snapshot_preflight".into(), "readiness_args".into()],
-        "use crate::snapshot_preflight::readiness_check; use std::fs;",
+        vec!["check_preflight".into(), "readiness_args".into()],
+        "use crate::check_preflight::readiness_check; use std::fs;",
     );
     assert!(
         graph

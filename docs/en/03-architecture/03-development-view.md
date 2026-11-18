@@ -25,29 +25,42 @@ different role access to I/O.
 | Workflow | Source | Responsibility |
 | --- | --- | --- |
 | Declare rules | `rule_catalog` | Discovers rule definitions, describes parameters and schemas, and validates versioned expressions. `check_planning::model` holds the `CustomRule` and `RuleSetting` configuration contracts. |
-| Plan a check | `check_planning` | Loads the effective policy and task, applies profile and applicability constraints, and produces a dependency-ordered plan. |
+| Prepare check inputs | `check_inputs.rs` | Prepares the configuration, rule sources, and snapshot options shared by `check` and `doctor`. |
+| Diagnose readiness | `check_preflight` | `doctor` checks the selected policy, plan, workspaces, acquisition budgets, and optional tool probes. |
+| Set snapshot scope | `snapshot_scope` | Defines file exclusions, acquisition budgets, and protected inputs. |
+| Capture a snapshot | `snapshot` | Inspects Git metadata and captures and materializes immutable inputs. |
+| Plan a check | `check_planning` | Builds a dependency-ordered plan from the effective policy, task, and profile. Applies `when_changed` and command dependencies to select checks from snapshot changes. |
 | Dispatch a rule | `gate_execution` | `workflow.rs` schedules planned checks. `rule_dispatch.rs` prepares rule facts and calls the evaluator. `gate.rs` makes the final gate decision. |
 | Evaluate a custom rule | `rule_engine` | Applies selectors and declarations, evaluates versioned operators and assertions, and owns the shared inputs for evaluation. |
 | Evaluate a built-in rule | `builtin_rules` | `dispatch.rs` selects an algorithm by implementation ID. The implementation modules inspect text, language syntax, or project facts. |
-| Select inputs | `snapshot`, `resource_selection`, `snapshot_preflight` | Capture and materialize Git snapshots, enforce exclusions and budgets, and diagnose readiness. |
 | Derive facts | `source_analysis`, `maven_analysis`, `python_analysis` | Extract syntax, language bindings, changed entities, and ecosystem facts. |
-| Collect and present evidence | `tool_evidence`, `tool_bridge`, `report_evidence`, `repair_feedback` | Normalize tool facts, bridge external tools, construct diagnostics and verification reports, and replay repair feedback. |
+| Collect and present evidence | `tool_evidence`, `tool_bridge`, `report_evidence` | Normalize tool facts, bridge external tools, and construct diagnostics and verification reports. |
+| Produce repair feedback | `repair_feedback` | Projects actionable feedback from the verification report. |
+| Export verified delivery | `delivery_export`, `snapshot::delivery` | Runs a full unfiltered check and archives the same snapshot when the gate passes with complete evidence. `snapshot::delivery` writes the archive. |
 | Govern policy and constraints | `policy_lifecycle`, `constraint_coverage` | Validate, activate, promote, and roll back policy versions. Bind constraint clauses to execution evidence. |
 | Review and accept | `external_acceptance`, `pilot_acceptance`, `judgment_review` | Authenticate attestations and manual evidence, validate pilot records, and obtain advisory judgments. |
 | Verify behavior | `compatibility_verification`, `test_effectiveness`, `selfcheck` | Run producer–consumer comparisons, test counterexamples against current and prior code, and check the bundled evaluator corpus. |
 | Operate the CLI and Agent | `cli_dispatch`, `agent_runtime` | Parse and dispatch CLI commands. Project Agent obligations and run the bounded host. |
 | Supply bounded capabilities | `runner`, `env`, `paths`, `net`, `content_digest`, `xml_parsing` | Own process execution, environment reads, path confinement, network access, hashing, and XML work budgets. |
 
-The root-level `rule_evaluation.rs` re-exports the historical rule API. The
-existing capability facades and Bazel entry points also preserve their
-respective public contracts. `contract_tests` is attached to the corresponding
-entry points through test modules.
+The root-level `rule_evaluation.rs` re-exports the historical rule API.
+Compatibility exports also retain the historical `snapshot_preflight`,
+`resource_selection`, and `repair_feedback` delivery paths. The existing
+capability facades and Bazel entry points preserve their respective public
+contracts. `contract_tests` is attached to the corresponding entry points
+through test modules.
 
 Built-in checks can call the shared fact and declaration helpers in the rule
 engine. The architecture gate checks this dependency direction separately
 from the owner graph, including references through the legacy rule exports.
 `source_analysis::declaration_fields` parses fields for both rule declarations
 and Git trailers.
+
+`check_planning::snapshot_inputs` resolves required paths from configuration and
+rule definitions. Check input preparation and policy validation both use
+`snapshot_scope` to protect those paths from exclusions. The architecture gate
+checks the dependency direction across these modules alongside the capability
+owner graph.
 
 V4 expression types, typed records and assertion evaluation belong to the domain. The adapter selects records from evidence and supplies the deadline to the evaluator. Application dispatch uses the declared producer IDs to share immutable collections with each rule. Project inventories retain publication order. Operation, scan and materialization budgets apply independently to each consumer.
 
@@ -205,7 +218,7 @@ rejected in domain/interfaces, including ordinary method calls, macro tokens and
 explicit `std::path::Path`/`PathBuf` calls. This is a conservative syntactic
 contract, not receiver type inference or proof of all possible I/O.
 
-CLI root resolution delegates to `snapshot_preflight::repository_root`, which uses
+CLI root resolution delegates to `check_preflight::repository_root`, which uses
 `spawn_blocking` and the `paths` owner while preserving native canonicalization
 and error context. `content_digest` owns canonical byte hashing and format
 validation; callers retain serialization and streaming framing. Pure

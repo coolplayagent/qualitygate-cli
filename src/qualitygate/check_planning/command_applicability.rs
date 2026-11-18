@@ -1,11 +1,12 @@
 //! Derive scheduling evidence from both sides of the complete immutable change.
-use crate::{
-    config,
-    domain::change_selection::{ChangedInput, Selection},
-    snapshot::Snapshot,
-};
+use crate::{config, snapshot::Snapshot};
 use anyhow::Result;
 use std::{collections::BTreeMap, sync::Arc};
+
+use super::{
+    selection_contracts::{ChangedInput, Selection},
+    trigger_selection,
+};
 
 pub(crate) async fn select(
     plan: &config::Plan,
@@ -50,8 +51,7 @@ pub(crate) async fn select(
                     .map(|path| (path, snapshot.base_files.get(path))),
             ) {
                 if shared.is_none()
-                    && (protected.is_match(path)
-                        || config::change_selection::shared_build_input(path))
+                    && (protected.is_match(path) || trigger_selection::shared_build_input(path))
                 {
                     shared = Some(format!(
                         "Policy, verification or shared build input changed: {path}"
@@ -83,11 +83,11 @@ pub(crate) async fn select(
         } else {
             shared.as_deref()
         };
-        config::change_selection::select(&plan, &changes, force)
+        trigger_selection::select(&plan, &changes, force)
     })
     .await?
 }
 
 #[cfg(test)]
-#[path = "snapshot_selection_tests.rs"]
+#[path = "command_applicability_tests.rs"]
 mod tests;

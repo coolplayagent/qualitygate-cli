@@ -1,6 +1,7 @@
 //! Bind passing full checks to an artifact made from exactly the checked bytes.
+use super::delivery_contracts::ExportReport;
 use crate::application::CheckOptions;
-use crate::domain::{Decision, delivery::ExportReport};
+use crate::domain::Decision;
 use anyhow::{Result, ensure};
 use std::path::PathBuf;
 

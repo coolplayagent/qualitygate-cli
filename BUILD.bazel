@@ -48,6 +48,14 @@ alias(
 )
 
 rust_test(
+    name = "check_workflow_compatibility_test",
+    crate_root = "tests/check_workflow_compatibility.rs",
+    srcs = ["tests/check_workflow_compatibility.rs"],
+    edition = crate_edition(),
+    deps = [":qualitygate_lib"],
+)
+
+rust_test(
     name = "rule_api_compatibility_test",
     crate_root = "tests/rule_api_compatibility.rs",
     srcs = ["tests/rule_api_compatibility.rs"],

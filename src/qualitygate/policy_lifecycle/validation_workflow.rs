@@ -369,8 +369,8 @@ async fn run_case(
                     .await?,
                 )
             };
-            crate::application::acquisition::validate_excluded(
-                &snapshot,
+            crate::snapshot_scope::exclusions::validate_excluded(
+                &snapshot.scope_evidence.excluded_paths,
                 &prepared.protected_paths,
             )?;
             let recheck = validation_recheck(options);
@@ -465,7 +465,7 @@ fn policy_capture(
     snapshot::CaptureOptions {
         exclude: policy.config.exclude.clone(),
         unstructured_documents: policy.config.unstructured_documents.clone(),
-        protected_paths: crate::policy_lifecycle::policy_loading::protected_paths(
+        protected_paths: crate::check_planning::snapshot_inputs::resolved(
             &policy.config,
             &policy.catalog,
             &policy.version.config_path,
@@ -503,7 +503,7 @@ fn prepare_check(
             &policy.config,
             &policy.catalog,
         )?,
-        protected_paths: crate::policy_lifecycle::policy_loading::protected_paths(
+        protected_paths: crate::check_planning::snapshot_inputs::resolved(
             &policy.config,
             &policy.catalog,
             &policy.version.config_path,

@@ -295,8 +295,11 @@ jobs:
         agent_runtime::host_decisions::
         check_planning::project::
         check_planning::runtime_contracts::
+        check_planning::selection_contracts::
+        check_preflight::readiness_contracts::
         constraint_coverage::constraint::
         content_digest::
+        delivery_export::delivery_contracts::
         external_acceptance::manual_contracts::
         external_acceptance::case_lineage::
         external_acceptance::provenance_contracts::
@@ -311,16 +314,12 @@ jobs:
         policy_lifecycle::policy_input::
         policy_lifecycle::rollback_contracts::
         policy_lifecycle::source_review::
-        repair_feedback::delivery_contracts::
         repair_feedback::feedback_projection::
         report_evidence::coverage::
         report_evidence::decision_envelope::
         report_evidence::ratchet::
         report_evidence::report::
         report_evidence::verification::
-        resource_selection::selection_contracts::
-        resource_selection::resource_exclusions::
-        resource_selection::snapshot_budget::
         rule_catalog::category::
         rule_catalog::language::
         rule_catalog::normative::
@@ -335,7 +334,8 @@ jobs:
         rule_catalog::rule_parameters::
         rule_catalog::rule_validation::
         selfcheck::fixture_results::
-        snapshot_preflight::readiness_contracts::
+        snapshot_scope::resource_exclusions::
+        snapshot_scope::snapshot_budget::
         test_effectiveness::counterexample_decisions::
         tool_evidence::contracts::
         tool_evidence::decimal::

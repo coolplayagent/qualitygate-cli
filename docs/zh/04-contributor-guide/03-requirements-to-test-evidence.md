@@ -28,7 +28,7 @@
 | 语言/模式共享约束与诊断归属 | `rule_catalog::rule_parameters::tests`、`rule_catalog::rule_guidance::tests`、配置参数/catalog 测试、适配器规则测试、`tests/issue64_rules.rs` 和完整 selfcheck。直接适配器的 C/C++ import 模式缺少支持时保持 incomplete。 |
 | 精确摘要 | `content_digest::tests`、`net::tests::maximum_provider_body_preserves_decoded_values_and_exact_wire_identity`、签名公钥摘要断言和策略绑定测试。 |
 | 包清单与具名夹具登记 | `tests/selfcheck.rs`、配置 selfcheck/catalog-asset 测试和同一 checkout 的 corpus 比较；独立 golden 不由实际执行结果生成。 |
-| 根路径解析的阻塞边界 | `snapshot_preflight::repository_root::tests`、`paths::tests::repository_roots_keep_native_resolution_and_errors`、Unix symlink-root 测试和架构回归样例。 |
+| 根路径解析的阻塞边界 | `check_preflight::repository_root::tests`、`paths::tests::repository_roots_keep_native_resolution_and_errors`、Unix symlink-root 测试和架构回归样例。 |
 | 跨平台夹具前提 | policy/agent-host 夹具使用规范临时根目录并断言 Git 提交的 CRLF 原始字节；CLI 测试检查索引字节。command/probe 测试分别验证 Unix 内容篡改、Windows 拒写后属性变更导致失效。`env::tests` 使用真实环境入口共用的摘要函数验证 4,096/4,097 项和 1 MiB/+1 字节边界。 |
 
 覆盖率、Bazel 与最终快照报告补充上述测试，不将启发式审查信号变为语义证明。
@@ -108,11 +108,12 @@ issue18/19 的样例及独立 golden 使用同一执行器。语法证据不等�
 
 | 需求领域 | 主要可重复证据 |
 | --- | --- |
-| GRAPH-WORK-01：索引化迭代依赖遍历与稳定策略顺序 | `check_planning::dependencies::tests`：首个就绪节点等价、有环/未知/重复依赖、10,000 节点反向链、profile 闭包、待完成检查及禁用依赖；既有 `resource_selection::trigger_selection::tests` 和 `tests/command_applicability.rs` |
+| 检查输入、快照范围、命令适用性与验证交付边界 | `architecture_keeps_snapshot_scope_and_input_boundaries_acyclic` 验证允许和禁止的引用。`architecture_module_graph_is_acyclic_and_respects_owners` 对生产源码执行相同检查。`check_workflow_paths_preserve_public_module_identity` 在 Cargo 与 Bazel `//:check_workflow_compatibility_test` 中核对原有 Rust 导入路径。`active_policy_requires_live_trust_and_rollback_authorizes_exact_current` 验证捕获的受保护路径与启用策略不一致时拒绝执行。[预检](../../../tests/doctor.rs)、[资源范围](../../../tests/delivery_scope/resources.rs)、[命令适用性](../../../tests/command_applicability.rs)及[验证交付](../../../tests/delivery.rs)覆盖工作流行为。 |
+| GRAPH-WORK-01：索引化迭代依赖遍历与稳定策略顺序 | `check_planning::dependencies::tests`：首个就绪节点等价、有环/未知/重复依赖、10,000 节点反向链、profile 闭包、待完成检查及禁用依赖；既有 `check_planning::trigger_selection::tests` 和 `tests/command_applicability.rs` |
 | 规则实现边界与既有 Rust API | `architecture_rejects_rule_engine_dependencies_on_builtin_implementations` 检查直接引用和经由兼容路径的引用。`architecture_keeps_trailer_analysis_independent_of_rule_evaluation` 验证 trailer 分析可导入共享声明字段，并拒绝对求值模块的依赖。`architecture_checks_exact_public_rule_compatibility_exports` 核对旧规则导出。[共用兼容性夹具](../../../tests/rule_api_compatibility.rs) 在 Cargo 和 Bazel `//:rule_api_compatibility_test` 中检查历史路径与诊断。 |
 | BUILTIN-WORK-01：共享 10,000 条/8 MiB 预留预算与 30 秒分析截止时间 | `builtin_rules::dispatch::builtin_limits_tests`：展开诊断字节、结构诊断数量、并行共享预留及多行变更范围；`report_evidence::diagnostic_budget::tests::builtin_workers_reject_expired_deadlines_before_retaining_findings`；`rule_engine::markers::tests`：索引邻接、标记边界与 2,000 个独立实体 |
 | FACT-WORK-01：Schema 1/2/3 事实采集计入重复标记声明，并为独立选择器提供本地预算 | `rule_engine::custom_rules::selection::tests::every_rule_version_bounds_repeated_marker_declaration_bytes`、`selectors_without_an_external_budget_still_reject_excess_subjects`；既有共享命名来源及未完成采集测试 |
-| COMMAND-SCOPE-01：显式语言/路径/输入命令选择、依赖保留及全局输入变化保守失效 | `resource_selection::trigger_selection::tests`；`tests/command_applicability.rs`：隔离 Git 仓库、混合语言、选择器、旧/新路径、空交付、默认兼容、策略变化、依赖、路径反馈与未完成执行；`c_headers_activate_both_c_and_cpp_consumers` 验证 `.h` 头文件的保守语言选择 |
+| COMMAND-SCOPE-01：显式语言/路径/输入命令选择、依赖保留及全局输入变化保守失效 | `check_planning::trigger_selection::tests`；`tests/command_applicability.rs`：隔离 Git 仓库、混合语言、选择器、旧/新路径、空交付、默认兼容、策略变化、依赖、路径反馈与未完成执行；`c_headers_activate_both_c_and_cpp_consumers` 验证 `.h` 头文件的保守语言选择 |
 | SYNTAX-REUSE-01：单次检查有界语法事实与内置声明语言默认值 | `source_analysis::syntax::cache::tests`；`builtin_rules::structure_rules::tests::declared_builtin_languages_avoid_unrelated_syntax_without_overriding_policy`、`shared_syntax_facts_preserve_cross_file_moves_and_rule_diagnostics`；既有 `tests/issue9_rules.rs`、`tests/custom_rules.rs` 和语法/实体变更单元测试保留诊断、非法输入失败和跨文件移动语义 |
 | CONSTRAINT-01 来源绑定清单、采用、快照覆盖与显式缺口 | `tests/constraint_coverage.rs`；`constraint_coverage::constraint::tests` |
 | RULE-OUTPUT-01: bounded diagnostic records, serialized bytes and replay expansion | `report_evidence::diagnostic_budget::tests`; `tests/custom_rules/output_budget.rs`: v1/v2/v3 incompleteness, retained findings, expression/fixed allowance and repair |
@@ -143,7 +144,7 @@ issue18/19 的样例及独立 golden 使用同一执行器。语法证据不等�
 | SHARED-EXECUTION-01 基线派生范围绑定、不可变执行输入/摘要共享、独立工作区与输入替换检测 | `snapshot::tests::derived_baseline_preserves_binding_and_isolates_shared_execution_inputs`：基线/当前摘要绑定、创建时拒绝等长内容篡改及永久失败；`snapshot::input_guard::tests`；`tests/ratchet.rs`；`tests/compatibility.rs` |
 | 诊断棘轮 | `tests/ratchet.rs`、各语言/工具 ratchet 目标、`tests/c_family_ratchet.rs` |
 | RATCHET-EVIDENCE-01 基线失败后保留当前文件/stdout 报告、双方错误与依赖阻塞 | `tests/ratchet.rs::ratchet_retains_current_file_and_stdout_reports_when_baseline_fails`：两种依赖基线的模式、多份当前报告、组合失败与修复；`ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete`：基线执行及身份验证失败后的原始字节/摘要保留 |
-| INPUT-PROTECTION-01 Windows 共享读取、阻止原地写入与替换、属性永久失效、句柄数量限制及创建失败/释放时关闭 | `snapshot::input_guard::tests`：原地改写恢复反例、共享冲突、并存校验器、已有写入句柄与初始检查失败；`snapshot::tests`；`snapshot_preflight::doctor_context::tests::exhausted_shared_budget_and_invalid_guard_never_start_another_probe`；`tests/selfcheck.rs`；`.github/workflows/windows-snapshot.yml` |
+| INPUT-PROTECTION-01 Windows 共享读取、阻止原地写入与替换、属性永久失效、句柄数量限制及创建失败/释放时关闭 | `snapshot::input_guard::tests`：原地改写恢复反例、共享冲突、并存校验器、已有写入句柄与初始检查失败；`snapshot::tests`；`check_preflight::doctor_context::tests::exhausted_shared_budget_and_invalid_guard_never_start_another_probe`；`tests/selfcheck.rs`；`.github/workflows/windows-snapshot.yml` |
 | INPUT-PROTECTION-01 写入被拒绝保留输入已验证状态、非零退出码和原始共享冲突错误；实际属性变化使覆盖率、基线和成对测试执行失效 | `tests/coverage.rs::native_coverage_repairs_preserve_raw_reports_and_reject_inconsistent_or_absent_evidence`；`tests/ratchet.rs::ratchet_baseline_failures_timeouts_mutation_and_tool_mismatch_are_incomplete`；`tests/test_effectiveness.rs::execution_gaps_and_non_assertion_failures_never_establish_effectiveness` |
 
 ## Agent 与任务验收
@@ -200,13 +201,13 @@ v10 非财务阈值的机器契约。它们不提供所声明的真实任务清�
 
 | 要求 | 单元 / 纯领域证据 | 集成 / 平台证据 |
 | --- | --- | --- |
-| ENV-39-01/02：离线指纹、运行时要求与解析诊断 | `check_planning::runtime_validation::tests`、`snapshot_preflight::readiness_contracts::tests` | `tests/doctor.rs`：离线 capabilities/Schema、兼容性反例 |
+| ENV-39-01/02：离线指纹、运行时要求与解析诊断 | `check_planning::runtime_validation::tests`、`check_preflight::readiness_contracts::tests` | `tests/doctor.rs`：离线 capabilities/Schema、兼容性反例 |
 | ENV-39-03：指定计划与环境变量要求 | `check_planning::plan::tests` | `tests/doctor.rs`：依赖展开、任务变量、缺失/空值、staged/diff/policy 选择；`tests/policy_promotion.rs`：活动签名策略 |
-| ENV-39-04：静态边界与有界探针 | `snapshot_preflight::doctor_context::tests` | `tests/doctor/probes.rs`：超时、超限、空版本、脚本/输入/策略变化、敏感输出 |
+| ENV-39-04：静态边界与有界探针 | `check_preflight::doctor_context::tests` | `tests/doctor/probes.rs`：超时、超限、空版本、脚本/输入/策略变化、敏感输出 |
 | ENV-39-05：分侧文件预算 | `snapshot::selected_preflight::tests` | `tests/doctor/budgets.rs`：仅 base 超限、2/8 MiB、最大容量、总量、受保护排除、index、计数与截断 |
-| ENV-39-06：预检协议与可执行建议 | `snapshot_preflight::readiness_contracts::tests` | `tests/doctor.rs`：Schema 校验与建议 argv 重放 |
+| ENV-39-06：预检协议与可执行建议 | `check_preflight::readiness_contracts::tests` | `tests/doctor.rs`：Schema 校验与建议 argv 重放 |
 | ENV-39-07：Skill 流程、兼容表与原生 Shell | `tests/quality/skill_package.rs` | `pr-checks.yml`：保留调试断言/溢出检查、关闭调试符号的完整 Windows 目标分组；带空格路径的 PowerShell/Git Bash 验证 |
-| DOCTOR-56：有界摘要、私有临时报告保留、原有退出码、写入失败及完整 JSON 兼容性 | `snapshot_preflight::doctor_output::tests`、`snapshot_preflight::doctor_summary::tests` | `tests/doctor/output.rs`：大量受阻诊断、独立目录、摘要/大小/Schema、非法配置与选择器、不可用存储及人类/JSON 格式 |
+| DOCTOR-56：有界摘要、私有临时报告保留、原有退出码、写入失败及完整 JSON 兼容性 | `check_preflight::doctor_output::tests`、`check_preflight::doctor_summary::tests` | `tests/doctor/output.rs`：大量受阻诊断、独立目录、摘要/大小/Schema、非法配置与选择器、不可用存储及人类/JSON 格式 |
 | EXECUTABLE-FILE-01：打开前校验普通文件，保留大小/摘要限制与符号链接兼容性 | `runner::identity::tests` | `tests/agent_host.rs::fifo_evaluator_is_rejected_before_opening_or_launching_the_agent`（Unix）：有界旧代码反例、未完成台账、无 Agent 启动或交付 |
 
 `cargo test --test doctor --all-features` 是独立于原生单元测试的集成目标。
@@ -222,7 +223,7 @@ Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Car
 
 | Requirement | Evidence |
 | --- | --- |
-| Versioned suffix classification, precedence and bounded reason counts | `resource_selection::resource_exclusions::tests` |
+| Versioned suffix classification, precedence and bounded reason counts | `snapshot_scope::resource_exclusions::tests` |
 | 复用采集列表、限制合并清单大小、排除未选中的中间 HEAD 路径 | `snapshot::limits::tests::shared_exclusion_inventory_bounds_the_union_and_ignores_bootstrap_omissions`; `tests/delivery_scope/resources.rs::resource_inventory_uses_acquired_trees_without_unselected_head_entries` |
 | Exclude before per-file/aggregate budgets; base-only, changed, renamed, deleted, staged and diff resources | `tests/delivery_scope/resources.rs::default_resources_are_excluded_before_budgets_in_every_local_selector`, `aggregate_resources_do_not_consume_content_budget_and_unknown_types_still_fail` |
 | Retention, opt-out, protected inputs, explicit exclusion conflicts, strict policy and selected policy | `tests/delivery_scope/resources.rs::retain_disable_and_protected_inputs_restore_acquisition_without_bypassing_limits`, `policy_selection_and_strict_configuration_apply_to_default_exclusions` |
@@ -252,7 +253,7 @@ Windows 实际 CI 结果、完整 selfcheck、架构源摘要/行号证据、Car
 | --- | --- |
 | 配置异常、有界发现、不可变候选包、规范来源变化 | `config::input_scenarios`、`check_planning::project_inventory::scenario_tests`、`rule_catalog::rule_authoring::tests`、`policy_lifecycle::candidate_store::tests`、`rule_catalog::custom_validation::scenario_tests` |
 | 语法与注释/字面量区分、测试框架发现、保留声明与依赖义务 | `rule_engine::markers::tests`、`builtin_rules::language_syntax::tests`、`builtin_rules::native_syntax::tests`、`builtin_rules::structure_rules::tests`、`rule_engine::custom_rules::scenario_tests`、`external_acceptance::trailer_analysis::tests` |
-| 命令失败、超时、输出超限、输入/可执行文件变化；当前和基线报告独立绑定 | `gate_execution::commands::tests`、`report_evidence::generated_reports::tests`、`snapshot_preflight::readiness_check::tests`、`gate_execution::rule_dispatch::tests`、`application::tests` |
+| 命令失败、超时、输出超限、输入/可执行文件变化；当前和基线报告独立绑定 | `gate_execution::commands::tests`、`report_evidence::generated_reports::tests`、`check_preflight::readiness_check::tests`、`gate_execution::rule_dispatch::tests`、`application::tests` |
 | 历史缺失、配对评估超时、采集策略不同、实时信任与归档验证资产 | `policy_lifecycle::validation_workflow::tests`、`policy_lifecycle::promotion_workflow::tests`；使用临时 Git 和签名合成记录 |
 | 有界 Agent 修复、契约/checkout 变化、求值器协议未完成与不可变交付 | `agent_runtime::host_controller::scenario_tests`、`cli_dispatch::cli::tests::agent_dispatch_keeps_invalid_evaluator_protocol_incomplete_with_retained_ledger`；使用固定可执行协议替身 |
 | 独立负标签、弃权、校准审查优先级、失败尝试与试点矩阵完整性 | `judgment_review::assessment_workflow::tests`、`judgment_review::assessment_workflow::pilot::tests`、`pilot_acceptance::pilot_contracts::tests`、`pilot_acceptance::pilot_workflow::tests`；不自动改变门禁，不宣称真实试点验收 |
