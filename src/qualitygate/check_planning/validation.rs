@@ -176,6 +176,9 @@ pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
             if report.format == ReportFormat::CargoClippy && !report.from_stdout {
                 bail!("cargo_clippy reports require from_stdout: true");
             }
+            if report.format == ReportFormat::Javac && report.from_stdout {
+                bail!("javac reports require a fresh file produced by javac -Xstdout");
+            }
             if let Some(baseline) = &report.baseline {
                 crate::paths::relative(Path::new(baseline))?;
             }
@@ -215,6 +218,13 @@ pub(crate) fn layout(config: &Config, resolved: bool) -> Result<()> {
                 && (report.format == ReportFormat::Junit || report.minimum_tests.is_some())
             {
                 bail!("ratchet requires diagnostic counts, not test statistics");
+            }
+            if report.mode == IncrementMode::Project
+                && (report.format == ReportFormat::Junit
+                    || report.minimum_tests.is_some()
+                    || report.baseline.is_some())
+            {
+                bail!("project mode requires diagnostic reports without a baseline");
             }
         }
         if check

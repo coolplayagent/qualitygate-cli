@@ -9,6 +9,16 @@ implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
 
+## Java deprecation guards
+
+`JAVA-DEPRECATION-01` uses `tests/java_deprecation.rs` to compile a project
+against a replacement JAR. Unchanged source uses of deprecated classes,
+interfaces, annotations and members block delivery, and compilation failure
+leaves the gate incomplete. `JAVA-DEPRECATION-02` uses
+`tests/java_forbidden_annotation.rs` to verify that PMD resolves a configured
+annotation type and allows a different type with the same short name.
+The `java-deprecation` CI job runs both with real tools.
+
 ## Production incident guards
 
 The [IG-01–20 matrix](../../../codespec/requirements/production-incident-guards.md) links each control to its observation boundary. Reproduce [crash, heap, descriptor and boundary cases](../../../codespec/test/production-incident-native.md), [publication and configuration models](../../../codespec/test/production-incident-models.md), and [syntax, historical regressions and owner dependency cycles](../../../codespec/test/production-incident-regressions.md). Additional experiments verify [reachable retention and retry amplification](../../../codespec/test/production-incident-retention-and-retry.md) and [capacity limits during configuration updates](../../../codespec/test/production-incident-capacity.md).

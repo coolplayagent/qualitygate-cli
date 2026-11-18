@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Java forbidden annotations"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0">
+  <description>Enforce a project-owned list of annotation types.</description>
+  <rule name="ForbiddenAnnotation" language="java"
+      class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+      message="Replace the forbidden annotation with its approved alternative.">
+    <description>Checks annotation applications by their resolved canonical name.</description>
+    <priority>2</priority>
+    <properties>
+      <property name="forbiddenAnnotations" type="String"
+          description="Comma-separated canonical names of annotation types"
+          value="com.acme.legacy.LegacyAudit"/>
+      <property name="xpath">
+        <value><![CDATA[
+          //Annotation[
+            some $name in tokenize($forbiddenAnnotations, ',')
+            satisfies pmd-java:typeIsExactly(normalize-space($name))
+          ]
+        ]]></value>
+      </property>
+    </properties>
+  </rule>
+</ruleset>

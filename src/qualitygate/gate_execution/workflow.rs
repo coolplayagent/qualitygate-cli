@@ -545,7 +545,7 @@ pub(crate) async fn check_prepared(
         report.verification.known_limits.push("Agent obligations require a current agent-contract projection and consuming-host evidence; this code check does not establish instruction delivery or behavioral compliance.".into());
     }
     if snapshot.delivery() {
-        report.verification.known_limits.push("Delivery scope selects changed lines and changed-file findings; unlocated command failures and incomplete evidence remain blocking. This is not repository-wide approval.".into());
+        report.verification.known_limits.push("Delivery findings normally cover changed lines and changed files. Project-mode diagnostics cover their configured producer scope. Unlocated command failures and incomplete evidence remain blocking.".into());
         if snapshot.scope_evidence.empty_delivery {
             report
                 .verification

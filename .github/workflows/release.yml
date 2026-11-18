@@ -218,6 +218,9 @@ jobs:
           test -s "dist/$package/references/spotbugs-ratchet.yaml"
           test -s "dist/$package/references/pmd-ratchet.yaml"
           test -s "dist/$package/references/checkstyle-ratchet.yaml"
+          for file in java-deprecation.yaml java-forbidden-annotations.yaml java-forbidden-annotations.xml; do
+            test -s "dist/$package/references/$file"
+          done
           test -f "dist/$package/references/rule-authoring.md"
           test -s "dist/$package/references/pilot-evidence.md"
           test -s "dist/$package/references/review-pack.md"

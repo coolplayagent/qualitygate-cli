@@ -6,6 +6,7 @@ mod coverage_py;
 mod eslint_json;
 mod golangci_json;
 mod jacoco;
+mod javac;
 mod json_budget;
 mod junit_validation;
 mod lcov;
@@ -122,11 +123,12 @@ pub fn parse(format: ReportFormat, bytes: &[u8]) -> Result<Data> {
         bail!("Report exceeds size budget");
     }
     let text = std::str::from_utf8(bytes)?;
-    if text.trim().is_empty() {
+    if text.trim().is_empty() && format != ReportFormat::Javac {
         bail!("Report is empty");
     }
     let data = match format {
         ReportFormat::CargoClippy => cargo_clippy::parse(text)?,
+        ReportFormat::Javac => javac::parse(text)?,
         ReportFormat::EslintJson => eslint_json::parse(text)?,
         ReportFormat::GolangciJson => golangci_json::parse(text)?,
         ReportFormat::RuffJson => ruff_json::parse(text)?,

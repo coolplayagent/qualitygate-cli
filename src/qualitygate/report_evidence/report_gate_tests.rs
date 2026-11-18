@@ -685,6 +685,56 @@ fn delivery_scope_keeps_changed_lines_file_findings_and_unlocated_failures() {
 }
 
 #[test]
+fn project_mode_keeps_unchanged_callers_and_respects_path_feedback() {
+    let mut snapshot = snapshot();
+    snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;
+    let findings = data(vec![issue("src/a.rs", 2), issue("src/b.rs", 1)]);
+    let mut result = pending();
+    apply(
+        &mut result,
+        &spec("project"),
+        findings.clone(),
+        None,
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics.len(), 2);
+    assert_eq!(result.diagnostics[1].file.as_deref(), Some("src/b.rs"));
+    assert_eq!(result.metadata["report:mode"], "project");
+
+    snapshot.path_filter = Some("src/b.rs".into());
+    let mut result = pending();
+    apply(
+        &mut result,
+        &spec("project"),
+        findings,
+        None,
+        &snapshot,
+        Path::new("/checked"),
+    )
+    .unwrap();
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].file.as_deref(), Some("src/b.rs"));
+    assert_eq!(result.metadata["report:filtered"], 1);
+}
+
+#[test]
+fn project_mode_rejects_unmapped_locations_and_non_diagnostic_payloads() {
+    for invalid in [
+        data(vec![issue("src/missing.rs", 1)]),
+        data(vec![issue("src/b.rs", 100)]),
+        coverage(&[("src/b.rs", 1, 1, 0, 0)]),
+        Data {
+            tests: Some(Tests::default()),
+            ..Data::default()
+        },
+    ] {
+        assert!(apply_data(&mut pending(), &spec("project"), invalid, None).is_err());
+    }
+}
+
+#[test]
 fn delivery_new_diagnostics_retains_multiplicity_before_filtering_in_either_order() {
     let mut snapshot = snapshot();
     snapshot.scope_evidence.mode = crate::domain::check_scope::CheckScope::Delivery;

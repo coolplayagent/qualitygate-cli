@@ -124,6 +124,23 @@ SARIF, Checkstyle, PMD, and SpotBugs. Their producer-specific completion markers
 file inventories, error records, path mappings, and version agreement are part
 of completeness, not optional metadata.
 
+## Java deprecation and forbidden annotations
+
+The [javac example](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
+blocks ordinary deprecation and removal warnings for the selected compilation.
+Collect detailed English JDK 21 output in a fresh UTF-8 file with `-Xstdout`.
+Enable both lint categories, set the warning cap high, and let Qualitygate
+apply blocking severity after compilation. Use the project's actual source
+list with paths relative to the command directory, classpath, module path and
+release. Java's warning exemptions and the selected inputs set coverage.
+
+The [PMD example](../../../skills/qualitygate-cli/references/java-forbidden-annotations.yaml)
+checks annotation applications independently. Copy the
+[ruleset](../../../skills/qualitygate-cli/references/java-forbidden-annotations.xml)
+and configure forbidden annotation types by fully qualified name. Run it after
+a successful build with all needed types on its auxiliary classpath. Both
+examples use project report mode so an unchanged use site can block delivery.
+
 ## Typed tool observations
 
 Commands can declare one `tool_facts` output instead of diagnostic reports or
@@ -225,9 +242,16 @@ dependencies; it does not replace Cargo's required quality gates. Cache state,
 lockfile behavior, platform, and selected targets belong in evidence.
 
 Incremental modes declare their meaning: `new_diagnostics`, `changed_lines`,
-`affected_scope`, or `full`. A changed file does not make every historical
+`affected_scope`, `ratchet`, `full`, or `project`. A changed file does not make every historical
 finding new. When a comparable baseline is unavailable, a required ratchet is
 incomplete unless trusted policy explicitly allows a disclosed full fallback.
+
+Choose `mode: project` for diagnostic reports that must block on any finding in
+the configured producer scope, including an unchanged caller affected by a
+dependency upgrade. This mode has no baseline and includes historical findings.
+All reported locations still resolve against captured source, and path feedback
+still limits the selected locations. Configure the command to analyze the
+intended targets and inputs. Policies can require `reports.project-diagnostics.v1`.
 
 For `new_diagnostics`, unchanged current occurrences consume matching baseline
 counts before selecting delivery findings. Adding an identical finding on a

@@ -1,0 +1,32 @@
+# Replace the source inventory and classpath with the project's compilation inputs.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1, reports.javac.v1]
+checks:
+  - id: java-deprecation
+    argv:
+      - javac
+      - -J-Duser.language=en
+      - -J-Duser.country=US
+      - -encoding
+      - UTF-8
+      - -Xlint:deprecation,removal
+      - -Xmaxwarns
+      - '2147483647'
+      - -Xstdout
+      - qualitygate-javac.log
+      - -d
+      - target/deprecation-classes
+      - '@config/java-sources.args'
+    timeout_seconds: 120
+    required: true
+    severity: error
+    tools:
+      - id: javac
+        argv: [javac, -version]
+        inputs: [config/java-sources.args]
+    reports:
+      - path: qualitygate-javac.log
+        format: javac
+        mode: project

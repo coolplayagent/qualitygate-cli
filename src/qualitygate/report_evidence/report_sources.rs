@@ -2,11 +2,16 @@
 
 use crate::{paths, snapshot::Snapshot};
 use anyhow::{Result, bail};
-use std::{cmp::Ordering, collections::BTreeMap, path::Path};
+use std::{
+    cmp::Ordering,
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 pub(crate) struct Sources<'a> {
     snapshot: &'a Snapshot,
     workspace: &'a Path,
+    exact_cwd: Option<PathBuf>,
     current: Option<Vec<&'a str>>,
     baseline: Option<Vec<&'a str>>,
     renames: Option<BTreeMap<&'a str, &'a str>>,
@@ -17,10 +22,16 @@ impl<'a> Sources<'a> {
         Self {
             snapshot,
             workspace,
+            exact_cwd: None,
             current: None,
             baseline: None,
             renames: None,
         }
+    }
+
+    pub(super) fn with_exact_cwd(mut self, cwd: &str) -> Self {
+        self.exact_cwd = Some(PathBuf::from(cwd));
+        self
     }
 
     pub(crate) fn map(&mut self, file: &str, base: bool) -> Result<String> {
@@ -30,13 +41,24 @@ impl<'a> Sources<'a> {
             &self.snapshot.files
         };
         let path = Path::new(file.strip_prefix("file://").unwrap_or(file));
-        let path = path
-            .strip_prefix(self.workspace)
-            .or_else(|_| path.strip_prefix(&self.snapshot.root))
-            .unwrap_or(path);
-        let relative = paths::from_native(path)?;
+        let relative = if let Some(cwd) = &self.exact_cwd {
+            // Javac retains the source argument's path. A filename relative
+            // to the command's cwd must not resolve to a same-named file elsewhere.
+            paths::from_native(&cwd.join(path))?
+        } else {
+            let path = path
+                .strip_prefix(self.workspace)
+                .or_else(|_| path.strip_prefix(&self.snapshot.root))
+                .unwrap_or(path);
+            paths::from_native(path)?
+        };
         if files.contains_key(&relative) {
             return Ok(relative);
+        }
+        if self.exact_cwd.is_some() {
+            bail!(
+                "Report path does not match a checked source relative to the command directory: {file}"
+            );
         }
         let index = if base {
             &mut self.baseline

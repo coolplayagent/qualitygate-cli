@@ -1,0 +1,41 @@
+# Set config/java-sources.args to the project's Java source inventory and classpath.
+# Copy the paired XML to config/java-forbidden-annotations.xml and set forbiddenAnnotations.
+# Match the compiler classpath, adding dependency JARs to --aux-classpath as needed.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: java-compile
+    required: true
+    severity: error
+    argv: [javac, -encoding, UTF-8, -d, target/classes, '@config/java-sources.args']
+    timeout_seconds: 120
+    tools:
+      - {id: javac, argv: [javac, -version], inputs: [config/java-sources.args]}
+  - id: java-forbidden-annotations
+    required: true
+    severity: error
+    depends_on: [java-compile]
+    argv:
+      - pmd
+      - check
+      - --dir
+      - src/main/java
+      - --rulesets
+      - config/java-forbidden-annotations.xml
+      - --aux-classpath
+      - target/classes
+      - --no-cache
+      - --no-fail-on-violation
+      - --format
+      - xml
+      - --report-file
+      - target/java-forbidden-annotations.xml
+    timeout_seconds: 120
+    tools:
+      - {id: pmd, argv: [pmd, --version], inputs: [config/java-forbidden-annotations.xml]}
+    reports:
+      - path: target/java-forbidden-annotations.xml
+        format: pmd
+        mode: project

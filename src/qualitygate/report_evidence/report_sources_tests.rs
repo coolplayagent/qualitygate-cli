@@ -98,6 +98,31 @@ fn current_and_baseline_indexes_preserve_independent_roots_and_inventories() {
 }
 
 #[test]
+fn java_paths_resolve_exactly_from_the_command_directory() {
+    let snapshot = snapshot(
+        &[
+            "Consumer.java",
+            "java/Consumer.java",
+            "java/nested/Other.java",
+        ],
+        &["java/Consumer.java"],
+    );
+    let mut sources = Sources::new(&snapshot, Path::new("/checked")).with_exact_cwd("java");
+    for baseline in [false, true] {
+        assert_eq!(
+            sources.map("Consumer.java", baseline).unwrap(),
+            "java/Consumer.java"
+        );
+    }
+    assert_eq!(
+        sources.map("nested/Other.java", false).unwrap(),
+        "java/nested/Other.java"
+    );
+    assert!(sources.map("Other.java", false).is_err());
+    assert!(sources.map("../Consumer.java", false).is_err());
+}
+
+#[test]
 fn indexed_suffix_results_match_exhaustive_resolution_across_path_shapes() {
     let mut names: Vec<_> = (0..200)
         .map(|i| format!("module/{i}/item-{}.rs", i % 19))

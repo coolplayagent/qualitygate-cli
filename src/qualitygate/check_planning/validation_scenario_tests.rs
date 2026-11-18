@@ -30,6 +30,29 @@ fn report_contracts_reject_ambiguous_producers_missing_denominators_and_test_rat
 }
 
 #[test]
+fn project_mode_accepts_diagnostics_and_rejects_baselines_tests_and_coverage() {
+    let make_config = |report| {
+        serde_json::from_value(json!({
+            "schema_version": 1,
+            "checks": [{"id": "verify", "argv": ["tool"], "reports": [report]}],
+        }))
+        .unwrap()
+    };
+    validate(&make_config(json!({
+        "path": "diagnostics.json", "format": "diagnostics", "mode": "project"
+    })))
+    .unwrap();
+    for invalid in [
+        json!({"path":"report.json","format":"diagnostics","mode":"project","baseline":"base.json"}),
+        json!({"path":"test.xml","format":"junit","mode":"project"}),
+        json!({"path":"report.json","format":"diagnostics","mode":"project","minimum_tests":1}),
+        json!({"path":"coverage.json","format":"lcov","mode":"project","coverage_paths":["src/**"]}),
+    ] {
+        assert!(validate(&make_config(invalid)).is_err());
+    }
+}
+
+#[test]
 fn manual_and_provenance_evidence_must_be_confined_and_cannot_hide_executable_work() {
     for check in [
         json!({"id":"review","kind":"manual","argv":["execute"]}),
