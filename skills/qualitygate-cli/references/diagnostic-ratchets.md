@@ -129,3 +129,41 @@ line positions); `ratchet` compares their counts with findings on replaced/delet
 baseline lines. `new_diagnostics` retains the changed files' baseline identities
 to avoid treating historical moved findings as new. This does not establish
 that the complete historical analyzer inventory is clean.
+
+## Java deprecation and forbidden annotations
+
+Use the [javac policy](java-deprecation.yaml) with JDK 17 or 21 to block
+deprecation and removal warnings. Use the [JDK 8 policy](java-deprecation-jdk8.yaml)
+for ordinary deprecation warnings. JDK 8 predates the separate removal
+diagnostic. List the project's source
+files and compilation inputs in the supplied argument file. Include the same
+classpath, release, and generated-source configuration as the build you intend
+to enforce. Pass source paths beneath the configured command directory
+without parent segments. Use the repository root for sibling sources. For
+builds with annotation processors, configure processing explicitly as in
+the project build.
+Use the example's `-Xstdout` diagnostic file and leave warnings enabled at
+warning level. Qualitygate applies the blocking severity after a successful
+compilation. A clean compilation creates a fresh empty file.
+
+For project-specific annotation bans, copy the [PMD ruleset](java-forbidden-annotations.xml)
+to the project and replace the sample names with the forbidden fully qualified
+annotation types. The [PMD policy](java-forbidden-annotations.yaml) shows how to
+run the check after compilation with the resulting classes and dependencies
+on PMD's auxiliary classpath. The sample binds both tools to one argument
+file containing only source paths. Put compiler options in the command
+instead to preserve the shared inventory. The XPath rule matches resolved annotation
+applications, including source-retention annotations. Keep
+`--show-suppressed` with the `pmd_with_suppressed` report format
+(`reports.pmd-suppressed.v1`). Suppressed findings can still block and are
+reported at file scope because PMD omits their original rule ID and line.
+The report covers the configured source inventory and classpath.
+
+The javac adapter advertises `reports.javac.v1`. Both checks use
+`reports[].mode: project` (`reports.project-diagnostics.v1`) to
+keep diagnostics from analyzed snapshot files even when their use sites did
+not change. The policy applies to every applicable finding in that inventory.
+Java compiler warning exemptions, build target selection, and the analyzer's
+ability to resolve a symbol determine coverage. Keep the locale and warning
+flags in the javac example. Missing evidence and compiler failure make the
+required check incomplete.

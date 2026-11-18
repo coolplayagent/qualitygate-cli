@@ -1,0 +1,19 @@
+# Copy python-deprecation-pyrightconfig.json to the project's pyright-deprecation.json.
+# Set the selected source inventory and target Python version in the Pyright config.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1, reports.pyright.v1]
+checks:
+  - id: python-deprecation
+    required: true
+    severity: error
+    argv: [pyright, --project, pyright-deprecation.json, --outputjson]
+    timeout_seconds: 120
+    tools:
+      - {id: pyright, argv: [pyright, --version], inputs: [pyright-deprecation.json]}
+    reports:
+      - path: target/python-deprecation.json
+        from_stdout: true
+        format: pyright_json
+        mode: project

@@ -9,6 +9,8 @@ use std::{fs, path::Path, process::Command};
 
 const OLD: &str = "pub fn empty(values: &[u8]) -> bool { values.len() == 0 }\n";
 const NEW: &str = "pub fn other(values: &[u8]) -> bool { values.len() == 0 }\n";
+const DEPRECATION_POLICY: &str =
+    include_str!("../skills/qualitygate-cli/references/rust-deprecation.yaml");
 
 // These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, exit: i32) -> Value {
@@ -44,13 +46,9 @@ fn stdout_report_configuration_requires_a_single_declared_source() {
     }
 }
 
-#[test]
-#[ignore = "requires Clippy; mandatory live Clippy CI job"]
-fn real_clippy_stdout_ratchet_repair_and_incomplete_compilation() {
-    let repository = fixture();
-    let root = repository.path();
+fn cargo_fixture(root: &Path, source: &str) {
     fs::create_dir(root.join("src")).unwrap();
-    fs::write(root.join("src/lib.rs"), OLD).unwrap();
+    fs::write(root.join("src/lib.rs"), source).unwrap();
     fs::write(
         root.join("Cargo.toml"),
         "[package]\nname = \"clippy-ratchet-fixture\"\nversion = \"0.1.0\"\nedition = \"2024\"\n",
@@ -72,6 +70,14 @@ fn real_clippy_stdout_ratchet_repair_and_incomplete_compilation() {
         "{}",
         String::from_utf8_lossy(&lock.stderr)
     );
+}
+
+#[test]
+#[ignore = "requires Clippy; mandatory live Clippy CI job"]
+fn real_clippy_stdout_ratchet_repair_and_incomplete_compilation() {
+    let repository = fixture();
+    let root = repository.path();
+    cargo_fixture(root, OLD);
     let mut policy = json!({"schema_version":1,"checks":[{
         "id":"clippy-ratchet",
         "argv":["cargo","clippy","--locked","--offline","--message-format=json","--lib","--","-W","clippy::len_zero"],
@@ -168,4 +174,64 @@ fn real_clippy_stdout_ratchet_repair_and_incomplete_compilation() {
     assert_eq!(incomplete["gate"]["decision"], "incomplete");
     assert_eq!(incomplete["checks"][0]["verdict"], Value::Null);
     assert_eq!(incomplete["checks"][0]["execution"]["exit_code"], 101);
+}
+
+#[test]
+fn packaged_rust_deprecation_policy_is_valid() {
+    let repository = fixture();
+    let root = repository.path();
+    fs::write(root.join("qualitygate.yaml"), DEPRECATION_POLICY).unwrap();
+    report(&cli(root, &["config", "--show", "--format", "json"]), 0);
+}
+
+#[test]
+#[ignore = "requires Clippy; mandatory live Clippy CI job"]
+fn real_clippy_deprecation_blocks_unchanged_call_sites_despite_local_allow() {
+    let repository = fixture();
+    let root = repository.path();
+    cargo_fixture(
+        root,
+        "mod api;\n#[allow(deprecated)]\npub fn use_api() { let unrelated_unused = 1; api::legacy(); }\n",
+    );
+    let api = root.join("src/api.rs");
+    fs::write(&api, "pub fn legacy() {}\n").unwrap();
+    fs::write(root.join("qualitygate.yaml"), DEPRECATION_POLICY).unwrap();
+    git(root, &["add", "."]);
+    git(root, &["commit", "-qm", "non-deprecated Rust declaration"]);
+    let check = |status| {
+        report(
+            &cli(
+                root,
+                &[
+                    "check",
+                    "--worktree",
+                    "--profile",
+                    "full",
+                    "--format",
+                    "json",
+                ],
+            ),
+            status,
+        )
+    };
+    assert_eq!(check(0)["gate"]["decision"], "pass");
+
+    fs::write(&api, "#[deprecated]\npub fn legacy() {}\n").unwrap();
+    let blocked = check(1);
+    assert_eq!(blocked["selection"]["changed_files"], json!(["src/api.rs"]));
+    assert_eq!(blocked["gate"]["complete"], true);
+    let result = &blocked["checks"][0];
+    assert_eq!(result["execution"]["exit_code"], 0);
+    let diagnostics = result["diagnostics"].as_array().unwrap();
+    assert!(!diagnostics.is_empty());
+    for diagnostic in diagnostics {
+        assert_eq!(diagnostic["file"], "src/lib.rs");
+        assert_eq!(diagnostic["range"]["start_line"], 3);
+        assert_eq!(diagnostic["evidence"]["rule"], "deprecated");
+    }
+
+    fs::write(&api, "pub fn broken(\n").unwrap();
+    assert_eq!(check(2)["gate"]["decision"], "incomplete");
+    fs::write(&api, "pub fn legacy() {}\n").unwrap();
+    assert_eq!(check(0)["gate"]["decision"], "pass");
 }

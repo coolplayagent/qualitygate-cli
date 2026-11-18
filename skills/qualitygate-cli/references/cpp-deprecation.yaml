@@ -1,0 +1,19 @@
+# Use a provisioned G++ with SARIF support. Repeat the check for each intended
+# translation unit and set its compiler flags, object path, and SARIF path.
+# G++ emits warnings and exits successfully. Qualitygate blocks emitted findings.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: cpp-deprecation
+    argv: [g++, -Wdeprecated-declarations, -fdiagnostics-format=sarif-file, -c, sample.cpp, -o, sample.o]
+    timeout_seconds: 120
+    required: true
+    severity: error
+    tools:
+      - {id: gpp, argv: [g++, --version]}
+    reports:
+      - path: sample.cpp.sarif
+        format: sarif
+        mode: project

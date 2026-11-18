@@ -7,6 +7,19 @@
 或真实试点已验收。
 
 
+## Java 废弃用法与禁用注解
+
+`JAVA-DEPRECATION-01` 由 `tests/java_deprecation.rs` 更换依赖 JAR 验证。
+未修改代码中的废弃类、接口、注解和成员引用应阻断交付，编译失败应使门禁未完成。
+`JAVA-DEPRECATION-02` 由 `tests/java_forbidden_annotation.rs` 验证 PMD
+能按全限定名识别禁用注解，放行短名相同的其他类型，并保留被 PMD 抑制的违规。CI 的
+`java-deprecation` 矩阵在 JDK 8、17 和 21 上使用真实工具运行两组测试。
+
+`tests/clippy_ratchet.rs`、`tests/c_family_ratchet.rs` 和 `tests/golangci_ratchet.rs`
+验证 Rust、C/C++、Go 的声明变更可阻断未修改的用法。`tests/language_deprecation.rs`
+验证类型感知 ESLint 的 TypeScript 和 JavaScript 检查及 ShellCheck 的 Bash 旧语法检查。
+`tests/python_deprecation.rs` 以 Pyright 验证 Python PEP 702 用法。
+
 ## 现网事故防护
 
 [IG-01 至 IG-20](../../../codespec/requirements/production-incident-guards.md) 逐项记录防护条件和观测范围。可独立复查[崩溃、堆内存、句柄与边界](../../../codespec/test/production-incident-native.md)、[发布交错与配置模型](../../../codespec/test/production-incident-models.md)以及[语法规则、仓库回归与 owner 循环依赖](../../../codespec/test/production-incident-regressions.md)。新增实验覆盖[可达对象滞留与重试放大](../../../codespec/test/production-incident-retention-and-retry.md)以及[配置更新时的资源上限](../../../codespec/test/production-incident-capacity.md)。

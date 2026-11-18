@@ -357,13 +357,16 @@ pub struct ReportSpec {
 #[serde(rename_all = "snake_case")]
 pub enum ReportFormat {
     CargoClippy,
+    Javac,
     EslintJson,
     GolangciJson,
     RuffJson,
+    PyrightJson,
     Junit,
     Checkstyle,
     Spotbugs,
     Pmd,
+    PmdWithSuppressed,
     Sarif,
     Lcov,
     Cobertura,
@@ -381,6 +384,7 @@ pub enum IncrementMode {
     NewDiagnostics,
     Ratchet,
     AffectedScope,
+    Project,
 }
 
 impl IncrementMode {

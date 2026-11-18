@@ -338,3 +338,28 @@ fn generic_location_inventory_preserves_ranges_and_cannot_contradict_primary_loc
     report["issues"][0]["locations"][1] = json!({"file":"src/b.rs","end_line":1});
     assert!(read(&report).is_err());
 }
+#[test]
+fn pmd_suppressed_mode_retains_file_evidence_and_validates_required_fields() {
+    let report = br#"<pmd><file name="src/A.java"><violation beginline="3" rule="ForbiddenAnnotation">replace it</violation></file><suppressedviolation filename="src/B.java" suppressiontype="//nopmd" msg="replace it" usermsg="temporary" /></pmd>"#;
+    assert_eq!(parse(ReportFormat::Pmd, report).unwrap().issues.len(), 1);
+    let data = parse(ReportFormat::PmdWithSuppressed, report).unwrap();
+    assert_eq!(data.issues.len(), 2);
+    assert_eq!(data.issues[0].rule, "ForbiddenAnnotation");
+    let suppressed = &data.issues[1];
+    assert_eq!(suppressed.rule, "pmd-suppressed");
+    assert_eq!(suppressed.file.as_deref(), Some("src/B.java"));
+    assert_eq!(suppressed.line, None);
+    assert_eq!(
+        suppressed.message,
+        "PMD suppressed finding (//nopmd): replace it"
+    );
+
+    for malformed in [
+        br#"<pmd><suppressedviolation suppressiontype="//nopmd" msg="replace it" /></pmd>"#.as_slice(),
+        br#"<pmd><suppressedviolation filename="src/B.java" msg="replace it" /></pmd>"#,
+        br#"<pmd><suppressedviolation filename="src/B.java" suppressiontype="//nopmd" msg=" " /></pmd>"#,
+        br#"<pmd><error filename="src/B.java" msg="failed" /></pmd>"#,
+    ] {
+        assert!(parse(ReportFormat::PmdWithSuppressed, malformed).is_err());
+    }
+}

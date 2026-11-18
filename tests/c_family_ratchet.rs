@@ -9,6 +9,9 @@ use std::{fs, path::Path, process::Command};
 
 const C_FIRST: &str = "#include <stdlib.h>\nint first(int bad) {\n  int *value = malloc(sizeof *value);\n  if (bad) return 1;\n  free(value);\n  return 0;\n}\n";
 const C_SECOND: &str = "int second(int bad) {\n  int *value = malloc(sizeof *value);\n  if (bad) return 1;\n  free(value);\n  return 0;\n}\n";
+const C_DEPRECATION: &str = include_str!("../skills/qualitygate-cli/references/c-deprecation.yaml");
+const CPP_DEPRECATION: &str =
+    include_str!("../skills/qualitygate-cli/references/cpp-deprecation.yaml");
 
 // These cases measure historical repository debt; delivery intersection is tested separately.
 fn run(root: &Path, expected: i32) -> Value {
@@ -108,5 +111,83 @@ fn real_gcc_c_and_cpp_sarif_ratchets_growth_repair_and_compile_failure() {
         fs::write(root.join(&source_name), &broken).unwrap();
         let incomplete = run(root, 2);
         assert_eq!(incomplete["gate"]["decision"], "incomplete", "{tool}: {incomplete}");
+    }
+}
+
+#[test]
+fn packaged_c_family_deprecation_policies_are_valid() {
+    let repository = fixture();
+    let root = repository.path();
+    for policy in [C_DEPRECATION, CPP_DEPRECATION] {
+        fs::write(root.join("qualitygate.yaml"), policy).unwrap();
+        report(&cli(root, &["config", "--show", "--format", "json"]), 0);
+    }
+}
+
+#[test]
+#[ignore = "requires GCC 13+ C and C++ SARIF producers; mandatory live C/C++ CI job"]
+fn real_gcc_deprecation_checks_block_unchanged_c_and_cpp_callers() {
+    for (policy, source_name, source, clean, deprecated) in [
+        (
+            C_DEPRECATION,
+            "sample.c",
+            "#include \"api.h\"\nint use_api(void) { return legacy(); }\n",
+            "static inline int legacy(void) { return 0; }\n",
+            "__attribute__((deprecated)) static inline int legacy(void) { return 0; }\n",
+        ),
+        (
+            CPP_DEPRECATION,
+            "sample.cpp",
+            "#include \"api.h\"\nLegacy object;\n",
+            "struct Legacy {};\n",
+            "struct [[deprecated]] Legacy {};\n",
+        ),
+    ] {
+        let repository = fixture();
+        let root = repository.path();
+        let header = root.join("api.h");
+        fs::write(root.join("qualitygate.yaml"), policy).unwrap();
+        fs::write(root.join(source_name), source).unwrap();
+        fs::write(&header, clean).unwrap();
+        git(root, &["add", "."]);
+        git(
+            root,
+            &["commit", "-qm", "non-deprecated C family declaration"],
+        );
+        let check = |status| {
+            report(
+                &cli(
+                    root,
+                    &[
+                        "check",
+                        "--worktree",
+                        "--profile",
+                        "full",
+                        "--format",
+                        "json",
+                    ],
+                ),
+                status,
+            )
+        };
+        assert_eq!(check(0)["gate"]["decision"], "pass");
+
+        fs::write(&header, deprecated).unwrap();
+        let blocked = check(1);
+        assert_eq!(blocked["selection"]["changed_files"], json!(["api.h"]));
+        assert_eq!(blocked["gate"]["complete"], true);
+        let result = &blocked["checks"][0];
+        assert_eq!(result["execution"]["exit_code"], 0);
+        let diagnostics = result["diagnostics"].as_array().unwrap();
+        assert_eq!(diagnostics.len(), 1, "{source_name}: {diagnostics:?}");
+        let finding = &diagnostics[0];
+        assert_eq!(finding["file"], source_name);
+        assert_eq!(finding["range"]["start_line"], 2);
+        assert_eq!(finding["evidence"]["rule"], "-Wdeprecated-declarations");
+
+        fs::write(&header, "struct broken {\n").unwrap();
+        assert_eq!(check(2)["gate"]["decision"], "incomplete");
+        fs::write(&header, clean).unwrap();
+        assert_eq!(check(0)["gate"]["decision"], "pass");
     }
 }

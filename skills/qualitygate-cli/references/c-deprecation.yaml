@@ -1,0 +1,19 @@
+# Use a provisioned GCC with SARIF support. Repeat the check for each intended
+# translation unit and set its compiler flags, object path, and SARIF path.
+# GCC emits warnings and exits successfully. Qualitygate blocks emitted findings.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: c-deprecation
+    argv: [gcc, -Wdeprecated-declarations, -fdiagnostics-format=sarif-file, -c, sample.c, -o, sample.o]
+    timeout_seconds: 120
+    required: true
+    severity: error
+    tools:
+      - {id: gcc, argv: [gcc, --version]}
+    reports:
+      - path: sample.c.sarif
+        format: sarif
+        mode: project

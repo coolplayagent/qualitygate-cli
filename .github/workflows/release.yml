@@ -218,6 +218,17 @@ jobs:
           test -s "dist/$package/references/spotbugs-ratchet.yaml"
           test -s "dist/$package/references/pmd-ratchet.yaml"
           test -s "dist/$package/references/checkstyle-ratchet.yaml"
+          for file in \
+            references/deprecation-policies.md \
+            references/java-deprecation.yaml references/java-deprecation-jdk8.yaml \
+            references/java-forbidden-annotations.yaml references/java-forbidden-annotations.xml \
+            references/rust-deprecation.yaml references/c-deprecation.yaml references/cpp-deprecation.yaml \
+            references/go-deprecation.yaml references/golangci-deprecation.yaml \
+            references/typescript-deprecation.yaml references/typescript-deprecation-eslint.config.mjs \
+            references/typescript-deprecation-tsconfig.json references/python-deprecation.yaml \
+            references/python-deprecation-pyrightconfig.json references/shell-deprecation.yaml; do
+            test -s "dist/$package/$file"
+          done
           test -f "dist/$package/references/rule-authoring.md"
           test -s "dist/$package/references/pilot-evidence.md"
           test -s "dist/$package/references/review-pack.md"

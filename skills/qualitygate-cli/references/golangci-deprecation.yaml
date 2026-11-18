@@ -1,0 +1,9 @@
+version: '2'
+run:
+  relative-path-mode: wd
+linters:
+  default: none
+  enable: [staticcheck]
+  settings:
+    staticcheck:
+      checks: [SA1019]

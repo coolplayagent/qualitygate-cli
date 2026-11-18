@@ -6,7 +6,7 @@ use crate::{
         reports::{Data, Issue, IssueLocation},
         rules::diagnostic,
     },
-    config::{IncrementMode, ReportSpec},
+    config::{IncrementMode, ReportFormat, ReportSpec},
     domain::{CheckResult, Range, ratchet},
     snapshot::{self, ScopeIndex, Snapshot},
 };
@@ -24,6 +24,11 @@ pub(crate) fn apply(
     snapshot: &Snapshot,
     workspace: &Path,
 ) -> Result<()> {
+    let project = spec.mode == IncrementMode::Project;
+    let delivery_lines = snapshot.delivery() && !project;
+    if project {
+        require_diagnostics(&data, "project")?;
+    }
     if !data.sarif_runs.is_empty() {
         result.metadata.insert(
             format!("{}:sarif_runs", spec.path),
@@ -69,6 +74,9 @@ pub(crate) fn apply(
     }
     let mut effective_mode = spec.mode;
     let mut sources = Sources::new(snapshot, workspace);
+    if spec.format == ReportFormat::Javac {
+        sources = sources.with_exact_cwd(result.execution.cwd.as_deref().unwrap_or("."));
+    }
     let scope = snapshot.scope_index();
     if !data.coverage.is_empty() || !data.coverage_files.is_empty() {
         effective_mode = crate::report_evidence::coverage_gate::apply(
@@ -95,12 +103,12 @@ pub(crate) fn apply(
     if spec.mode.needs_baseline() {
         let baseline = baseline.context("Missing baseline analysis")?;
         if is_ratchet {
-            require_diagnostics(&baseline)?;
-            require_diagnostics(&data)?;
+            require_diagnostics(&baseline, "ratchet")?;
+            require_diagnostics(&data, "ratchet")?;
         }
         for mut issue in baseline.issues {
             normalize_issue(&mut issue, snapshot, &mut sources, true, &mut line_counts)?;
-            if snapshot.delivery() {
+            if delivery_lines {
                 let selected = if is_ratchet {
                     delivery_issue(&issue, snapshot, &scope, true)
                 } else if issue.locations.is_empty() {
@@ -122,7 +130,7 @@ pub(crate) fn apply(
             }
         }
     }
-    if snapshot.delivery() {
+    if delivery_lines {
         for issue in &mut data.issues {
             normalize_issue(issue, snapshot, &mut sources, false, &mut line_counts)?;
         }
@@ -189,7 +197,7 @@ pub(crate) fn apply(
         if let Some(first) = issue.locations.first() {
             displayed = first.clone();
         }
-        if snapshot.delivery() {
+        if delivery_lines {
             select_location(&issue, &mut displayed, |location| {
                 Ok(scope.selects_diagnostic(
                     location.file.as_deref(),
@@ -205,6 +213,12 @@ pub(crate) fn apply(
         }
         let include = match spec.mode {
             IncrementMode::Full => true,
+            IncrementMode::Project => select_location(&issue, &mut displayed, |location| {
+                Ok(location
+                    .file
+                    .as_deref()
+                    .is_none_or(|file| snapshot.feedback_includes(file)))
+            })?,
             IncrementMode::ChangedLines if snapshot.delivery() => true,
             IncrementMode::ChangedLines => select_location(&issue, &mut displayed, |location| {
                 let file = location
@@ -326,7 +340,7 @@ fn count_key(issue: &Issue) -> ratchet::Key {
     }
 }
 
-fn require_diagnostics(data: &Data) -> Result<()> {
+fn require_diagnostics(data: &Data, mode: &str) -> Result<()> {
     if data.tests.is_some()
         || !data.coverage.is_empty()
         || !data.coverage_files.is_empty()
@@ -334,7 +348,7 @@ fn require_diagnostics(data: &Data) -> Result<()> {
         || data.coverage_producer.is_some()
         || data.branch_coverage
     {
-        bail!("ratchet requires diagnostic counts, not tests or coverage");
+        bail!("{mode} requires diagnostic counts, not tests or coverage");
     }
     Ok(())
 }

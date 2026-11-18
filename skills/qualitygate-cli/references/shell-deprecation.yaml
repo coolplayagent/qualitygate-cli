@@ -1,0 +1,23 @@
+# Replace scripts/build.sh in both checks with a Bash script in the checked snapshot.
+schema_version: 1
+requires:
+  min_cli_version: "1.4.0"
+  capabilities: [reports.project-diagnostics.v1]
+checks:
+  - id: shell-parse
+    argv: [bash, -n, scripts/build.sh]
+    timeout_seconds: 30
+    tools:
+      - {id: bash, argv: [bash, --version]}
+  - id: shell-deprecation
+    argv: [shellcheck, --shell=bash, '--include=SC2006,SC2007', --format=checkstyle, scripts/build.sh]
+    depends_on: [shell-parse]
+    timeout_seconds: 90
+    findings_exit_codes: [1]
+    tools:
+      - {id: shellcheck, argv: [shellcheck, --version]}
+    reports:
+      - path: target/shell-deprecation.xml
+        from_stdout: true
+        format: checkstyle
+        mode: project

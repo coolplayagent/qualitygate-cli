@@ -65,10 +65,12 @@ the configured delivery decision.
 | `checks[].metadata.change_selection` | The command's change-based execution or non-applicability explanation. |
 | `gate.complete` and `gate.decision` | Whether validation finished and whether blockers remain. |
 
-Line findings apply to changed lines; findings without line positions apply to
-changed files, including deletions, renames, binary and mode changes. Unlocated
-command failures, timeouts and missing evidence remain gate inputs. An empty
-delivery does not prove repository-wide quality.
+By default, line findings apply to changed lines. Findings without line
+positions apply to changed files, including deletions, renames, binary and mode
+changes. A diagnostic report with `mode: project` can also report unchanged
+locations within its producer scope. Unlocated command failures, timeouts and
+missing evidence remain gate inputs. An empty delivery does not prove
+repository-wide quality.
 
 Exact-content renames pair removed paths with new paths one-to-one in lexical
 path order. Each old path can supply only one rename: surplus identical copies

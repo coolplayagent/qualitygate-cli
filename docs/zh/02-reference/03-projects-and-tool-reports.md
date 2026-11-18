@@ -81,6 +81,28 @@ SARIF 保留 run、工具版本、规则、result kind、消息、位置与 part
 参考棘轮覆盖 Clippy、ESLint、golangci-lint、Ruff、GCC/Clang analyzer SARIF、Checkstyle、PMD 与
 SpotBugs。各 producer 的完成标志、文件清单、错误记录、路径映射和版本一致性属于完整性契约。
 
+## 项目废弃检查
+
+[随包语言策略](../../../skills/qualitygate-cli/references/deprecation-policies.md)覆盖 Java、
+Rust、C、C++、Go、TypeScript、JavaScript、Python 和指定的 Bash 旧语法。策略使用对应工具
+和项目选定的输入，以 project 模式保留诊断。实际覆盖取决于工具的符号解析、目标与依赖清单。
+
+### Java 废弃用法与禁用注解
+
+[JDK 17 和 21 示例](../../../skills/qualitygate-cli/references/java-deprecation.yaml)
+阻断所选编译范围内的普通废弃和待移除用法。[JDK 8 示例](../../../skills/qualitygate-cli/references/java-deprecation-jdk8.yaml)
+检查该版本支持的普通废弃。用 `-Xstdout` 每次生成新的 UTF-8 英文详细诊断文件，启用对应
+lint 并提高警告上限。编译成功后由 Qualitygate 判定阻断级别。
+源码路径须在命令工作目录下且无父目录段，使用项目实际的 classpath、module path、显式注解
+处理器配置和目标 Java 版本。
+Java 规范允许的警告豁免和实际编译输入决定覆盖范围。
+
+[PMD 示例](../../../skills/qualitygate-cli/references/java-forbidden-annotations.yaml)
+独立检查注解使用。复制[规则集](../../../skills/qualitygate-cli/references/java-forbidden-annotations.xml)，
+写入要禁用的注解全限定名，并在编译成功后对同一源码清单运行。PMD 的辅助 classpath 须包含解析所需的
+类型。`pmd_with_suppressed` 格式将 `--show-suppressed` 输出的抑制记录保留为文件级违规。
+两份示例均使用 project 报告模式，未变更的用法位置也可阻断交付。
+
 ## 类型化工具观测
 
 命令可声明单个 `tool_facts` 输出，与诊断报告和项目报告互斥。闭合契约包含 `adapter`、
@@ -155,9 +177,13 @@ lockfile 行为、平台和选中 target 都属于证据。
 `new_diagnostics` 先用当前保留的未改动诊断消耗基线同标识计数，再筛选交付诊断。
 保留历史诊断并在变更行新增相同诊断时，新增实例仍会被报告；单纯移动已有诊断不会被当成新增。
 
-增量模式必须声明含义：`new_diagnostics`、`changed_lines`、`affected_scope` 或 `full`。文件发生变更
+检查可使用 `new_diagnostics`、`changed_lines`、`affected_scope`、`ratchet`、`full` 或 `project`。文件发生变更
 不代表其历史诊断全部变成新增问题。缺少可比基线时，必需 ratchet 保持未完成，除非受信策略事先
 允许且明确披露 full 回退。
+
+诊断报告可选用 `mode: project`，让配置的工具分析范围内的任何诊断都可阻断交付，包括依赖升级后
+指向未修改调用处的诊断。该模式没有基线，也会保留历史诊断。位置仍必须映射至快照采集的源码，
+路径反馈仍只选择对应位置。由命令配置确定分析目标与输入。策略可要求 `reports.project-diagnostics.v1`。
 
 ---
 
