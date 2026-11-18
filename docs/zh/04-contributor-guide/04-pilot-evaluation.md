@@ -7,10 +7,7 @@
 
 ## 当前 v10 契约
 
-新试点使用 [observation-v10.json](../../../templates/pilot/observation-v10.json)。观察前需声明八个独立输入（四个缺陷修复、
-四个重构）、两个模型组、existing-tools 与 Qualitygate 两种流程、交替执行顺序、任务来源工件、
-每个 assignment 的初始 full 报告，以及有界的尝试次数、耗时与无进展停止规则。两个模型乘两种
-流程形成 32 个运行单元。
+观察前封存所选任务分层、模型组、既有工具与 Qualitygate 两种流程、交替顺序、来源工件，以及每个 assignment 的初始 full 报告和尝试、耗时、停止参数。本项目选定四个缺陷修复、四个重构，与两个模型和两种流程组合成 32 个运行单元。[v10 模板](../../../templates/pilot/observation-v10.json) · [本轮协议、收尾条件与历史设计](../../../codespec/design/pilot.md)
 
 每次尝试（包括失败与超时）都需要摘要校验的模型采集和执行回执。请求模型与报告模型分别保存，
 无法获知实际路由时明确记为 unknown。回执绑定 harness 身份、起止时间声明、状态、快照和报告。

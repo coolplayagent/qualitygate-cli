@@ -1,29 +1,19 @@
 # 可扩展工具事实与规则断言设计
 
-> 文档版本：v0.2
-> 日期：2026-11-17
-> 状态：首期已实现；未声明生产采用或二进制发行
-> 行为规范：[工具事实与规则断言需求](../requirements/tool-facts-and-assertions.md)
-> 评审基线：`900c795b893da5af472662bacef04cac82c0b270`
+**设计版本 v0.3 · 2026-11-18**
+
+实现基线为 `4d8537e24138c1fc4b2dcbfd3d21682fc0191fad`。开发构建已跑通项目自建工具、类型化事实生产和 V4 裁决。通用克隆对生产者仍有一项已复现的协议校验缺口。行为要求见 [TFA-01 至 TFA-08](../requirements/tool-facts-and-assertions.md)。
 
 ## 1. 设计范围与已有基础
 
-本设计细化 TFA-01–TFA-08 的实现边界；行为、数值、完整性和验收条件以需求文档为准。
-首期接口已进入 Rust 开发实现；以下概念示例不替代导出的闭合 Schema。
-工具输出配置与范围限制见[工具报告参考](../../docs/en/02-reference/03-projects-and-tool-reports.md)，
-规则语法见[V4 参考](../../skills/qualitygate-cli/references/operators-v4.md)。
+项目约束能用已有事实表达时，可以直接编写有来源绑定的规则。缺少检测能力时，Agent 可以在被检项目的 `tools/<name>/` 编写 Rust 检查器，再由项目策略显式接入。目录名由项目约定，执行入口由 `checks[].argv` 指定。`checks[].tools` 运行版本探针，可用 `inputs` 绑定源码、manifest 和锁文件。两条输出路径共用快照、runner、依赖计划和最终 Gate。
 
-现有架构已提供不可变快照、工具与产物身份、有界 runner、外部报告归一化、有限规则 DSL、
-依赖计划及策略采用流程。扩展复用这些边界，不新增第二套执行调度器或门禁裁决器。
+| 工具提供的结果 | 策略接入 | 谁判定违规 |
+| --- | --- | --- |
+| 已定位的诊断、测试结果或覆盖率报告 | 在命令的 `reports` 中声明 diagnostics、SARIF、JUnit 等受支持格式和读取位置 | 命令检查结合退出状态及报告内容作出裁决。自建工具退出 0 仍可因有效违规诊断得到 fail。 |
+| 可被多条规则复用的函数指标或克隆对 | 在策略命令中声明一个 `tool_facts` 输出及与 `tool_id` 同名的版本探针。该命令的 `reports` 和 `projects` 须为空 | producer 负责采集和验证。V4 规则在 `depends_on` 中列出 producer，在 `fact_sources` 选择其输出，再独立判断阈值或关系。 |
 
-| 已有实现 | 本设计需要处理的变化点 |
-| --- | --- |
-| `check_planning::model::RuleSource` 选择源码事实 | 增加显式选择生产者输出的 source，保留源码 source 的原有语义 |
-| V3 的实体字段为名称、文本和路径 | V4 根据事实类型检查字段和比较类型，不改变 V3 的字段解释 |
-| `report_evidence::tool_reports::Data` 归一化诊断、测试和覆盖率 | 新增工具事实输出分支，不把指标或关系塞进诊断文本 |
-| `gate_execution::rule_execution` 从报告 metadata 读取项目事实 | 以类型化运行结果传递事实，报告 JSON 作为兼容投影 |
-| workflow 按 command/manual/compatibility/test_effectiveness 分派 | 规划阶段归一化执行节点，执行阶段保留共同依赖和完成时复核 |
-| Bazel 按 capability 独立编译，Cargo 为一个 package | 首期新增可独立构建的接入程序，保留现有包与 CLI 标签 |
+在已支持的事实形状内，项目可以增加指标和消费规则。新增实体、字段类型或关系形状涉及版本化契约、独立库存、适配器和求值器。工具配置、可用字段和已实测接入示例分别见[工具报告参考](../../docs/en/02-reference/03-projects-and-tool-reports.md)、[V4 参考](../../skills/qualitygate-cli/references/operators-v4.md)与[项目工具实测](rule-engine-and-tool-builders.md#agent-自建工具的两条实测路径)。
 
 ## 2. 能力归属与依赖方向
 
@@ -44,18 +34,19 @@
 
 纯事实模块进入 reviewed owner map 和 Miri inventory；适配器继续不能依赖 CLI。
 公共历史 facade 保持兼容。新的归一化代码以 Rust 库提供，CLI 接入程序调用相同实现。
-domain 只持有纯能力描述；具体 parser 的静态注册及函数分派由 adapters 持有。
-描述与实现通过注册一致性契约验证，不通过反向依赖拼成全局插件对象。
+domain 定义封闭的 `FactSchema` 与 `ToolFormat`。adapters 在 `normalize` 中按格式分派到 crapper、dryer 或通用 JSON 导入器。两个入口共享这段实现。[事实类型](../../src/qualitygate/tool_evidence/contracts.rs) · [归一化分派](../../src/qualitygate/tool_evidence/normalization.rs)
 
 ## 3. 运行数据流
 
 ```mermaid
 flowchart LR
     P[选定策略与快照] --> C[配置验证与执行计划]
-    C --> R[现有 Runner 执行外部工具]
-    R --> A[Rust 适配器校验并归一化]
+    C --> R[Runner 执行命令]
+    R -->|reports| D[报告适配器生成检查结果]
+    R -->|tool_facts| A[校验工具身份和库存并归一化]
     A --> F[类型化事实存储]
     F --> E[V4 source 与断言]
+    D --> V
     E --> V[完成时身份与证据复核]
     V --> G[现有 Gate 裁决]
     F --> O[报告兼容投影]
@@ -63,9 +54,7 @@ flowchart LR
 
 ### 3.1 计划与执行结果
 
-通过配置验证的计划在分派前归一化为 `PlannedOperation`，表达已有规则、命令、手工验收、兼容验证和
-成对测试执行方式。事实采集属于命令的输出契约，不为 crapper 或 dryer 新增执行器种类。
-计划节点统一携带 ID、required、severity、depends_on、范围及预算；不改变现有 YAML 的默认解释。
+`Plan` 保存规则设置、命令配置、执行顺序与必需检查清单。分派前通过 `Plan::operation` 取出 `PlannedOperation`，区分规则、命令、手工验收、兼容验证和成对测试。事实采集沿用普通命令的执行路径、依赖和超时。[执行计划](../../src/qualitygate/check_planning/plan.rs)
 
 内部结果为 `ExecutionOutcome { check_result, evidence }`，类型化 `evidence` 分别持有项目事实、
 工具事实、已验证覆盖率及真实执行凭据。
@@ -83,9 +72,9 @@ flowchart LR
 采集范围包括声明的项目/target inventory、配置身份、采集筛选条件和确认完成的范围。
 记录类型、数值约定及空集合条件由 TFA-02、TFA-03、TFA-05 定义。
 
-工具和独立桥接程序提交的 snapshot/producer 字段只是待校验声明。应用层将其与选定快照、
-实际命令、工具版本和保留产物逐项绑定，不能仅因外部 JSON 写了正确的摘要就认定受信执行。
-从 stdin 或磁盘导入的报告沿用相同验证要求；离线格式转换成功不证明原分析已在目标快照运行。
+工具提交的 snapshot/producer 字段是待校验声明。通用生产者可从 `context_path` 读取本次执行身份，再通过 stdout 或声明的产物文件返回报告。应用层绑定选定快照、实际命令、工具探针和保留产物摘要。离线桥接程序接受原始报告与上下文文件，输出始终标记为 `complete: false`。[采集实现](../../src/qualitygate/gate_execution/fact_execution.rs) · [桥接回归](../../tests/tool_bridge.rs)
+
+事实 v1 从声明的 Rust 文件独立枚举受支持的函数项，排除闭包、直接声明在块内的函数及内联 `mod tests` 中的函数。指标记录须覆盖每个入选位置与每个声明指标。克隆对在相似度和节点下限均为零时可以按长度入选的函数数核对总对数。存在采集过滤时，核对两端位置仍可能漏掉合格的对。项目检查器需有独立的已知值和漏报样例来验证测量方法。[库存实现](../../src/qualitygate/tool_evidence/inventory.rs) · [记录校验](../../src/qualitygate/tool_evidence/normalization.rs)
 
 完成时仍执行现有输入、策略及外部证据复核，再计算约束覆盖和最终 Gate。
 失效的生产者事实及依赖其产生的断言结果不能保留可接受结论；报告保留失效原因和原始运行记录。
@@ -107,14 +96,18 @@ flowchart LR
 config 在执行前验证生产者存在、依赖显式声明、输出兼容及字段类型；未知字段或单位不匹配
 属于规则无效，运行中缺少契约要求的字段属于证据未完成。两种错误均不能变成普通断言为 false。
 
-下面是语义伪码；可复制的 YAML 示例见 V4 参考，具体语法由导出 Schema 约束：
+例如，行数夹具在策略中为规则声明 `depends_on: [scan]`。以下是其 V4 规则文件里选择指标与判定阈值的两个字段。先要求至少一条记录，可避免完整空集满足全称断言。
 
-```text
-source functions := facts(producer = complexity_scan, type = function_metric)
-source duplicates := facts(producer = clone_scan, type = clone_pair)
-assert count(selected(functions)) >= policy.minimum_functions
-assert all(selected(functions), metric("cyclomatic_complexity") <= policy.limit)
-assert count(filter(duplicates, similarity >= policy.similarity_limit)) == 0
+```yaml
+fact_sources:
+  spans: {producer: scan, schema: function_metric, schema_version: 1, project: app, metric: span_lines, unit: count, measurement: inclusive-function-lines-v1}
+assertion:
+  op: and
+  args:
+    - {op: compare, left: {op: count, input: {op: source, name: spans}}, relation: ge, right: {op: number, value: 1}}
+    - op: all
+      input: {op: source, name: spans}
+      predicate: {op: compare, left: {op: field, name: value}, relation: le, right: {op: number, value: 3}}
 ```
 
 指标名称与测量定义分离：采用相同已注册事实类型的新工具可以提供新指标名称，规则明确选择
@@ -128,7 +121,7 @@ V1–V3 的已发布 schema、算子、内容摘要和回放解释保持不变�
 完整报告及 decision envelope 沿用既有协议；新增事实证据通过兼容的元数据/产物引用投影。
 独立工具事实协议有自己的版本，不能直接替换现有 diagnostics 输入格式。
 
-新规则要求 V4 能力；旧 runtime 必须明确拒绝，不能退回字符串比较或跳过。
+接入前以实际可执行文件的 `capabilities --format json` 核对 `rules.operators.v4` 与 `tool-facts.v1`。本次核对的开发 CLI 与已安装 Skill CLI 均显示 1.3.0。开发构建支持两项能力，已安装构建可运行普通 diagnostics 检查，对该 V4 规则执行 `rules validate` 则拒绝其版本。[兼容性记录](../requirements/tool-facts-and-assertions.md#v1v4-兼容性实测)
 有界十进制的编码、规范化、单位和比较规则以 TFA-02 为准；这里不再定义第二套转换算法。
 原始指标若经过上游舍入，协议保留其测量定义，不以精确序列化比较宣称恢复了上游数学精度。
 固定版本 dryer 在输出 12 位小数之前筛选原始相似度，因此 V4 source 的范围验证还检查
@@ -139,6 +132,12 @@ V1–V3 的已发布 schema、算子、内容摘要和回放解释保持不变�
 
 报告解析的字节、深度、记录数与时间预算和表达式的 source、集合、节点及工作量预算分别计账。
 复用集合不能绕过各消费者实际遍历的预算；截断报告不能充当完整集合参与断言。
+
+### 4.3 通用克隆对下限的已知差异
+
+公开的工具事实 Schema 要求 `minimum_lines >= 1`。当前通用 `clone_pair` 生产者允许配置与信封同时取 0，并可发布 `complete: true` 的产物。仅运行生产者时 Gate 退出 0。加入必需 V4 消费者后，消费端以 `Invalid acquired clone universe` 阻断，Gate 退出 2。相同夹具取 1 时，产物符合 Schema，生产者与消费者均通过。
+
+待修正的位置是通用生产者的输出声明及归一化校验。修复验收须确认零值在发布完整事实前被拒、没有消费者也不能使必需生产者通过，同时保留取 1 的正例，并以导出的 Schema 校验实际保留的产物。[复现记录与实现位置](rule-engine-and-tool-builders.md#已复现的契约差异)
 
 ## 5. 首批适配与独立验证
 
@@ -157,11 +156,7 @@ V1–V3 的已发布 schema、算子、内容摘要和回放解释保持不变�
 | 模型检查结果 | TFA-07，后续 | 后续协议保留模型、配置、检查边界和反例产物，unknown 不变成布尔断言结果 |
 | uml-viewer | TFA-07，后续 | 消费结构与指标证据；现有架构 gate 继续裁决依赖约束，首期不集成 GUI 或伴随 Agent |
 
-对 Rust 小型隔离仓库建立干净版本、已知缺陷与未参与适配器调试的独立反例；预期结果独立编写。
-除普通成功/违规，还验证缺覆盖率、解析警告、部分结果、阈值边界、源码/测试/依赖变化以及超预算。
-工具观测、转换器自测和规则裁决分开记录，保留原始输出而不是仅保留最终分数。
-首期仅以建议/影子方式评估检出、误报、incomplete 与延迟，阻断采用继续走既有策略生命周期。
-本设计不为未经试点的工具写入生产阈值，也不把工具 README 的阈值直接当作仓库要求。
+固定版本原生夹具中，crapper 采到六条指标，dryer 采到一对克隆。缺少解析器或依赖版本不符时，相关生产者均报 `tool_error`。这组实测覆盖采集与离线转换。V4 阈值和依赖传播由独立的通用生产者夹具验证。正式阻断所需的检出率、误报率与延迟仍须在目标项目中测量。[原生执行结果](../test/tool-facts-native-validation.md#observed-outcomes) · [V4 工作流回归](../../src/qualitygate/gate_execution/fact_workflow_tests.rs)
 
 ## 6. Bazel 构建与独立入口
 
@@ -182,26 +177,17 @@ Bazel 为纯契约、归一化库、桥接 binary 和测试声明明确 targets�
 并检查未登记入口和源码不可达的反例。业务模块归属、domain I/O 限制、
 文档行数、Miri 纯模块清单及 Cargo/Bazel 测试覆盖均随入口清单检查。
 CI 与仓库策略使用同一组全产品构建和测试目标，保持单元与集成测试独立。
-同包新增 `[[bin]]` 会进入 Cargo 包的 target 元数据，必须验证 `cargo package` 与
-`cargo install` 的实际行为；不能用 `default-run` 推断安装时只会选择原 CLI。
-GitHub 二进制附件及 Skill 归档使用各自显式构建/打包清单，不会因 Cargo 新增 target
-自动交付桥接程序。每种发行介质必须明确记录两个入口的包含或排除及其验证结果；
-未发布的桥接入口只能描述为可从源码构建，不能宣称它已随现有 CLI 包提供。
-
-首期“多个可独立构建目标”不宣称已经有多个独立 Cargo 产品包。
-仅在后续明确需要独立版本、依赖集合和发布时，再设计 workspace 迁移：
-保留一个锁文件、按 package 获取 Bazel 依赖、扩大所有质量门禁和源入口 inventory，
-发布流程按包名定位版本。该迁移不属于本次 Spec 承诺的首期实现。
+`cargo package` 包含两个 binary target，从源码执行 `cargo install --path . --locked --bins` 安装两者，
+指定 `--bin qualitygate` 则只安装主 CLI。Bazel 的 `//:production_binaries` 构建两者，
+`//:qualitygate-tool-bridge` 可单独构建桥接入口。当前 GitHub release 与 Skill 归档的打包清单只收录主 CLI。
+[双入口构建、安装及打包合同](../../docs/en/04-contributor-guide/01-development-and-quality-gates.md#independent-tool-bridge)
 
 ## 7. 实现验收与后续边界
 
-需求文档的验收矩阵关联纯契约、适配器、执行集成、真实工具和构建入口测试。
-CodeSpec 地图通过 `relay-knowledge map directory` 维护。文档检查仍包括相对链接、锚点、围栏、
-需求编号引用、地图与索引一致性，以及 authored 文件不超过 1000 行。
+项目自建检查器已在隔离 Git 仓库走通两条路径。诊断工具定位了第二行违规，输入文件缺失时返回 incomplete。
+另一个工具报告函数行数，以 3 行为上限时，3 行和 4 行输入均成功发布事实，消费规则分别通过和失败。
+输入超出工具支持形态时，生产者未发布事实，必需消费者被阻断。夹具的完整策略、来源绑定和逐项结果见[自建工具实测](rule-engine-and-tool-builders.md#agent-自建工具的两条实测路径)。
 
-首期实现分为“类型化事实与协议 → V4 消费 → crapper/dryer 接入及独立构建目标”。
-每步须提交相应正反例和需求到测试证据，运行仓库既有质量门禁后才能登记工程完成；
-现有策略的采用和阻断启用仍为另外的流程。Miri、ASan、完整 gate 结果与试点效果分别记录。
-现行策略只扩大产品构建清单，不自动启用 crapper/dryer 阈值或变更策略采用状态。
-首期原生适配面为已独立盘点的 Rust 函数；语言、实体排除及上游舍入限制随协议与文档保留。
-验证成功不能替代真实生产试点或完整 Clean Code/DRY/SOLID 语义证明。
+当前仓库策略的 full profile 选用 `line-ending` 和十个命令检查，配置的 `tool_facts` 生产者为零。
+因此，生产者和 V4 的接入证据来自上述隔离夹具，生产项目采用及其效果仍待验证。
+按条款查找单元测试、执行集成和已验证范围，见[需求验收矩阵](../requirements/tool-facts-and-assertions.md#验收矩阵)与[仓库策略](../../qualitygate.yaml)。

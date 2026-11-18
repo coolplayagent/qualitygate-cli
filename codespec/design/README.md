@@ -2,54 +2,18 @@
 
 This directory is governed by `codespec/codespec-map.yaml`. Update its map entry through `relay-knowledge map directory` and keep reviewed source material within the declared content scope.
 
-The [tool facts and assertions design](tool-facts-and-assertions.md) maps typed tool evidence and V4
-assertions to existing capability owners, compatible report projections and
-independent Bazel targets, following the [requirements](../requirements/tool-facts-and-assertions.md).
+The [tool facts and assertions design](tool-facts-and-assertions.md) describes how a project checker
+returns diagnostics or publishes typed facts for V4 rules, which runtime capabilities it needs,
+and how the offline bridge is distributed. Its [requirements](../requirements/tool-facts-and-assertions.md)
+define TFA-01–TFA-08. The [rule engine and agent-built tool review](rule-engine-and-tool-builders.md)
+records the fixture outcomes and the open producer-side validation gap for clone pairs.
 
 [Policy validation](../../docs/en/02-reference/04-policy-task-and-signed-evidence.md) specifies the immutable
 archive, protected operator inputs, shared snapshots, execution permits and
 signed promotion/rollback boundaries. The [architecture contract](../../docs/en/03-architecture/03-development-view.md)
 assigns these responsibilities to acyclic Rust owners.
 
-[Phase A baseline design](pilot-phase-a.md) maps the cross-agent evolution
-requirements to task preparation, comparable existing-tool records and
-explicit pilot entry/exit criteria. Team-selected inputs remain separate from
-controlled fixture evidence.
-
-[Phase B design](pilot-phase-b.md) specifies bounded feedback, additive replay context,
-external retry/evidence ownership and full checks after actual model changes.
-
-[Phase C design](pilot-phase-c.md) specifies protected case provenance,
-assignment-based pilot aggregation, report bindings, descriptive comparisons
-and the boundary between engineering evidence and authorized rollout.
-
-[Phase D design](pilot-phase-d.md) specifies the pre-observation integrity
-seal, balanced model/workflow enrollment and the fields that may be appended
-without changing the frozen pilot plan.
-
-[Phase E design](pilot-phase-e.md) specifies the externally trusted owner
-signature, exact start subject, validity/revocation rules and authenticated
-versus absent summary states without granting final trial acceptance.
-
-[Phase F design](pilot-phase-f.md) specifies deterministic threshold assessment,
-complete observation binding and the independent reviewer's authenticated final
-acceptance or rejection without inventing production evidence.
-
-[Phase G design](pilot-phase-g.md) specifies v2 sealed total-budget inputs,
-pure all-attempt and human-time accounting, and the tenth acceptance check while
-preserving the already sealed v1 interpretation.
-
-[Phase H design](pilot-phase-h.md) specifies v3 declared task strata,
-distinct-input counting, duplicate-task refusal and v1/v2 digest compatibility.
-
-[Phase I design](pilot-phase-i.md) specifies v4 per-input source artifacts,
-bounded rereads, seal binding and v1/v2/v3 digest compatibility.
-
-[Phase J design](pilot-phase-j.md) specifies v5 alternating run order,
-stratum-level counterbalancing and observed start-sequence audit.
-
-[Phase K design](pilot-phase-k.md) specifies v6 initial full reports,
-strictly decreasing error debt and bounded repair-attempt auditing.
-
-[Phase L design](pilot-phase-l.md) specifies v7 archived model captures,
-explicitly unknown routed model identities and requested-configuration comparisons.
+The [pilot design](pilot.md) brings together the current v10 trial, its closeout
+conditions and phases A–O. Start with the [trial protocol](pilot.md#本轮协议与收尾条件)
+for inputs, responsibilities and outstanding evidence. Use the [version guide](pilot.md#版本与证据导航)
+when replaying a previously sealed manifest.

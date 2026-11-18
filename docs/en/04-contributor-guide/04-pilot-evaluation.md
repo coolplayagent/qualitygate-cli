@@ -9,12 +9,12 @@ or review savings.
 
 ## Current v10 contract
 
-New pilots use [observation-v10.json](../../../templates/pilot/observation-v10.json). Before observations,
-declare eight independent inputs (four bug fixes and four refactors), two model
-groups, the existing-tools and Qualitygate workflows, an alternating run order,
-task-source artifacts, an initial full report for every assignment, and bounded
-attempt/time/no-progress rules. With two models and two workflows, the complete
-matrix contains 32 run units.
+Before observations, seal the selected task mix, model groups, existing-tools and
+Qualitygate workflows, alternating order, source artifacts, initial full reports,
+and attempt, time and no-progress limits. This repository's plan pairs four bug fixes
+and four refactors with two models and two workflows, giving 32 assignments.
+See the [v10 template](../../../templates/pilot/observation-v10.json) and the
+[trial design, closeout criteria and version history](../../../codespec/design/pilot.md).
 
 Every attempt, including failures and timeouts, has a digest-checked model
 capture and execution receipt. Requested and reported model identities remain

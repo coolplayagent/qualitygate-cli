@@ -22,17 +22,6 @@ Cargo 的退出码 101 也可能来自编译错误，只有实际执行报告中
 调用方必须保留完整执行状态。模板本身只检查当前一次执行，不自动判定两份报告的行为等价或反例有效性。
 逐新增/修改测试文件的反例证明需另行配置 [test_effectiveness](../../../docs/en/02-reference/02-rules.md)。
 
-阶段范围及真实收益边界见[执行设计](../../../codespec/design/pilot-phase-a.md)和
-[试点准备记录](../../../docs/en/01-user-guide/05-real-repository-pilot.md)。
-阶段 C 的生产者限制、汇总口径和反例见[证据记录](../../../docs/en/01-user-guide/05-real-repository-pilot.md)。
-具体任务采用后，应先按[阶段 D](../../../docs/en/01-user-guide/05-real-repository-pilot.md)组成完整模型×流程 assignment
-矩阵并执行 `pilot seal`，再开始写入 observation。
-新试点还应按[阶段 E](../../../docs/en/01-user-guide/05-real-repository-pilot.md)导出精确主题，并由仓库外受信 human owner
-签署启动授权；模板和 Agent 不能自行创建信任 key。
-观察完成后按[阶段 F](../../../docs/en/01-user-guide/05-real-repository-pilot.md)生成验收主题，由独立 reviewer 签署接受或拒绝。
-新试点使用[观察清单 v6](../observation-v6.json)，按[阶段 G](../../../docs/en/01-user-guide/05-real-repository-pilot.md)
-在封存前填写结构化总预算，并按[阶段 H](../../../docs/en/01-user-guide/05-real-repository-pilot.md)核对
-4 个缺陷修复/4 个重构的独立任务配额，再按[阶段 I](../../../docs/en/01-user-guide/05-real-repository-pilot.md)
-提供每项任务的来源工件，再按[阶段 J](../../../docs/en/01-user-guide/05-real-repository-pilot.md)封存交替执行顺序并
-记录实际启动位置，最后按[阶段 K](../../../docs/en/01-user-guide/05-real-repository-pilot.md)提供每运行单元的
-初始完整报告和无进展停止参数；旧 v1–v5 清单维持原摘要和验收解释。
+任务模板版本 v1 与观察清单版本分别管理。本轮采用[观察清单 v10](../observation-v10.json)。
+封存前补齐独立任务来源、两模型与两种流程的 assignment、交替顺序、初始 full 报告和停止参数。owner 签署启动授权后开始观察。每次尝试归档模型与执行记录，窗口结束后由独立 reviewer 根据八项非财务检查决定是否接受。
+早期 v1–v9 计划沿用各自封存的预算、摘要和验收口径。[任务基线](../../../codespec/design/pilot.md#阶段-a) · [试点设计与收尾条件](../../../codespec/design/pilot.md#本轮协议与收尾条件) · [版本对照](../../../codespec/design/pilot.md#版本与证据导航)
