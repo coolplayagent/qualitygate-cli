@@ -7,6 +7,10 @@ snapshots, facts, policies, checks, diagnostics, evidence, tasks, and gate
 decisions. It answers “what capabilities exist and how do they relate?” without
 depending on a CLI process or deployment topology.
 
+**Agents as Tool Builders is an architecture goal.** A project can add a detector by having an agent build a versioned tool and demonstrate its behavior on clean, failing, and incomplete inputs. The project policy selects the tool. Qualitygate binds its observations to the snapshot and owns rule evaluation, completeness checks, and the delivery decision. Replacing a producer that measures the same facts should preserve the verdict on the same evidence.
+
+For C/C++ memory checks, the project tool builds instrumented targets and reports the selected tests and ASan findings. A failure in unchanged code still counts as a failed test. The engine applies the same test-count contract when the project changes how it runs ASan. [Project tool integration](../02-reference/03-projects-and-tool-reports.md)
+
 ```mermaid
 flowchart LR
     Snapshot[Snapshot<br/>identity + files + changes] --> Facts

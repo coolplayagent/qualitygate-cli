@@ -2,9 +2,11 @@
 
 **设计版本 v0.3 · 2026-11-18**
 
-实现基线为 `4d8537e24138c1fc4b2dcbfd3d21682fc0191fad`。开发构建已跑通项目自建工具、类型化事实生产和 V4 裁决。通用克隆对生产者仍有一项已复现的协议校验缺口。行为要求见 [TFA-01 至 TFA-08](../requirements/tool-facts-and-assertions.md)。
+实现基线为 `4d8537e24138c1fc4b2dcbfd3d21682fc0191fad`。开发构建已跑通项目自建工具、类型化事实生产和 V4 裁决。通用克隆对生产者的历史协议差异及修正见 §4.3。行为要求见 [TFA-01 至 TFA-08](../requirements/tool-facts-and-assertions.md)。
 
 ## 1. 设计范围与已有基础
+
+**设计目标：Agents as Tool Builders。** 面对新条款，先复用现有事实；缺少检测手段时，由 Agent 在被检项目交付可测试、可替换的生产者。厚规则引擎拥有可跨工具复用的单位、范围、依赖、完整性和裁决语义。验收替换时对同一组独立输入比较事实与结果：完整观测应保持相同结论，缺证据应保持不完整。ASan 实例中的构建、插桩和日志解释归工具所有，测试失败与交付阻断由现有报告契约衔接。[逻辑视图](../../docs/zh/03-architecture/01-logical-view.md)
 
 项目约束能用已有事实表达时，可以直接编写有来源绑定的规则。缺少检测能力时，Agent 可以在被检项目的 `tools/<name>/` 编写 Rust 检查器，再由项目策略显式接入。目录名由项目约定，执行入口由 `checks[].argv` 指定。`checks[].tools` 运行版本探针，可用 `inputs` 绑定源码、manifest 和锁文件。两条输出路径共用快照、runner、依赖计划和最终 Gate。
 
@@ -133,11 +135,9 @@ V1–V3 的已发布 schema、算子、内容摘要和回放解释保持不变�
 报告解析的字节、深度、记录数与时间预算和表达式的 source、集合、节点及工作量预算分别计账。
 复用集合不能绕过各消费者实际遍历的预算；截断报告不能充当完整集合参与断言。
 
-### 4.3 通用克隆对下限的已知差异
+### 4.3 生产者的公共取值约束
 
-公开的工具事实 Schema 要求 `minimum_lines >= 1`。当前通用 `clone_pair` 生产者允许配置与信封同时取 0，并可发布 `complete: true` 的产物。仅运行生产者时 Gate 退出 0。加入必需 V4 消费者后，消费端以 `Invalid acquired clone universe` 阻断，Gate 退出 2。相同夹具取 1 时，产物符合 Schema，生产者与消费者均通过。
-
-待修正的位置是通用生产者的输出声明及归一化校验。修复验收须确认零值在发布完整事实前被拒、没有消费者也不能使必需生产者通过，同时保留取 1 的正例，并以导出的 Schema 校验实际保留的产物。[复现记录与实现位置](rule-engine-and-tool-builders.md#已复现的契约差异)
+共享输出声明在规划和归一化时要求 `minimum_lines >= 1`。该约束适用于所有发布者，独立于是否配置消费规则。回归 `generic_pair_inventory_and_record_semantics_cannot_be_silently_weakened` 验证零值拒绝和正例归一化信封的公开 Schema。[历史复现](rule-engine-and-tool-builders.md#已复现的契约差异)
 
 ## 5. 首批适配与独立验证
 

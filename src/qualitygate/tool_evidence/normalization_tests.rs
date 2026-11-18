@@ -289,7 +289,17 @@ fn generic_pair_inventory_and_record_semantics_cannot_be_silently_weakened() {
     c.spec.adapter = ToolFormat::ToolFacts;
     c.spec.clone_measurement = facts.clone_measurement.clone();
     let value = serde_json::to_value(&facts).unwrap();
-    assert!(run(&value.to_string(), &mut c).is_ok());
+    let normalized = run(&value.to_string(), &mut c).unwrap();
+    assert!(jsonschema::is_valid(
+        &super::super::schema::document(),
+        &serde_json::to_value(normalized).unwrap(),
+    ));
+    let mut zero = value.clone();
+    zero["minimum_lines"] = json!(0);
+    c.spec.minimum_lines = 0;
+    assert!(c.spec.validate().is_err());
+    assert!(run(&zero.to_string(), &mut c).is_err());
+    c.spec.minimum_lines = 1;
     for field in ["records", "inventory", "clone_measurement"] {
         let mut bad = value.clone();
         bad[field] = match field {

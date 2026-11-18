@@ -1,0 +1,24 @@
+schema_version: 1
+checks:
+  - id: asan-native
+    kind: command
+    required: true
+    severity: error
+    argv: [cargo, run, --locked, --quiet, --manifest-path, tools/asan/Cargo.toml, --, --suite, native]
+    timeout_seconds: 900
+    findings_exit_codes: [10]
+    tools:
+      - id: asan-driver
+        argv: [cargo, run, --locked, --quiet, --manifest-path, tools/asan/Cargo.toml, --, --version]
+        inputs: [tools/asan/src/main.rs, tools/asan/Cargo.toml, tools/asan/Cargo.lock, tools/asan/suites.json]
+        timeout_seconds: 60
+      - {id: clang, argv: [clang, --version]}
+      - {id: clangxx, argv: [clang++, --version]}
+      - {id: ctest, argv: [ctest, --version]}
+      - {id: cmake, argv: [cmake, --version]}
+      - {id: ninja, argv: [ninja, --version]}
+    reports:
+      - {path: asan-report.json, format: diagnostics, from_stdout: true, minimum_tests: 1}
+profiles:
+  full: {include: [asan-native]}
+verification_assets: [qualitygate.yaml, "tools/asan/**", CMakeLists.txt]

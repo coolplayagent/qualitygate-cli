@@ -1,0 +1,6 @@
+{
+  "native": {
+    "objects": ["CMakeFiles/native.dir/owner.cpp.o", "CMakeFiles/native.dir/reader.cpp.o"],
+    "tests": {"memory": "native"}
+  }
+}

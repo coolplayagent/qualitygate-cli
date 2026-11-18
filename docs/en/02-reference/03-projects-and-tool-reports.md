@@ -18,6 +18,10 @@ checks stay blocked. This preflight does not provide an OS filesystem deadline o
 protection against every concurrent path replacement. Live pip acceptance is
 verified separately from synthetic malformed-output regressions.
 
+## Agents as Tool Builders
+
+Choose the output from the rule's evidence needs. A project-owned Python, Node.js, or Rust checker can publish a supported diagnostic report for a single check. When several rules reuse one measurement, a producer can publish a supported versioned tool-facts collection. Register its invocation in `checks[].argv`, its version probe and source inputs in `checks[].tools`, and its required status in the project policy. Use independent fixtures to verify that a replacement tool preserves the meaning and scope of the evidence. [ASan driver and policy example](../../../templates/asan/README.md)
+
 ## Unified report contract
 
 External checks declare a fixed command, working directory, timeout, accepted

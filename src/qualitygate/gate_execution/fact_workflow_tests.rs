@@ -96,7 +96,24 @@ sed "s/SNAPSHOT/$digest/" facts-template.json > facts.json
     };
     let snapshot = Arc::new(snapshot);
     let loaded = application::policy::load_plan(&snapshot, &options).await?;
-    super::check_prepared(options, snapshot, loaded, vec![], false, None, None).await
+    let report =
+        super::check_prepared(options, snapshot, loaded, vec![], false, None, None).await?;
+    if !stale {
+        let scan = report
+            .checks
+            .iter()
+            .find(|check| check.id == "scan")
+            .unwrap();
+        let file = scan.metadata["tool_facts"]["artifact"]["path"]
+            .as_str()
+            .unwrap();
+        let envelope = serde_json::from_slice(&tokio::fs::read(file).await?)?;
+        assert!(jsonschema::is_valid(
+            &crate::tool_evidence::schema::document(),
+            &envelope
+        ));
+    }
+    Ok(report)
 }
 
 #[tokio::test]

@@ -8,9 +8,10 @@
 crapper/dryer 适配与桥接入口。下表登记对应测试；真实工具执行与生产试点分别记录，
 开发实现不表示已发行或已采用为阻断策略。
 
-2026-11-18 复核发现，通用 `clone_pair` 生产者可发布 `minimum_lines: 0` 的事实，
-该产物违反公开 Schema 的下限 1。仅运行生产者时 Gate 通过，加入必需的 V4 消费者则阻断。此交叉校验缺口及正反例见
-[规则引擎与 Agent 自建工具评审](../design/rule-engine-and-tool-builders.md#已复现的契约差异)。
+TFA-02 要求生产者在发布前拒绝 `minimum_lines: 0`，即使未选择消费者。回归
+`generic_pair_inventory_and_record_semantics_cannot_be_silently_weakened` 覆盖声明、归一化及正例 Schema；
+`one_completed_producer_feeds_two_rules_with_independent_threshold_verdicts` 核对保留产物。
+[历史复现记录](../design/rule-engine-and-tool-builders.md#已复现的契约差异)。
 
 本文是 TFA-01 至 TFA-08 的唯一行为规范。对应设计见
 [工具事实与断言设计](../design/tool-facts-and-assertions.md)，

@@ -272,6 +272,7 @@ impl OutputSpec {
                 "Native adapters cannot consume generic execution context"
             );
         }
+        ensure!(self.minimum_lines > 0, "minimum_lines must be positive");
         self.similarity_floor.validate()?;
         ensure!(
             self.similarity_floor >= zero() && self.similarity_floor <= Decimal::from_i64(1),
@@ -296,10 +297,6 @@ impl OutputSpec {
                 ensure!(
                     self.schema == FactSchema::ClonePair && self.tool_version == DRYER_VERSION,
                     "Unsupported dryer schema/version"
-                );
-                ensure!(
-                    self.minimum_lines > 0,
-                    "Dryer minimum_lines must be positive"
                 );
             }
             ToolFormat::ToolFacts => {}
