@@ -63,6 +63,10 @@ a requirement.
 | E2 | Document introduction text, an organisational notice body, or a governance resolution. | Intent, scope, roles, sequencing, and stated selection criteria. | Company-wide mandatory force, or a numeric threshold that the text did not state. |
 | E3 | Widely published engineering practice, or this repository's own inference from the two levels above. | A concrete mechanism, a default, or an implementation order. | Any claim that the company requires it, or that a tool result proves quality. |
 
+[E1]: #evidence-levels
+[E2]: #evidence-levels
+[E3]: #evidence-levels
+
 Three rules follow, and they are the reason this note is usable at all:
 
 - Every load-bearing claim ends with its level. A claim without a level is a
