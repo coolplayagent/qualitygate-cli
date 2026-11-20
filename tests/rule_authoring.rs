@@ -312,6 +312,147 @@ fn invalid_fields_have_schema_locations_and_cannot_bypass_snapshot_loading() {
 }
 
 #[test]
+fn project_rule_language_and_syntax_capabilities_agree_across_cli_entry_points() {
+    let repo = fixture();
+    let root = repo.path();
+    let mut rule = candidate(root, "adapter-contract", &["java"]);
+    rule["when"] = json!({"entity":"import"});
+    rule["requires_capabilities"] = json!(["imports"]);
+    rule["then"] = json!({"forbid_pattern":"^import forbidden"});
+    let valid_java = rule.clone();
+    let mut valid_rust = candidate(root, "adapter-contract", &["rust"]);
+    valid_rust["requires_capabilities"] = json!(["test_methods", "annotations"]);
+    valid_rust["binding"] = json!({"marker":{"type":"annotation","name":"Generated"}});
+    valid_rust["applies_to"] = json!({"provenance_scope":"all_added_tests"});
+    valid_rust["then"] = json!({"require_marker":true});
+    let input = "candidate.yaml";
+    let package_rule = "qualitygate/rules/adapter-contract.yaml";
+    let validate = ["rules", "validate", input, "--format", "json"];
+    let generate = ["rules", "generate", "--input", input, "--format", "json"];
+    let catalog = ["rules", "list", "--source", "project", "--format", "json"];
+
+    for (languages, expected) in [
+        (json!(["kotlin"]), "no syntax adapter"),
+        (json!(["shell"]), "imports capability unavailable for shell"),
+        (
+            json!(["java", "shell"]),
+            "imports capability unavailable for shell",
+        ),
+    ] {
+        rule["language"] = languages;
+        save(root, input, &rule);
+        let validation = report(&cli(root, &validate), 1);
+        assert_eq!(validation["decision"], "fail");
+        let issue = &validation["files"][0]["issues"][0];
+        assert_eq!(issue["stage"], "semantic");
+        let reason = issue["message"].as_str().unwrap();
+        assert!(reason.contains(expected), "{reason}");
+        if rule["language"] == json!(["kotlin"]) {
+            assert!(reason.contains("kotlin"), "{reason}");
+            for supported in ["java", "python", "typescript", "go", "rust", "shell"] {
+                assert!(reason.contains(supported), "{reason}");
+            }
+        }
+        let rejected = report(&cli(root, &generate), 1);
+        assert_eq!(rejected["gate"]["decision"], "fail");
+        assert!(
+            rejected["gate"]["blockers"][0]
+                .as_str()
+                .unwrap()
+                .contains(reason)
+        );
+        assert!(!root.join(package_rule).exists());
+
+        save(root, package_rule, &rule);
+        let rejected = report(&cli(root, &catalog), 1);
+        assert_eq!(rejected["gate"]["decision"], "fail");
+        assert!(
+            rejected["gate"]["blockers"][0]
+                .as_str()
+                .unwrap()
+                .contains(reason)
+        );
+        fs::write(
+            root.join("qualitygate.yaml"),
+            "schema_version: 1\ncustom_rules: qualitygate/rules\nrules: {adapter-contract: {}}\n",
+        )
+        .unwrap();
+        let check = report(&cli(root, &["check", "--format", "json"]), 2);
+        assert_eq!(check["gate"]["decision"], "incomplete");
+        assert!(
+            check["gate"]["blockers"][0]
+                .as_str()
+                .unwrap()
+                .contains(reason)
+        );
+        fs::remove_file(root.join("qualitygate.yaml")).unwrap();
+        fs::remove_file(root.join(package_rule)).unwrap();
+    }
+
+    for valid in [valid_java, valid_rust] {
+        save(root, input, &valid);
+        assert_eq!(report(&cli(root, &validate), 0)["decision"], "pass");
+        assert_eq!(report(&cli(root, &generate), 0)["file"], package_rule);
+        assert_eq!(
+            report(&cli(root, &catalog), 0)["rules"][0]["id"],
+            valid["id"]
+        );
+        fs::remove_file(root.join(package_rule)).unwrap();
+    }
+}
+
+#[test]
+fn named_project_rule_sources_share_the_syntax_declaration_contract() {
+    let repo = fixture();
+    let root = repo.path();
+    let mut rule = candidate(root, "named-syntax", &[]);
+    rule["when"] = json!({"entity":"file"});
+    rule["requires_capabilities"] = json!(["files"]);
+    rule.as_object_mut().unwrap().remove("then");
+    let sources = json!({
+        "imports": {"language":["java"],"when":{"entity":"import"},"requires_capabilities":["imports"]}
+    });
+    let validate = ["rules", "validate", "named.yaml", "--format", "json"];
+
+    for (version, expression_field) in [(2, "expression"), (3, "expression"), (4, "assertion")] {
+        let mut versioned = rule.clone();
+        versioned["schema_version"] = json!(version);
+        versioned[expression_field] = json!({"op":"bool","value":true});
+        if version == 2 {
+            versioned["when"] = json!({"entity":"import"});
+            versioned["requires_capabilities"] = json!(["imports"]);
+        } else {
+            versioned["sources"] = sources.clone();
+        }
+        for (language, expected) in [
+            ("java", None),
+            ("shell", Some("imports capability unavailable for shell")),
+            ("kotlin", Some("no syntax adapter")),
+        ] {
+            if version == 2 {
+                versioned["language"] = json!([language]);
+            } else {
+                versioned["sources"]["imports"]["language"] = json!([language]);
+            }
+            save(root, "named.yaml", &versioned);
+            let result = report(&cli(root, &validate), i32::from(expected.is_some()));
+            if let Some(reason) = expected {
+                assert_eq!(result["files"][0]["issues"][0]["stage"], "semantic");
+                assert!(
+                    result["files"][0]["issues"][0]["message"]
+                        .as_str()
+                        .unwrap()
+                        .contains(reason),
+                    "{result}"
+                );
+            } else {
+                assert_eq!(result["decision"], "pass");
+            }
+        }
+    }
+}
+
+#[test]
 fn expanded_rule_yaml_is_rejected_before_generation_and_preserves_inputs() {
     let repo = fixture();
     let root = repo.path();

@@ -41,6 +41,14 @@ candidate policy. Listing, describing, source binding, schema export and validat
 are read-only. See [rules](02-rules.md) and the
 [authoring tutorial](../01-user-guide/06-schema-guided-repository-rules.md).
 
+`rules validate`, `rules generate`, and `rules list` when loading project rules
+return exit code 1 when a well-formed language name has no registered adapter
+or a declared language lacks a required syntax capability. An unregistered
+name reports `no syntax adapter` and lists the supported names. `check` returns
+exit code 2 if the selected policy loads an invalid declaration or a required
+rule reaches evaluation with one.
+See the [language adapter capabilities](02-rules.md#language-adapter-capabilities).
+
 ## Snapshot checks
 
 ```bash

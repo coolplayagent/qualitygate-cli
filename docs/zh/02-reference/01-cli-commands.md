@@ -36,6 +36,11 @@ qualitygate rules generate --input candidate.yaml --format json
 `rules disable` 和 `rules configure` 修改候选策略；查看、描述、来源绑定、Schema 导出与验证均只读。
 详见[规则参考](02-rules.md)和[编写教程](../01-user-guide/06-schema-guided-repository-rules.md)。
 
+`rules validate`、`rules generate` 和加载项目规则的 `rules list` 遇到格式合法但没有登记适配器的语言名，
+或语言缺少声明的语法能力时，退出码为 1。未登记语言的错误含 `no syntax adapter` 并列出支持的语言名。
+若选定策略加载了无效声明，或必需规则带着无效声明进入求值，`check` 退出码为 2。
+见[语言适配器能力](02-rules.md#语言适配器能力)。
+
 ## 快照检查
 
 ```bash

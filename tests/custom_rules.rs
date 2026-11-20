@@ -424,10 +424,26 @@ fn capability_gaps_and_ai_only_scope_are_incomplete_even_without_matching_entiti
     let root = fixture();
     let root = root.path();
     policy(root, "");
+    for (body, reason) in [
+        (
+            "language: [ruby]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method}\nthen: {name_pattern: ok}",
+            "no syntax adapter",
+        ),
+        (
+            "language: [shell]\nrequires_capabilities: [imports]\nwhen: {entity: import}\nthen: {forbid_pattern: unsafe}",
+            "imports capability unavailable for shell",
+        ),
+        (
+            "language: [shell]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method}\nthen: {name_pattern: ok}",
+            "test_methods capability unavailable for shell",
+        ),
+    ] {
+        definition(root, body);
+        let blocked = check(root, 2);
+        assert_eq!(blocked["gate"]["decision"], "incomplete");
+        assert!(blocked["gate"]["blockers"].to_string().contains(reason));
+    }
     for body in [
-        "language: [ruby]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method}\nthen: {name_pattern: ok}",
-        "language: [shell]\nrequires_capabilities: [imports]\nwhen: {entity: import}\nthen: {forbid_pattern: unsafe}",
-        "language: [shell]\nrequires_capabilities: [test_methods]\nwhen: {entity: test_method}\nthen: {name_pattern: ok}",
         "language: [java]\nrequires_capabilities: [test_methods, dependency_resolution]\nwhen: {entity: test_method}\nthen: {require_dependency: {group: example, artifact: declarations}}",
         "language: [python]\nrequires_capabilities: [test_methods, comments]\napplies_to: {provenance_scope: ai_only}\nbinding: {marker: {type: comment, name: '@generated'}}\nwhen: {entity: test_method}\nthen: {require_marker: true}",
     ] {

@@ -1,5 +1,6 @@
 //! Multiset matching preserves moves while distinguishing newly copied entities.
 
+use crate::domain::language::require_syntax_capabilities;
 use crate::snapshot::{self, File, Snapshot};
 use crate::source_analysis::syntax;
 use crate::source_analysis::syntax::Entity;
@@ -70,9 +71,7 @@ fn analyze(
     let (base_files, files) = inputs;
     crate::adapters::parallel::check_deadline(deadline)?;
     for language in languages {
-        if !["java", "python", "typescript", "go", "rust", "shell"].contains(&language.as_str()) {
-            bail!("Syntax capability unavailable for language: {language}");
-        }
+        require_syntax_capabilities(language, &[])?;
     }
     let mut filters = globset::GlobSetBuilder::new();
     for path in paths {

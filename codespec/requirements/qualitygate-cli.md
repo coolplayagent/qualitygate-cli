@@ -471,6 +471,8 @@ fix: "按实际来源补齐约定字段，并声明配套依赖，然后重新�
 
 `requires_capabilities` 描述运行检查所需的能力；`then` 描述被检查对象必须满足的条件。被要求存在的依赖属于验收条件，不能作为缺失后自动跳过规则的先决条件。必需规则的绑定方式由受信策略确定，执行时不得自动降级为更宽松的替代绑定。
 
+**RULE-LANGUAGE-78** 要求 V1–V4 项目规则及 V3/V4 的每个语法命名来源都用适配器登记表校验显式语言。每种语言都须支持声明的 `test_methods`、`annotations`、`comments` 和 `imports` 中的全部要求。未知语言报告 `no syntax adapter` 和支持名称。无效声明在规则验证、生成和项目规则目录查看中退出 1。检查加载策略遇到无效声明时退出 2。必需规则绕过加载校验进入求值时，必须在选择实体前阻塞，门禁退出 2。验收见[需求到测试证据](../../docs/zh/04-contributor-guide/03-requirements-to-test-evidence.md)。
+
 ### 6.3 适用性、执行状态与门禁语义
 
 每个检查分别记录以下维度，避免把规则违规、工具故障和不适用混为一谈：
@@ -722,7 +724,6 @@ M1 优先交付 fixture 全谱系证伪门禁和实际验证命令；真实仓�
 
 - [Anthropic：Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：任务清单、进度记录与实际测试支持持续工作；本项目聚焦其中的验证反馈与交付门禁。
 - [Tree-sitter 官方说明](https://tree-sitter.github.io/tree-sitter/)：提供语法树生成与增量解析能力；项目语义分析需由本项目的生态适配层另行提供。
-
 
 ## 11. 规则契约与测试有效性增量
 

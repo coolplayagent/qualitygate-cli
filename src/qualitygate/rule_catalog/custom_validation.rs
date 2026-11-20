@@ -1,3 +1,4 @@
+use super::language::{SYNTAX_CAPABILITIES, require_syntax_capabilities};
 use super::tool_source_validation::source_types;
 use crate::config::CustomRule;
 use crate::config::constraints;
@@ -58,19 +59,15 @@ pub(crate) fn validate(rule: &CustomRule) -> Result<()> {
     }
     let mut capabilities = BTreeSet::new();
     for capability in &rule.requires_capabilities {
-        if ![
-            "test_methods",
-            "annotations",
-            "comments",
-            "imports",
-            "files",
-            "commits",
-            "dependency_resolution",
-            "external_provenance",
-        ]
-        .contains(&capability.as_str())
-            || !capabilities.insert(capability)
-        {
+        let supported = SYNTAX_CAPABILITIES.contains(&capability.as_str())
+            || [
+                "files",
+                "commits",
+                "dependency_resolution",
+                "external_provenance",
+            ]
+            .contains(&capability.as_str());
+        if !supported || !capabilities.insert(capability) {
             bail!("Unknown or duplicate capability: {capability}");
         }
     }
@@ -107,9 +104,7 @@ pub(crate) fn validate(rule: &CustomRule) -> Result<()> {
         globset::Glob::new(path)?;
     }
     for language in &rule.language {
-        if language.trim().is_empty() {
-            bail!("Rule language cannot be empty");
-        }
+        require_syntax_capabilities(language, &rule.requires_capabilities)?;
     }
     if rule.expression.is_none()
         && rule.assertion.is_none()
@@ -224,6 +219,52 @@ mod scenario_tests {
     fn rule() -> CustomRule {
         serde_json::from_value(json!({"id":"meaningful-tests","version":1,"source":{"document":"AGENTS.md","section":"Tests","content_hash":format!("sha256:{}","0".repeat(64))},"language":["python"],"requires_capabilities":["test_methods","comments"],"when":{"entity":"test_method"},"then":{"min_count":1},"fix":"Add a scenario test"})).unwrap()
     }
+
+    #[test]
+    fn validates_each_explicit_language_against_its_syntax_capabilities() {
+        use crate::domain::language::{LANGUAGES, SyntaxDeclarationError};
+
+        let mut candidate = rule();
+        candidate.when.entity = "import".into();
+        candidate.requires_capabilities = vec!["imports".into()];
+        candidate.language = vec!["java".into(), "go".into()];
+        validate(&candidate).unwrap();
+
+        candidate.language.push("shell".into());
+        let error = validate(&candidate).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<SyntaxDeclarationError>(),
+            Some(SyntaxDeclarationError::UnsupportedCapability { language: "shell", capability })
+                if capability == "imports"
+        ));
+
+        candidate.language[2] = "kotlin".into();
+        let error = validate(&candidate).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<SyntaxDeclarationError>(),
+            Some(SyntaxDeclarationError::UnknownLanguage { language }) if language == "kotlin"
+        ));
+        let message = error.to_string();
+        assert!(message.contains("no syntax adapter"));
+        assert!(
+            LANGUAGES
+                .iter()
+                .all(|language| message.contains(language.name))
+        );
+
+        candidate.language.clear();
+        validate(&candidate).unwrap();
+
+        candidate.when.entity = "test_method".into();
+        candidate.language = vec!["rust".into()];
+        candidate.requires_capabilities = vec![
+            "test_methods".into(),
+            "annotations".into(),
+            "dependency_resolution".into(),
+        ];
+        validate(&candidate).unwrap();
+    }
+
     #[test]
     fn schema_generation_and_marker_scope_cannot_silently_change_assertion_semantics() {
         let expression = json!({"op":"compare","left":{"op":"count","input":{"op":"entities"}},"relation":"ge","right":{"op":"number","value":1}});
