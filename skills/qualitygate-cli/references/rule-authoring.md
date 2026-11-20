@@ -54,9 +54,11 @@ pinned schemas used for mixed-version validation; it does not choose a format.
 
 All formats require source identity, positive rule version, capabilities,
 selection and a fix. V1 requires fixed assertions; V2/V3 require a boolean
-expression and may add fixed assertions. Empty `language` means language-neutral;
-otherwise use unique lowercase identifiers such as `java`, `python`, `rust`,
-`typescript`, `go` or `shell`, not `all`. Scope does not grant adapter capabilities.
+expression and may add fixed assertions. An empty `language` list leaves
+selection unfiltered. Explicit names must match the adapter registry
+(`java`, `python`, `typescript`, `go`, `rust`, `shell`). Each declared
+language must supply every requested syntax capability. Named syntax
+sources are validated against their own declarations.
 The CLI also checks Rust regex/glob syntax, confined source paths and the exact
 current source digest. Schema success is not source approval, semantic equivalence
 to prose, or execution evidence. The shared sequence below applies to all formats.

@@ -141,6 +141,28 @@ C++ gtest 命名本批延期：缺少可靠的测试实体提取。正则本身�
 | `binding` | 需要追溯时使用的 annotation、comment 或 Git trailer 类型化关联。 |
 | `fix` | 从同一来源条款推导的可执行修复说明。 |
 
+### 语言适配器能力
+
+V1–V4 项目规则使用下表中的小写语言名。显式列出的每种语言都必须具备声明的每项语法能力。
+V3/V4 的 `sources` 中，每个命名来源按自身声明校验。
+
+| `language` | 项目规则识别的扩展名 | `test_methods` | `annotations` | `comments` | `imports` |
+| --- | --- | --- | --- | --- | --- |
+| `java` | `.java` | 支持 | 支持 | 支持 | 支持 |
+| `python` | `.py` | 支持 | 支持 | 支持 | 支持 |
+| `typescript` | `.ts`、`.tsx`、`.js`、`.jsx`、`.mjs`、`.cjs` | 支持 | — | 支持 | 支持 |
+| `go` | `.go` | 支持 | — | 支持 | 支持 |
+| `rust` | `.rs` | 支持 | 支持 | 支持 | 支持 |
+| `shell` | `.sh`、`.bash` | — | — | 支持 | — |
+
+例如，需要 `imports` 的规则可以同时选择 Java 和 Go，需要 `annotations` 的规则可以同时选择
+Java 和 Rust。在任一声明中加入 Shell 都会导致校验失败。省略 `language` 或使用空列表时不按语言
+过滤，求值器仍会检查每个选中语法文件的能力。
+
+`files`、`commits`、`dependency_resolution` 和 `external_provenance` 遵循各自的证据契约。
+C 和 C++ 有独立的内置检查与外部报告支持。Shell 专项内置规则可通过受支持的 shebang 识别无扩展名脚本。
+项目规则按扩展名选择语言。
+
 ### 结构化 Schema 契约
 
 project-rule JSON Schema 是 CLI、Skill、生成、校验及不可变策略加载共享的可执行序列化契约。对象通过

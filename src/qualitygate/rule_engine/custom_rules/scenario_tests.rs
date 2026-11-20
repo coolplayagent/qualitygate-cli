@@ -194,6 +194,31 @@ fn unavailable_language_provenance_and_dependency_facts_are_gaps_not_empty_succe
 }
 
 #[test]
+fn syntax_declaration_gaps_block_rules_that_bypass_the_catalog() {
+    let snapshot = snapshot(&[]);
+    let mut rule = rule(json!({"forbid_pattern":"unsafe"}));
+    rule.when.entity = "import".into();
+    rule.requires_capabilities = vec!["imports".into()];
+    let setting = RuleSetting::default();
+    for (language, reason) in [
+        ("kotlin", "no syntax adapter"),
+        ("shell", "imports capability unavailable for shell"),
+    ] {
+        rule.language = vec![language.into()];
+        let result = evaluate(&rule, &setting, &snapshot);
+        assert_eq!(result.execution.status, ExecutionStatus::Blocked);
+        assert_eq!(result.verdict, None);
+        assert!(result.execution.reason.unwrap().contains(reason));
+        assert_eq!(result.matched_entities, 0);
+    }
+
+    rule.language = vec!["java".into()];
+    let result = evaluate(&rule, &setting, &snapshot);
+    assert_eq!(result.verdict, Some(Verdict::Pass));
+    assert_eq!(result.matched_entities, 0);
+}
+
+#[test]
 fn manifest_only_changes_recheck_retained_marked_tests_and_require_bound_python_dependencies() {
     let mut input = snapshot(&[
         (

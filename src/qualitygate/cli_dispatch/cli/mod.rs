@@ -529,7 +529,27 @@ impl Cli {
                 Ok((crate::interfaces::render::metadata(&value, self.format)?, 0))
             }
             Command::Rules { command } => {
-                run_rules(root, self.config, command, self.format, self.envelope).await
+                let rejects_invalid_declaration =
+                    matches!(command, Rules::List { .. } | Rules::Generate { .. });
+                match run_rules(root, self.config, command, self.format, self.envelope).await {
+                    Err(error)
+                        if rejects_invalid_declaration
+                            && error.is::<crate::domain::language::SyntaxDeclarationError>() =>
+                    {
+                        let decision = crate::domain::Decision::Fail;
+                        let gate = crate::domain::Gate {
+                            complete: true,
+                            decision,
+                            blockers: vec![format!("{error:#}")],
+                        };
+                        let value = serde_json::json!({"schema_version": 1, "gate": gate});
+                        Ok((
+                            crate::interfaces::render::metadata(&value, self.format)?,
+                            decision.exit_code(),
+                        ))
+                    }
+                    result => result,
+                }
             }
             Command::Judgment { command } => {
                 if self.envelope && !matches!(&command, Judgment::Pilot { .. }) {

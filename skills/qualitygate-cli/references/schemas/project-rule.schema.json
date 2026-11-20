@@ -12,7 +12,7 @@
     "version": {"type": "integer", "minimum": 1, "maximum": 4294967295},
     "source": {"$ref": "#/$defs/source"},
     "language": {
-      "description": "Canonical programming language names, e.g. java, python, rust, typescript, go, shell, cpp. Empty means language-neutral; it does not grant missing adapter capabilities.",
+      "description": "Exact lowercase names from the syntax adapter registry. The CLI verifies that each declared language supports the required syntax capabilities. An empty list leaves selection unfiltered by language.",
       "type": "array", "uniqueItems": true, "default": [],
       "items": {"type": "string", "pattern": "^[a-z][a-z0-9_+-]{0,63}$", "not": {"const": "all"}}
     },

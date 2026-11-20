@@ -185,6 +185,32 @@ generation and separate adoption steps, follow the
 | `binding` | Typed annotation, comment, or Git-trailer association when traceability is required. |
 | `fix` | Actionable remediation derived from the same source clause. |
 
+### Language adapter capabilities
+
+V1–V4 project rules use the exact, lowercase names in the table below. Each
+explicitly selected language must support every declared syntax capability.
+Each V3/V4 named source under `sources` is checked against its own declaration.
+
+| `language` | Project rule file extensions | `test_methods` | `annotations` | `comments` | `imports` |
+| --- | --- | --- | --- | --- | --- |
+| `java` | `.java` | Yes | Yes | Yes | Yes |
+| `python` | `.py` | Yes | Yes | Yes | Yes |
+| `typescript` | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | Yes | — | Yes | Yes |
+| `go` | `.go` | Yes | — | Yes | Yes |
+| `rust` | `.rs` | Yes | Yes | Yes | Yes |
+| `shell` | `.sh`, `.bash` | — | — | Yes | — |
+
+For example, a rule that requires `imports` can select Java and Go. A rule that
+requires `annotations` can select Java and Rust. Adding Shell to either
+declaration fails validation. Omitting `language` or using an empty list leaves
+selection unfiltered by language. The evaluator still checks the capabilities
+of each selected syntax file.
+
+`files`, `commits`, `dependency_resolution`, and `external_provenance` use
+their own evidence contracts. C and C++ have separate built-in checks and
+external report support. Shell-specific built-ins can recognize extensionless
+scripts by a supported shebang. Project rule language selection uses extensions.
+
 ### Structured Schema contract
 
 The project-rule JSON Schema is the executable serialization contract shared by

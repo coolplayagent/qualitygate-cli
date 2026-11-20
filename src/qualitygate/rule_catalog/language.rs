@@ -1,5 +1,7 @@
 //! Shared syntax capability descriptors; availability does not establish project facts.
 
+use std::fmt;
+
 #[derive(Debug, serde::Serialize)]
 pub struct Language {
     pub name: &'static str,
@@ -7,6 +9,9 @@ pub struct Language {
     pub syntax_capabilities: &'static [&'static str],
     pub marker_options: &'static [&'static str],
 }
+
+/// Project-rule capabilities provided by the syntax adapters.
+pub const SYNTAX_CAPABILITIES: &[&str] = &["test_methods", "annotations", "comments", "imports"];
 
 pub const LANGUAGES: &[Language] = &[
     Language {
@@ -49,6 +54,66 @@ pub const LANGUAGES: &[Language] = &[
 
 pub fn named(name: &str) -> Option<&'static Language> {
     LANGUAGES.iter().find(|language| language.name == name)
+}
+
+/// A project-rule language declaration that its syntax adapter cannot fulfill.
+#[derive(Debug)]
+pub enum SyntaxDeclarationError {
+    UnknownLanguage {
+        language: String,
+    },
+    UnsupportedCapability {
+        language: &'static str,
+        capability: String,
+    },
+}
+
+impl fmt::Display for SyntaxDeclarationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnknownLanguage { language } => {
+                let supported = LANGUAGES
+                    .iter()
+                    .map(|language| language.name)
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(
+                    formatter,
+                    "Language {language:?} has no syntax adapter. Supported languages are {supported}."
+                )
+            }
+            Self::UnsupportedCapability {
+                language,
+                capability,
+            } => write!(
+                formatter,
+                "{capability} capability unavailable for {language}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for SyntaxDeclarationError {}
+
+/// Validate a language and its required syntax facts. Other facts have independent providers.
+pub fn require_syntax_capabilities(
+    name: &str,
+    capabilities: &[String],
+) -> Result<(), SyntaxDeclarationError> {
+    let language = named(name).ok_or_else(|| SyntaxDeclarationError::UnknownLanguage {
+        language: name.into(),
+    })?;
+    for capability in capabilities {
+        if SYNTAX_CAPABILITIES.contains(&capability.as_str())
+            && !language.syntax_capabilities.contains(&capability.as_str())
+        {
+            return Err(SyntaxDeclarationError::UnsupportedCapability {
+                language: language.name,
+                capability: capability.clone(),
+            });
+        }
+    }
+    Ok(())
 }
 
 pub fn for_path(path: &str) -> Option<&'static Language> {

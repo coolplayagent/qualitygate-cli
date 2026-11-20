@@ -2,6 +2,7 @@
 
 use crate::config::CustomRule;
 use crate::domain::RuleIssue;
+use crate::domain::language::SyntaxDeclarationError;
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 use std::sync::LazyLock;
@@ -191,11 +192,35 @@ pub fn inspect(bytes: &[u8]) -> Result<(Option<CustomRule>, Vec<RuleIssue>)> {
 }
 
 pub fn inspect_versioned(bytes: &[u8]) -> Result<(u32, Option<CustomRule>, Vec<RuleIssue>)> {
+    let (version, inspection) = inspect_rule(bytes)?;
+    Ok(match inspection {
+        Ok(rule) => (version, Some(rule), Vec::new()),
+        Err(rejection) => (version, None, rejection.into_issues()),
+    })
+}
+
+enum RuleRejection {
+    Document(Vec<RuleIssue>),
+    Semantic(anyhow::Error),
+}
+
+impl RuleRejection {
+    fn into_issues(self) -> Vec<RuleIssue> {
+        match self {
+            Self::Document(issues) => issues,
+            Self::Semantic(error) => vec![RuleIssue::new("semantic", format!("{error:#}"))],
+        }
+    }
+}
+
+fn inspect_rule(bytes: &[u8]) -> Result<(u32, std::result::Result<CustomRule, RuleRejection>)> {
     if bytes.len() > crate::config::MAX_CONFIG_BYTES {
         return Ok((
             1,
-            None,
-            vec![RuleIssue::new("input", "Project rule exceeds 1 MiB")],
+            Err(RuleRejection::Document(vec![RuleIssue::new(
+                "input",
+                "Project rule exceeds 1 MiB",
+            )])),
         ));
     }
     let parsed = (|| -> Result<Value> {
@@ -206,7 +231,15 @@ pub fn inspect_versioned(bytes: &[u8]) -> Result<(u32, Option<CustomRule>, Vec<R
     })();
     let value = match parsed {
         Ok(value) => value,
-        Err(error) => return Ok((1, None, vec![RuleIssue::new("yaml", format!("{error:#}"))])),
+        Err(error) => {
+            return Ok((
+                1,
+                Err(RuleRejection::Document(vec![RuleIssue::new(
+                    "yaml",
+                    format!("{error:#}"),
+                )])),
+            ));
+        }
     };
     let version = match value.get("schema_version").and_then(Value::as_u64) {
         Some(2) => 2,
@@ -230,32 +263,29 @@ pub fn inspect_versioned(bytes: &[u8]) -> Result<(u32, Option<CustomRule>, Vec<R
         })
         .collect();
     if !issues.is_empty() {
-        return Ok((version, None, issues));
+        return Ok((version, Err(RuleRejection::Document(issues))));
     }
     let rule = (|| -> Result<CustomRule> {
         let rule: CustomRule = serde_json::from_value(value).context("Invalid typed rule")?;
         crate::rule_catalog::custom_validation::validate(&rule)?;
         Ok(rule)
     })();
-    match rule {
-        Ok(rule) => Ok((version, Some(rule), Vec::new())),
-        Err(error) => Ok((
-            version,
-            None,
-            vec![RuleIssue::new("semantic", format!("{error:#}"))],
-        )),
-    }
+    Ok((version, rule.map_err(RuleRejection::Semantic)))
 }
 
 /// Used by both rule authoring and immutable policy snapshot loading.
 pub fn parse(bytes: &[u8]) -> Result<CustomRule> {
-    let (rule, issues) = inspect(bytes)?;
-    match rule {
-        Some(rule) => Ok(rule),
-        None => bail!(
+    let (_, inspection) = inspect_rule(bytes)?;
+    match inspection {
+        Ok(rule) => Ok(rule),
+        Err(RuleRejection::Semantic(error)) if error.is::<SyntaxDeclarationError>() => {
+            Err(error.context("Project rule schema/semantic validation failed"))
+        }
+        Err(rejection) => bail!(
             "Project rule schema/semantic validation failed: {}",
-            issues
-                .iter()
+            rejection
+                .into_issues()
+                .into_iter()
                 .map(|issue| format!(
                     "{} at {}: {}",
                     issue.stage, issue.instance_path, issue.message

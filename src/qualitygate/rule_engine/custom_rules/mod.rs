@@ -2,6 +2,7 @@
 
 use crate::adapters::diagnostic_budget;
 use crate::adapters::syntax;
+use crate::domain::language::require_syntax_capabilities;
 use crate::report_evidence::report::diagnostic;
 use crate::rule_engine::markers;
 use crate::{
@@ -26,21 +27,6 @@ struct Subject {
     text: String,
     declaration: Option<String>,
     triggered: bool,
-}
-
-fn require_syntax_capabilities(language: &str, capabilities: &[String]) -> Result<()> {
-    let descriptor = crate::domain::language::named(language)
-        .ok_or_else(|| anyhow::anyhow!("Syntax capability unavailable for language: {language}"))?;
-    for capability in capabilities {
-        if ["test_methods", "annotations", "comments", "imports"].contains(&capability.as_str())
-            && !descriptor
-                .syntax_capabilities
-                .contains(&capability.as_str())
-        {
-            bail!("{capability} capability unavailable for {language}");
-        }
-    }
-    Ok(())
 }
 
 pub fn evaluate(rule: &CustomRule, setting: &RuleSetting, snapshot: &Snapshot) -> CheckResult {
