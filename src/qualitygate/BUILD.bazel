@@ -299,6 +299,8 @@ filegroup(
         "tool_evidence/normalization.rs",
         "tool_evidence/normalization_tests.rs",
         "report_evidence/diagnostic_budget_tests.rs",
+        "builtin_rules/artifact_hygiene.rs",
+        "builtin_rules/artifact_hygiene_tests.rs",
         "builtin_rules/builtin_conventions.rs",
         "builtin_rules/builtin_conventions_tests.rs",
         "builtin_rules/builtin_limits_tests.rs",

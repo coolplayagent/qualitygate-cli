@@ -13,6 +13,9 @@ This directory is governed by `codespec/codespec-map.yaml`. Update its map entry
 
 The [production incident guard specification](production-incident-guards.md) maps incident causes to executable checks, reproducible counterexamples and production evidence.
 
+The [added-file artifact supplement](artifact-hygiene.md) defines scope,
+classification, size thresholds and execution budgets for the artifact rules.
+
 The normative product contract is [qualitygate-cli requirements](qualitygate-cli.md).
 Focused requirement documents refine that contract without replacing it.
 

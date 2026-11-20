@@ -1,0 +1,16 @@
+id: no-committed-binaries
+version: 1
+description: Report prohibited binary artifacts in newly added files
+implementation: artifact-hygiene
+language: []
+requires_capabilities: [files]
+defaults:
+  enabled: false
+  required: false
+  severity: error
+  parameters:
+    binary_extensions: ['.class', '.jar', '.war', '.ear', '.so', '.dll', '.dylib', '.exe', '.o', '.a', '.lib', '.pyc', '.pyo', '.wasm']
+    scan_content: true
+standard_refs:
+  - {source_id: openssf-scorecard, controls: [repository-posture, static-gate]}
+lifecycle_inputs: [added-binary-artifact]

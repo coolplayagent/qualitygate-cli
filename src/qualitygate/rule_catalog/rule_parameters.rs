@@ -1,5 +1,6 @@
-//! Pure language and bounded regex-map contracts shared by discovery and evaluation.
-use anyhow::{Context, Result, ensure};
+//! Pure, bounded rule parameter contracts shared by discovery and evaluation.
+use anyhow::{Context, Result, bail, ensure};
+use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -9,6 +10,120 @@ pub const MAX_PATTERN_LANGUAGES: usize = 32;
 pub const MAX_PATTERNS: usize = 32;
 pub const MAX_PATTERN_BYTES: usize = 512;
 pub type CompiledPatterns = BTreeMap<String, Vec<(String, Regex)>>;
+
+#[derive(Debug)]
+pub struct ArtifactHygieneParameters {
+    pub binary_extensions: BTreeSet<String>,
+    pub allow_paths: GlobSet,
+    pub scan_content: bool,
+    pub max_added_bytes: Option<usize>,
+}
+
+impl ArtifactHygieneParameters {
+    pub const KEYS: &[&str] = &[
+        "binary_extensions",
+        "max_added_bytes",
+        "allow_paths",
+        "scan_content",
+    ];
+    pub const MAX_EXTENSIONS: usize = 128;
+    pub const MAX_EXTENSION_BYTES: usize = 32;
+    pub const MAX_ALLOW_PATHS: usize = 256;
+    pub const MAX_GLOB_BYTES: usize = 1024;
+
+    pub fn from_parameters(values: &BTreeMap<String, Value>) -> Result<Self> {
+        let mut binary_extensions = BTreeSet::new();
+        let mut allow_paths = GlobSetBuilder::new();
+        let mut scan_content = false;
+        let mut max_added_bytes = None;
+        for (key, value) in values {
+            match key.as_str() {
+                "binary_extensions" => {
+                    for entry in artifact_array(key, value, Self::MAX_EXTENSIONS)? {
+                        let extension = entry
+                            .as_str()
+                            .context("binary_extensions values must be strings")?;
+                        ensure!(
+                            extension.len() <= Self::MAX_EXTENSION_BYTES
+                                && extension.strip_prefix('.').is_some_and(|suffix| {
+                                    !suffix.is_empty()
+                                        && suffix.bytes().all(|byte| {
+                                            byte.is_ascii_alphanumeric()
+                                                || matches!(byte, b'_' | b'-')
+                                        })
+                                }),
+                            "binary_extensions requires dotted ASCII suffixes of 2..={} bytes: {extension:?}",
+                            Self::MAX_EXTENSION_BYTES
+                        );
+                        ensure!(
+                            binary_extensions.insert(extension.to_ascii_lowercase()),
+                            "binary_extensions has a duplicate case-insensitive suffix: {extension:?}"
+                        );
+                    }
+                }
+                "max_added_bytes" => {
+                    let maximum = crate::domain::snapshot_budget::MAX_FILE_BYTES;
+                    let limit = value
+                        .as_u64()
+                        .filter(|bytes| (1..=maximum as u64).contains(bytes))
+                        .with_context(|| {
+                            format!("max_added_bytes must be an integer in 1..={maximum}")
+                        })?;
+                    max_added_bytes = Some(limit as usize);
+                }
+                "allow_paths" => {
+                    for entry in artifact_array(key, value, Self::MAX_ALLOW_PATHS)? {
+                        let pattern = entry
+                            .as_str()
+                            .context("allow_paths values must be strings")?;
+                        ensure!(
+                            !pattern.is_empty()
+                                && pattern.len() <= Self::MAX_GLOB_BYTES
+                                && !pattern.starts_with(['/', '!'])
+                                && !pattern.contains(['\\', ':'])
+                                && !pattern.chars().any(char::is_control)
+                                && !pattern.split('/').any(|part| part == ".." || part == "."),
+                            "allow_paths requires repository-relative /-separated globs up to {} bytes without negation: {pattern:?}",
+                            Self::MAX_GLOB_BYTES
+                        );
+                        allow_paths.add(
+                            GlobBuilder::new(pattern)
+                                .literal_separator(true)
+                                .build()
+                                .with_context(|| {
+                                    format!("Invalid allow_paths glob: {pattern:?}")
+                                })?,
+                        );
+                    }
+                }
+                "scan_content" => {
+                    scan_content = value.as_bool().context("scan_content must be a boolean")?;
+                }
+                _ => bail!("Unsupported artifact-hygiene parameter: {key}"),
+            }
+        }
+        Ok(Self {
+            binary_extensions,
+            allow_paths: allow_paths
+                .build()
+                .context("Cannot compile allow_paths globs")?,
+            scan_content,
+            max_added_bytes,
+        })
+    }
+
+    pub fn has_detector(&self) -> bool {
+        !self.binary_extensions.is_empty() || self.scan_content || self.max_added_bytes.is_some()
+    }
+}
+
+fn artifact_array<'a>(key: &str, value: &'a Value, limit: usize) -> Result<&'a [Value]> {
+    let items = value
+        .as_array()
+        .with_context(|| format!("{key} must be an array"))?;
+    ensure!(items.len() <= limit, "{key} allows at most {limit} entries");
+    Ok(items)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatternLanguages {

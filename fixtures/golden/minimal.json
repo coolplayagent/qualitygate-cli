@@ -79,5 +79,9 @@
   "custom-contract-pass": {"/execution/status":"completed","/verdict":"pass","/diagnostic_count":0},
   "custom-contract-missing-text": {"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"require_pattern"},
   "custom-contract-empty": {"/execution/status":"completed","/verdict":"fail","/diagnostic_count":1,"/diagnostics/0/evidence/assertion":"min_count"},
-  "custom-contract-syntax-error": {"/execution/status":"blocked","/verdict":null,"/diagnostic_count":0}
+  "custom-contract-syntax-error": {"/execution/status":"blocked","/verdict":null,"/diagnostic_count":0},
+  "issue77-binary-pass": {"/execution/status":"completed","/verdict":"pass","/severity":"error","/required":false,"/diagnostic_count":0,"/diagnostics":[]},
+  "issue77-binary-fail": {"/execution/status":"completed","/verdict":"fail","/severity":"error","/required":false,"/diagnostic_count":1,"/diagnostics/0/file":"lib/x.SO","/diagnostics/0/range":null,"/diagnostics/0/evidence/kind":"binary_extension","/diagnostics/0/evidence/extension":".so","/diagnostics/0/evidence/bytes":9},
+  "issue77-size-pass": {"/execution/status":"completed","/verdict":"pass","/severity":"warning","/required":false,"/diagnostic_count":0,"/diagnostics":[]},
+  "issue77-size-fail": {"/execution/status":"completed","/verdict":"fail","/severity":"warning","/required":false,"/diagnostic_count":1,"/diagnostics/0/file":"a.txt","/diagnostics/0/range":null,"/diagnostics/0/evidence/kind":"oversized_added_file","/diagnostics/0/evidence/extension":".txt","/diagnostics/0/evidence/bytes":5}
 }

@@ -57,6 +57,56 @@ spec 匹配。直接调用 `crate::application::work()` 可以引入依赖而没
 为缺失语言补充边界，或用 `languages` 声明实际适用的语言。可通过 `rules describe import-boundary`
 查看参数，也可通过 `rules schema --builtin import-boundary` 导出参数 Schema。
 
+## 新增文件产物检查
+
+`no-committed-binaries` 和 `oversized-added-file` 是语言无关的共享规则，声明 `files`
+能力。两条规则都默认 `enabled: false` 和 `required: false`。启用后将其纳入交付 profile。
+
+| 规则 | 默认级别 | 默认判定 |
+| --- | --- | --- |
+| `no-committed-binaries` | error | 文件名最后一个后缀为 `.class`、`.jar`、`.war`、`.ear`、`.so`、`.dll`、`.dylib`、`.exe`、`.o`、`.a`、`.lib`、`.pyc`、`.pyo` 或 `.wasm`，或前 4 KiB 含 NUL 或非法 UTF-8。 |
+| `oversized-added-file` | warning | 捕获的文件字节数严格大于 1 MiB（1,048,576 字节）。刚好达到阈值的文件通过该检查。 |
+
+规则选择所选快照中标记为 `added` 的文件。内容相同的纯重命名、已有文件的修改均不在选择范围内。
+`allow_paths` 接受仓库相对路径的 glob，命中后豁免当前规则。媒体等默认排除项由
+[快照策略](04-policy-task-and-signed-evidence.md#默认排除文档与媒体资源)决定。
+需检查的默认排除资源可通过 `unstructured_documents.retain` 显式保留。
+
+`binary_extensions` 覆盖整张后缀名单，应提供完整的所需后缀。匹配仅使用文件名的最后一个
+后缀，ASCII 大小写等价。例如 `lib/X.SO` 命中 `.so`，`lib/x.so.1` 的末尾后缀为 `.1`。
+设置 `scan_content: false` 可仅检查后缀。仅需内容检测时，将 `binary_extensions` 设为
+`[]` 并启用 `scan_content`。合法 UTF-8 字符在 4 KiB 采样边界被切断不会产生内容诊断。
+UTF-16 和其他非 UTF-8 文本可能被内容启发式命中。
+
+名单直接覆盖 Java 字节码和 Python 字节码。Rust 的 `.rlib`、`.rmeta`，Python 的 `.pyd`、
+`.whl`，Node 的 `.node`，以及 MSVC 的 `.obj` 可按项目补充后缀。无后缀的 Go 和原生
+可执行文件可能由前缀扫描命中。生成的 JavaScript、源码映射等合法 UTF-8 文本仍需由项目
+声明哪些输出路径禁止新增。
+
+诊断绑定文件路径，无行范围。证据包括 `kind`、`extension` 和整个快照文件的字节数 `bytes`。
+后缀命中优先于内容命中。大小判定独立执行。若要对已捕获文件产生大小诊断，应将
+`max_added_bytes` 配置为低于有效单文件采集上限。超过采集上限时，预检报 `snapshot.file_limit`。
+
+每次检查上限为 10,000 个所选且未豁免的新增文件、32 MiB 实际扫描的前缀字节，并受规则
+截止时间约束。耗尽预算会使检查未完成。需要在证据不完整时阻断交付的项目可设置
+`required: true`。已完成的 error 违规会令门禁失败。已完成的 warning 仍可能让整体通过。
+
+```yaml
+rules:
+  no-committed-binaries:
+    enabled: true
+    required: true
+    parameters:
+      allow_paths: ["fixtures/packaged-test-tool.jar"]
+  oversized-added-file:
+    enabled: true
+    parameters:
+      max_added_bytes: 524288
+```
+
+可通过 `rules describe no-committed-binaries` 和 `rules describe oversized-added-file`
+查看参数和有效默认值。
+
 ## 历史评审信号
 
 `cpp-disabled-test`、`c-ignored-atomic-cas` 和 `workaround-marker` 均按需启用，

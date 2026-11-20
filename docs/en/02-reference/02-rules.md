@@ -82,6 +82,69 @@ Supply the missing boundary or use `languages` to express the intended scope.
 Inspect parameters with `rules describe import-boundary` or export their schema
 with `rules schema --builtin import-boundary`.
 
+## Added-file artifact checks
+
+`no-committed-binaries` and `oversized-added-file` are language-neutral
+shared rules with the `files` capability. Both ship with `enabled: false`
+and `required: false`. Include the enabled rules in the profile used for delivery.
+
+| Rule | Default severity | Default detection |
+| --- | --- | --- |
+| `no-committed-binaries` | error | The final filename suffix is one of `.class`, `.jar`, `.war`, `.ear`, `.so`, `.dll`, `.dylib`, `.exe`, `.o`, `.a`, `.lib`, `.pyc`, `.pyo` or `.wasm`, or the first 4 KiB contain NUL or invalid UTF-8. |
+| `oversized-added-file` | warning | The captured file contains more than 1 MiB (1,048,576 bytes). A file exactly at the limit passes this check. |
+
+The evaluator selects paths classified as `added` in the chosen snapshot.
+Byte-identical renames and changes to existing files fall outside that
+selection. `allow_paths` accepts repository-relative globs and exempts matching
+files from the configured rule. Media and other default exclusions follow
+the [snapshot policy](04-policy-task-and-signed-evidence.md#default-document-and-media-exclusions).
+Use `unstructured_documents.retain` for selected excluded resources that need
+to be checked.
+
+Override `binary_extensions` with the complete desired suffix list. Suffix
+matching uses ASCII case folding and the final filename suffix. For example,
+`lib/X.SO` matches `.so` and `lib/x.so.1` has the suffix `.1`.
+Set `scan_content: false` to use suffix checks only. For a content-only rule,
+set `binary_extensions: []` and keep `scan_content: true`.
+A valid UTF-8 character cut short at the 4 KiB boundary does not produce a
+content finding. UTF-16 and other non-UTF-8 text can trigger this heuristic.
+
+Java classes and Python bytecode are in the default suffix list. For direct
+matching of Rust `.rlib` and `.rmeta`, Python `.pyd` and `.whl`, Node `.node`
+or MSVC `.obj`, add the relevant suffixes explicitly. Extensionless Go and
+native executables can be flagged by the prefix scan. Valid UTF-8 generated
+JavaScript, source maps and other generated text need a project output-path
+policy to distinguish them from hand-authored files.
+
+Findings attach to the file without a line range. Diagnostic evidence contains
+`kind`, `extension` and `bytes`, where `bytes` is the full captured size. A
+suffix match takes precedence over a content match for the binary finding.
+The size threshold applies independently. Choose `max_added_bytes` below the
+effective snapshot file limit to report size findings on captured inputs.
+A file above the acquisition limit fails preflight with `snapshot.file_limit`.
+
+Each check is bounded to 10,000 selected, non-exempt additions, 32 MiB of
+prefix bytes actually inspected, and a rule deadline. Exhaustion leaves the
+check incomplete. Choose `required: true` when incomplete evidence must block
+delivery. A completed error finding makes the gate fail. A completed warning
+can leave the overall gate passing.
+
+```yaml
+rules:
+  no-committed-binaries:
+    enabled: true
+    required: true
+    parameters:
+      allow_paths: ["fixtures/packaged-test-tool.jar"]
+  oversized-added-file:
+    enabled: true
+    parameters:
+      max_added_bytes: 524288
+```
+
+Inspect these parameters and effective defaults with
+`rules describe no-committed-binaries` and `rules describe oversized-added-file`.
+
 ## Historical review signals
 
 `cpp-disabled-test`, `c-ignored-atomic-cas` and `workaround-marker` are opt-in,

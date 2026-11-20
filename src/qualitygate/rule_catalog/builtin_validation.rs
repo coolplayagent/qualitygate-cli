@@ -1,7 +1,8 @@
 use crate::config::Marker;
 use crate::config::RuleSetting;
 use crate::domain::rule_parameters::{
-    self, LanguageContract, LanguageScope, PatternLanguages, UndeclaredImports,
+    self, ArtifactHygieneParameters, LanguageContract, LanguageScope, PatternLanguages,
+    UndeclaredImports,
 };
 use anyhow::{Context, Result, bail};
 
@@ -19,6 +20,13 @@ pub(crate) fn validate_with_scope(
     }
     if id == "module-boundary" {
         crate::rule_catalog::project_rules::module_boundary(rule)?;
+        return Ok(());
+    }
+    if id == "artifact-hygiene" {
+        let parameters = ArtifactHygieneParameters::from_parameters(&rule.parameters)?;
+        if rule.enabled && !parameters.has_detector() {
+            bail!("artifact-hygiene requires at least one enabled detector");
+        }
         return Ok(());
     }
     let specific = crate::rule_catalog::parameters::names(id)?;

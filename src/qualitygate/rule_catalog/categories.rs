@@ -85,7 +85,7 @@ fn origin(entry: &Entry) -> &str {
         return "project";
     };
     match rule.implementation.as_str() {
-        "line-ending" | "commit-message" | "diff-size" => "core",
+        "line-ending" | "commit-message" | "diff-size" | "artifact-hygiene" => "core",
         "test-naming"
         | "test-naming-strict"
         | "test-annotation-dependency"

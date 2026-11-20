@@ -251,6 +251,7 @@ const BOOK_VOLUMES: &[&str] = &[
 ];
 
 const RULE_IMPLEMENTATIONS: &[&str] = &[
+    "artifact-hygiene",
     "line-ending",
     "commit-message",
     "test-annotation-dependency",

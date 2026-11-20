@@ -1,0 +1,26 @@
+schema_version: 1
+inputs:
+  - id: added-binary-artifact
+    status: enforced
+    rule_id: no-committed-binaries
+    lifecycle_stage: static-analysis
+    languages: [all]
+    concerns: [security, reviewability, static-gate]
+    enforcement: deterministic-static
+    outcome: violation
+    source_ids: [openssf-scorecard]
+    evidence: [added-file, snapshot-path, file-extension, binary-content-prefix]
+    applicability: Added files in the selected snapshot outside rule path exemptions.
+    critical_adoption: Choose path exemptions for intentional fixtures or tools. The bounded prefix heuristic can flag non-UTF-8 text and can miss binary bytes outside its sample.
+  - id: added-file-size
+    status: enforced
+    rule_id: oversized-added-file
+    lifecycle_stage: review
+    languages: [all]
+    concerns: [reviewability, quality-gate]
+    enforcement: deterministic-static
+    outcome: warning
+    source_ids: [google-code-review, cloudflare-codex]
+    evidence: [added-file, snapshot-path, file-byte-count]
+    applicability: Added files acquired by the selected snapshot outside rule path exemptions.
+    critical_adoption: Set the review threshold below the active capture limit. Capture budget exhaustion separately reports incomplete evidence.

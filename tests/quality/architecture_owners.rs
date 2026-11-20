@@ -33,6 +33,7 @@ pub(super) const FEATURES: &[(&str, &[(&str, &str)])] = &[
     (
         "builtin_rules",
         &[
+            ("artifact_hygiene", "adapters"),
             ("builtin_conventions", "adapters"),
             ("dispatch", "adapters"),
             ("language_syntax", "adapters"),

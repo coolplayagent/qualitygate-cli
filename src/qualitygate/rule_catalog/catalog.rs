@@ -230,6 +230,9 @@ const LIFECYCLE_SUPPLEMENTS: &[&str] = &[
     include_str!(
         "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-typescript.yaml"
     ),
+    include_str!(
+        "../../../knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-artifacts.yaml"
+    ),
 ];
 
 const SOURCE_AUTHORITIES: &[&str] = &[

@@ -1,6 +1,8 @@
 //! Discoverable parameter contracts shared by CLI edits and policy validation.
 
-use crate::domain::rule_parameters::{self, LanguageContract, PatternLanguages, UndeclaredImports};
+use crate::domain::rule_parameters::{
+    self, ArtifactHygieneParameters, LanguageContract, PatternLanguages, UndeclaredImports,
+};
 use anyhow::{Result, bail};
 use serde_json::{Value, json};
 
@@ -11,6 +13,7 @@ pub(crate) fn names(implementation: &str) -> Result<&'static [&'static str]> {
         "line-ending" => &[],
         "commit-message" => &["pattern"],
         "diff-size" => &["max_added_lines"],
+        "artifact-hygiene" => ArtifactHygieneParameters::KEYS,
         "test-naming" => &["pattern", "patterns", "paths", "languages"],
         "test-naming-strict" => &["pattern", "paths", "languages"],
         "test-annotation-dependency" => &["annotation", "group", "artifact", "paths", "languages"],
@@ -78,6 +81,10 @@ fn describe_contract(
             "exempt_patterns" => ("array", "Regular expressions exempting matching comments.", strings()),
             "modules" => ("array", "1..256 unique normalized repository module roots.", json!({"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"type":"string"}})),
             "max_added_lines" => ("integer", "Maximum added lines in the selected diff (at least one).", json!({"type":"integer","minimum":1})),
+            "binary_extensions" => ("array", "Disallowed final file suffixes, including the dot. Semantic validation checks ASCII case-insensitive uniqueness.", json!({"type":"array","maxItems":ArtifactHygieneParameters::MAX_EXTENSIONS,"uniqueItems":true,"items":{"type":"string","minLength":2,"maxLength":ArtifactHygieneParameters::MAX_EXTENSION_BYTES,"pattern":"^\\.[A-Za-z0-9_-]+$"}})),
+            "max_added_bytes" => ("integer", "Maximum bytes per added file. Set below the active snapshot capture limit to report oversized files.", json!({"type":"integer","minimum":1,"maximum":crate::domain::snapshot_budget::MAX_FILE_BYTES})),
+            "allow_paths" => ("array", "Repository-relative globs exempting captured paths from this rule.", json!({"type":"array","maxItems":ArtifactHygieneParameters::MAX_ALLOW_PATHS,"items":{"type":"string","minLength":1,"maxLength":ArtifactHygieneParameters::MAX_GLOB_BYTES}})),
+            "scan_content" => ("boolean", "Inspect a bounded file prefix for NUL bytes or invalid UTF-8.", json!({"type":"boolean"})),
             "minimum_similar" => ("integer", "Minimum similar tests before requiring parameterization (at least two).", json!({"type":"integer","minimum":2})),
             "language" => ("string", "Required comment language.", json!({"type":"string","enum":["chinese","english","bilingual"]})),
             "provenance_scope" => ("string", "Whether all additions or only verified agent-participating additions require markers.", json!({"type":"string","enum":["all_added_tests","ai_only"]})),
