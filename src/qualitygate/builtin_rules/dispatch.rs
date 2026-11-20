@@ -415,7 +415,7 @@ fn source_pattern_guidance<'a>(
     }
 }
 
-pub(crate) fn compiled_patterns(
+fn compiled_patterns(
     setting: &RuleSetting,
     key: &str,
 ) -> Result<crate::domain::rule_parameters::CompiledPatterns> {
@@ -424,15 +424,10 @@ pub(crate) fn compiled_patterns(
         .parameters
         .get(key)
         .with_context(|| format!("{key} requires language-keyed regex arrays"))?;
-    let languages = if key == "forbidden_imports" {
-        PatternLanguages::Syntax
-    } else {
-        PatternLanguages::Text
-    };
-    compile_patterns(key, value, languages)
+    compile_patterns(key, value, PatternLanguages::Text)
 }
 
-fn string_parameter(setting: &RuleSetting, key: &str) -> Result<Vec<String>> {
+pub(crate) fn string_parameter(setting: &RuleSetting, key: &str) -> Result<Vec<String>> {
     setting
         .parameters
         .get(key)
@@ -441,7 +436,7 @@ fn string_parameter(setting: &RuleSetting, key: &str) -> Result<Vec<String>> {
         .map(Option::unwrap_or_default)
 }
 
-fn path_filter(setting: &RuleSetting) -> Result<Option<GlobSet>> {
+pub(crate) fn path_filter(setting: &RuleSetting) -> Result<Option<GlobSet>> {
     let paths = string_parameter(setting, "paths")?;
     if paths.is_empty() {
         return Ok(None);

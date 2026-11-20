@@ -14,18 +14,21 @@ pub type CompiledPatterns = BTreeMap<String, Vec<(String, Regex)>>;
 pub enum PatternLanguages {
     Syntax,
     Text,
+    Imports,
 }
 
 impl PatternLanguages {
     pub fn supports(self, language: &str) -> bool {
-        crate::rule_catalog::language::named(language).is_some()
-            || (self == Self::Text && matches!(language, "c" | "cpp"))
+        crate::rule_catalog::language::named(language).is_some_and(|descriptor| {
+            self != Self::Imports || descriptor.syntax_capabilities.contains(&"imports")
+        }) || (self == Self::Text && matches!(language, "c" | "cpp"))
     }
 
     pub fn names(self) -> Vec<&'static str> {
         let mut languages: Vec<_> = crate::rule_catalog::language::LANGUAGES
             .iter()
             .map(|language| language.name)
+            .filter(|language| self.supports(language))
             .collect();
         if self == Self::Text {
             languages.extend(["c", "cpp"]);
@@ -41,6 +44,26 @@ impl PatternLanguages {
             Self::Text
         } else {
             Self::Syntax
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UndeclaredImports {
+    Report,
+    Incomplete,
+    Off,
+}
+
+impl UndeclaredImports {
+    pub const VALUES: [&str; 3] = ["report", "incomplete", "off"];
+
+    pub fn parse(value: &Value) -> Result<Self> {
+        match value.as_str() {
+            Some("report") => Ok(Self::Report),
+            Some("incomplete") => Ok(Self::Incomplete),
+            Some("off") => Ok(Self::Off),
+            _ => anyhow::bail!("undeclared must be report, incomplete, or off"),
         }
     }
 }

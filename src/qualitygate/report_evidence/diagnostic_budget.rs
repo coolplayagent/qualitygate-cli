@@ -98,6 +98,11 @@ impl BuiltinResult {
         crate::adapters::parallel::check_deadline(self.deadline)
     }
 
+    #[cfg(test)]
+    pub(crate) fn expire_deadline(&mut self) {
+        self.deadline = Instant::now();
+    }
+
     fn reserve(&self, diagnostic: &Diagnostic) -> Result<()> {
         self.check_deadline()?;
         self.budget

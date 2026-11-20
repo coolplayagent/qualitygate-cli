@@ -22,7 +22,7 @@ fn result() -> CheckResult {
 #[test]
 fn builtin_workers_reject_expired_deadlines_before_retaining_findings() {
     let mut output = BuiltinResult::new(result());
-    output.deadline = Instant::now();
+    output.expire_deadline();
     assert!(output.check_deadline().is_err());
     assert!(output.push(finding("repair")).is_err());
     let mut buffered = Vec::new();

@@ -1,6 +1,6 @@
 id: import-boundary
-version: 1
-description: Enforce explicitly configured source import boundaries across supported languages
+version: 2
+description: Enforce configured import declarations and report missing language boundaries
 implementation: import-boundary
 language: [java, python, rust, typescript, go]
 requires_capabilities: [imports]

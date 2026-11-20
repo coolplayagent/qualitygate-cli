@@ -1,4 +1,5 @@
 //! Actual golangci-lint v2 JSON across paired Go snapshots.
+//! Each live fixture isolates the runner lock in its own temporary directory.
 mod common;
 #[path = "common/repository.rs"]
 mod repository;
@@ -81,7 +82,8 @@ fn real_golangci_stdout_ratchet_growth_repair_and_typecheck_failure() {
     .unwrap();
     let policy = json!({"schema_version":1,"checks":[{
         "id":"golangci-lint-ratchet",
-        "argv":["env",format!("GOLANGCI_LINT_CACHE={}",cache.path().join("lint").display()),
+        "argv":["env",format!("TMPDIR={}",cache.path().display()),
+            format!("GOLANGCI_LINT_CACHE={}",cache.path().join("lint").display()),
             format!("GOCACHE={}",cache.path().join("go-build").display()),
             format!("GOPATH={}",cache.path().join("go-path").display()),"GOTELEMETRY=off",
             binary,"run","--output.json.path=stdout","--output.text.path=stderr",
@@ -184,6 +186,7 @@ func main() {
         0..0,
         [
             json!("env"),
+            json!(format!("TMPDIR={}", cache.path().display())),
             json!(format!(
                 "GOLANGCI_LINT_CACHE={}",
                 cache.path().join("lint").display()

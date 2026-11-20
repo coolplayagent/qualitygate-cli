@@ -15,6 +15,38 @@ fn go_imports_have_one_fact_per_spec_and_preserve_grouped_locations() {
     );
     assert_eq!(structure.imports[0].text, "import \"example/one\"");
     assert_eq!(structure.imports[1].text, "import alias \"example/two\"");
+    assert_eq!(
+        structure.declared_import_text(1).unwrap(),
+        structure.imports[1].text
+    );
+}
+
+#[test]
+fn rust_allowlist_subject_uses_the_ast_argument_without_replacing_import_text() {
+    let view = parse(
+        "lib.rs",
+        "pub use /* 文 */ crate::allowed::a;\nuse\n    crate::allowed::{b, c};\nuse crate::other;\n"
+            .as_bytes(),
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!(view.imports[0].text, "pub use /* 文 */ crate::allowed::a;");
+    assert_eq!(view.imports[1].text, "use\n    crate::allowed::{b, c};");
+    assert_eq!(
+        (0..view.imports.len())
+            .map(|index| view.declared_import_text(index).unwrap())
+            .collect::<Vec<_>>(),
+        [
+            "crate::allowed::a",
+            "crate::allowed::{b, c}",
+            "crate::other"
+        ]
+    );
+    assert!(view.declared_import_text(3).is_err());
+    let encoded = serde_json::to_value(&view).unwrap();
+    assert!(encoded.get("rust_use_arguments").is_none());
+    let decoded: Structure = serde_json::from_value(encoded).unwrap();
+    assert!(decoded.declared_import_text(0).is_err());
 }
 
 #[test]

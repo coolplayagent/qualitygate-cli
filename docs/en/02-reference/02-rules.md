@@ -17,12 +17,9 @@ style, and API checks are intentionally line-pattern review signals. Their
 finding text states that a match does not prove exploitability, data flow,
 runtime behavior, or standards conformance.
 
-`import-boundary` remains disabled until a repository supplies reviewed
-`forbidden_imports`. `security-sensitive-api` and `todo-marker` are warnings by
-default. Language-specific rules should be enabled only after reading their
-exact definition and capability limits.
-
-The import rule inspects syntax imports intersecting added lines. A fully qualified call such as `crate::application::work()` introduces a dependency without adding an import. For a clause that forbids the dependency itself, register a project architecture checker that resolves the supported reference forms. This repository tests imports, aliases, re-exports and direct calls against the same forbidden owner edge.
+`security-sensitive-api` and `todo-marker` are warnings by default.
+Language-specific rules should be enabled only after reading their exact
+definition and capability limits.
 
 Internal C and C++ rules cite the C V5.3 (DKBA 12271-2023.12) and C++ V5.1
 (DKBA 12977-2022.12) language specifications. The older C&C++ secure coding
@@ -52,6 +49,38 @@ literal text are excluded; executable interpolations remain in scope. Malformed
 syntax and exhausted budgets remain incomplete. Cross-file types, runtime
 expansion and data flow remain external-analyzer or human-review concerns.
 See the [bundled rule guide](../../../skills/qualitygate-cli/references/builtin-rules.md#structured-language-reviews) for exact boundaries.
+
+## Import boundaries
+
+`import-boundary` is disabled by default. Enable it with a reviewed nonempty
+`declared_imports` or `forbidden_imports` map. Both maps combine `all` and
+language-specific patterns. The rule checks parsed imports that intersect added
+lines in Java, Python, Rust, TypeScript/JavaScript and Go, subject to `paths` and
+`languages`. Forbidden matches take precedence over declared matches.
+
+For imports with configured boundaries that match neither map, `undeclared`
+accepts `report` (violation), `incomplete` (blocked execution) or `off` (count
+only). Omission defaults to `report` for languages with declared patterns and
+`off` for languages with only forbidden patterns. An in-scope changed import whose
+language has no patterns blocks execution in every mode. A required check in
+this state returns exit code 2, with the language in `gate.blockers` and the
+check's execution reason. The JSON check metadata lists `boundary_languages`
+and `undeclared_count`. Diagnostic evidence includes `classification`, `language`
+and `pattern`, with `null` for an undeclared import.
+
+Rust's `declared_imports` patterns see the `use` argument, so `^crate::allowed`
+matches `pub use crate::allowed::item;`. Forbidden patterns and declared patterns
+for other languages use the existing syntax text. A grouped Rust `use` such as
+`use crate::{allowed, other};` is matched as one node. Python also uses one node
+per import statement, and Go checks each import spec separately. A call written
+as `crate::application::work()` introduces a dependency without an import node.
+Use a project architecture checker when the policy requires resolved references.
+
+When upgrading to import-boundary version 2, a policy covering only some languages
+can now return exit code 2 for newly changed imports in the remaining languages.
+Supply the missing boundary or use `languages` to express the intended scope.
+Inspect parameters with `rules describe import-boundary` or export their schema
+with `rules schema --builtin import-boundary`.
 
 ## Historical review signals
 

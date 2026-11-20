@@ -50,6 +50,25 @@ fn incomplete_wins_over_failure_without_losing_failure() {
 }
 
 #[test]
+fn required_blocker_includes_a_bounded_single_line_reason() {
+    let mut check = CheckResult::pending("import-boundary", true, Severity::Error);
+    let reason = format!(
+        "no boundary declared for language: java\n{}",
+        "界".repeat(512)
+    );
+    check.block(ExecutionStatus::Blocked, &reason);
+    let gate = evaluate(std::slice::from_ref(&check), &[], &[]);
+    let prefix = "Required check incomplete: import-boundary: ";
+    let brief = gate.blockers[0].strip_prefix(prefix).unwrap();
+    assert!(brief.starts_with("no boundary declared for language: java 界"));
+    assert!(!brief.contains('\n'));
+    assert_eq!(brief.chars().count(), 513);
+    assert!(brief.ends_with('…'));
+    assert_eq!(check.execution.reason.as_deref(), Some(reason.as_str()));
+    assert_eq!(gate.decision, Decision::Incomplete);
+}
+
+#[test]
 fn optional_failure_to_execute_is_visible_without_blocking_completed_checks() {
     let mut optional = CheckResult::pending("suggest", false, Severity::Warning);
     optional.block(ExecutionStatus::TimedOut, "deadline exceeded");

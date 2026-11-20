@@ -12,10 +12,7 @@
 Rust、Shell、C 和 C++ 包。适用时结构规则使用 tree-sitter。许多安全、日志、风格和 API 检查是逐行
 模式审查信号；命中并不能证明漏洞可利用、数据流、运行时行为或标准符合性。
 
-`import-boundary` 在仓库提供经审核的 `forbidden_imports` 前保持禁用；`security-sensitive-api` 和
-`todo-marker` 默认是 warning。启用语言规则前应阅读其精确定义和能力限制。
-
-导入规则只检查与新增行相交的导入节点。直接调用 `crate::application::work()` 同样能引入依赖，却没有导入节点。条款若禁止依赖本身，应接入能识别相应引用形式的项目架构检查器。本仓库对同一禁止依赖边分别验证普通导入、别名、重导出和直接调用。
+`security-sensitive-api` 和 `todo-marker` 默认是 warning。启用语言规则前应阅读其精确定义和能力限制。
 
 内部 C/C++ 规则引用 C V5.3（DKBA 12271-2023.12）与 C++ V5.1（DKBA 12977-2022.12）
 语言编程规范。较早的《C&C++ 语言安全编程规范 V3.0》已被上述语言规范替代，不应作为
@@ -35,6 +32,30 @@ API 规则排除成员调用和其他命名空间，但不能解析非限定名�
 TypeScript 局部作用域和 Shell 命令操作数。注释与字面文本不触发诊断，插值中的执行表达式仍受检查。
 解析失败或预算耗尽报告未完成；跨文件类型、运行时展开和数据流仍需外部分析器或人工复核。
 具体边界见[内置规则指南](../../../skills/qualitygate-cli/references/builtin-rules.md#structured-language-reviews)。
+
+## 导入边界
+
+`import-boundary` 默认禁用。启用时至少提供一张经审核的非空 `declared_imports` 或
+`forbidden_imports` 映射。两张表都合并 `all` 和具体语言的模式。在 `paths` 和 `languages`
+选定的范围内，规则检查 Java、Python、Rust、TypeScript/JavaScript 和 Go 中与新增行相交的解析导入节点。
+禁止表的命中优先于允许表。
+
+如果语言已有边界但导入未命中两张表，`undeclared` 可选 `report`（违规）、`incomplete`（阻塞）或
+`off`（仅计数）。省略时，有允许表的语言默认 `report`，只有禁止表的语言默认 `off`。只要作用域内的
+变更导入所在语言缺少边界，任何模式都会阻塞检查。此时必需检查使门禁退出码为 2，缺失的语言会显示在
+`gate.blockers` 和该检查的执行原因中。JSON 检查元数据包含 `boundary_languages` 和
+`undeclared_count`，诊断证据包含 `classification`、`language` 和 `pattern`，未声明导入的
+`pattern` 为 `null`。
+
+Rust 的 `declared_imports` 匹配 `use` 参数，因此 `^crate::allowed` 可以匹配
+`pub use crate::allowed::item;`。禁止表和其他语言的允许表继续匹配现有语法文本。Rust 组合导入
+（如 `use crate::{allowed, other};`）与 Python 的 import 语句均按单个节点匹配。Go 按每个 import
+spec 匹配。直接调用 `crate::application::work()` 可以引入依赖而没有导入节点。策略需要解析引用时，
+应接入能识别相应引用形式的项目架构检查器。
+
+升级到 `import-boundary` 规则版本 2 后，只配置部分语言的策略遇到其他语言的新增导入时，可能返回退出码 2。
+为缺失语言补充边界，或用 `languages` 声明实际适用的语言。可通过 `rules describe import-boundary`
+查看参数，也可通过 `rules schema --builtin import-boundary` 导出参数 Schema。
 
 ## 历史评审信号
 

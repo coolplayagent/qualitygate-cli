@@ -490,6 +490,214 @@ fn every_builtin_parameter_contract_describes_and_validates_its_packaged_default
     }
 }
 
+fn import_boundary_check(root: &Path, exit: i32) -> Value {
+    report(
+        &cli(
+            root,
+            &[
+                "check",
+                "--worktree",
+                "--profile",
+                "full",
+                "--format",
+                "json",
+            ],
+        ),
+        exit,
+    )
+}
+
+fn import_boundary_result(report: &Value) -> &Value {
+    report["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|check| check["id"] == "import-boundary")
+        .unwrap()
+}
+
+#[test]
+fn import_boundary_cli_distinguishes_declared_forbidden_and_uncovered_imports() {
+    let directory = fixture();
+    let root = directory.path();
+    let policy = root.join("qualitygate.yaml");
+    let rust = root.join("lib.rs");
+    let java = root.join("Example.java");
+    let declared_only = "\
+schema_version: 1
+rules:
+  import-boundary:
+    enabled: true
+    parameters:
+      declared_imports:
+        rust: ['^crate::allowed']
+";
+    std::fs::write(&policy, declared_only).unwrap();
+    std::fs::write(&rust, "use crate::allowed::x;\n").unwrap();
+    let passed = import_boundary_check(root, 0);
+    assert_eq!(passed["scope"], "delivery");
+    assert_eq!(passed["gate"]["decision"], "pass");
+    assert_eq!(passed["gate"]["complete"], true);
+    let check = import_boundary_result(&passed);
+    assert_eq!(check["rule_version"], 2);
+    assert_eq!(check["metadata"]["boundary_languages"], json!(["rust"]));
+    assert_eq!(check["metadata"]["undeclared_count"], 0);
+    assert_eq!(check["diagnostics"], json!([]));
+
+    std::fs::write(&rust, "use crate::other;\n").unwrap();
+    let failed = import_boundary_check(root, 1);
+    assert_eq!(failed["gate"]["decision"], "fail");
+    assert_eq!(failed["gate"]["complete"], true);
+    let check = import_boundary_result(&failed);
+    assert_eq!(check["metadata"]["undeclared_count"], 1);
+    let diagnostics = check["diagnostics"].as_array().unwrap();
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["evidence"]["classification"], "undeclared");
+    assert_eq!(diagnostics[0]["evidence"]["language"], "rust");
+    assert_eq!(
+        diagnostics[0]["evidence"].get("pattern"),
+        Some(&Value::Null)
+    );
+
+    let forbidden = "^use crate::allowed::blocked";
+    std::fs::write(
+        &policy,
+        format!("{declared_only}      forbidden_imports:\n        rust: ['{forbidden}']\n"),
+    )
+    .unwrap();
+    std::fs::write(&rust, "use crate::allowed::blocked;\n").unwrap();
+    let failed = import_boundary_check(root, 1);
+    let check = import_boundary_result(&failed);
+    let diagnostics = check["diagnostics"].as_array().unwrap();
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["evidence"]["classification"], "forbidden");
+    assert_eq!(diagnostics[0]["evidence"]["pattern"], forbidden);
+    assert_eq!(check["metadata"]["undeclared_count"], 0);
+
+    std::fs::write(&java, "import java.util.List;\nfinal class Example {}\n").unwrap();
+    let mixed = import_boundary_check(root, 2);
+    assert_eq!(mixed["gate"]["decision"], "incomplete");
+    assert_eq!(mixed["gate"]["complete"], false);
+    let check = import_boundary_result(&mixed);
+    let retained = check["diagnostics"].as_array().unwrap();
+    assert_eq!(retained.len(), 1);
+    assert_eq!(retained[0]["fingerprint"], diagnostics[0]["fingerprint"]);
+    assert_eq!(retained[0]["evidence"], diagnostics[0]["evidence"]);
+    assert_eq!(check["execution"]["status"], "blocked");
+    assert!(check["verdict"].is_null());
+    let missing = "no boundary declared for language: java";
+    assert!(
+        check["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains(missing)
+    );
+    assert!(
+        mixed["gate"]["blockers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|blocker| { blocker.as_str().unwrap().contains(missing) })
+    );
+
+    std::fs::remove_file(rust).unwrap();
+    std::fs::write(&policy, declared_only).unwrap();
+    let uncovered = import_boundary_check(root, 2);
+    assert!(
+        uncovered["gate"]["blockers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|blocker| { blocker.as_str().unwrap().contains(missing) })
+    );
+    let check = import_boundary_result(&uncovered);
+    assert_eq!(check["diagnostics"], json!([]));
+    assert_eq!(check["metadata"]["boundary_languages"], json!(["rust"]));
+    assert_eq!(check["metadata"]["undeclared_count"], 0);
+}
+
+#[test]
+fn import_boundary_cli_modes_keep_counts_and_require_language_coverage() {
+    let directory = fixture();
+    let root = directory.path();
+    let policy = root.join("qualitygate.yaml");
+    std::fs::write(root.join("lib.rs"), "use crate::other;\n").unwrap();
+    for (mode, exit, decision) in [("incomplete", 2, "incomplete"), ("off", 0, "pass")] {
+        std::fs::write(
+            &policy,
+            format!(
+                "\
+schema_version: 1
+rules:
+  import-boundary:
+    enabled: true
+    parameters:
+      declared_imports:
+        rust: ['^crate::allowed']
+      undeclared: {mode}
+"
+            ),
+        )
+        .unwrap();
+        let result = import_boundary_check(root, exit);
+        assert_eq!(result["gate"]["decision"], decision);
+        let check = import_boundary_result(&result);
+        assert_eq!(check["metadata"]["undeclared_count"], 1);
+        assert_eq!(check["diagnostics"], json!([]));
+    }
+
+    std::fs::write(root.join("Example.java"), "import java.util.List;\n").unwrap();
+    let result = import_boundary_check(root, 2);
+    assert_eq!(result["gate"]["decision"], "incomplete");
+    let check = import_boundary_result(&result);
+    assert_eq!(check["metadata"]["undeclared_count"], 1);
+    assert!(
+        check["execution"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("no boundary declared for language: java")
+    );
+}
+
+#[test]
+fn import_boundary_cli_schema_agrees_with_description_and_preserves_project_schema() {
+    let directory = fixture();
+    let root = directory.path();
+    let described = run(root, &["rules", "describe", "import-boundary"]);
+    let nonexistent = root.join("no-repository");
+    let schema = run(
+        &nonexistent,
+        &["rules", "schema", "--builtin", "import-boundary"],
+    );
+    assert_eq!(
+        run(&nonexistent, &["rules", "schema"]),
+        run(&nonexistent, &["schema", "project-rule"])
+    );
+    for parameter in described["parameters"].as_array().unwrap() {
+        let mut expected = parameter["schema"].clone();
+        expected["description"] = parameter["description"].clone();
+        assert_eq!(
+            schema["properties"][parameter["name"].as_str().unwrap()],
+            expected
+        );
+    }
+    assert_eq!(
+        schema["properties"]["undeclared"]["enum"],
+        json!(["report", "incomplete", "off"])
+    );
+    let validator = jsonschema::draft202012::options().build(&schema).unwrap();
+    assert!(validator.is_valid(&json!({"declared_imports":{"rust":["^crate::allowed"]}})));
+    assert!(validator.is_valid(&json!({"forbidden_imports":{"rust":["^use"]}})));
+    for invalid in [
+        json!({}),
+        json!({"declared_imports":{}}),
+        json!({"declared_imports":{"shell":["^source"]}}),
+        json!({"declared_imports":{"rust":["^crate::allowed"]},"undeclared":"skip"}),
+    ] {
+        assert!(!validator.is_valid(&invalid), "{invalid}");
+    }
+}
+
 #[test]
 fn project_discovery_and_assignment_work_before_activation_with_bounded_large_repo_cost() {
     let directory = fixture();

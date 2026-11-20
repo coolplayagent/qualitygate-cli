@@ -49,6 +49,25 @@ pub struct Structure {
     /// the full source for every entity. This is invocation-local derived data.
     #[serde(skip)]
     pub(crate) nonblank_lines: Vec<usize>,
+    /// Byte ranges into the corresponding Rust import texts, in import order.
+    #[serde(skip)]
+    rust_use_arguments: Vec<std::ops::Range<usize>>,
+}
+
+impl Structure {
+    pub(crate) fn declared_import_text(&self, index: usize) -> Result<&str> {
+        let import = self
+            .imports
+            .get(index)
+            .context("Import syntax is unavailable")?;
+        if self.language != "rust" {
+            return Ok(&import.text);
+        }
+        self.rust_use_arguments
+            .get(index)
+            .and_then(|range| import.text.get(range.clone()))
+            .context("Rust use argument syntax is unavailable")
+    }
 }
 
 pub fn language(path: &str) -> Option<&'static str> {
@@ -111,6 +130,7 @@ pub(crate) fn parse_before(
         tests: Vec::new(),
         comments: Vec::new(),
         imports: Vec::new(),
+        rust_use_arguments: Vec::new(),
         nonblank_lines: std::str::from_utf8(bytes)?
             .lines()
             .enumerate()
@@ -118,6 +138,7 @@ pub(crate) fn parse_before(
             .collect(),
     };
     let mut pending = vec![tree.root_node()];
+    let mut imports = Vec::new();
     let mut visited = 0;
     while let Some(node) = pending.pop() {
         check_deadline()?;
@@ -144,14 +165,7 @@ pub(crate) fn parse_before(
                         | "use_declaration"
                 ))
         {
-            result.imports.push(Import {
-                text: if language == "go" {
-                    format!("import {}", text(node, bytes))
-                } else {
-                    text(node, bytes).into()
-                },
-                range: range(node),
-            });
+            imports.push(node);
         }
         if let Some(test) = tests_in_source::extract(language, path, node, bytes) {
             result.tests.push(test);
@@ -160,7 +174,27 @@ pub(crate) fn parse_before(
         pending.extend(node.named_children(&mut cursor));
     }
     result.tests.sort_by_key(|test| test.range.start_line);
-    result.imports.sort_by_key(|import| import.range.start_line);
+    imports.sort_by_key(|node| node.start_position().row);
+    for node in imports {
+        check_deadline()?;
+        if language == "rust" {
+            let argument = node
+                .child_by_field_name("argument")
+                .with_context(|| format!("Rust use argument syntax is unavailable: {path}"))?;
+            let start = node.start_byte();
+            result
+                .rust_use_arguments
+                .push(argument.start_byte() - start..argument.end_byte() - start);
+        }
+        result.imports.push(Import {
+            text: if language == "go" {
+                format!("import {}", text(node, bytes))
+            } else {
+                text(node, bytes).into()
+            },
+            range: range(node),
+        });
+    }
     result
         .comments
         .sort_by_key(|comment| comment.range.start_line);

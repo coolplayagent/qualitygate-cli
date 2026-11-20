@@ -63,6 +63,10 @@ a requirement.
 | E2 | Document introduction text, an organisational notice body, or a governance resolution. | Intent, scope, roles, sequencing, and stated selection criteria. | Company-wide mandatory force, or a numeric threshold that the text did not state. |
 | E3 | Widely published engineering practice, or this repository's own inference from the two levels above. | A concrete mechanism, a default, or an implementation order. | Any claim that the company requires it, or that a tool result proves quality. |
 
+[E1]: #evidence-levels
+[E2]: #evidence-levels
+[E3]: #evidence-levels
+
 Three rules follow, and they are the reason this note is usable at all:
 
 - Every load-bearing claim ends with its level. A claim without a level is a
@@ -333,10 +337,9 @@ repository that adopts it must publish its own edges rather than inherit ours:
 - unresolved edges: an import that matches no declared edge is reported as
   undeclared, not as allowed.
 
-The tool obligation that follows: a boundary rule has no default. If the
-repository has not declared the forbidden edges, the check must report
-incomplete, not pass. An empty rule set that "passes" is worse than no gate,
-because it converts an absence of policy into evidence of compliance. [E3]
+The repository supplies its own boundary patterns. When a required check
+encounters an in-scope changed import in a language with neither declared nor
+forbidden patterns, it reports incomplete and identifies the language. [E3]
 
 ## Gates and measurement
 
@@ -415,8 +418,8 @@ an external report or platform data, P3 is a declared capability gap.
 
 Capability vocabulary used below:
 
-- `import-boundary`: declared forbidden import edges per language, bounded
-  regular expressions, disabled unless a repository declares them;
+- `import-boundary`: declared and forbidden import patterns per language,
+  expressed as bounded regular expressions. The rule is disabled by default.
 - `count` / `text` / `marker` / `required-path`: bounded assertion families
   over selected entities;
 - `tree-sitter`: parsed entities, so structure rather than raw text is asserted;
@@ -426,7 +429,7 @@ Capability vocabulary used below:
 
 | Check | Type | Pri | Current capability | Evidence |
 | --- | --- | --- | --- | --- |
-| Forbidden cross-layer or cross-module import | Architecture | P0 | `import-boundary` with declared `forbidden_imports`; reports undeclared edges | E3 |
+| Forbidden cross-layer or cross-module import | Architecture | P0 | `import-boundary` gives `forbidden_imports` precedence. With `declared_imports`, unmatched imports are reported by default. | E3 |
 | Design record attached to a change | Architecture | P1 | `required-path` plus a path convention | E2 |
 | Design record names solution, test focus and impact analysis | Architecture | P2 | `text` heading assertions | E2 |
 | Logical element mapped to repository and directory | Architecture | P1 | `required-path` plus an element inventory | E1 |

@@ -75,6 +75,7 @@ qualitygate 负责检查计划、规则执行、验证命令运行、结果聚�
 | 换行符保持 | 修改文件行尾与原文一致（LF/CRLF），新文件默认 LF | |
 | 提交信息格式 | 匹配 `[ID]type: description` 风格（ID/type 集合可配置） | |
 | 新依赖声明检查 | 由生态工具解析导入归属、模块边界与依赖清单，确认未声明后报 error | 不能仅按 import 文本猜测；不支持解析时报告能力缺失 |
+| IMPORT-BOUNDARY-01 源码导入边界 | 对选定范围内与新增行相交的语法导入，先匹配禁止表，再匹配允许表。未命中按 `undeclared` 模式处理 | 导入所在语言缺少边界时记录 incomplete，必需规则退出 2 并报告语言。保留分类证据、覆盖语言和未声明计数。匹配粒度为解析节点 |
 | 模块依赖边界 | 变更违反团队约定的模块访问或依赖方向 → error | 优先接入现有架构检查工具 |
 
 Issue 9 扩展四个默认不启用的可配置内置规则：`commit-message-convention` 校验新增提交主题，`test-naming-strict` 校验新增 Java 测试方法名，`test-annotation-dependency` 仅对带指定注解的新增 Java 测试方法要求指定 Maven 依赖的声明及解析事实，`no-hardcoded-secrets` 检查新增 Java 文件中的字面凭据赋值。四者默认级别为 error；缺失或失效的必需事实、语法解析失败及预算超限均报告未完成。大仓库分析使用有界并行、固定截止时间和有序结果。需求到测试证据见 [Issue 9 验收映射](../../docs/en/04-contributor-guide/03-requirements-to-test-evidence.md)。
