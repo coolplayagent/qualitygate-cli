@@ -1,5 +1,6 @@
 //! Dispatch and implementations for the built-in checks.
 
+pub(crate) mod artifact_hygiene;
 pub(crate) mod builtin_conventions;
 pub mod dispatch;
 pub(crate) mod language_syntax;

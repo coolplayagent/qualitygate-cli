@@ -49,10 +49,20 @@ fn progressive_discovery_categories_are_mutable_and_do_not_enable_rules() {
             .unwrap()
             .iter()
             .any(|c| c["name"] == "core"
-                && c["rule_count"] == 5
+                && c["rule_count"] == 7
                 && c["enabled_count"] == 0
                 && c["custom"] == false)
     );
+    let core = run(root, &["rules", "list", "--category", "core"]);
+    for id in ["no-committed-binaries", "oversized-added-file"] {
+        assert!(
+            core["rules"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|rule| rule["id"] == id && rule["enabled"] == false)
+        );
+    }
     assert!(!root.join("qualitygate.yaml").exists());
     run(root, &["init"]);
     let before = policy(root);

@@ -9,6 +9,18 @@ implementation ledgers and phase-by-phase progress notes. Test names identify
 repeatable repository evidence, not production deployment or pilot acceptance.
 
 
+## Added-file artifact checks
+
+[ARTIFACT-01–04](../../../codespec/requirements/artifact-hygiene.md) map to
+the following tests and fixtures.
+
+| Contract | Repeatable evidence |
+| --- | --- |
+| Opt-in shared rules and CLI results | `tests/artifact_hygiene.rs::artifact_rules_are_discoverable_and_opt_in` checks discovery and defaults. `binary_extension_and_content_findings_block_added_files` verifies suffix and content findings with file-level JSON and gate exits. |
+| Scope, exceptions and acquisition | `retained_media_obeys_rule_local_allow_paths` in `tests/artifact_hygiene.rs` covers retained media with and without a rule-local exemption. `size_warnings_are_distinct_from_snapshot_limits` checks size warnings and the `doctor` acquisition diagnostic. `only_added_snapshot_paths_are_classified` checks the change-kind boundary. |
+| Bounded detection | Unit tests in `builtin_rules::artifact_hygiene::tests` exercise suffix comparison, byte-prefix classification, sample truncation, and incomplete execution under limits. |
+| Bundled defaults | `issue77-binary-pass`, `issue77-binary-fail`, `issue77-size-pass` and `issue77-size-fail` run in the minimal, typical and stress selfcheck suites with independent golden outcomes. |
+
 ## Java deprecation guards
 
 `JAVA-DEPRECATION-01` uses `tests/java_deprecation.rs` to compile a project
@@ -88,7 +100,7 @@ separates primary sources, local Bash help and repository counterexamples.
 | Requirement | Repeatable evidence and limit |
 | --- | --- |
 | Versioned SQL/Shell operand boundaries | `builtin_rules::language_syntax::tests::{sql_formatting_distinguishes_python_operators_from_database_placeholders, shell_brackets_are_checked_only_in_test_commands, shell_assignment_review_uses_command_position_instead_of_physical_lines, shell_traps_check_signal_operands_instead_of_action_text, bounded_comparison_recovery_cannot_hide_other_syntax_errors}`; `tests/issue12_rules.rs::{shell_spacing_and_traps_respect_shell_operand_boundaries, shell_syntax_recovery_is_specific_and_invalid_evidence_stays_incomplete}`; `tests/issue16_rules.rs::sql_query_review_accepts_bound_parameters_and_reports_actual_formatting`. Syntax signals do not prove query safety or complete shell correctness. |
-| Frozen version-1 compatibility | `builtin_rules::language_syntax::tests::frozen_v1_review_definitions_keep_their_original_source_pattern_behavior` round-trips the four original definitions and preserves their old matcher outcomes. New catalog definitions advance to version 2 without weakening severity or requiredness. `tests/selfcheck.rs::full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golden_agreement` retains the exact 1118-case corpus, including all 36 new outcomes and their selected version. `selfcheck::fixture_execution::tests::builtin_observations_preserve_selected_definition_versions_for_every_execution_outcome` verifies version propagation for passing, violating and incomplete observations. |
+| Frozen version-1 compatibility | `builtin_rules::language_syntax::tests::frozen_v1_review_definitions_keep_their_original_source_pattern_behavior` round-trips the four original definitions and preserves their old matcher outcomes. New catalog definitions advance to version 2 without weakening severity or requiredness. `tests/selfcheck.rs::full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golden_agreement` retains all 36 language-review outcomes and their selected versions in the full corpus. `selfcheck::fixture_execution::tests::builtin_observations_preserve_selected_definition_versions_for_every_execution_outcome` verifies version propagation for passing, violating and incomplete observations. |
 | Active/ref/local authority and repairable initialization | `tests/policy_promotion.rs::only_independent_signed_exact_validation_can_activate_a_policy_and_history_is_immutable` preserves signed-active source/trust with missing local/default and alternate configuration paths, without creating either file. `tests/init.rs::{explicit_policy_reference_never_suggests_local_initialization, snapshot_guidance_depends_on_local_policy_and_selection, unreadable_or_malformed_configuration_does_not_suggest_init}` retains reference/snapshot/error distinctions. |
 | Captured lookup versus delivery findings | `tests/file_contracts.rs::cli_file_contracts_distinguish_complete_lookup_from_delivery_findings` contrasts historical missing/overlong files in CLI full and core repository scope, selected deletions/changes and path feedback. Whole-repository obligations need additional adequate evidence. |
 | Existing rule packages and runtime capability | `tests/custom_rules.rs::{private_rule_runs_on_java_and_python_with_stable_diagnostics_and_snapshot_isolation, project_rule_directory_is_loaded_from_selected_policy_snapshot}`; `tests/quality/skill_startup.rs`; `tests/operators/v3.rs`. These prove their executable contracts; preservation/migration and legacy/no-install decisions need separate forward traces. |

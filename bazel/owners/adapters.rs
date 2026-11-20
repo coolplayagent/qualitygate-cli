@@ -178,6 +178,8 @@ pub mod rule_catalog {
 
 #[path = "../../src/qualitygate/builtin_rules"]
 pub mod builtin_rules {
+    #[path = "artifact_hygiene.rs"]
+    pub(crate) mod artifact_hygiene;
     #[path = "builtin_conventions.rs"]
     pub mod builtin_conventions;
     #[path = "dispatch.rs"]

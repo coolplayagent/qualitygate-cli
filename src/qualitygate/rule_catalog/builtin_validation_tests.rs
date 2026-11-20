@@ -6,6 +6,82 @@ fn setting(parameters: Value) -> RuleSetting {
 }
 
 #[test]
+fn artifact_hygiene_requires_bounded_parameters_and_an_enabled_detector() {
+    for candidate in [
+        json!({}),
+        json!({"scan_content": false, "binary_extensions": []}),
+        json!({"scan_content": 1}),
+        json!({"binary_extensions": "so"}),
+        json!({"binary_extensions": [true]}),
+        json!({"binary_extensions": ["so"]}),
+        json!({"binary_extensions": [".so.1"]}),
+        json!({"binary_extensions": [".So", ".sO"]}),
+        json!({"binary_extensions": [format!(".{}", "a".repeat(32))]}),
+        json!({"binary_extensions": vec![".so"; 129]}),
+        json!({"max_added_bytes": 0}),
+        json!({"max_added_bytes": 8 * 1024 * 1024 + 1}),
+        json!({"scan_content": true, "allow_paths": vec!["foo/*"; 257]}),
+        json!({"scan_content": true, "allow_paths": ["/fixtures/**"]}),
+        json!({"scan_content": true, "allow_paths": ["a/../fixtures/**"]}),
+        json!({"scan_content": true, "allow_paths": ["fixtures/["]}),
+        json!({"scan_content": true, "allow_paths": ["a".repeat(1025)]}),
+        json!({"scan_content": true, "languages": ["rust"]}),
+    ] {
+        assert!(
+            validate(
+                "no-committed-binaries",
+                "artifact-hygiene",
+                &[],
+                &setting(candidate.clone())
+            )
+            .is_err(),
+            "{candidate}"
+        );
+    }
+
+    let candidate = setting(json!({
+        "binary_extensions": [".SO", ".PyC"],
+        "max_added_bytes": 8 * 1024 * 1024,
+        "allow_paths": ["fixtures/*", "testdata/**"],
+        "scan_content": true,
+    }));
+    let parameters = ArtifactHygieneParameters::from_parameters(&candidate.parameters).unwrap();
+    assert_eq!(
+        parameters.binary_extensions,
+        [".pyc".into(), ".so".into()].into()
+    );
+    assert_eq!(parameters.max_added_bytes, Some(8 * 1024 * 1024));
+    assert!(parameters.scan_content);
+    assert!(parameters.allow_paths.is_match("fixtures/sample.png"));
+    assert!(
+        !parameters
+            .allow_paths
+            .is_match("fixtures/nested/sample.png")
+    );
+    assert!(
+        parameters
+            .allow_paths
+            .is_match("testdata/nested/sample.png")
+    );
+
+    for candidate in [
+        json!({"binary_extensions": [".so"]}),
+        json!({"scan_content": true, "binary_extensions": []}),
+        json!({"max_added_bytes": 1}),
+    ] {
+        assert!(
+            validate(
+                "no-committed-binaries",
+                "artifact-hygiene",
+                &[],
+                &setting(candidate)
+            )
+            .is_ok()
+        );
+    }
+}
+
+#[test]
 fn malformed_parameter_values_cannot_silently_weaken_builtin_checks() {
     for (implementation, key, values) in [
         (

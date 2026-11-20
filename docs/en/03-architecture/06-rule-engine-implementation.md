@@ -64,6 +64,7 @@ or promise type/data-flow facts that tree-sitter alone cannot provide.
 | Family | Implementations | Input and purpose |
 | --- | --- | --- |
 | Snapshot metadata | `line-ending`, `commit-message`, `diff-size` | Captured bytes, selected commit subjects, and added-line totals. |
+| Added-file bytes | `artifact-hygiene` | Final filename suffix, bounded content prefix, and full captured size. |
 | Added-file text | `file-pattern`, `shell-shebang`, `shell-commented-code` | Whole newly added files or Shell-specific line groups. `file-pattern` uses bounded parallel batches. |
 | Added-line text | `source-pattern` | Reviewed regex signals only on diff-added source lines. |
 | Parsed entities | `test-naming`, `test-naming-strict`, `parameterized-tests`, `comment-language`, `ai-code-traceability`, `import-boundary` | Tree-sitter entities and their base/head identities. |
@@ -104,6 +105,22 @@ deleted lines do not offset additions. The metric bounds review size; it does
 not measure semantic complexity.
 
 ## Added-file and Shell implementations
+
+### `artifact-hygiene`
+
+The evaluator selects included `added` paths, applies `allow_paths`, and reads
+the captured bytes. A final suffix match yields `binary_extension`. Otherwise,
+when content scanning is enabled, up to 4,096 bytes are inspected for NUL or
+invalid UTF-8. The detector distinguishes an incomplete character in a partial
+sample from malformed bytes at the end of the complete file. Captured length
+independently yields `oversized_added_file` if greater than the configured
+limit. Diagnostics carry a file path without a line range, so binary additions
+remain visible even when change mapping has no line evidence.
+
+Each invocation counts up to 10,000 selected non-exempt files and 32 MiB of
+actually inspected prefix bytes. The rule deadline and diagnostic output
+budget also apply. Resource exhaustion leaves the result incomplete. Snapshot
+resource selection and size limits apply before evaluation.
 
 ### `file-pattern`
 

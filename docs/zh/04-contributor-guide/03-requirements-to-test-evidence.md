@@ -7,6 +7,17 @@
 或真实试点已验收。
 
 
+## 新增文件产物检查
+
+[ARTIFACT-01–04](../../../codespec/requirements/artifact-hygiene.md) 对应以下测试和夹具。
+
+| 契约 | 可重复证据 |
+| --- | --- |
+| 共享规则发现、启用与 CLI 结果 | `tests/artifact_hygiene.rs::artifact_rules_are_discoverable_and_opt_in` 检查发现和默认值。`binary_extension_and_content_findings_block_added_files` 验证后缀和内容诊断、文件级 JSON 证据与门禁退出码。 |
+| 范围、豁免和采集 | `tests/artifact_hygiene.rs::retained_media_obeys_rule_local_allow_paths` 比较保留媒体文件是否获得规则内豁免。`size_warnings_are_distinct_from_snapshot_limits` 检查大小告警与 `doctor` 采集诊断。`only_added_snapshot_paths_are_classified` 验证变更分类边界。 |
+| 有界检测 | `builtin_rules::artifact_hygiene::tests` 覆盖后缀、字节前缀分类、采样边界截断和限额耗尽后的未完成结果。 |
+| 随包默认值 | minimal、typical、stress 三组自检分别执行 `issue77-binary-pass`、`issue77-binary-fail`、`issue77-size-pass`、`issue77-size-fail`，并与独立的 golden 结果比对。 |
+
 ## Java 废弃用法与禁用注解
 
 `JAVA-DEPRECATION-01` 由 `tests/java_deprecation.rs` 更换依赖 JAR 验证。
@@ -75,7 +86,7 @@
 | 需求 | 可重复证据及限制 |
 | --- | --- |
 | 版本化 SQL/Shell 操作数边界 | `builtin_rules::language_syntax::tests::{sql_formatting_distinguishes_python_operators_from_database_placeholders, shell_brackets_are_checked_only_in_test_commands, shell_assignment_review_uses_command_position_instead_of_physical_lines, shell_traps_check_signal_operands_instead_of_action_text, bounded_comparison_recovery_cannot_hide_other_syntax_errors}`；`tests/issue12_rules.rs::{shell_spacing_and_traps_respect_shell_operand_boundaries, shell_syntax_recovery_is_specific_and_invalid_evidence_stays_incomplete}`；`tests/issue16_rules.rs::sql_query_review_accepts_bound_parameters_and_reports_actual_formatting`。语法信号不证明查询安全或完整 Shell 正确性。 |
-| 冻结 version 1 兼容性 | `builtin_rules::language_syntax::tests::frozen_v1_review_definitions_keep_their_original_source_pattern_behavior` 往返四条旧定义并保留原匹配结果。新 catalog 定义升为 version 2，不降低 severity 或 requiredness。`tests/selfcheck.rs::full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golden_agreement` 保留精确的 1118 案例清单，逐项验证新增 36 个结果及所选版本。`selfcheck::fixture_execution::tests::builtin_observations_preserve_selected_definition_versions_for_every_execution_outcome` 验证通过、违规和 incomplete 结果均传播所选版本。 |
+| 冻结 version 1 兼容性 | `builtin_rules::language_syntax::tests::frozen_v1_review_definitions_keep_their_original_source_pattern_behavior` 往返四条旧定义并保留原匹配结果。新 catalog 定义升为 version 2，不降低 severity 或 requiredness。`tests/selfcheck.rs::full_corpus_runs_real_evaluators_and_keeps_negative_cases_green_only_on_golden_agreement` 在完整案例库中保留语言评审的 36 个结果及其所选版本。`selfcheck::fixture_execution::tests::builtin_observations_preserve_selected_definition_versions_for_every_execution_outcome` 验证通过、违规和 incomplete 结果均传播所选版本。 |
 | Active/ref/local 权威及可修复初始化 | `tests/policy_promotion.rs::only_independent_signed_exact_validation_can_activate_a_policy_and_history_is_immutable` 验证本地默认配置缺失、另选不存在的配置路径时，仍保留 signed-active source/trust，且不创建任何配置文件。`tests/init.rs::{explicit_policy_reference_never_suggests_local_initialization, snapshot_guidance_depends_on_local_policy_and_selection, unreadable_or_malformed_configuration_does_not_suggest_init}` 保留引用、快照与配置错误的区别。 |
 | 完整采集查找与交付诊断 | `tests/file_contracts.rs::cli_file_contracts_distinguish_complete_lookup_from_delivery_findings` 对比历史缺失/超长文件在 CLI full 与 core repository 范围的结果，覆盖所选删除/修改和路径反馈。全仓义务仍需额外的充分证据。 |
 | 既有规则包与运行时能力 | `tests/custom_rules.rs::{private_rule_runs_on_java_and_python_with_stable_diagnostics_and_snapshot_isolation, project_rule_directory_is_loaded_from_selected_policy_snapshot}`、`tests/quality/skill_startup.rs`、`tests/operators/v3.rs` 证明各自执行契约；保留/迁移、legacy 检查及不擅自安装的决策需单独前向轨迹。 |

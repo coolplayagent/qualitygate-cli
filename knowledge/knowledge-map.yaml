@@ -21,6 +21,7 @@ directories:
   - knowledge/best-practices/engineering-standards/README.md
   - knowledge/best-practices/engineering-standards/registry.yaml
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix.yaml
+  - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-artifacts.yaml
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-python.yaml
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-c.yaml
   - knowledge/best-practices/engineering-standards/lifecycle-rule-matrix-cpp.yaml

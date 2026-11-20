@@ -401,6 +401,38 @@ line pattern.
 | `shell-alias` | warning | alias definition in a script |
 | `shell-chmod-read` | warning | chmod removing read permission |
 
+## Added-file artifact checks
+
+The shared `no-committed-binaries` and `oversized-added-file` rules use the
+`files` capability. Both have `enabled: false` and `required: false` by default.
+Enable the rules the repository adopts and include them in the delivery profile.
+
+`no-committed-binaries` defaults to error. It matches these case-insensitive
+final filename suffixes and scans up to the first 4 KiB of unmatched files for
+NUL or invalid UTF-8. A UTF-8 character that continues beyond the sample is
+handled as a partial sample.
+
+`.class`, `.jar`, `.war`, `.ear`, `.so`, `.dll`, `.dylib`, `.exe`, `.o`, `.a`,
+`.lib`, `.pyc`, `.pyo`, `.wasm`.
+
+Set `binary_extensions` to the full desired suffix list. Set `scan_content`
+to `false` for suffix-only checking. Size checking is independent.
+`oversized-added-file` defaults to warning above 1 MiB (1,048,576 bytes).
+Configure `max_added_bytes` to the byte ceiling for captured added files.
+
+Both rules select snapshot change kind `added`. `allow_paths` exempts
+repository-relative globs from the configured rule. Selection and acquisition
+precede evaluation. Use `unstructured_documents.retain` for resources excluded
+by default that need inspection, and inspect `doctor` when a file exceeds the
+snapshot acquisition limit. [Snapshot resource policy](operations.md#default-document-and-media-acquisition-exclusions)
+
+Each invocation examines up to 10,000 selected, non-exempt additions and
+32 MiB of prefix bytes, subject to the rule deadline. Findings include file-level
+evidence for `kind`, `extension`, and full captured `bytes`. Exhaustion leaves
+the check incomplete. Set `required: true` when the repository requires
+complete evidence for delivery. Inspect defaults and parameters with
+`rules describe no-committed-binaries` and `rules describe oversized-added-file`.
+
 ## Architecture rules
 
 `import-boundary` is packaged for Java, Python, Rust, TypeScript/JavaScript and

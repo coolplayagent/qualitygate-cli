@@ -1,0 +1,16 @@
+id: oversized-added-file
+version: 1
+description: Report newly added files above the configured byte limit
+implementation: artifact-hygiene
+language: []
+requires_capabilities: [files]
+defaults:
+  enabled: false
+  required: false
+  severity: warning
+  parameters:
+    max_added_bytes: 1048576
+standard_refs:
+  - {source_id: google-code-review, controls: [focused-change, code-health]}
+  - {source_id: cloudflare-codex, controls: [reviewability, merge-gate]}
+lifecycle_inputs: [added-file-size]

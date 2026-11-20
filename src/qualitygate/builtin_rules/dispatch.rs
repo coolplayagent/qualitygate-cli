@@ -117,6 +117,9 @@ pub fn evaluate_borrowed(
                 .insert("git_trailers".into(), git.evidence().clone());
         }
         match implementation {
+            "artifact-hygiene" => {
+                crate::builtin_rules::artifact_hygiene::evaluate(&mut result, setting, snapshot)
+            }
             "line-ending" => line_endings(&mut result, snapshot),
             "commit-message" => commits(&mut result, setting, snapshot),
             "test-annotation-dependency" => {

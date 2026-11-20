@@ -103,5 +103,9 @@
   "evolution-workflow-rollback-2":{"/validation/evaluation/conclusion":"pass","/exit_code":0,"/validation/evaluation/jobs":2,"/state":"rolled_back","/has_active":true,"/approval_code":0,"/approval_state":"approved","/promoted_candidate":true,"/rollback/status":"completed","/active_is_parent":true,"/active_is_candidate":false,"/probe_statuses":["completed"]},
   "evolution-context-migration":{"/status":"completed","/value/mandatory/0/id":"line-ending","/value/mandatory_checks/0/id":"required-test","/value/selected/0/id":"line-ending","/value/selected/0/categories":["migration","audit"],"/value/selected/0/enabled":true},
   "evolution-context-audit":{"/status":"completed","/value/mandatory/0/id":"line-ending","/value/mandatory_checks/0/id":"required-test","/value/selected/0/id":"line-ending","/value/selected/0/categories":["migration","audit"],"/value/selected/0/enabled":true},
-  "evolution-context-legacy":{"/status":"completed"}
+  "evolution-context-legacy":{"/status":"completed"},
+  "issue77-binary-pass": {"/execution/status":"completed","/verdict":"pass","/severity":"error","/required":false,"/diagnostic_count":0,"/diagnostics":[]},
+  "issue77-binary-fail": {"/execution/status":"completed","/verdict":"fail","/severity":"error","/required":false,"/diagnostic_count":1,"/diagnostics/0/file":"src/data.bin","/diagnostics/0/range":null,"/diagnostics/0/evidence/kind":"binary_content","/diagnostics/0/evidence/extension":".bin","/diagnostics/0/evidence/bytes":7},
+  "issue77-size-pass": {"/execution/status":"completed","/verdict":"pass","/severity":"warning","/required":false,"/diagnostic_count":0,"/diagnostics":[]},
+  "issue77-size-fail": {"/execution/status":"completed","/verdict":"fail","/severity":"warning","/required":false,"/diagnostic_count":1,"/diagnostics/0/file":"lib/bundle.jar","/diagnostics/0/range":null,"/diagnostics/0/evidence/kind":"oversized_added_file","/diagnostics/0/evidence/extension":".jar","/diagnostics/0/evidence/bytes":9}
 }

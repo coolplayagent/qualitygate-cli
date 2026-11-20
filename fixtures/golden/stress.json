@@ -150,5 +150,9 @@
   "evolution-suite-mutable-ref":{"/status":"incomplete","/reason":{"$contains":"immutable full Git commit IDs"}},
   "evolution-suite-missing-anchor":{"/status":"incomplete","/reason":{"$contains":"independent anchor cases"}},
   "evolution-suite-empty-oracle":{"/status":"incomplete","/reason":{"$contains":"independent expectations"}},
-  "evolution-suite-unknown-field":{"/status":"incomplete","/reason":{"$contains":"unknown field"}}
+  "evolution-suite-unknown-field":{"/status":"incomplete","/reason":{"$contains":"unknown field"}},
+  "issue77-binary-pass": {"/execution/status":"completed","/verdict":"pass","/severity":"error","/required":false,"/diagnostic_count":0,"/diagnostics":[]},
+  "issue77-binary-fail": {"/execution/status":"completed","/verdict":"fail","/severity":"error","/required":false,"/diagnostic_count":1,"/diagnostics/0/file":"out/tool","/diagnostics/0/range":null,"/diagnostics/0/evidence/kind":"binary_content","/diagnostics/0/evidence/extension":null,"/diagnostics/0/evidence/bytes":9},
+  "issue77-size-pass": {"/execution/status":"completed","/verdict":"pass","/severity":"warning","/required":false,"/diagnostic_count":0,"/diagnostics":[]},
+  "issue77-size-fail": {"/execution/status":"completed","/verdict":"fail","/severity":"warning","/required":false,"/diagnostic_count":1,"/diagnostics/0/file":"nested/unicode.txt","/diagnostics/0/range":null,"/diagnostics/0/evidence/kind":"oversized_added_file","/diagnostics/0/evidence/extension":".txt","/diagnostics/0/evidence/bytes":6}
 }

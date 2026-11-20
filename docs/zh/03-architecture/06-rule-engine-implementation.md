@@ -52,6 +52,7 @@ L2  项目、编译器与原生工具语义
 | 类别 | Implementation | 技术输入与功能 |
 | --- | --- | --- |
 | 快照元数据 | `line-ending`、`commit-message`、`diff-size` | 捕获字节、选中提交主题和新增行总数。 |
+| 新增文件字节 | `artifact-hygiene` | 文件名最终后缀、有界内容前缀和捕获的完整文件大小。 |
 | 新增文件文本 | `file-pattern`、`shell-shebang`、`shell-commented-code` | 整个新增文件或 Shell 特定行组；`file-pattern` 使用有界并行。 |
 | 新增行文本 | `source-pattern` | 只在 diff 新增源码行匹配经审核的正则信号。 |
 | 语法实体 | `test-naming`、`test-naming-strict`、`parameterized-tests`、`comment-language`、`ai-code-traceability`、`import-boundary` | tree-sitter 实体及其 base/head 身份。 |
@@ -83,6 +84,18 @@ subject 与模式。若比较范围没有新 commit，结果明确标为 skipped
 语义复杂度。
 
 ## 新增文件与 Shell 实现
+
+### `artifact-hygiene`
+
+实现从已捕获的快照选择范围内标记为 `added` 的路径，并应用 `allow_paths`。最终后缀命中时
+产生 `binary_extension`。开启内容扫描且后缀未命中时，最多读取前 4,096 字节，判断是否
+含 NUL 或非法 UTF-8。截断的采样末尾与完整文件末尾的残缺字符分别判定。文件大小严格大于
+配置阈值时独立产生 `oversized_added_file`。诊断只绑定路径，无行范围，因此二进制文件没有
+新增行证据时仍会保留诊断。
+
+每次执行最多处理 10,000 个所选且未豁免的新增文件，并扫描 32 MiB 实际前缀字节。同时遵守
+规则截止时间和诊断输出预算。任何预算耗尽都会令结果未完成。快照资源选择和采集限额先于
+规则求值。
 
 ### `file-pattern`
 
