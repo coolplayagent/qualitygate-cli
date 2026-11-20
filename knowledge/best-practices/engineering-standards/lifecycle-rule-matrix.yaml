@@ -780,8 +780,8 @@ inputs:
     outcome: violation
     source_ids: [aws-architecture, azure-waf, google-typescript, cloudflare-codex]
     evidence: [changed-imports, syntax-spans, configured-boundaries]
-    applicability: Added imports parsed by a supported adapter after the repository explicitly declares forbidden import patterns.
-    critical_adoption: This rule is disabled until the repository defines its boundaries; syntax imports cannot prove resolved dependency direction, runtime reachability, or threat-model coverage.
+    applicability: Parsed imports intersecting added lines in the selected scope after a repository enables the rule with a declared or forbidden import map.
+    critical_adoption: Review the effective boundary for each selected language. A changed import in a language without patterns produces incomplete execution. Use project-level evidence for resolved dependencies and runtime reachability.
   - id: test-scenario-naming
     status: enforced
     rule_id: test-naming

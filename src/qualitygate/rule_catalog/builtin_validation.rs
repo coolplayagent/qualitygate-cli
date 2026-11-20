@@ -1,6 +1,8 @@
 use crate::config::Marker;
 use crate::config::RuleSetting;
-use crate::domain::rule_parameters::{self, LanguageContract, LanguageScope, PatternLanguages};
+use crate::domain::rule_parameters::{
+    self, LanguageContract, LanguageScope, PatternLanguages, UndeclaredImports,
+};
 use anyhow::{Context, Result, bail};
 
 pub(crate) fn validate_with_scope(
@@ -74,6 +76,12 @@ pub(crate) fn validate_with_scope(
                     value,
                     PatternLanguages::for_implementation(id),
                 )?;
+            }
+            "declared_imports" => {
+                rule_parameters::compile_patterns(key, value, PatternLanguages::Imports)?;
+            }
+            "undeclared" => {
+                UndeclaredImports::parse(value)?;
             }
             "paths" | "exempt_patterns" | "languages" => {
                 for value in value
@@ -155,9 +163,13 @@ pub(crate) fn validate_with_scope(
     if id == "file-pattern" && !rule.parameters.contains_key("pattern") {
         bail!("file-pattern requires pattern");
     }
-    if id == "import-boundary" && rule.enabled && !rule.parameters.contains_key("forbidden_imports")
+    if id == "import-boundary"
+        && rule.enabled
+        && !crate::rule_catalog::parameters::IMPORT_BOUNDARY_MAPS
+            .iter()
+            .any(|key| rule.parameters.contains_key(*key))
     {
-        bail!("import-boundary requires forbidden_imports when enabled");
+        bail!("import-boundary requires declared_imports or forbidden_imports when enabled");
     }
     Ok(())
 }

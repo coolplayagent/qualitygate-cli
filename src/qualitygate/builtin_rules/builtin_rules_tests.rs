@@ -180,8 +180,6 @@ fn presentation_comes_from_the_definition_and_cannot_mask_execution_gaps() {
         assert_eq!(result.execution.status, ExecutionStatus::Blocked);
         assert_eq!(result.verdict, None);
     }
-    let syntax_patterns = setting(serde_json::json!({"forbidden_imports":{"cpp":["risk"]}}));
-    assert!(compiled_patterns(&syntax_patterns, "forbidden_imports").is_err());
 }
 
 #[test]

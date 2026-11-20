@@ -210,8 +210,11 @@ enum Rules {
         #[command(subcommand)]
         command: Option<Categories>,
     },
-    /// Export the shipped project-rule JSON Schema (always JSON).
-    Schema,
+    /// Export the shipped project-rule or selected built-in parameter JSON Schema.
+    Schema {
+        #[arg(long, value_parser = ["import-boundary"])]
+        builtin: Option<String>,
+    },
     /// Validate YAML/JSON rules, DSL semantics and current source bindings.
     Validate {
         #[arg(default_value = config::catalog::PROJECT_RULES_DIR)]
@@ -440,10 +443,15 @@ impl Cli {
             return Ok((serde_json::to_string_pretty(&document)?, 0));
         }
         if let Command::Rules {
-            command: Rules::Schema,
+            command: Rules::Schema { ref builtin },
         } = self.command
         {
-            let schema = tokio::task::spawn_blocking(config::rule_schema::document).await??;
+            let schema = tokio::task::spawn_blocking(if builtin.is_some() {
+                config::parameters::import_boundary_schema
+            } else {
+                config::rule_schema::document
+            })
+            .await??;
             return Ok((serde_json::to_string_pretty(&schema)?, 0));
         }
         let root = application::repository_root::resolve(self.root).await?;
@@ -750,7 +758,7 @@ async fn run_rules(
                 };
                 Ok((config::rule_management::update(&root, path.as_ref(), mutation)?, 0))
             }
-            Rules::Schema => unreachable!("schema export does not require a repository"),
+            Rules::Schema { .. } => unreachable!("schema export does not require a repository"),
             Rules::Validate { path } => {
                 let report = config::rule_authoring::validate(&root, &path)?;
                 let code = report.decision.exit_code();

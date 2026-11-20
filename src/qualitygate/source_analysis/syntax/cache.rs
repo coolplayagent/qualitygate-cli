@@ -116,6 +116,11 @@ fn retained_bytes(view: &Structure) -> usize {
             .capacity()
             .saturating_mul(size_of::<super::Import>()),
     );
+    bytes = bytes.saturating_add(
+        view.rust_use_arguments
+            .capacity()
+            .saturating_mul(size_of::<std::ops::Range<usize>>()),
+    );
     for test in &view.tests {
         for text in [
             &test.name,

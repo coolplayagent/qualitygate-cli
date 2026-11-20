@@ -403,20 +403,34 @@ line pattern.
 
 ## Architecture rules
 
-`import-boundary` is packaged for Java, Python, Rust, TypeScript, and Go, but
-is disabled by default. It checks only added syntax imports and deliberately
-requires an explicit `forbidden_imports` mapping when enabled. It cannot prove
-resolved dependency direction, runtime reachability, or a complete threat
-model. For Java Maven dependency facts, use the separate `module-boundary` and
-`used-undeclared` rules with their documented project prerequisites.
+`import-boundary` is packaged for Java, Python, Rust, TypeScript/JavaScript and
+Go. It is disabled by default and requires at least one nonempty
+`declared_imports` or `forbidden_imports` map when enabled. Both maps accept `all`
+and language keys, each with a bounded list of regular expressions. Within the
+`paths` and `languages` scope, the rule classifies parsed imports intersecting
+added lines. A forbidden match takes precedence over a declared match.
 
-Go imports are represented once per import spec, including grouped imports.
-Patterns see `import ` followed by the optional alias and quoted package path;
-diagnostic ranges identify the individual spec. Existing grouped imports do
-not become new findings merely because another entry is added to the group.
+For a changed import with a configured boundary and no match, set `undeclared`
+to `report` for a violation, `incomplete` for blocked execution, or `off` to
+count it without a finding. Omission uses `report` for languages with declared
+patterns and `off` for languages with only forbidden patterns. A changed import
+in a language with neither type of pattern blocks the check in all three modes.
+For a required check, the missing language is named in `gate.blockers` and the
+CLI returns exit code 2. JSON metadata exposes `boundary_languages` and
+`undeclared_count`, and diagnostic evidence exposes `classification`,
+`language` and `pattern`.
 
-After the user authorizes a policy change and supplies the intended boundary,
-the candidate configuration can contain:
+Rust's declared patterns use the `use` argument, excluding any visibility
+specifier or final semicolon. Rust forbidden patterns and all patterns for the
+other languages use the existing import text. One Rust grouped `use` or Python
+multi-name `import` is one matching node. Go uses one fact per import spec,
+formatted as `import ` followed by the optional alias and quoted package path.
+The diagnostic range covers the parsed node. The rule checks source syntax.
+For Java Maven dependency facts, use `module-boundary` and `used-undeclared`
+with their documented prerequisites.
+
+For a policy scoped to Rust, configure the allowed prefix and a forbidden
+subtree as follows.
 
 ```yaml
 rules:
@@ -425,14 +439,16 @@ rules:
     required: true
     severity: error
     parameters:
+      languages: [rust]
+      declared_imports:
+        rust: ['^crate::interfaces(::|$)']
       forbidden_imports:
-        rust: ['^use crate::interfaces::internal']
-        typescript: ['^import .* from legacy-internal/']
+        rust: ['^use crate::interfaces::internal(::|;)']
 ```
 
-The mapping permits supported language names or `all`; each value is a bounded
-array of valid regular expressions. Enabling `import-boundary` without this
-mapping is a configuration error rather than an empty successful check.
+`rules describe import-boundary` displays the parameters. To export the JSON
+Schema for an enabled rule's parameter object, run
+`rules schema --builtin import-boundary`.
 
 ## Agent workflow
 

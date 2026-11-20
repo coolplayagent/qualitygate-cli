@@ -121,6 +121,10 @@ fn configured_import_boundaries_only_match_added_syntax_imports() {
     assert_eq!(result.matched_entities, 1);
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(result.diagnostics[0].range.as_ref().unwrap().start_line, 1);
+    assert_eq!(
+        result.diagnostics[0].evidence["classification"],
+        "forbidden"
+    );
     let qualified = run_as(
         "import-boundary",
         "import-boundary",
@@ -140,6 +144,132 @@ fn configured_import_boundaries_only_match_added_syntax_imports() {
         serde_json::json!({}),
     );
     assert_eq!(incomplete.verdict, None);
+}
+
+#[test]
+fn import_boundary_counts_unmatched_imports_and_applies_each_mode() {
+    let input = snapshot(
+        "src/lib.rs",
+        None,
+        "pub use\n    crate::allowed::{self, X};\nuse crate::other;\n",
+    );
+    for (mode, verdict, diagnostics) in [
+        (None, Some(Verdict::Fail), 1),
+        (Some("report"), Some(Verdict::Fail), 1),
+        (Some("incomplete"), None, 0),
+        (Some("off"), Some(Verdict::Pass), 0),
+    ] {
+        let mut parameters = json!({"declared_imports":{"rust":["^crate::allowed"]}});
+        if let Some(mode) = mode {
+            parameters["undeclared"] = json!(mode);
+        }
+        let result = run("import-boundary", &input, parameters);
+        assert_eq!(result.verdict, verdict, "{mode:?}");
+        assert_eq!(result.matched_entities, 2, "{mode:?}");
+        assert_eq!(result.metadata["undeclared_count"], 1, "{mode:?}");
+        assert_eq!(result.diagnostics.len(), diagnostics, "{mode:?}");
+        if let Some(diagnostic) = result.diagnostics.first() {
+            assert_eq!(diagnostic.range.as_ref().unwrap().start_line, 3);
+            assert_eq!(
+                diagnostic.evidence,
+                json!({
+                    "classification":"undeclared", "language":"rust", "pattern":null,
+                })
+            );
+        }
+    }
+}
+
+#[test]
+fn import_boundary_merges_pattern_sets_and_preserves_deny_only_default_by_language() {
+    let mut input = snapshot("src/lib.rs", None, "use crate::allowed::x;\n");
+    let java = snapshot(
+        "Test.java",
+        None,
+        "import org.example.Other;\nclass Test {}\n",
+    );
+    input.files.extend(java.files);
+    input.changes.extend(java.changes);
+    let result = run(
+        "import-boundary",
+        &input,
+        json!({
+            "languages":["rust","java"],
+            "forbidden_imports":{"all":["^use"],"rust":["^use","allowed"]},
+            "declared_imports":{"rust":["^crate::allowed"]}
+        }),
+    );
+    assert_eq!(result.verdict, Some(Verdict::Fail));
+    assert_eq!(result.matched_entities, 2);
+    assert_eq!(
+        result.metadata["boundary_languages"],
+        json!(["java", "rust"])
+    );
+    assert_eq!(result.metadata["undeclared_count"], 1);
+    assert_eq!(result.diagnostics.len(), 2);
+    for diagnostic in result.diagnostics {
+        assert_eq!(diagnostic.file.as_deref(), Some("src/lib.rs"));
+        assert_eq!(diagnostic.evidence["classification"], "forbidden");
+    }
+}
+
+#[test]
+fn import_boundary_missing_coverage_requires_an_in_scope_changed_import() {
+    let mut input = snapshot("a.py", Some("import os\n"), "import os\n# hello\n");
+    let parameters = json!({"declared_imports":{"rust":["^crate::allowed"]}, "undeclared":"off"});
+    let check = |input: &Snapshot, parameters| run("import-boundary", input, parameters);
+    let missing = check(&input, parameters.clone());
+    assert_eq!(missing.execution.status, ExecutionStatus::Blocked);
+    assert_eq!(
+        missing.execution.reason.as_deref(),
+        Some("no boundary declared for language: python")
+    );
+    assert_eq!(missing.metadata["undeclared_count"], 0);
+
+    for (parameter, selection) in [("languages", json!(["rust"])), ("paths", json!(["src/**"]))] {
+        let mut filtered = parameters.clone();
+        filtered[parameter] = selection;
+        assert_eq!(check(&input, filtered).verdict, Some(Verdict::Pass));
+    }
+    input.changes.get_mut("a.py").unwrap().added_lines = [2].into();
+    let retained = check(&input, parameters);
+    assert_eq!(retained.verdict, Some(Verdict::Pass));
+    assert_eq!(retained.matched_entities, 0);
+}
+
+#[test]
+fn import_boundary_invalid_maps_and_expired_deadlines_preserve_incomplete_evidence() {
+    let input = snapshot("src/lib.rs", None, "use crate::other;\n");
+    for parameters in [
+        json!({}),
+        json!({"forbidden_imports":{}}),
+        json!({"declared_imports":{}}),
+        json!({"forbidden_imports":{"cpp":["risk"]}}),
+        json!({"forbidden_imports":{"shell":["legacy"]},"languages":["shell"],"paths":["["]}),
+    ] {
+        let result = run("import-boundary", &input, parameters);
+        assert_eq!(result.execution.status, ExecutionStatus::Blocked);
+        assert_eq!(result.verdict, None);
+    }
+
+    let mut result = crate::adapters::diagnostic_budget::BuiltinResult::new(CheckResult::pending(
+        "import-boundary",
+        true,
+        crate::domain::Severity::Error,
+    ));
+    result.expire_deadline();
+    let setting = RuleSetting {
+        parameters: serde_json::from_value(
+            json!({"declared_imports":{"rust":["^crate::allowed"]}}),
+        )
+        .unwrap(),
+        ..RuleSetting::default()
+    };
+    let error = imports(&mut result, &setting, &input, &Default::default()).unwrap_err();
+    assert!(error.to_string().contains("Rule analysis exceeded"));
+    assert_eq!(result.verdict, None);
+    assert_eq!(result.matched_entities, 0);
+    assert_eq!(result.metadata["undeclared_count"], 0);
 }
 
 #[test]
@@ -390,15 +520,6 @@ fn framework_defaults_and_per_language_overrides_preserve_test_discovery_convent
         assert_eq!(result.verdict, Some(expected), "{:?}", result.execution);
     }
     let input = snapshot("a.py", None, "import os\n# hello\n");
-    assert_eq!(
-        run(
-            "import-boundary",
-            &input,
-            serde_json::json!({"forbidden_imports":{"java":[".*"]}})
-        )
-        .verdict,
-        Some(Verdict::Pass)
-    );
     assert_eq!(
         run(
             "comment-language",

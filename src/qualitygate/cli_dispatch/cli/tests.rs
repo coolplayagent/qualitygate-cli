@@ -58,6 +58,7 @@ fn conflicting_selectors_and_unbounded_or_incomplete_arguments_are_rejected() {
         vec!["config"],
         vec!["rules", "list", "--source", "unknown"],
         vec!["rules", "history", "line-ending", "--limit", "257"],
+        vec!["rules", "schema", "--builtin", "unknown"],
     ] {
         assert!(
             Cli::try_parse_from(std::iter::once("qualitygate").chain(args.iter().copied()))
@@ -159,7 +160,25 @@ async fn schema_exports_are_json_without_repository_or_configuration_discovery()
     .await
     .unwrap();
     assert_eq!(code, 0);
-    assert!(serde_json::from_str::<serde_json::Value>(&output).unwrap()["$id"].is_string());
+    let document: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(document["$id"], config::rule_schema::SCHEMA_ID);
+    let (output, code) = parse(&[
+        "--root",
+        "/qualitygate-nonexistent-unit-root",
+        "rules",
+        "schema",
+        "--builtin",
+        "import-boundary",
+    ])
+    .run()
+    .await
+    .unwrap();
+    assert_eq!(code, 0);
+    let document: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(
+        document,
+        config::parameters::import_boundary_schema().unwrap()
+    );
 }
 
 #[tokio::test]

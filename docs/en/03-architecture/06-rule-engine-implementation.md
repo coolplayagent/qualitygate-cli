@@ -252,10 +252,15 @@ the declaration binding, not the truth of the declaration or code correctness.
 
 ### `import-boundary`
 
-Configured regexes run against parsed import-node text only when the node range
-intersects an added line. AST ranges avoid matches in comments and ordinary
-strings and preserve multi-line imports. The rule enforces a reviewed source
-boundary; it does not claim resolved dependency or runtime data-flow semantics.
+The evaluator classifies parsed import nodes whose ranges intersect added lines.
+It applies forbidden patterns before declared patterns. The Rust syntax adapter
+provides a byte range into the existing import text for matching declared `use`
+arguments. The syntax cache accounts for these ranges. The evaluator uses the
+original import text for forbidden matching. Imports without configured
+boundaries block execution. Imports with configured boundaries that match
+neither map follow the `undeclared` policy. Metadata and completed findings
+collected before an execution gap remain available in the report. The shared
+deadline and diagnostic budget bound the evaluation.
 
 ## Project-semantics implementations
 

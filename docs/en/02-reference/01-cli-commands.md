@@ -29,6 +29,7 @@ qualitygate rules categories --format json
 qualitygate rules list --language rust --source all --format json
 qualitygate rules describe RULE_ID --format json
 qualitygate rules schema --format json
+qualitygate rules schema --builtin import-boundary
 qualitygate rules source --document AGENTS.md --section "Quality contract" --format json
 qualitygate rules validate candidate.yaml --format json
 qualitygate rules generate --input candidate.yaml --format json

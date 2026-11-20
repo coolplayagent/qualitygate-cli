@@ -64,7 +64,7 @@ pub fn evaluate(checks: &[CheckResult], required: &[String], invalid: &[String])
             completed += 1;
         }
         if (check.required || required.contains(&check.id)) && !valid_completed && !valid_skip {
-            gaps.push(format!("Required check incomplete: {}", check.id));
+            gaps.push(required_check_gap(check));
         }
         if valid_completed
             && check.verdict == Some(Verdict::Fail)
@@ -94,6 +94,28 @@ pub fn evaluate(checks: &[CheckResult], required: &[String], invalid: &[String])
         decision,
         blockers: gaps,
     }
+}
+
+fn required_check_gap(check: &CheckResult) -> String {
+    let mut gap = format!("Required check incomplete: {}", check.id);
+    if check.execution.status == ExecutionStatus::Blocked
+        && let Some(reason) = check.execution.reason.as_deref().map(str::trim)
+        && !reason.is_empty()
+    {
+        gap.push_str(": ");
+        let mut chars = reason.chars();
+        gap.extend(chars.by_ref().take(512).map(|character| {
+            if character.is_control() || matches!(character, '\u{2028}' | '\u{2029}') {
+                ' '
+            } else {
+                character
+            }
+        }));
+        if chars.next().is_some() {
+            gap.push('…');
+        }
+    }
+    gap
 }
 
 #[cfg(test)]

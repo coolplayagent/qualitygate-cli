@@ -2,11 +2,15 @@
 
 use crate::adapters::syntax::Entity;
 use crate::adapters::syntax::Structure;
+use crate::domain::rule_parameters::{
+    CompiledPatterns, PatternLanguages, UndeclaredImports, compile_patterns,
+};
 use crate::report_evidence::report::diagnostic;
 use crate::{config::RuleSetting, snapshot::Snapshot};
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, bail, ensure};
 use regex::Regex;
-use std::collections::BTreeMap;
+use serde_json::json;
+use std::collections::{BTreeMap, BTreeSet};
 
 struct Change {
     path: String,
@@ -22,13 +26,15 @@ pub(crate) fn evaluate_with_provenance(
     snapshot: &Snapshot,
     facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
+    if id == "import-boundary" {
+        return imports(result, setting, snapshot, facts);
+    }
     let changes = collect(setting, snapshot, facts, result.deadline())?;
     match id {
         "test-naming" | "test-naming-strict" => naming(result, setting, &changes),
         "parameterized-tests" => parameterized(result, setting, &changes),
         "comment-language" => comments(result, setting, &changes, snapshot),
         "ai-code-traceability" => markers(result, setting, &changes, snapshot, facts),
-        "import-boundary" => imports(result, setting, &changes, snapshot),
         _ => bail!("Unknown structure rule: {id}"),
     }
 }
@@ -40,14 +46,6 @@ fn collect(
     deadline: std::time::Instant,
 ) -> Result<Vec<Change>> {
     let git = facts.git_trailers;
-    let strings = |key: &str| -> Result<Vec<String>> {
-        setting
-            .parameters
-            .get(key)
-            .map(|value| serde_json::from_value(value.clone()).map_err(Into::into))
-            .transpose()
-            .map(Option::unwrap_or_default)
-    };
     let marker: Option<crate::config::Marker> = setting
         .parameters
         .get("marker")
@@ -57,8 +55,8 @@ fn collect(
     let mut result = Vec::new();
     for file in crate::adapters::entity_changes::collect_before(
         snapshot,
-        &strings("paths")?,
-        &strings("languages")?,
+        &crate::builtin_rules::dispatch::string_parameter(setting, "paths")?,
+        &crate::builtin_rules::dispatch::string_parameter(setting, "languages")?,
         false,
         deadline,
         facts.syntax,
@@ -173,29 +171,164 @@ fn naming(
 fn imports(
     result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
     setting: &RuleSetting,
-    changes: &[Change],
     snapshot: &Snapshot,
+    facts: &crate::rule_engine::evaluation_facts::BorrowedRuleFacts<'_>,
 ) -> Result<()> {
-    let patterns = crate::builtin_rules::dispatch::compiled_patterns(setting, "forbidden_imports")?;
-    for change in changes {
+    result
+        .metadata
+        .insert("boundary_languages".into(), json!([]));
+    result.metadata.insert("undeclared_count".into(), json!(0));
+    result.check_deadline()?;
+    let patterns = |key, languages| -> Result<CompiledPatterns> {
+        setting.parameters.get(key).map_or_else(
+            || Ok(CompiledPatterns::new()),
+            |value| compile_patterns(key, value, languages),
+        )
+    };
+    let forbidden = patterns("forbidden_imports", PatternLanguages::Syntax)?;
+    result.check_deadline()?;
+    let declared = patterns("declared_imports", PatternLanguages::Imports)?;
+    ensure!(
+        !forbidden.is_empty() || !declared.is_empty(),
+        "import-boundary requires forbidden_imports or declared_imports"
+    );
+    let mode = setting
+        .parameters
+        .get("undeclared")
+        .map(UndeclaredImports::parse)
+        .transpose()?;
+    let paths = crate::builtin_rules::dispatch::string_parameter(setting, "paths")?;
+    let selected_languages =
+        crate::builtin_rules::dispatch::string_parameter(setting, "languages")?;
+    for language in &selected_languages {
+        ensure!(
+            PatternLanguages::Syntax.supports(language),
+            "Syntax capability unavailable for language: {language}"
+        );
+    }
+    let languages: Vec<_> = PatternLanguages::Imports
+        .names()
+        .into_iter()
+        .filter(|language| {
+            selected_languages.is_empty() || selected_languages.iter().any(|item| item == language)
+        })
+        .map(str::to_owned)
+        .collect();
+    let boundaries: BTreeMap<_, _> = languages
+        .iter()
+        .map(|language| {
+            let forbidden = import_patterns(&forbidden, language);
+            let declared = import_patterns(&declared, language);
+            let mode = mode.unwrap_or(if declared.is_empty() {
+                UndeclaredImports::Off
+            } else {
+                UndeclaredImports::Report
+            });
+            (
+                language.as_str(),
+                ImportBoundary {
+                    forbidden,
+                    declared,
+                    mode,
+                },
+            )
+        })
+        .collect();
+    let boundary_languages: Vec<_> = boundaries
+        .iter()
+        .filter_map(|(language, boundary)| boundary.is_configured().then_some(language))
+        .collect();
+    result
+        .metadata
+        .insert("boundary_languages".into(), json!(boundary_languages));
+    if languages.is_empty() {
+        crate::builtin_rules::dispatch::path_filter(setting)?;
+        return Ok(());
+    }
+    let files = crate::adapters::entity_changes::collect_before(
+        snapshot,
+        &paths,
+        &languages,
+        false,
+        result.deadline(),
+        facts.syntax,
+    )?;
+    let mut coverage = ImportCoverage::default();
+    let evaluation = check_changed_imports(result, snapshot, &files, &boundaries, &mut coverage);
+    result
+        .metadata
+        .insert("undeclared_count".into(), json!(coverage.undeclared));
+    let mut reasons: Vec<_> = coverage
+        .missing
+        .into_iter()
+        .map(|language| format!("no boundary declared for language: {language}"))
+        .collect();
+    if coverage.incomplete != 0 {
+        reasons.push(format!(
+            "{} changed imports have no matching declaration",
+            coverage.incomplete
+        ));
+    }
+    if reasons.is_empty() {
+        return evaluation;
+    }
+    if let Err(error) = evaluation {
+        reasons.push(error.to_string());
+    }
+    bail!("{}", reasons.join(", "))
+}
+
+type ImportPattern<'a> = &'a (String, Regex);
+
+struct ImportBoundary<'a> {
+    forbidden: Vec<ImportPattern<'a>>,
+    declared: Vec<ImportPattern<'a>>,
+    mode: UndeclaredImports,
+}
+
+impl ImportBoundary<'_> {
+    fn is_configured(&self) -> bool {
+        !self.forbidden.is_empty() || !self.declared.is_empty()
+    }
+}
+
+fn import_patterns<'a>(patterns: &'a CompiledPatterns, language: &str) -> Vec<ImportPattern<'a>> {
+    let mut seen = BTreeSet::new();
+    patterns
+        .get("all")
+        .into_iter()
+        .chain(patterns.get(language))
+        .flatten()
+        .filter(|(pattern, _)| seen.insert(pattern.as_str()))
+        .collect()
+}
+
+#[derive(Default)]
+struct ImportCoverage<'a> {
+    missing: BTreeSet<&'a str>,
+    undeclared: usize,
+    incomplete: usize,
+}
+
+fn check_changed_imports<'a>(
+    result: &mut crate::adapters::diagnostic_budget::BuiltinResult,
+    snapshot: &Snapshot,
+    files: &'a [crate::adapters::entity_changes::FileView],
+    boundaries: &BTreeMap<&str, ImportBoundary<'_>>,
+    coverage: &mut ImportCoverage<'a>,
+) -> Result<()> {
+    for file in files {
         result.check_deadline()?;
-        let mut active = std::collections::BTreeSet::new();
-        let selected: Vec<_> = patterns
-            .get("all")
-            .into_iter()
-            .chain(patterns.get(&change.view.language))
-            .flat_map(|entries| entries.iter())
-            .filter(|(pattern, _)| active.insert(pattern.as_str()))
-            .collect();
-        if selected.is_empty() {
-            continue;
-        }
+        let language = file.view.language.as_str();
+        let boundary = boundaries
+            .get(language)
+            .context("Unexpected import language")?;
         let added_lines = &snapshot
             .changes
-            .get(&change.path)
+            .get(&file.path)
             .context("Changed syntax view is missing snapshot change lines")?
             .added_lines;
-        for import in &change.view.imports {
+        'imports: for (index, import) in file.view.imports.iter().enumerate() {
             result.check_deadline()?;
             if added_lines
                 .range(import.range.start_line..=import.range.end_line)
@@ -205,21 +338,57 @@ fn imports(
                 continue;
             }
             result.matched_entities += 1;
-            for (pattern, regex) in &selected {
+            if !boundary.is_configured() {
+                coverage.missing.insert(language);
+                continue;
+            }
+            let mut forbidden = false;
+            for (pattern, regex) in &boundary.forbidden {
+                result.check_deadline()?;
                 if regex.is_match(&import.text) {
+                    forbidden = true;
                     result.push(diagnostic(
                         &result.id,
-                        Some(&change.path),
+                        Some(&file.path),
                         Some(import.range.clone()),
                         format!("Changed import matches configured forbidden boundary {pattern:?}"),
-                        serde_json::json!({"language": change.view.language, "pattern": pattern}),
+                        json!({"classification":"forbidden", "language":language, "pattern":pattern}),
                         "Move the dependency behind an approved boundary or update the reviewed boundary policy",
                         &format!(
                             "{}:{}-{}:{pattern}",
-                            change.path, import.range.start_line, import.range.end_line
+                            file.path, import.range.start_line, import.range.end_line
                         ),
                     ))?;
                 }
+            }
+            if forbidden {
+                continue;
+            }
+            if !boundary.declared.is_empty() {
+                let subject = file.view.declared_import_text(index)?;
+                for (_, regex) in &boundary.declared {
+                    result.check_deadline()?;
+                    if regex.is_match(subject) {
+                        continue 'imports;
+                    }
+                }
+            }
+            coverage.undeclared += 1;
+            match boundary.mode {
+                UndeclaredImports::Report => result.push(diagnostic(
+                    &result.id,
+                    Some(&file.path),
+                    Some(import.range.clone()),
+                    "Changed import is outside the declared boundary".into(),
+                    json!({"classification":"undeclared", "language":language, "pattern":null}),
+                    "Use a declared import or update the reviewed boundary policy",
+                    &format!(
+                        "undeclared:{}:{}-{}:{index}",
+                        file.path, import.range.start_line, import.range.end_line
+                    ),
+                ))?,
+                UndeclaredImports::Incomplete => coverage.incomplete += 1,
+                UndeclaredImports::Off => {}
             }
         }
     }

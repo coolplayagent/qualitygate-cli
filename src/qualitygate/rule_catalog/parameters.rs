@@ -1,8 +1,10 @@
 //! Discoverable parameter contracts shared by CLI edits and policy validation.
 
-use crate::domain::rule_parameters::{self, LanguageContract, PatternLanguages};
+use crate::domain::rule_parameters::{self, LanguageContract, PatternLanguages, UndeclaredImports};
 use anyhow::{Result, bail};
 use serde_json::{Value, json};
+
+pub(crate) const IMPORT_BOUNDARY_MAPS: [&str; 2] = ["declared_imports", "forbidden_imports"];
 
 pub(crate) fn names(implementation: &str) -> Result<&'static [&'static str]> {
     Ok(match implementation {
@@ -20,7 +22,13 @@ pub(crate) fn names(implementation: &str) -> Result<&'static [&'static str]> {
         "comment-language" => &["language", "exempt_patterns", "paths", "languages"],
         "ai-code-traceability" => &["marker", "provenance_scope", "paths", "languages"],
         "source-pattern" => &["prohibited_patterns", "paths", "languages"],
-        "import-boundary" => &["forbidden_imports", "paths", "languages"],
+        "import-boundary" => &[
+            "forbidden_imports",
+            "declared_imports",
+            "undeclared",
+            "paths",
+            "languages",
+        ],
         "used-undeclared" => &["modules"],
         "module-boundary" => &["modules", "forbidden", "dependency_kind"],
         _ => bail!("Unknown builtin implementation: {implementation}"),
@@ -63,6 +71,8 @@ fn describe_contract(
             "patterns" => ("object", "Language names mapped to test-name regular expressions.", json!({"type":"object","additionalProperties":{"type":"string"}})),
             "prohibited_patterns" => ("object", "Declared language scope mapped to 1..32 distinct regular expressions, each 1..512 UTF-8 bytes; semantic validation enforces the byte limit and regex syntax.", contract.pattern_schema()),
             "forbidden_imports" => ("object", "Supported syntax languages (or all) mapped to 1..32 distinct regular expressions, each 1..512 UTF-8 bytes; semantic validation enforces the byte limit and regex syntax.", rule_parameters::pattern_schema(PatternLanguages::Syntax)),
+            "declared_imports" => ("object", "Import-capable languages (or all) mapped to 1..32 distinct allowed regular expressions, each 1..512 UTF-8 bytes. Rust matches the use argument; other languages match the parsed import text.", rule_parameters::pattern_schema(PatternLanguages::Imports)),
+            "undeclared" => ("string", "Action for an import that matches no pattern in a configured boundary. When omitted, report applies where an allow list is configured and off applies to forbidden-only boundaries.", json!({"type":"string","enum":UndeclaredImports::VALUES})),
             "paths" => ("array", "Repository-relative glob patterns selecting source files.", strings()),
             "languages" => ("array", "Language scope from this built-in's definition; fixed lists and selectable subsets are expressed by the schema.", contract.language_schema()),
             "exempt_patterns" => ("array", "Regular expressions exempting matching comments.", strings()),
@@ -82,6 +92,31 @@ fn describe_contract(
         }
         Ok(descriptor)
     }).collect()
+}
+
+/// The enabled built-in's parameter object, independent of repository policy.
+pub fn import_boundary_schema() -> Result<Value> {
+    let properties = describe("import-boundary", &json!({}))?
+        .into_iter()
+        .map(|mut descriptor| {
+            let name = descriptor["name"]
+                .as_str()
+                .expect("parameter descriptor")
+                .to_owned();
+            let mut schema = descriptor["schema"].take();
+            schema["description"] = descriptor["description"].take();
+            (name, schema)
+        })
+        .collect::<serde_json::Map<_, _>>();
+    Ok(json!({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:qualitygate:builtin-rule:import-boundary:parameters:2",
+        "title": "Enabled import-boundary parameters",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": properties,
+        "anyOf": IMPORT_BOUNDARY_MAPS.map(|key| json!({"required":[key]})),
+    }))
 }
 
 fn strings() -> Value {
@@ -140,6 +175,87 @@ pub(crate) fn apply(parameters: &mut Value, edits: &[String], implementation: &s
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn enabled_import_boundary_schema_matches_policy_parameter_validation() {
+        let document = import_boundary_schema().unwrap();
+        let validator = jsonschema::draft202012::new(&document).unwrap();
+        let catalog = crate::config::catalog::Catalog::load(&Default::default(), []).unwrap();
+        let builtin = catalog.entries["import-boundary"].builtin.as_ref().unwrap();
+        assert_eq!(builtin.version, 2);
+        assert!(!builtin.defaults.enabled);
+        let descriptors = describe_builtin(builtin).unwrap();
+        for parameter in descriptors {
+            let name = parameter["name"].as_str().unwrap();
+            let mut schema = parameter["schema"].clone();
+            schema["description"] = parameter["description"].clone();
+            assert_eq!(document["properties"][name], schema, "{name}");
+        }
+        for (candidate, expected) in [
+            (
+                json!({"declared_imports":{"rust":["^crate::allowed"]}}),
+                true,
+            ),
+            (json!({"forbidden_imports":{"shell":["legacy"]}}), true),
+            (
+                json!({"declared_imports":{"all":["allowed"]},"forbidden_imports":{"rust":["legacy"]},"undeclared":"report"}),
+                true,
+            ),
+            (
+                json!({"declared_imports":{"typescript":["allowed"]},"undeclared":"incomplete"}),
+                true,
+            ),
+            (
+                json!({"declared_imports":{"java":["allowed"]},"undeclared":"off"}),
+                true,
+            ),
+            (json!({}), false),
+            (json!({"undeclared":"off"}), false),
+            (json!({"declared_imports":{}}), false),
+            (json!({"declared_imports":{"rust":[]}}), false),
+            (json!({"declared_imports":{"shell":["allowed"]}}), false),
+            (
+                json!({"declared_imports":{"rust":["allowed"]},"undeclared":"warn"}),
+                false,
+            ),
+            (
+                json!({"declared_imports":{"rust":["allowed"]},"undeclared":false}),
+                false,
+            ),
+        ] {
+            assert_eq!(validator.is_valid(&candidate), expected, "{candidate}");
+            let mut setting = builtin.defaults.clone();
+            setting.enabled = true;
+            setting.parameters = serde_json::from_value(candidate.clone()).unwrap();
+            assert_eq!(
+                crate::rule_catalog::builtin_validation::validate_with_scope(
+                    &builtin.id,
+                    &builtin.implementation,
+                    &builtin.language,
+                    builtin.language_scope,
+                    &setting,
+                )
+                .is_ok(),
+                expected,
+                "{candidate}"
+            );
+        }
+        let mut invalid_regex = builtin.defaults.clone();
+        invalid_regex.enabled = true;
+        invalid_regex.parameters =
+            serde_json::from_value(json!({"declared_imports":{"rust":["["]}})).unwrap();
+        assert!(
+            crate::rule_catalog::builtin_validation::validate_with_scope(
+                &builtin.id,
+                &builtin.implementation,
+                &builtin.language,
+                builtin.language_scope,
+                &invalid_regex,
+            )
+            .is_err()
+        );
+    }
+
     #[test]
     fn shipped_source_rule_schemas_and_validation_share_language_contracts() {
         let config = crate::config::Config {
